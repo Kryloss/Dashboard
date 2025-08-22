@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+:root {
+  /* Design system colors from design.json */
+  --bg-base: #0B0C0D;
+  --bg-canvas: #000000;
+  --bg-elevated: #10131A;
+  --surface-1: #121922;
+  --surface-2: #0F101A;
+  --surface-3: #182331;
+  --border-neutral: #2A3442;
+  --border-subtle: #1C2430;
+  --text-primary: #FBF7FA;
+  --text-secondary: #9CA9B7;
+  --text-tertiary: #556274;
+  --text-inverted: #0B0C0D;
+  --link: #257ADA;
+  --accent-700: #114EB2;
+  --accent-600: #1E4A74;
+  --accent-500: #257ADA;
+  --accent-400: #4AA7FF;
+  --accent-300: #90C9FF;
+  --muted: #2D383B;
+  --focus-ring: #93C5FD;
+  --shadow-base: rgba(0, 0, 0, 0.60);
+  --shadow-soft: rgba(0, 0, 0, 0.35);
+  --glow-accent: rgba(37, 122, 218, 0.35);
+  --glow-cyan: rgba(74, 167, 255, 0.30);
+  --white: #FFFFFF;
+  --black: #000000;
+
+  /* Mapped to Tailwind/shadcn variables */
+  --background: var(--bg-base);
+  --foreground: var(--text-primary);
+  --card: var(--surface-1);
+  --card-foreground: var(--text-secondary);
+  --popover: var(--surface-1);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--accent-500);
+  --primary-foreground: var(--white);
+  --secondary: var(--white);
+  --secondary-foreground: var(--text-inverted);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--surface-2);
+  --accent-foreground: var(--text-primary);
+  --destructive: #dc2626;
+  --destructive-foreground: var(--white);
+  --border: var(--border-neutral);
+  --input: var(--surface-2);
+  --ring: var(--focus-ring);
+  --radius: 0.5rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --font-sans: ui-sans-serif, system-ui, Inter, "Segoe UI", Roboto, sans-serif;
+
+  /* Custom gradients and effects */
+  --gradient-accent-linear: linear-gradient(135deg, var(--accent-700) 0%, var(--accent-500) 60%, var(--accent-400) 100%);
+  --gradient-hero-orb: radial-gradient(circle at 50% 65%, rgba(74, 167, 255, 0.65) 0%, rgba(17, 78, 178, 0.30) 45%, rgba(15, 9, 45, 0.0) 80%);
+  --shadow-elev-1: 0 8px 24px rgba(0, 0, 0, 0.40);
+  --shadow-elev-2: 0 14px 40px rgba(0, 0, 0, 0.55);
+  --shadow-glow-accent: 0 0 60px var(--glow-accent);
+  --shadow-glow-soft: 0 0 36px var(--glow-cyan);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: ui-sans-serif, system-ui, Inter, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
