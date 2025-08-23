@@ -12,8 +12,32 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
+import { signUp } from "@/lib/actions/auth"
+import { useState, useTransition } from "react"
 
 export default function SignupPage() {
+    const [error, setError] = useState<string | null>(null)
+    const [isPending, startTransition] = useTransition()
+
+    const handleSubmit = async (formData: FormData) => {
+        setError(null)
+
+        // Validate password confirmation
+        const password = formData.get('password') as string
+        const confirmPassword = formData.get('confirmPassword') as string
+
+        if (password !== confirmPassword) {
+            setError('Passwords do not match')
+            return
+        }
+
+        startTransition(async () => {
+            const result = await signUp(formData)
+            if (result?.error) {
+                setError(result.error)
+            }
+        })
+    }
     return (
         <div className="min-h-screen bg-[#000000] flex items-center justify-center p-6">
             {/* Background gradient orb effect */}
@@ -44,16 +68,25 @@ export default function SignupPage() {
                     </CardHeader>
 
                     <CardContent className="space-y-6">
-                        <form className="space-y-4">
+                        {/* Error message */}
+                        {error && (
+                            <div className="p-3 rounded-lg bg-[rgba(220,38,38,0.10)] border border-[rgba(220,38,38,0.35)] text-red-400 text-sm">
+                                {error}
+                            </div>
+                        )}
+
+                        <form action={handleSubmit} className="space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="name" className="text-[#FBF7FA]">
+                                <Label htmlFor="full_name" className="text-[#FBF7FA]">
                                     Full Name
                                 </Label>
                                 <Input
-                                    id="name"
+                                    id="full_name"
+                                    name="full_name"
                                     type="text"
                                     placeholder="Enter your full name"
-                                    className="bg-[#0F101A] border-[#2A3442] text-[#FBF7FA] placeholder-[#90A0A8] focus:border-[#4AA7FF] focus:ring-[#93C5FD] rounded-xl"
+                                    className="bg-[#0F101A] border-[#2A3442] text-[#FBF7FA] placeholder-[#90A0A8] focus:border-[#4AA7FF] focus:ring-[#93C5FD] rounded-xl disabled:opacity-60 disabled:cursor-not-allowed"
+                                    disabled={isPending}
                                     required
                                 />
                             </div>
@@ -63,9 +96,11 @@ export default function SignupPage() {
                                 </Label>
                                 <Input
                                     id="email"
+                                    name="email"
                                     type="email"
                                     placeholder="Enter your email"
-                                    className="bg-[#0F101A] border-[#2A3442] text-[#FBF7FA] placeholder-[#90A0A8] focus:border-[#4AA7FF] focus:ring-[#93C5FD] rounded-xl"
+                                    className="bg-[#0F101A] border-[#2A3442] text-[#FBF7FA] placeholder-[#90A0A8] focus:border-[#4AA7FF] focus:ring-[#93C5FD] rounded-xl disabled:opacity-60 disabled:cursor-not-allowed"
+                                    disabled={isPending}
                                     required
                                 />
                             </div>
@@ -75,9 +110,12 @@ export default function SignupPage() {
                                 </Label>
                                 <Input
                                     id="password"
+                                    name="password"
                                     type="password"
                                     placeholder="Create a strong password"
-                                    className="bg-[#0F101A] border-[#2A3442] text-[#FBF7FA] placeholder-[#90A0A8] focus:border-[#4AA7FF] focus:ring-[#93C5FD] rounded-xl"
+                                    className="bg-[#0F101A] border-[#2A3442] text-[#FBF7FA] placeholder-[#90A0A8] focus:border-[#4AA7FF] focus:ring-[#93C5FD] rounded-xl disabled:opacity-60 disabled:cursor-not-allowed"
+                                    disabled={isPending}
+                                    minLength={8}
                                     required
                                 />
                             </div>
@@ -87,22 +125,27 @@ export default function SignupPage() {
                                 </Label>
                                 <Input
                                     id="confirmPassword"
+                                    name="confirmPassword"
                                     type="password"
                                     placeholder="Confirm your password"
-                                    className="bg-[#0F101A] border-[#2A3442] text-[#FBF7FA] placeholder-[#90A0A8] focus:border-[#4AA7FF] focus:ring-[#93C5FD] rounded-xl"
+                                    className="bg-[#0F101A] border-[#2A3442] text-[#FBF7FA] placeholder-[#90A0A8] focus:border-[#4AA7FF] focus:ring-[#93C5FD] rounded-xl disabled:opacity-60 disabled:cursor-not-allowed"
+                                    disabled={isPending}
+                                    minLength={8}
                                     required
                                 />
                             </div>
+
+                            <Button
+                                type="submit"
+                                disabled={isPending}
+                                className="w-full rounded-full bg-gradient-to-br from-[#114EB2] via-[#257ADA] to-[#4AA7FF] text-white shadow-[0_0_60px_rgba(37,122,218,0.35)] hover:from-[#257ADA] hover:to-[#90C9FF] hover:shadow-[0_0_72px_rgba(74,167,255,0.35)] hover:-translate-y-0.5 focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#121922] active:brightness-95 transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:transform-none"
+                            >
+                                {isPending ? "Creating Account..." : "Create Account"}
+                            </Button>
                         </form>
                     </CardContent>
 
                     <CardFooter className="flex flex-col space-y-4">
-                        <Button
-                            type="submit"
-                            className="w-full rounded-full bg-gradient-to-br from-[#114EB2] via-[#257ADA] to-[#4AA7FF] text-white shadow-[0_0_60px_rgba(37,122,218,0.35)] hover:from-[#257ADA] hover:to-[#90C9FF] hover:shadow-[0_0_72px_rgba(74,167,255,0.35)] hover:-translate-y-0.5 focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#121922] active:brightness-95 transition-all"
-                        >
-                            Create Account
-                        </Button>
                         <Button
                             variant="outline"
                             className="w-full rounded-full bg-white text-[#0B0C0D] border-0 shadow-[0_8px_20px_rgba(0,0,0,0.25)] hover:bg-[#F2F4F7] hover:shadow-[0_10px_26px_rgba(0,0,0,0.30)] active:bg-[#E6E9EF] transition-all"

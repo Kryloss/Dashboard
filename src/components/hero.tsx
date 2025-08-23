@@ -19,7 +19,7 @@ export function Hero() {
             <div className="relative z-10 text-center max-w-4xl mx-auto px-6">
                 {/* Logo/Brand */}
                 <div className="mb-6">
-                    <h1 className="text-6xl md:text-7xl font-extrabold text-[#FBF7FA] tracking-tight leading-[68px] mb-4">
+                    <h1 className="text-7xl md:text-7xl font-extrabold text-[#FBF7FA] tracking-tight leading-[70px] mb-5">
                         Kryloss
                     </h1>
                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[rgba(37,122,218,0.10)] border border-[rgba(37,122,218,0.35)] text-[#4AA7FF] text-sm font-medium">

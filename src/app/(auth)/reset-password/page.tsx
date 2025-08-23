@@ -12,33 +12,35 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
-import { signIn } from "@/lib/actions/auth"
+import { resetPassword } from "@/lib/actions/auth"
 import { useState, useTransition } from "react"
-import { useSearchParams } from "next/navigation"
 
-export default function LoginPage() {
+export default function ResetPasswordPage() {
     const [error, setError] = useState<string | null>(null)
+    const [message, setMessage] = useState<string | null>(null)
     const [isPending, startTransition] = useTransition()
-    const searchParams = useSearchParams()
-    const message = searchParams.get('message')
 
     const handleSubmit = async (formData: FormData) => {
         setError(null)
+        setMessage(null)
 
         startTransition(async () => {
-            const result = await signIn(formData)
+            const result = await resetPassword(formData)
             if (result?.error) {
                 setError(result.error)
+            } else if (result?.message) {
+                setMessage(result.message)
             }
         })
     }
+
     return (
         <div className="min-h-screen bg-[#000000] flex items-center justify-center p-6">
             {/* Background gradient orb effect */}
             <div
                 className="absolute inset-0 opacity-40"
                 style={{
-                    background: "radial-gradient(circle at 30% 70%, rgba(74,167,255,0.35) 0%, rgba(17,78,178,0.20) 45%, rgba(15,9,45,0.0) 80%)"
+                    background: "radial-gradient(circle at 50% 30%, rgba(74,167,255,0.35) 0%, rgba(17,78,178,0.20) 45%, rgba(15,9,45,0.0) 80%)"
                 }}
             />
 
@@ -54,10 +56,10 @@ export default function LoginPage() {
 
                     <CardHeader className="text-center pb-6">
                         <CardTitle className="text-2xl font-bold text-[#FBF7FA]">
-                            Welcome back
+                            Reset your password
                         </CardTitle>
                         <CardDescription className="text-[#9CA9B7]">
-                            Sign in to your Kryloss account to access your dashboard
+                            Enter your email address and we'll send you a link to reset your password
                         </CardDescription>
                     </CardHeader>
 
@@ -91,54 +93,26 @@ export default function LoginPage() {
                                     required
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <Label htmlFor="password" className="text-[#FBF7FA]">
-                                        Password
-                                    </Label>
-                                    <Link
-                                        href="/reset-password"
-                                        className="text-sm text-[#257ADA] hover:text-[#4AA7FF] underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#121922] rounded"
-                                    >
-                                        Forgot password?
-                                    </Link>
-                                </div>
-                                <Input
-                                    id="password"
-                                    name="password"
-                                    type="password"
-                                    placeholder="Enter your password"
-                                    className="bg-[#0F101A] border-[#2A3442] text-[#FBF7FA] placeholder-[#90A0A8] focus:border-[#4AA7FF] focus:ring-[#93C5FD] rounded-xl disabled:opacity-60 disabled:cursor-not-allowed"
-                                    disabled={isPending}
-                                    required
-                                />
-                            </div>
 
                             <Button
                                 type="submit"
-                                disabled={isPending}
+                                disabled={isPending || !!message}
                                 className="w-full rounded-full bg-gradient-to-br from-[#114EB2] via-[#257ADA] to-[#4AA7FF] text-white shadow-[0_0_60px_rgba(37,122,218,0.35)] hover:from-[#257ADA] hover:to-[#90C9FF] hover:shadow-[0_0_72px_rgba(74,167,255,0.35)] hover:-translate-y-0.5 focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#121922] active:brightness-95 transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:transform-none"
                             >
-                                {isPending ? "Signing In..." : "Sign In"}
+                                {isPending ? "Sending..." : message ? "Email Sent" : "Send Reset Link"}
                             </Button>
                         </form>
                     </CardContent>
 
                     <CardFooter className="flex flex-col space-y-4">
-                        <Button
-                            variant="outline"
-                            className="w-full rounded-full bg-white text-[#0B0C0D] border-0 shadow-[0_8px_20px_rgba(0,0,0,0.25)] hover:bg-[#F2F4F7] hover:shadow-[0_10px_26px_rgba(0,0,0,0.30)] active:bg-[#E6E9EF] transition-all"
-                        >
-                            Continue with Google
-                        </Button>
 
                         <div className="text-center text-sm text-[#9CA9B7]">
-                            Don&apos;t have an account?{" "}
+                            Remember your password?{" "}
                             <Link
-                                href="/signup"
+                                href="/login"
                                 className="text-[#257ADA] hover:text-[#4AA7FF] underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#121922] rounded"
                             >
-                                Sign up
+                                Sign in
                             </Link>
                         </div>
                     </CardFooter>
