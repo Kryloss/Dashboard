@@ -1,15 +1,14 @@
 import {
-    Body,
-    Button,
-    Container,
-    Head,
-    Heading,
-    Html,
-    Img,
-    Link,
-    Preview,
-    Section,
-    Text,
+  Body,
+  Button,
+  Container,
+  Head,
+  Heading,
+  Html,
+  Link,
+  Preview,
+  Section,
+  Text,
 } from '@react-email/components'
 import * as React from 'react'
 
@@ -31,7 +30,7 @@ export const WelcomeEmail = ({ fullName }: WelcomeEmailProps) => (
 
                 <Text style={text}>
                     Thank you for joining Kryloss, your centralized hub for powerful productivity tools.
-                    Your account has been successfully created and you're ready to start exploring.
+                    Your account has been successfully created and you&apos;re ready to start exploring.
                 </Text>
 
                 <Section style={platformSection}>
@@ -70,7 +69,7 @@ export const WelcomeEmail = ({ fullName }: WelcomeEmailProps) => (
                 </Section>
 
                 <Text style={text}>
-                    Need help getting started? Visit our{' '}
+                    Need help getting started? Visit our{" "}
                     <Link href="https://kryloss.com/docs" style={link}>
                         documentation
                     </Link>{' '}

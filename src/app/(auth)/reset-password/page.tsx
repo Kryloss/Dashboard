@@ -59,7 +59,7 @@ export default function ResetPasswordPage() {
                             Reset your password
                         </CardTitle>
                         <CardDescription className="text-[#9CA9B7]">
-                            Enter your email address and we'll send you a link to reset your password
+                            Enter your email address and we&apos;ll send you a link to reset your password
                         </CardDescription>
                     </CardHeader>
 
@@ -107,7 +107,7 @@ export default function ResetPasswordPage() {
                     <CardFooter className="flex flex-col space-y-4">
 
                         <div className="text-center text-sm text-[#9CA9B7]">
-                            Remember your password?{" "}
+                                                         Remember your password?{" "}
                             <Link
                                 href="/login"
                                 className="text-[#257ADA] hover:text-[#4AA7FF] underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#121922] rounded"

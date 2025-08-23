@@ -13,10 +13,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { signIn } from "@/lib/actions/auth"
-import { useState, useTransition } from "react"
+import { useState, useTransition, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 
-export default function LoginPage() {
+function LoginForm() {
     const [error, setError] = useState<string | null>(null)
     const [isPending, startTransition] = useTransition()
     const searchParams = useSearchParams()
@@ -155,5 +155,13 @@ export default function LoginPage() {
                 </div>
             </div>
         </div>
+    )
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <LoginForm />
+        </Suspense>
     )
 }
