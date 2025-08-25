@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { signOut } from '@/lib/actions/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
 
@@ -197,6 +198,19 @@ export default async function DashboardPage() {
                         </div>
                     </CardContent>
                 </Card>
+
+                {/* Sign Out */}
+                <div className="mt-6 flex justify-end">
+                    <form action={signOut}>
+                        <Button
+                            type="submit"
+                            variant="outline"
+                            className="rounded-full border-[#2A3442] bg-transparent text-[#FBF7FA] hover:bg-white/5 hover:text-white hover:border-[#344253] focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#121922] transition-all px-6"
+                        >
+                            Sign Out
+                        </Button>
+                    </form>
+                </div>
             </div>
         </div>
     )
