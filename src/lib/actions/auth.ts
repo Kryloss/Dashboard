@@ -1,7 +1,6 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 
 export async function signUp(formData: FormData) {
@@ -63,7 +62,7 @@ export async function signUp(formData: FormData) {
     }
 
     revalidatePath('/')
-    redirect('/login?message=Check your email to verify your account')
+    return { success: true, message: 'Account created successfully! Please check your email to verify your account.' }
 }
 
 export async function signIn(formData: FormData) {
@@ -100,14 +99,14 @@ export async function signIn(formData: FormData) {
     }
 
     revalidatePath('/')
-    redirect('/dashboard')
+    return { success: true, message: 'Signed in successfully!' }
 }
 
 export async function signOut() {
     const supabase = await createClient()
     await supabase.auth.signOut()
     revalidatePath('/')
-    redirect('/')
+    return { success: true, message: 'Signed out successfully!' }
 }
 
 export async function resetPassword(formData: FormData) {
@@ -122,7 +121,7 @@ export async function resetPassword(formData: FormData) {
         return { error: error.message }
     }
 
-    return { message: 'Check your email for the password reset link' }
+    return { success: true, message: 'Check your email for the password reset link' }
 }
 
 export async function updatePassword(formData: FormData) {
@@ -138,7 +137,7 @@ export async function updatePassword(formData: FormData) {
     }
 
     revalidatePath('/')
-    redirect('/dashboard?message=Password updated successfully')
+    return { success: true, message: 'Password updated successfully!' }
 }
 
 export async function updateProfile(formData: FormData) {
@@ -204,7 +203,7 @@ export async function updateProfile(formData: FormData) {
     }
 
     revalidatePath('/profile')
-    return { message: 'Profile updated successfully' }
+    return { success: true, message: 'Profile updated successfully!' }
 }
 
 // Note: Google OAuth is now handled client-side only
@@ -252,10 +251,10 @@ export async function handleGoogleCallback() {
 
     // Check if username is missing and redirect to set it
     if (!existingProfile?.username) {
-        redirect('/profile?message=Please set your username to complete your profile')
+        return { success: true, message: 'Please set your username to complete your profile', redirectTo: '/profile' }
     }
 
-    redirect('/dashboard')
+    return { success: true, message: 'Google authentication successful!', redirectTo: '/dashboard' }
 }
 
 // Server-only email utility

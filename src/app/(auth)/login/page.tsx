@@ -15,23 +15,43 @@ import Link from "next/link"
 import { signIn } from "@/lib/actions/auth"
 import { createClient } from "@/lib/supabase/client"
 import { AuthHealthCheck } from "@/components/database-health-check"
-import { useState, useTransition, Suspense } from "react"
-import { useSearchParams } from "next/navigation"
+import { useState, useTransition, useEffect } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
+import { useAuthRedirect } from "@/lib/hooks/use-auth-redirect"
 
 function LoginForm() {
     const [error, setError] = useState<string | null>(null)
+    const [message, setMessage] = useState<string | null>(null)
     const [isPending, startTransition] = useTransition()
     const [isGoogleLoading, setIsGoogleLoading] = useState(false)
     const searchParams = useSearchParams()
-    const message = searchParams.get('message')
+    const router = useRouter()
+
+    // Redirect if already authenticated
+    useAuthRedirect({ redirectIfAuthenticated: true })
+
+    // Get message from URL params
+    useEffect(() => {
+        const urlMessage = searchParams.get('message')
+        if (urlMessage) {
+            setMessage(urlMessage)
+        }
+    }, [searchParams])
 
     const handleSubmit = async (formData: FormData) => {
         setError(null)
+        setMessage(null)
 
         startTransition(async () => {
             const result = await signIn(formData)
             if (result?.error) {
                 setError(result.error)
+            } else if (result?.success) {
+                setMessage(result.message)
+                // The auth context will handle the redirect automatically
+                setTimeout(() => {
+                    router.push('/dashboard')
+                }, 1000)
             }
         })
     }
@@ -75,6 +95,7 @@ function LoginForm() {
             setIsGoogleLoading(false)
         }
     }
+
     return (
         <div className="min-h-screen bg-[#000000] flex items-center justify-center p-6">
             {/* Background gradient orb effect */}
@@ -214,9 +235,5 @@ function LoginForm() {
 }
 
 export default function LoginPage() {
-    return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <LoginForm />
-        </Suspense>
-    )
+    return <LoginForm />
 }

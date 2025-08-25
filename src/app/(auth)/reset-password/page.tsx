@@ -1,35 +1,37 @@
-"use client"
+'use client'
 
-import { Button } from "@/components/ui/button"
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import Link from "next/link"
-import { resetPassword } from "@/lib/actions/auth"
-import { useState, useTransition } from "react"
+import { useState, useTransition } from 'react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import Link from 'next/link'
+import { resetPassword } from '@/lib/actions/auth'
+import { AuthHealthCheck } from '@/components/database-health-check'
 
-export default function ResetPasswordPage() {
-    const [error, setError] = useState<string | null>(null)
+export default function ResetPasswordRequestPage() {
+    const [email, setEmail] = useState('')
     const [message, setMessage] = useState<string | null>(null)
+    const [error, setError] = useState<string | null>(null)
     const [isPending, startTransition] = useTransition()
 
-    const handleSubmit = async (formData: FormData) => {
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
         setError(null)
         setMessage(null)
 
+        if (!email) {
+            setError('Please enter your email address')
+            return
+        }
+
         startTransition(async () => {
-            const result = await resetPassword(formData)
+            const result = await resetPassword(new FormData(e.target as HTMLFormElement))
             if (result?.error) {
                 setError(result.error)
-            } else if (result?.message) {
+            } else if (result?.success) {
                 setMessage(result.message)
+                setEmail('')
             }
         })
     }
@@ -44,7 +46,10 @@ export default function ResetPasswordPage() {
                 }}
             />
 
-            <div className="relative z-10 w-full max-w-md">
+            <div className="relative z-10 w-full max-w-md space-y-6">
+                {/* Health Check Component */}
+                <AuthHealthCheck />
+
                 <Card className="bg-[#121922] border-[#2A3442] shadow-[0_14px_40px_rgba(0,0,0,0.55)] rounded-2xl">
                     {/* Accent edge glow */}
                     <div
@@ -56,10 +61,10 @@ export default function ResetPasswordPage() {
 
                     <CardHeader className="text-center pb-6">
                         <CardTitle className="text-2xl font-bold text-[#FBF7FA]">
-                            Reset your password
+                            Reset Password
                         </CardTitle>
                         <CardDescription className="text-[#9CA9B7]">
-                            Enter your email address and we&apos;ll send you a link to reset your password
+                            Enter your email address and we'll send you a link to reset your password
                         </CardDescription>
                     </CardHeader>
 
@@ -78,16 +83,18 @@ export default function ResetPasswordPage() {
                             </div>
                         )}
 
-                        <form action={handleSubmit} className="space-y-4">
+                        <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="space-y-2">
                                 <Label htmlFor="email" className="text-[#FBF7FA]">
-                                    Email
+                                    Email Address
                                 </Label>
                                 <Input
                                     id="email"
                                     name="email"
                                     type="email"
-                                    placeholder="Enter your email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="Enter your email address"
                                     className="bg-[#0F101A] border-[#2A3442] text-[#FBF7FA] placeholder-[#90A0A8] focus:border-[#4AA7FF] focus:ring-[#93C5FD] rounded-xl disabled:opacity-60 disabled:cursor-not-allowed"
                                     disabled={isPending}
                                     required
@@ -96,26 +103,23 @@ export default function ResetPasswordPage() {
 
                             <Button
                                 type="submit"
-                                disabled={isPending || !!message}
+                                disabled={isPending}
                                 className="w-full rounded-full bg-gradient-to-br from-[#114EB2] via-[#257ADA] to-[#4AA7FF] text-white shadow-[0_0_60px_rgba(37,122,218,0.35)] hover:from-[#257ADA] hover:to-[#90C9FF] hover:shadow-[0_0_72px_rgba(74,167,255,0.35)] hover:-translate-y-0.5 focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#121922] active:brightness-95 transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:transform-none"
                             >
-                                {isPending ? "Sending..." : message ? "Email Sent" : "Send Reset Link"}
+                                {isPending ? "Sending..." : "Send Reset Link"}
                             </Button>
                         </form>
-                    </CardContent>
-
-                    <CardFooter className="flex flex-col space-y-4">
 
                         <div className="text-center text-sm text-[#9CA9B7]">
-                                                         Remember your password?{" "}
+                            Remember your password?{" "}
                             <Link
                                 href="/login"
-                                className="text-[#257ADA] hover:text-[#4AA7FF] underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#121922] rounded"
+                                className="text-[#257ADA] hover:text-[#4AA7FF] underline-offset-4 hover:underline"
                             >
                                 Sign in
                             </Link>
                         </div>
-                    </CardFooter>
+                    </CardContent>
                 </Card>
 
                 {/* Back to home */}
