@@ -49,39 +49,29 @@ export default function SignupPage() {
         try {
             const supabase = createClient()
 
-            // Use NEXT_PUBLIC_SITE_URL for production, fallback to window.location.origin for development
-            const redirectUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
-            console.log('OAuth redirect URL:', `${redirectUrl}/dashboard`)
-
             const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
-                options: {
-                    redirectTo: `${redirectUrl}/dashboard`,
-                },
+                options: { redirectTo: `${window.location.origin}/dashboard` },
             })
 
-            if (error) {
-                console.error('OAuth initiation error:', error)
-                setError(`OAuth error: ${error.message}`)
-                setIsGoogleLoading(false)
-                return
-            }
-
-            console.log('OAuth response:', data)
-
-            // If data.url exists and we need to manually redirect
             if (data?.url) {
-                console.log('Redirecting to:', data.url)
                 window.location.href = data.url
                 return
             }
 
-            // If no URL returned, something went wrong
-            setError('Failed to initiate Google sign-up - no redirect URL')
+            if (error) {
+                console.error(error.message)
+                setError(error.message)
+                setIsGoogleLoading(false)
+                return
+            }
+
+            setError('Failed to initiate Google sign-up')
             setIsGoogleLoading(false)
         } catch (err) {
-            console.error('OAuth exception:', err)
-            setError(`Failed to sign up with Google: ${err}`)
+            const message = err instanceof Error ? err.message : 'Failed to sign up with Google'
+            console.error(message)
+            setError(message)
             setIsGoogleLoading(false)
         }
     }
