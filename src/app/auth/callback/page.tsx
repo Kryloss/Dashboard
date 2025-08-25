@@ -13,20 +13,38 @@ export default function AuthCallbackPage() {
             const supabase = createClient()
 
             try {
-                // Wait for the auth callback to be processed
-                const { data, error: sessionError } = await supabase.auth.getSession()
+                // Handle the auth callback (this processes URL fragments/codes)
+                const { data: authData, error: authError } = await supabase.auth.getSession()
 
-                if (sessionError) {
-                    console.error('Auth callback error:', sessionError)
+                if (authError) {
+                    console.error('Auth callback error:', authError)
                     setError('Authentication failed')
                     setTimeout(() => router.push('/login?message=Authentication failed'), 2000)
                     return
                 }
 
-                if (data.session) {
-                    const user = data.session.user
+                if (authData.session) {
+                    const user = authData.session.user
 
-                    // Check if profile exists
+                    // Check the URL parameters to determine the flow type
+                    const urlParams = new URLSearchParams(window.location.search)
+                    const type = urlParams.get('type')
+
+                    // Handle password recovery flow
+                    if (type === 'recovery') {
+                        console.log('Password recovery flow detected')
+                        router.push('/auth/reset-password')
+                        return
+                    }
+
+                    // Handle email confirmation
+                    if (type === 'signup') {
+                        console.log('Email confirmation flow detected')
+                        router.push('/dashboard?message=Email confirmed! Welcome to Kryloss.')
+                        return
+                    }
+
+                    // Default OAuth/login flow - check if profile exists
                     const { data: existingProfile } = await supabase
                         .from('profiles')
                         .select('*')
@@ -34,7 +52,7 @@ export default function AuthCallbackPage() {
                         .single()
 
                     if (!existingProfile) {
-                        // Create profile for Google user
+                        // Create profile for OAuth users (Google, etc.)
                         const { error: profileError } = await supabase
                             .from('profiles')
                             .insert([
@@ -52,10 +70,11 @@ export default function AuthCallbackPage() {
                         }
                     }
 
-                    // Always redirect to dashboard first - let the dashboard handle username prompts
+                    // Redirect to dashboard for regular sign-in flows
                     router.push('/dashboard')
                 } else {
                     // No session found, redirect to login
+                    console.log('No session found in callback')
                     router.push('/login?message=Please sign in to continue')
                 }
             } catch (err) {
