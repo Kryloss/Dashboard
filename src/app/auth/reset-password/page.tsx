@@ -31,13 +31,13 @@ function ResetPasswordForm() {
             try {
                 console.log('Handling password reset flow...')
 
-                // Check for Supabase error parameters first
+                // Check for Supabase error parameters (fallback for old links)
                 const urlError = searchParams.get('error')
                 const errorCode = searchParams.get('error_code')
                 const errorDescription = searchParams.get('error_description')
 
                 if (urlError || errorCode) {
-                    console.log('Supabase error detected:', { urlError, errorCode, errorDescription })
+                    console.log('Supabase error detected (old flow):', { urlError, errorCode, errorDescription })
 
                     let errorMessage = 'Invalid or expired reset link.'
 
@@ -56,10 +56,10 @@ function ResetPasswordForm() {
                     return
                 }
 
-                // Get the code from URL parameters or hash
+                // Get the code from URL parameters (direct flow)
                 let code = searchParams.get('code')
 
-                // Also check URL hash for tokens (some Supabase configurations use hash)
+                // Fallback: check URL hash for tokens (old flow)
                 if (!code && typeof window !== 'undefined') {
                     const hashParams = new URLSearchParams(window.location.hash.substring(1))
                     code = hashParams.get('access_token') || hashParams.get('token_hash')
@@ -74,6 +74,8 @@ function ResetPasswordForm() {
                     setError('Invalid reset link. Missing verification code. Please request a new reset link.')
                     return
                 }
+
+                console.log('Processing reset code directly:', code.substring(0, 8) + '...')
 
                 // Verify the OTP code for password recovery
                 console.log('Verifying recovery code...')
@@ -221,8 +223,17 @@ function ResetPasswordForm() {
                                 <div className="mt-3 p-2 bg-[rgba(0,0,0,0.20)] rounded text-xs">
                                     <div className="text-[#4AA7FF] font-medium mb-1">Technical Details:</div>
                                     <div className="text-[#556274]">
-                                        Supabase processed your reset link and found it expired/invalid.
-                                        The error was: <code className="text-[#9CA9B7]">{searchParams.get('error_code') || 'unknown'}</code>
+                                        {searchParams.get('error') || searchParams.get('error_code') ? (
+                                            <>
+                                                Supabase processed your reset link and found it expired/invalid.
+                                                The error was: <code className="text-[#9CA9B7]">{searchParams.get('error_code') || 'unknown'}</code>
+                                            </>
+                                        ) : (
+                                            <>
+                                                This appears to be an old-style reset link that went through Supabase verification.
+                                                New reset links will go directly to your site for better reliability.
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                             </div>
