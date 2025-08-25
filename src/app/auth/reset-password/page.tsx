@@ -24,49 +24,89 @@ function ResetPasswordForm() {
     const [error, setError] = useState<string | null>(null)
     const [isValidSession, setIsValidSession] = useState<boolean | null>(null)
 
-        useEffect(() => {
+    useEffect(() => {
         const handlePasswordReset = async () => {
             const supabase = createClient()
-            
+
             try {
                 console.log('Handling password reset flow...')
-                
-                // Get the code from URL parameters
-                const code = searchParams.get('code')
+
+                // Get the code from URL parameters or hash
+                let code = searchParams.get('code')
+
+                // Also check URL hash for tokens (some Supabase configurations use hash)
+                if (!code && typeof window !== 'undefined') {
+                    const hashParams = new URLSearchParams(window.location.hash.substring(1))
+                    code = hashParams.get('access_token') || hashParams.get('token_hash')
+                }
+
                 console.log('Reset code from URL:', code ? 'Present' : 'Missing')
-                
+                console.log('Full URL:', typeof window !== 'undefined' ? window.location.href : 'N/A')
+
                 if (!code) {
-                    console.log('No code parameter found in URL')
+                    console.log('No code parameter found in URL search params or hash')
                     setIsValidSession(false)
-                    setError('Invalid reset link. Missing verification code.')
+                    setError('Invalid reset link. Missing verification code. Please request a new reset link.')
                     return
                 }
-                
-                // Exchange the code for a session
-                console.log('Exchanging code for session...')
-                const { data, error } = await supabase.auth.exchangeCodeForSession(code)
-                
+
+                // Verify the OTP code for password recovery
+                console.log('Verifying recovery code...')
+                const { data, error } = await supabase.auth.verifyOtp({
+                    token_hash: code,
+                    type: 'recovery'
+                })
+
                 if (error) {
-                    console.error('Code exchange error:', error)
+                    console.error('Recovery code verification error:', error)
                     setIsValidSession(false)
-                    setError(`Invalid or expired reset link: ${error.message}`)
+
+                    // Provide more specific error messages
+                    let errorMessage = 'Invalid or expired reset link.'
+
+                    if (error.message.includes('expired')) {
+                        errorMessage = 'This reset link has expired. Please request a new password reset.'
+                    } else if (error.message.includes('invalid')) {
+                        errorMessage = 'This reset link is invalid or has already been used. Please request a new password reset.'
+                    } else if (error.message.includes('not found')) {
+                        errorMessage = 'This reset link was not found. It may have expired or been used already.'
+                    } else {
+                        errorMessage = `Reset link error: ${error.message}`
+                    }
+
+                    setError(errorMessage)
                     return
                 }
-                
+
                 if (!data.session) {
-                    console.log('No session established from code')
+                    console.log('No session established from recovery code')
                     setIsValidSession(false)
                     setError('Failed to establish session from reset link.')
                     return
                 }
-                
+
                 console.log('Session successfully established for user:', data.session.user.email)
                 setIsValidSession(true)
-                
+
             } catch (err) {
                 console.error('Password reset handling failed:', err)
+
+                // As a fallback, check if there's already a session (e.g., from auth callback)
+                try {
+                    console.log('Checking for existing session as fallback...')
+                    const { data: sessionData } = await supabase.auth.getSession()
+
+                    if (sessionData.session) {
+                        console.log('Found existing session, using it')
+                        setIsValidSession(true)
+                        return
+                    }
+                } catch (fallbackErr) {
+                    console.error('Fallback session check failed:', fallbackErr)
+                }
+
                 setIsValidSession(false)
-                setError('Failed to process reset link. Please request a new one.')
+                setError('Failed to process reset link. This may be due to email client prefetching. Please request a new reset link.')
             }
         }
 
@@ -141,6 +181,18 @@ function ResetPasswordForm() {
                             <div className="p-3 rounded-lg bg-[rgba(220,38,38,0.10)] border border-[rgba(220,38,38,0.35)] text-red-400 text-sm">
                                 {error}
                             </div>
+
+                            {/* Help information */}
+                            <div className="p-3 rounded-lg bg-[rgba(37,122,218,0.10)] border border-[rgba(37,122,218,0.35)] text-[#9CA9B7] text-xs">
+                                <div className="text-[#4AA7FF] mb-2 font-medium">Why did this happen?</div>
+                                <ul className="space-y-1 text-xs">
+                                    <li>• The reset link may have expired (usually valid for 1 hour)</li>
+                                    <li>• The link may have already been used</li>
+                                    <li>• Your email client may have &quot;prefetched&quot; the link for security scanning</li>
+                                    <li>• The link may have been modified by email tracking systems</li>
+                                </ul>
+                            </div>
+
                             <div className="text-center">
                                 <Link
                                     href="/reset-password"
