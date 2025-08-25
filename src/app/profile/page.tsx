@@ -2,10 +2,12 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import ProfileForm from '@/components/profile-form'
 
+export const dynamic = 'force-dynamic'
+
 export default async function ProfilePage({
     searchParams,
 }: {
-    searchParams: Promise<{ message?: string }>
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
     const supabase = await createClient()
 
@@ -73,7 +75,7 @@ export default async function ProfilePage({
                 <ProfileForm
                     initialProfile={finalProfile}
                     user={user}
-                    initialMessage={(await searchParams).message}
+                    initialMessage={((await searchParams)?.message as string) || undefined}
                 />
             </div>
         </div>

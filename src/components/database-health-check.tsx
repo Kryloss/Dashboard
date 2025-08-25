@@ -23,8 +23,14 @@ export function AuthHealthCheck() {
         connection: 'checking',
         environment: 'checking'
     })
+    const [origin, setOrigin] = useState<string>('')
 
     useEffect(() => {
+        // Compute origin on client only to avoid SSR/CSR mismatch
+        if (typeof window !== 'undefined') {
+            setOrigin(window.location.origin)
+        }
+
         async function checkBasicHealth() {
             try {
                 // Check environment variables
@@ -124,7 +130,7 @@ export function AuthHealthCheck() {
                 </div>
 
                 <div className="mt-2 text-xs text-[#556274]">
-                    🌍 Current URL: {typeof window !== 'undefined' ? window.location.origin : 'Server'}
+                    🌍 Current URL: <span suppressHydrationWarning>{origin || '(detecting...)'}</span>
                 </div>
 
                 <div className="text-xs text-[#556274]">
