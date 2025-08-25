@@ -18,11 +18,13 @@ export default function AuthCallbackPage() {
         // Set timeout to prevent infinite loading
         const timeoutId = setTimeout(() => {
             if (!hasProcessed.current) {
-                console.log('Auth callback timed out')
+                console.log('Auth callback timed out - redirecting to homepage')
+                hasProcessed.current = true
                 setError('Authentication timed out')
-                router.push('/login?message=Authentication timed out. Please try again.')
+                // Redirect to homepage instead of login to avoid loops
+                router.push('/?message=Authentication completed but took longer than expected')
             }
-        }, 15000) // 15 second timeout
+        }, 10000) // 10 second timeout (reduced for faster fallback)
 
         const handleAuthCallback = async () => {
             hasProcessed.current = true
@@ -55,29 +57,47 @@ export default function AuthCallbackPage() {
                 // For OAuth flows (Google, etc.) - exchange code for session
                 if (code) {
                     console.log('Exchanging OAuth code for session...')
-                    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
-                    
-                    if (error) {
-                        console.error('Code exchange error:', error)
-                        clearTimeout(timeoutId)
-                        setError('Failed to exchange authorization code')
-                        setTimeout(() => router.push('/login?message=Authentication failed during code exchange'), 2000)
-                        return
-                    }
-
-                    if (data.session) {
-                        console.log('OAuth session established for user:', data.session.user.email)
-                        clearTimeout(timeoutId)
+                    try {
+                        const { data, error } = await supabase.auth.exchangeCodeForSession(code)
                         
-                        // Continue with profile creation/verification below
-                        const authData = data
-                        const user = authData.session.user
+                        if (error) {
+                            console.error('Code exchange error:', error)
+                            clearTimeout(timeoutId)
+                            setError('Failed to exchange authorization code')
+                            setTimeout(() => router.push('/login?message=Authentication failed during code exchange'), 2000)
+                            return
+                        }
 
-                        // Check if profile exists and create if needed
-                        await handleProfileCreation(supabase, user)
-                        
-                        // Redirect to dashboard for OAuth flows
-                        router.push('/dashboard')
+                        if (data?.session?.user) {
+                            console.log('OAuth session established for user:', data.session.user.email || 'unknown')
+                            clearTimeout(timeoutId)
+                            
+                            // Continue with profile creation/verification below
+                            const user = data.session.user
+
+                            // Check if profile exists and create if needed
+                            try {
+                                await handleProfileCreation(supabase, user)
+                            } catch (profileError) {
+                                console.error('Profile creation failed, continuing with redirect:', profileError)
+                                // Continue even if profile creation fails
+                            }
+                            
+                            // Redirect to homepage for OAuth flows
+                            router.push('/')
+                            return
+                        } else {
+                            console.error('No session or user found after code exchange')
+                            clearTimeout(timeoutId)
+                            setError('Failed to establish session after code exchange')
+                            setTimeout(() => router.push('/login?message=Session establishment failed'), 2000)
+                            return
+                        }
+                    } catch (codeExchangeError) {
+                        console.error('Code exchange failed with exception:', codeExchangeError)
+                        clearTimeout(timeoutId)
+                        setError('Code exchange failed')
+                        setTimeout(() => router.push('/login?message=Authentication process failed'), 2000)
                         return
                     }
                 }
@@ -100,9 +120,9 @@ export default function AuthCallbackPage() {
                     return
                 }
 
-                if (authData.session) {
+                if (authData?.session?.user) {
                     const user = authData.session.user
-                    console.log('Session established for user:', user.email)
+                    console.log('Session established for user:', user.email || 'unknown')
                     clearTimeout(timeoutId)
 
                     // Handle password recovery flow
@@ -115,15 +135,20 @@ export default function AuthCallbackPage() {
                     // Handle email confirmation
                     if (type === 'signup') {
                         console.log('Email confirmation flow detected')
-                        router.push('/dashboard?message=Email confirmed! Welcome to Kryloss.')
+                        router.push('/?message=Email confirmed! Welcome to Kryloss.')
                         return
                     }
 
                     // Default login flow - check if profile exists and create if needed
-                    await handleProfileCreation(supabase, user)
+                    try {
+                        await handleProfileCreation(supabase, user)
+                    } catch (profileError) {
+                        console.error('Profile handling failed, continuing with redirect:', profileError)
+                        // Continue even if profile handling fails
+                    }
                     
-                    // Redirect to dashboard for regular sign-in flows
-                    router.push('/dashboard')
+                    // Redirect to homepage for regular sign-in flows
+                    router.push('/')
                 } else {
                     // No session found, redirect to login
                     console.log('No session found in callback')
@@ -135,44 +160,69 @@ export default function AuthCallbackPage() {
                 console.error('Callback handling error:', err)
                 clearTimeout(timeoutId)
                 setError('Something went wrong during authentication')
-                setTimeout(() => router.push('/login?message=Authentication error occurred'), 2000)
+                // Redirect to homepage instead of login to avoid loops
+                setTimeout(() => router.push('/?message=Authentication completed with some issues'), 2000)
+            } finally {
+                // Ensure we always mark as processed
+                hasProcessed.current = true
             }
         }
 
         // Helper function for profile creation
         const handleProfileCreation = async (supabase: ReturnType<typeof createClient>, user: { id: string; email?: string; user_metadata?: Record<string, unknown> }) => {
+            if (!user?.id) {
+                console.error('Cannot create profile: user ID is missing')
+                return
+            }
+
             try {
-                const { data: existingProfile } = await supabase
+                // Check if profile exists
+                const { data: existingProfile, error: selectError } = await supabase
                     .from('profiles')
                     .select('*')
                     .eq('id', user.id)
                     .single()
 
+                if (selectError && selectError.code !== 'PGRST116') {
+                    // PGRST116 is "not found" error, which is expected for new users
+                    console.error('Error checking existing profile:', selectError)
+                    throw selectError
+                }
+
                 if (!existingProfile) {
-                    console.log('Creating profile for new user:', user.email)
+                    console.log('Creating profile for new user:', user.email || 'unknown email')
+                    
+                    const profileData = {
+                        id: user.id,
+                        email: user.email || null,
+                        username: null, // Will prompt user to set username
+                        full_name: (user.user_metadata?.full_name as string) || null,
+                    }
+
                     const { error: profileError } = await supabase
                         .from('profiles')
-                        .insert([
-                            {
-                                id: user.id,
-                                email: user.email!,
-                                username: null, // Will prompt user to set username
-                                full_name: user.user_metadata?.full_name || null,
-                            }
-                        ])
+                        .insert([profileData])
 
                     if (profileError) {
-                        console.error('Profile creation error:', profileError.message, profileError.code, profileError.details)
-                        // Continue anyway, profile might already exist or the profile page will handle it
+                        console.error('Profile creation error:', {
+                            message: profileError.message,
+                            code: profileError.code,
+                            details: profileError.details
+                        })
+                        
+                        // Don't throw here - continue with auth flow
+                        // The profile page can handle missing profiles
+                        console.log('Continuing with auth flow despite profile creation failure')
                     } else {
-                        console.log('Profile created successfully for:', user.email)
+                        console.log('Profile created successfully for:', user.email || user.id)
                     }
                 } else {
-                    console.log('Profile already exists for:', user.email)
+                    console.log('Profile already exists for:', user.email || user.id)
                 }
             } catch (profileErr) {
                 console.error('Profile handling error:', profileErr)
-                // Continue with auth flow even if profile creation fails
+                // Don't re-throw - continue with auth flow even if profile creation fails
+                console.log('Continuing with auth flow despite profile handling error')
             }
         }
 
