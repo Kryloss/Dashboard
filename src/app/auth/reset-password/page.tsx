@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -23,9 +23,25 @@ function ResetPasswordForm() {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [isValidSession, setIsValidSession] = useState<boolean | null>(null)
+    const hasProcessed = useRef(false)
 
     useEffect(() => {
+        // Prevent re-running if already processing or completed
+        if (isValidSession !== null || hasProcessed.current) {
+            return
+        }
+
+        // Set timeout to prevent infinite loading
+        const timeoutId = setTimeout(() => {
+            if (isValidSession === null && !hasProcessed.current) {
+                console.log('Reset verification timed out')
+                setIsValidSession(false)
+                setError('Reset verification timed out. Please request a new reset link.')
+            }
+        }, 15000) // 15 second timeout
+
         const handlePasswordReset = async () => {
+            hasProcessed.current = true
             const supabase = createClient()
 
             try {
@@ -56,6 +72,14 @@ function ResetPasswordForm() {
                     return
                 }
 
+                // First, check if we already have a valid session (from auth callback)
+                const { data: existingSession } = await supabase.auth.getSession()
+                if (existingSession.session) {
+                    console.log('Found existing session for user:', existingSession.session.user.email)
+                    setIsValidSession(true)
+                    return
+                }
+
                 // Get the code from URL parameters (direct flow)
                 let code = searchParams.get('code')
 
@@ -66,7 +90,6 @@ function ResetPasswordForm() {
                 }
 
                 console.log('Reset code from URL:', code ? 'Present' : 'Missing')
-                console.log('Full URL:', typeof window !== 'undefined' ? window.location.href : 'N/A')
 
                 if (!code) {
                     console.log('No code parameter found in URL search params or hash')
@@ -75,10 +98,9 @@ function ResetPasswordForm() {
                     return
                 }
 
-                console.log('Processing reset code directly:', code.substring(0, 8) + '...')
+                console.log('Processing reset code:', code.substring(0, 8) + '...')
 
                 // Verify the OTP code for password recovery
-                console.log('Verifying recovery code...')
                 const { data, error } = await supabase.auth.verifyOtp({
                     token_hash: code,
                     type: 'recovery'
@@ -117,28 +139,18 @@ function ResetPasswordForm() {
 
             } catch (err) {
                 console.error('Password reset handling failed:', err)
-
-                // As a fallback, check if there's already a session (e.g., from auth callback)
-                try {
-                    console.log('Checking for existing session as fallback...')
-                    const { data: sessionData } = await supabase.auth.getSession()
-
-                    if (sessionData.session) {
-                        console.log('Found existing session, using it')
-                        setIsValidSession(true)
-                        return
-                    }
-                } catch (fallbackErr) {
-                    console.error('Fallback session check failed:', fallbackErr)
-                }
-
                 setIsValidSession(false)
                 setError('Failed to process reset link. This may be due to email client prefetching. Please request a new reset link.')
+            } finally {
+                clearTimeout(timeoutId)
             }
         }
 
         handlePasswordReset()
-    }, [searchParams])
+
+        // Cleanup timeout on unmount
+        return () => clearTimeout(timeoutId)
+    }, []) // Remove searchParams dependency to prevent re-runs
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
