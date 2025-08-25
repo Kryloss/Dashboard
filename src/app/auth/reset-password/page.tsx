@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef, useMemo, Suspense } from 'react'
+import { useEffect, useState, useRef, useMemo, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -33,20 +33,24 @@ function ResetPasswordForm() {
         code: searchParams.get('code')
     }), [searchParams])
 
+    // Stabilize the timeout handler to avoid dependency issues
+    const handleTimeout = useCallback(() => {
+        if (!hasProcessed.current) {
+            console.log('Reset verification timed out')
+            hasProcessed.current = true
+            setIsValidSession(false)
+            setError('Reset verification timed out. Please request a new reset link.')
+        }
+    }, [])
+
     useEffect(() => {
         // Prevent re-running if already processing or completed
-        if (isValidSession !== null || hasProcessed.current) {
+        if (hasProcessed.current) {
             return
         }
 
         // Set timeout to prevent infinite loading
-        const timeoutId = setTimeout(() => {
-            if (isValidSession === null && !hasProcessed.current) {
-                console.log('Reset verification timed out')
-                setIsValidSession(false)
-                setError('Reset verification timed out. Please request a new reset link.')
-            }
-        }, 15000) // 15 second timeout
+        const timeoutId = setTimeout(handleTimeout, 15000) // 15 second timeout
 
         const handlePasswordReset = async () => {
             hasProcessed.current = true
@@ -156,7 +160,7 @@ function ResetPasswordForm() {
 
         // Cleanup timeout on unmount
         return () => clearTimeout(timeoutId)
-    }, [searchParamsData]) // Include memoized search params
+    }, [searchParamsData, handleTimeout]) // Include memoized search params and stable timeout handler
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
