@@ -157,8 +157,29 @@ export default function DatabaseHealthCheck() {
         profile: 'checking',
         permissions: 'checking'
     })
+    const [envStatus, setEnvStatus] = useState<{
+        hasUrl: boolean
+        hasKey: boolean
+        urlPreview: string
+        keyPreview: string
+    }>({
+        hasUrl: false,
+        hasKey: false,
+        urlPreview: '',
+        keyPreview: ''
+    })
 
     useEffect(() => {
+        // Check environment variables first
+        const hasUrl = !!process.env.NEXT_PUBLIC_SUPABASE_URL
+        const hasKey = !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+        const urlPreview = process.env.NEXT_PUBLIC_SUPABASE_URL ?
+            `${process.env.NEXT_PUBLIC_SUPABASE_URL.substring(0, 30)}...` : 'Not set'
+        const keyPreview = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?
+            `${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.substring(0, 20)}...` : 'Not set'
+
+        setEnvStatus({ hasUrl, hasKey, urlPreview, keyPreview })
+
         async function checkHealth() {
             const supabase = createClient()
 
@@ -178,7 +199,7 @@ export default function DatabaseHealthCheck() {
                 setStatus(prev => ({ ...prev, auth: 'success' }))
 
                 // Check profile exists
-                const { error: profileError } = await supabase
+                const { data: profileData, error: profileError } = await supabase
                     .from('profiles')
                     .select('id, email, username, full_name')
                     .eq('id', user.id)
@@ -189,7 +210,7 @@ export default function DatabaseHealthCheck() {
                         setStatus(prev => ({
                             ...prev,
                             profile: 'missing',
-                            details: 'Profile not found - will be auto-created'
+                            details: `Profile not found for user ${user.id} - will be auto-created. Error: ${profileError.message}`
                         }))
                     } else {
                         setStatus(prev => ({
@@ -199,7 +220,11 @@ export default function DatabaseHealthCheck() {
                         }))
                     }
                 } else {
-                    setStatus(prev => ({ ...prev, profile: 'success' }))
+                    setStatus(prev => ({
+                        ...prev,
+                        profile: 'success',
+                        details: `Profile found: ${profileData.username || 'No username'} | ${profileData.full_name || 'No full name'}`
+                    }))
                 }
 
                 // Check update permissions
@@ -276,6 +301,35 @@ export default function DatabaseHealthCheck() {
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
+                {/* Environment Variables Status */}
+                <div className="mb-4 p-3 bg-[rgba(0,0,0,0.20)] rounded">
+                    <h4 className="text-xs text-[#4AA7FF] font-semibold mb-2">Environment Variables</h4>
+                    <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs text-[#FBF7FA]">SUPABASE_URL:</span>
+                            <span className={`text-xs ${envStatus.hasUrl ? 'text-green-400' : 'text-red-400'}`}>
+                                {envStatus.hasUrl ? '✅ Set' : '❌ Missing'}
+                            </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs text-[#FBF7FA]">SUPABASE_ANON_KEY:</span>
+                            <span className={`text-xs ${envStatus.hasKey ? 'text-green-400' : 'text-red-400'}`}>
+                                {envStatus.hasKey ? '✅ Set' : '❌ Missing'}
+                            </span>
+                        </div>
+                        {envStatus.hasUrl && (
+                            <div className="text-xs text-[#556274] font-mono">
+                                URL: {envStatus.urlPreview}
+                            </div>
+                        )}
+                        {envStatus.hasKey && (
+                            <div className="text-xs text-[#556274] font-mono">
+                                Key: {envStatus.keyPreview}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
                 <div className="flex items-center justify-between">
                     <span className="text-xs text-[#FBF7FA]">Authentication:</span>
                     <span className={`text-xs ${getStatusColor(status.auth)}`}>

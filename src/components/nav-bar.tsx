@@ -22,11 +22,63 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { subdomains } from "@/lib/subdomains"
 import { cn } from "@/lib/utils"
-import { useAuth } from "@/lib/contexts/auth-context"
+import { createClient } from "@/lib/supabase/client"
+import { signOut } from "@/lib/actions/auth"
+import { useState, useEffect } from "react"
+import type { User } from "@supabase/supabase-js"
+import type { Profile } from "@/lib/types/database.types"
 
 export function NavBar() {
-    const { user, profile, loading, signOut } = useAuth()
+    const [user, setUser] = useState<User | null>(null)
+    const [profile, setProfile] = useState<Profile | null>(null)
+    const [loading, setLoading] = useState(true)
 
+    const supabase = createClient()
+
+    useEffect(() => {
+        async function getUser() {
+            const { data: { user } } = await supabase.auth.getUser()
+            setUser(user)
+
+            if (user) {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', user.id)
+                    .single()
+
+                setProfile(profile)
+            }
+
+            setLoading(false)
+        }
+
+        getUser()
+
+        const {
+            data: { subscription },
+        } = supabase.auth.onAuthStateChange(async (event, session) => {
+            setUser(session?.user ?? null)
+
+            if (session?.user) {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', session.user.id)
+                    .single()
+
+                setProfile(profile)
+            } else {
+                setProfile(null)
+            }
+        })
+
+        return () => subscription.unsubscribe()
+    }, [supabase])
+
+    async function handleSignOut() {
+        await signOut()
+    }
     return (
         <header className="sticky top-0 z-50 w-full border-b border-[#1C2430] bg-[#0B0C0D]/80 backdrop-blur">
             <div className="container flex h-16 items-center justify-between px-6">
@@ -117,7 +169,7 @@ export function NavBar() {
                                 <DropdownMenuSeparator className="bg-[#2A3442]" />
                                 <DropdownMenuItem
                                     className="text-[#FBF7FA] hover:bg-white/5 hover:text-white focus:bg-white/5 focus:text-white cursor-pointer"
-                                    onClick={signOut}
+                                    onClick={handleSignOut}
                                 >
                                     Sign out
                                 </DropdownMenuItem>

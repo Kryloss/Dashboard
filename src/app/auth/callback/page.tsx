@@ -3,12 +3,10 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { useAuth } from '@/lib/contexts/auth-context'
 
 export default function AuthCallbackPage() {
     const router = useRouter()
     const [error, setError] = useState<string | null>(null)
-    const { user, profile } = useAuth()
 
     useEffect(() => {
         const handleAuthCallback = async () => {
@@ -101,19 +99,6 @@ export default function AuthCallbackPage() {
 
         handleAuthCallback()
     }, [router])
-
-    // If we already have a user from the auth context, redirect appropriately
-    useEffect(() => {
-        if (user) {
-            if (profile && !profile.username) {
-                // User needs to set username
-                router.push('/profile?message=Please set your username to complete your profile')
-            } else {
-                // User is fully set up
-                router.push('/dashboard')
-            }
-        }
-    }, [user, profile, router])
 
     if (error) {
         return (

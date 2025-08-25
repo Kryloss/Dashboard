@@ -76,16 +76,49 @@ CREATE TRIGGER handle_profiles_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION handle_updated_at();
 
--- 8. Create indexes for performance
+-- 8. Create function to handle new user signup
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO public.profiles (id, email, username, full_name, avatar_url)
+    VALUES (
+        NEW.id,
+        NEW.email,
+        COALESCE(NEW.raw_user_meta_data->>'username', NULL),
+        COALESCE(NEW.raw_user_meta_data->>'full_name', NULL),
+        COALESCE(NEW.raw_user_meta_data->>'avatar_url', NULL)
+    );
+    RETURN NEW;
+EXCEPTION
+    WHEN unique_violation THEN
+        -- Profile already exists, just return
+        RETURN NEW;
+    WHEN OTHERS THEN
+        -- Log the error but don't fail the signup
+        RAISE LOG 'Failed to create profile for user %: %', NEW.id, SQLERRM;
+        RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 9. Create trigger for new user signup
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- 10. Create indexes for performance
 CREATE INDEX IF NOT EXISTS profiles_username_idx ON public.profiles(username);
 CREATE INDEX IF NOT EXISTS profiles_email_idx ON public.profiles(email);
 
--- 9. Test the setup with a sample query (this should work for authenticated users)
+-- 11. Test the setup with a sample query (this should work for authenticated users)
 -- SELECT * FROM profiles WHERE id = auth.uid();
 
--- 10. Grant necessary permissions
+-- 12. Grant necessary permissions
 GRANT USAGE ON SCHEMA public TO authenticated;
 GRANT ALL ON public.profiles TO authenticated;
+
+-- 13. Grant execute permission on the trigger function
+GRANT EXECUTE ON FUNCTION public.handle_new_user() TO authenticated;
 
 -- Verification queries (run these to check your setup):
 -- 1. Check if RLS is enabled:
@@ -96,3 +129,9 @@ GRANT ALL ON public.profiles TO authenticated;
 
 -- 3. Check table structure:
 -- \d public.profiles
+
+-- 4. Check triggers:
+-- SELECT * FROM information_schema.triggers WHERE event_object_table = 'users' AND trigger_schema = 'auth';
+
+-- 5. Check if the function exists:
+-- SELECT * FROM information_schema.routines WHERE routine_name = 'handle_new_user';

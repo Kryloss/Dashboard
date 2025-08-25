@@ -7,29 +7,27 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { updateProfile } from '@/lib/actions/auth'
-import { useAuth } from '@/lib/contexts/auth-context'
+import { createClient } from '@/lib/supabase/client'
 import DatabaseHealthCheck from '@/components/database-health-check'
+import type { User } from '@supabase/supabase-js'
+interface ProfileData {
+    id: string
+    email: string
+    username: string | null
+    full_name: string | null
+}
 
 interface ProfileFormProps {
+    initialProfile: ProfileData | null
+    user: User
     initialMessage?: string
 }
 
-export default function ProfileForm({ initialMessage }: ProfileFormProps) {
-    const { user, profile, refreshProfile, updateProfile: updateAuthProfile } = useAuth()
+export default function ProfileForm({ initialProfile, user, initialMessage }: ProfileFormProps) {
+    const [profile, setProfile] = useState<ProfileData | null>(initialProfile)
     const [error, setError] = useState<string | null>(null)
     const [message, setMessage] = useState<string | null>(initialMessage || null)
     const [isPending, startTransition] = useTransition()
-
-    if (!user || !profile) {
-        return (
-            <div className="min-h-screen bg-[#0B0C0D] flex items-center justify-center">
-                <div className="text-center">
-                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#4AA7FF]"></div>
-                    <p className="text-[#9CA9B7] mt-4">Loading profile...</p>
-                </div>
-            </div>
-        )
-    }
 
     const handleSubmit = async (formData: FormData) => {
         setError(null)
@@ -46,14 +44,30 @@ export default function ProfileForm({ initialMessage }: ProfileFormProps) {
                 const username = formData.get('username') as string
                 const fullName = formData.get('full_name') as string
 
-                // Update the auth context immediately for instant UI feedback
-                updateAuthProfile({
-                    username: username || profile.username,
-                    full_name: fullName || profile.full_name,
-                })
+                if (profile) {
+                    setProfile({
+                        ...profile,
+                        username: username || profile.username,
+                        full_name: fullName || profile.full_name,
+                    })
+                }
 
-                // Refresh profile data from server to ensure consistency
-                await refreshProfile()
+                // Refresh profile data from server
+                const supabase = createClient()
+                const { data: updatedProfile } = await supabase
+                    .from('profiles')
+                    .select('id, email, username, full_name')
+                    .eq('id', user.id)
+                    .single()
+
+                if (updatedProfile) {
+                    setProfile({
+                        id: updatedProfile.id,
+                        email: updatedProfile.email,
+                        username: updatedProfile.username,
+                        full_name: updatedProfile.full_name,
+                    })
+                }
             }
         })
     }

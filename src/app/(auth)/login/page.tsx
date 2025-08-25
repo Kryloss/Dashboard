@@ -15,43 +15,23 @@ import Link from "next/link"
 import { signIn } from "@/lib/actions/auth"
 import { createClient } from "@/lib/supabase/client"
 import { AuthHealthCheck } from "@/components/database-health-check"
-import { useState, useTransition, useEffect, Suspense } from "react"
-import { useSearchParams, useRouter } from "next/navigation"
-import { useAuthRedirect } from "@/lib/hooks/use-auth-redirect"
+import { useState, useTransition, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 
 function LoginForm() {
     const [error, setError] = useState<string | null>(null)
-    const [message, setMessage] = useState<string | null>(null)
     const [isPending, startTransition] = useTransition()
     const [isGoogleLoading, setIsGoogleLoading] = useState(false)
     const searchParams = useSearchParams()
-    const router = useRouter()
-    
-    // Redirect if already authenticated
-    useAuthRedirect({ redirectIfAuthenticated: true })
-
-    // Get message from URL params
-    useEffect(() => {
-        const urlMessage = searchParams.get('message')
-        if (urlMessage) {
-            setMessage(urlMessage)
-        }
-    }, [searchParams])
+    const message = searchParams.get('message')
 
     const handleSubmit = async (formData: FormData) => {
         setError(null)
-        setMessage(null)
 
         startTransition(async () => {
             const result = await signIn(formData)
             if (result?.error) {
                 setError(result.error)
-            } else if (result?.success) {
-                setMessage(result.message)
-                // The auth context will handle the redirect automatically
-                setTimeout(() => {
-                    router.push('/dashboard')
-                }, 1000)
             }
         })
     }
@@ -95,7 +75,6 @@ function LoginForm() {
             setIsGoogleLoading(false)
         }
     }
-
     return (
         <div className="min-h-screen bg-[#000000] flex items-center justify-center p-6">
             {/* Background gradient orb effect */}
@@ -236,14 +215,7 @@ function LoginForm() {
 
 export default function LoginPage() {
     return (
-        <Suspense fallback={
-            <div className="min-h-screen bg-[#000000] flex items-center justify-center">
-                <div className="text-center">
-                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#4AA7FF]"></div>
-                    <p className="text-[#9CA9B7] mt-4">Loading...</p>
-                </div>
-            </div>
-        }>
+        <Suspense fallback={<div>Loading...</div>}>
             <LoginForm />
         </Suspense>
     )

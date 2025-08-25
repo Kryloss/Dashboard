@@ -15,23 +15,15 @@ import Link from "next/link"
 import { signUp } from "@/lib/actions/auth"
 import { createClient } from "@/lib/supabase/client"
 import { AuthHealthCheck } from "@/components/database-health-check"
-import { useState, useTransition, Suspense } from "react"
-import { useRouter } from "next/navigation"
-import { useAuthRedirect } from "@/lib/hooks/use-auth-redirect"
+import { useState, useTransition } from "react"
 
-function SignupForm() {
+export default function SignupPage() {
     const [error, setError] = useState<string | null>(null)
-    const [message, setMessage] = useState<string | null>(null)
     const [isPending, startTransition] = useTransition()
     const [isGoogleLoading, setIsGoogleLoading] = useState(false)
-    const router = useRouter()
-    
-    // Redirect if already authenticated
-    useAuthRedirect({ redirectIfAuthenticated: true })
 
     const handleSubmit = async (formData: FormData) => {
         setError(null)
-        setMessage(null)
 
         // Validate password confirmation
         const password = formData.get('password') as string
@@ -46,12 +38,6 @@ function SignupForm() {
             const result = await signUp(formData)
             if (result?.error) {
                 setError(result.error)
-            } else if (result?.success) {
-                setMessage(result.message)
-                // Redirect to login after successful signup
-                setTimeout(() => {
-                    router.push('/login')
-                }, 2000)
             }
         })
     }
@@ -95,7 +81,6 @@ function SignupForm() {
             setIsGoogleLoading(false)
         }
     }
-
     return (
         <div className="min-h-screen bg-[#000000] flex items-center justify-center p-6">
             {/* Background gradient orb effect */}
@@ -129,13 +114,6 @@ function SignupForm() {
                     </CardHeader>
 
                     <CardContent className="space-y-6">
-                        {/* Success message */}
-                        {message && (
-                            <div className="p-3 rounded-lg bg-[rgba(37,122,218,0.10)] border border-[rgba(37,122,218,0.35)] text-[#4AA7FF] text-sm">
-                                {message}
-                            </div>
-                        )}
-
                         {/* Error message */}
                         {error && (
                             <div className="p-3 rounded-lg bg-[rgba(220,38,38,0.10)] border border-[rgba(220,38,38,0.35)] text-red-400 text-sm">
@@ -267,26 +245,12 @@ function SignupForm() {
                 <div className="text-center mt-6">
                     <Link
                         href="/"
-                        className="text-[#257ADA] hover:text-[#4AA7FF] text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#000000] rounded"
+                        className="text-[#9CA9B7] hover:text-[#FBF7FA] text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#000000] rounded"
                     >
                         ← Back to home
                     </Link>
                 </div>
             </div>
         </div>
-    )
-}
-
-export default function SignupPage() {
-    return (
-        <Suspense fallback={
-            <div className="min-h-screen bg-[#000000] flex items-center justify-center">
-                <div className="text-center">
-                    <div className="text-[#9CA9B7] text-lg">Loading...</div>
-                </div>
-            </div>
-        }>
-            <SignupForm />
-        </Suspense>
     )
 }

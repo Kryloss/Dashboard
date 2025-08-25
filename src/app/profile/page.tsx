@@ -1,26 +1,61 @@
-'use client'
-
-import { useAuthRedirect } from '@/lib/hooks/use-auth-redirect'
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import ProfileForm from '@/components/profile-form'
 
-export default function ProfilePage() {
-    const { user, loading } = useAuthRedirect({ requireAuth: true })
+export const dynamic = 'force-dynamic'
 
-    // Show loading state
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-[#0B0C0D] flex items-center justify-center">
-                <div className="text-center">
-                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#4AA7FF]"></div>
-                    <p className="text-[#FBF7FA] mt-4">Loading...</p>
-                </div>
-            </div>
-        )
+export default async function ProfilePage({
+    searchParams,
+}: {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
+    const supabase = await createClient()
+
+    // Server-side authentication check
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+        redirect('/login')
     }
 
-    // Don't render if not authenticated (will redirect via hook)
-    if (!user) {
-        return null
+    // Fetch profile data server-side
+    const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('id, email, username, full_name') // No updated_at
+        .eq('id', user.id)
+        .single()
+
+    let finalProfile = profile
+
+    if (error) {
+        console.error('Profile fetch error:', error.message, error.code, error.details)
+
+        // If profile doesn't exist, create it
+        if (error.code === 'PGRST116') { // No rows returned
+            console.log('Profile not found, creating new profile for user:', user.id)
+
+            const { data: newProfile, error: createError } = await supabase
+                .from('profiles')
+                .insert([
+                    {
+                        id: user.id,
+                        email: user.email!,
+                        username: null,
+                        full_name: user.user_metadata?.full_name || null,
+                    }
+                ])
+                .select('id, email, username, full_name')
+                .single()
+
+            if (createError) {
+                console.error('Profile creation error:', createError.message, createError.code, createError.details)
+            } else {
+                finalProfile = newProfile
+                console.log('Profile created successfully:', newProfile)
+            }
+        }
     }
 
     return (
@@ -36,8 +71,12 @@ export default function ProfilePage() {
                     </p>
                 </div>
 
-                {/* Profile form with auth context */}
-                <ProfileForm />
+                {/* Pass initial data to client component */}
+                <ProfileForm
+                    initialProfile={finalProfile}
+                    user={user}
+                    initialMessage={((await searchParams)?.message as string) || undefined}
+                />
             </div>
         </div>
     )

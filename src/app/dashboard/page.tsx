@@ -1,29 +1,27 @@
-'use client'
-
-import { useAuthRedirect } from '@/lib/hooks/use-auth-redirect'
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { signOut } from '@/lib/actions/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
 
-export default function DashboardPage() {
-    const { user, profile, loading } = useAuthRedirect({ requireAuth: true })
+export default async function DashboardPage() {
+    const supabase = await createClient()
 
-    // Show loading state
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-[#0B0C0D] flex items-center justify-center">
-                <div className="text-center">
-                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#4AA7FF]"></div>
-                    <p className="text-[#FBF7FA] mt-4">Loading dashboard...</p>
-                </div>
-            </div>
-        )
-    }
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
 
-    // Don't render if not authenticated (will redirect via hook)
     if (!user) {
-        return null
+        redirect('/login')
     }
+
+    // Get user profile
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single()
 
     return (
         <div className="min-h-screen bg-[#0B0C0D] pt-6">
@@ -203,17 +201,15 @@ export default function DashboardPage() {
 
                 {/* Sign Out */}
                 <div className="mt-6 flex justify-end">
-                    <Button
-                        type="button"
-                        onClick={() => {
-                            // The auth context will handle sign out and redirect
-                            window.location.href = '/'
-                        }}
-                        variant="outline"
-                        className="rounded-full border-[#2A3442] bg-transparent text-[#FBF7FA] hover:bg-white/5 hover:text-white hover:border-[#344253] focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#121922] transition-all px-6"
-                    >
-                        Sign Out
-                    </Button>
+                    <form action={signOut}>
+                        <Button
+                            type="submit"
+                            variant="outline"
+                            className="rounded-full border-[#2A3442] bg-transparent text-[#FBF7FA] hover:bg-white/5 hover:text-white hover:border-[#344253] focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#121922] transition-all px-6"
+                        >
+                            Sign Out
+                        </Button>
+                    </form>
                 </div>
             </div>
         </div>

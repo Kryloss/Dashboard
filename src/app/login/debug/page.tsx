@@ -1,168 +1,381 @@
-"use client"
+'use client'
 
-import { useCallback, useMemo, useState } from "react"
-import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
-type ProbeResult = {
-    label: string
-    redirectTo: string
-    url?: string
-    error?: string
+interface DebugInfo {
+    env: {
+        hasUrl: boolean
+        hasKey: boolean
+        urlPreview: string
+        keyPreview: string
+        siteUrl: string
+    }
+    connection: {
+        status: 'checking' | 'success' | 'error'
+        error?: string
+        details?: string
+    }
+    auth: {
+        status: 'checking' | 'success' | 'error'
+        error?: string
+        details?: string
+    }
+    profile: {
+        status: 'checking' | 'success' | 'error' | 'missing'
+        error?: string
+        details?: string
+    }
 }
 
-export default function LoginDebugPage() {
-    const [loading, setLoading] = useState(false)
-    const [results, setResults] = useState<ProbeResult[]>([])
-    const [generalError, setGeneralError] = useState<string | null>(null)
+export default function DebugPage() {
+    const [debugInfo, setDebugInfo] = useState<DebugInfo>({
+        env: {
+            hasUrl: false,
+            hasKey: false,
+            urlPreview: '',
+            keyPreview: '',
+            siteUrl: ''
+        },
+        connection: { status: 'checking' },
+        auth: { status: 'checking' },
+        profile: { status: 'checking' }
+    })
 
-    const origin = typeof window !== "undefined" ? window.location.origin : ""
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "(not set)"
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "(not set)"
+    const [isRunning, setIsRunning] = useState(false)
 
-    const candidates = useMemo(
-        () => [
-            { label: "window.location.origin", redirectTo: origin ? `${origin}/dashboard` : "" },
-            { label: "NEXT_PUBLIC_SITE_URL", redirectTo: siteUrl && siteUrl !== "(not set)" ? `${siteUrl}/dashboard` : "" },
-        ],
-        [origin, siteUrl]
-    )
-
-    const runProbes = useCallback(async () => {
-        setLoading(true)
-        setGeneralError(null)
-        setResults([])
+    const runDebugChecks = async () => {
+        setIsRunning(true)
+        setDebugInfo(prev => ({
+            ...prev,
+            connection: { status: 'checking' },
+            auth: { status: 'checking' },
+            profile: { status: 'checking' }
+        }))
 
         try {
-            const supabase = createClient()
-            const localResults: ProbeResult[] = []
+            // Check environment variables
+            const hasUrl = !!process.env.NEXT_PUBLIC_SUPABASE_URL
+            const hasKey = !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+            const urlPreview = process.env.NEXT_PUBLIC_SUPABASE_URL ?
+                `${process.env.NEXT_PUBLIC_SUPABASE_URL.substring(0, 30)}...` : 'Not set'
+            const keyPreview = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?
+                `${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.substring(0, 20)}...` : 'Not set'
+            const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'Not set'
 
-            for (const c of candidates) {
-                if (!c.redirectTo) {
-                    localResults.push({ ...c, error: "redirectTo is empty" })
-                    continue
+            setDebugInfo(prev => ({
+                ...prev,
+                env: { hasUrl, hasKey, urlPreview, keyPreview, siteUrl }
+            }))
+
+            // Test Supabase connection
+            try {
+                const supabase = createClient()
+
+                // Test basic connection
+                const { error: connError } = await supabase
+                    .from('profiles')
+                    .select('count')
+                    .limit(0)
+
+                if (connError) {
+                    setDebugInfo(prev => ({
+                        ...prev,
+                        connection: {
+                            status: 'error',
+                            error: connError.message,
+                            details: `Code: ${connError.code}, Details: ${connError.details}`
+                        }
+                    }))
+                } else {
+                    setDebugInfo(prev => ({
+                        ...prev,
+                        connection: { status: 'success' }
+                    }))
                 }
+
+                // Test authentication
                 try {
-                    const { data, error } = await supabase.auth.signInWithOAuth({
-                        provider: "google",
-                        options: { redirectTo: c.redirectTo, skipBrowserRedirect: true },
-                    })
+                    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-                    if (error) {
-                        localResults.push({ ...c, error: error.message })
-                    } else if (data?.url) {
-                        localResults.push({ ...c, url: data.url })
+                    if (authError) {
+                        setDebugInfo(prev => ({
+                            ...prev,
+                            auth: {
+                                status: 'error',
+                                error: authError.message,
+                                details: `Code: ${authError.code}`
+                            }
+                        }))
+                    } else if (user) {
+                        setDebugInfo(prev => ({
+                            ...prev,
+                            auth: {
+                                status: 'success',
+                                details: `User: ${user.email} (${user.id})`
+                            }
+                        }))
+
+                        // Test profile access
+                        const { data: profile, error: profileError } = await supabase
+                            .from('profiles')
+                            .select('id, email, username')
+                            .eq('id', user.id)
+                            .single()
+
+                        if (profileError) {
+                            if (profileError.code === 'PGRST116') {
+                                setDebugInfo(prev => ({
+                                    ...prev,
+                                    profile: {
+                                        status: 'missing',
+                                        details: 'Profile not found - needs to be created'
+                                    }
+                                }))
+                            } else {
+                                setDebugInfo(prev => ({
+                                    ...prev,
+                                    profile: {
+                                        status: 'error',
+                                        error: profileError.message,
+                                        details: `Code: ${profileError.code}`
+                                    }
+                                }))
+                            }
+                        } else {
+                            setDebugInfo(prev => ({
+                                ...prev,
+                                profile: {
+                                    status: 'success',
+                                    details: `Profile found: ${profile.username || 'No username'}`
+                                }
+                            }))
+                        }
                     } else {
-                        localResults.push({ ...c, error: "No data.url returned" })
+                        setDebugInfo(prev => ({
+                            ...prev,
+                            auth: {
+                                status: 'success',
+                                details: 'No user authenticated'
+                            }
+                        }))
                     }
-                } catch (err) {
-                    localResults.push({ ...c, error: err instanceof Error ? err.message : String(err) })
+                } catch (authException) {
+                    setDebugInfo(prev => ({
+                        ...prev,
+                        auth: {
+                            status: 'error',
+                            error: 'Exception occurred',
+                            details: String(authException)
+                        }
+                    }))
                 }
+
+            } catch (connException) {
+                setDebugInfo(prev => ({
+                    ...prev,
+                    connection: {
+                        status: 'error',
+                        error: 'Connection failed',
+                        details: String(connException)
+                    }
+                }))
             }
 
-            setResults(localResults)
-        } catch (err) {
-            setGeneralError(err instanceof Error ? err.message : String(err))
+        } catch (error) {
+            console.error('Debug check failed:', error)
         } finally {
-            setLoading(false)
+            setIsRunning(false)
         }
-    }, [candidates])
+    }
+
+    useEffect(() => {
+        runDebugChecks()
+    }, [])
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'success': return 'text-green-400'
+            case 'error': return 'text-red-400'
+            case 'missing': return 'text-yellow-400'
+            case 'checking': return 'text-[#9CA9B7]'
+            default: return 'text-[#9CA9B7]'
+        }
+    }
+
+    const getStatusIcon = (status: string) => {
+        switch (status) {
+            case 'success': return '✅'
+            case 'error': return '❌'
+            case 'missing': return '⚠️'
+            case 'checking': return '🔄'
+            default: return '❓'
+        }
+    }
 
     return (
-        <div className="min-h-screen bg-[#000000] py-10">
-            <div className="container mx-auto max-w-2xl px-6">
-                <Card className="bg-[#121922] border-[#2A3442] shadow-[0_8px_24px_rgba(0,0,0,0.40)] rounded-2xl mb-6">
-                    <div
-                        className="absolute top-0 left-0 right-0 h-[1px] rounded-t-2xl"
-                        style={{
-                            background: "linear-gradient(180deg, rgba(37,122,218,0.35) 0%, rgba(0,0,0,0) 100%)",
-                        }}
-                    />
-                    <CardHeader>
-                        <CardTitle className="text-[#FBF7FA]">Google Sign-In Debug</CardTitle>
-                        <CardDescription className="text-[#9CA9B7]">
-                            This page probes the OAuth redirect flow without navigating, to help diagnose issues in production.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 gap-3 text-sm">
-                            <div className="flex items-center justify-between">
-                                <span className="text-[#9CA9B7]">Current URL</span>
-                                <span className="text-[#FBF7FA] font-mono">{origin || "(server)"}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-[#9CA9B7]">NEXT_PUBLIC_SITE_URL</span>
-                                <span className="text-[#FBF7FA] font-mono">{siteUrl}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-[#9CA9B7]">NEXT_PUBLIC_SUPABASE_URL (host)</span>
-                                <span className="text-[#FBF7FA] font-mono">
-                                    {supabaseUrl !== "(not set)" ? (() => {
-                                        try {
-                                            const u = new URL(supabaseUrl)
-                                            return u.host
-                                        } catch {
-                                            return supabaseUrl
-                                        }
-                                    })() : supabaseUrl}
-                                </span>
-                            </div>
-                        </div>
+        <div className="min-h-screen bg-[#0B0C0D] pt-6">
+            <div className="container mx-auto max-w-4xl px-6">
+                <div className="mb-8">
+                    <h1 className="text-4xl md:text-5xl font-extrabold text-[#FBF7FA] mb-4 tracking-tight">
+                        Debug Information
+                    </h1>
+                    <p className="text-xl text-[#9CA9B7]">
+                        Detailed debugging information for Supabase connection issues.
+                    </p>
+                </div>
 
-                        {generalError && (
-                            <div className="p-3 rounded-lg bg-[rgba(220,38,38,0.10)] border border-[rgba(220,38,38,0.35)] text-red-400 text-sm">
-                                {generalError}
-                            </div>
-                        )}
-
-                        <div className="flex justify-end">
-                            <Button
-                                type="button"
-                                onClick={runProbes}
-                                disabled={loading}
-                                className="rounded-full bg-gradient-to-br from-[#114EB2] via-[#257ADA] to-[#4AA7FF] text-white shadow-[0_0_60px_rgba(37,122,218,0.35)] hover:from-[#257ADA] hover:to-[#90C9FF] hover:shadow-[0_0_72px_rgba(74,167,255,0.35)] hover:-translate-y-0.5 focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#121922] active:brightness-95 transition-all disabled:opacity-60 disabled:cursor-not-allowed px-6"
-                            >
-                                {loading ? "Probing…" : "Run OAuth Probes"}
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Results */}
-                {!!results.length && (
+                <div className="space-y-6">
+                    {/* Environment Variables */}
                     <Card className="bg-[#121922] border-[#2A3442] shadow-[0_8px_24px_rgba(0,0,0,0.40)] rounded-2xl">
-                        <div
-                            className="absolute top-0 left-0 right-0 h-[1px] rounded-t-2xl"
-                            style={{
-                                background: "linear-gradient(180deg, rgba(37,122,218,0.35) 0%, rgba(0,0,0,0) 100%)",
-                            }}
-                        />
                         <CardHeader>
-                            <CardTitle className="text-[#FBF7FA] text-lg">Probe Results</CardTitle>
+                            <CardTitle className="text-[#FBF7FA] text-xl font-bold">
+                                Environment Variables
+                            </CardTitle>
                             <CardDescription className="text-[#9CA9B7]">
-                                Click the URL to verify it opens the Google consent screen.
+                                Check if your Supabase configuration is properly set
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                            {results.map((r, idx) => (
-                                <div key={idx} className="rounded-xl border border-[#2A3442] p-3 bg-[#0F101A]">
-                                    <div className="text-sm text-[#FBF7FA] font-medium mb-1">{r.label}</div>
-                                    <div className="text-xs text-[#9CA9B7] mb-2">redirectTo: {r.redirectTo}</div>
-                                    {r.url ? (
-                                        <div className="text-xs">
-                                            <a className="text-[#257ADA] hover:text-[#4AA7FF] underline" href={r.url} target="_blank" rel="noreferrer">
-                                                Open OAuth URL ↗
-                                            </a>
-                                        </div>
-                                    ) : (
-                                        <div className="text-xs text-red-400">{r.error || "Unknown error"}</div>
-                                    )}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <p className="text-sm text-[#556274] mb-1">SUPABASE_URL</p>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`text-sm ${debugInfo.env.hasUrl ? 'text-green-400' : 'text-red-400'}`}>
+                                            {debugInfo.env.hasUrl ? '✅ Set' : '❌ Missing'}
+                                        </span>
+                                        {debugInfo.env.hasUrl && (
+                                            <span className="text-xs text-[#9CA9B7] font-mono">
+                                                {debugInfo.env.urlPreview}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
-                            ))}
+                                <div>
+                                    <p className="text-sm text-[#556274] mb-1">SUPABASE_ANON_KEY</p>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`text-sm ${debugInfo.env.hasKey ? 'text-green-400' : 'text-red-400'}`}>
+                                            {debugInfo.env.hasKey ? '✅ Set' : '❌ Missing'}
+                                        </span>
+                                        {debugInfo.env.hasKey && (
+                                            <span className="text-xs text-[#9CA9B7] font-mono">
+                                                {debugInfo.env.keyPreview}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <p className="text-sm text-[#556274] mb-1">SITE_URL</p>
+                                <span className="text-sm text-[#9CA9B7]">{debugInfo.env.siteUrl}</span>
+                            </div>
                         </CardContent>
                     </Card>
-                )}
+
+                    {/* Connection Status */}
+                    <Card className="bg-[#121922] border-[#2A3442] shadow-[0_8px_24px_rgba(0,0,0,0.40)] rounded-2xl">
+                        <CardHeader>
+                            <CardTitle className="text-[#FBF7FA] text-xl font-bold">
+                                Connection Status
+                            </CardTitle>
+                            <CardDescription className="text-[#9CA9B7]">
+                                Real-time connection and authentication status
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <span className="text-[#FBF7FA]">Database Connection:</span>
+                                <span className={`${getStatusColor(debugInfo.connection.status)}`}>
+                                    {getStatusIcon(debugInfo.connection.status)} {debugInfo.connection.status}
+                                </span>
+                            </div>
+                            {debugInfo.connection.error && (
+                                <div className="p-3 bg-[rgba(220,38,38,0.10)] border border-[rgba(220,38,38,0.35)] rounded text-red-400 text-sm">
+                                    <strong>Error:</strong> {debugInfo.connection.error}
+                                    {debugInfo.connection.details && (
+                                        <div className="mt-1 text-xs">{debugInfo.connection.details}</div>
+                                    )}
+                                </div>
+                            )}
+
+                            <div className="flex items-center justify-between">
+                                <span className="text-[#FBF7FA]">Authentication:</span>
+                                <span className={`${getStatusColor(debugInfo.auth.status)}`}>
+                                    {getStatusIcon(debugInfo.auth.status)} {debugInfo.auth.status}
+                                </span>
+                            </div>
+                            {debugInfo.auth.error && (
+                                <div className="p-3 bg-[rgba(220,38,38,0.10)] border border-[rgba(220,38,38,0.35)] rounded text-red-400 text-sm">
+                                    <strong>Error:</strong> {debugInfo.auth.error}
+                                    {debugInfo.auth.details && (
+                                        <div className="mt-1 text-xs">{debugInfo.auth.details}</div>
+                                    )}
+                                </div>
+                            )}
+
+                            <div className="flex items-center justify-between">
+                                <span className="text-[#FBF7FA]">Profile Access:</span>
+                                <span className={`${getStatusColor(debugInfo.profile.status)}`}>
+                                    {getStatusIcon(debugInfo.profile.status)} {debugInfo.profile.status}
+                                </span>
+                            </div>
+                            {debugInfo.profile.error && (
+                                <div className="p-3 bg-[rgba(220,38,38,0.10)] border border-[rgba(220,38,38,0.35)] rounded text-red-400 text-sm">
+                                    <strong>Error:</strong> {debugInfo.profile.error}
+                                    {debugInfo.profile.details && (
+                                        <div className="mt-1 text-xs">{debugInfo.profile.details}</div>
+                                    )}
+                                </div>
+                            )}
+                            {debugInfo.profile.details && !debugInfo.profile.error && (
+                                <div className="p-3 bg-[rgba(37,122,218,0.10)] border border-[rgba(37,122,218,0.35)] rounded text-[#4AA7FF] text-sm">
+                                    {debugInfo.profile.details}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Actions */}
+                    <div className="flex justify-center">
+                        <Button
+                            onClick={runDebugChecks}
+                            disabled={isRunning}
+                            className="rounded-full bg-gradient-to-br from-[#114EB2] via-[#257ADA] to-[#4AA7FF] text-white shadow-[0_0_60px_rgba(37,122,218,0.35)] hover:from-[#257ADA] hover:to-[#90C9FF] hover:shadow-[0_0_72px_rgba(74,167,255,0.35)] hover:-translate-y-0.5 focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#121922] active:brightness-95 transition-all disabled:opacity-60 disabled:hover:transform-none px-8"
+                        >
+                            {isRunning ? 'Running Checks...' : 'Run Debug Checks'}
+                        </Button>
+                    </div>
+
+                    {/* Instructions */}
+                    <Card className="bg-[rgba(37,122,218,0.10)] border-[rgba(37,122,218,0.35)] rounded-2xl">
+                        <CardHeader>
+                            <CardTitle className="text-[#4AA7FF] text-lg font-semibold">
+                                How to Fix Common Issues
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3 text-sm text-[#9CA9B7]">
+                            <div>
+                                <strong className="text-[#FBF7FA]">Missing Environment Variables:</strong>
+                                <p>Create a <code className="bg-[rgba(0,0,0,0.20)] px-1 rounded">.env.local</code> file in your project root with:</p>
+                                <pre className="bg-[rgba(0,0,0,0.20)] p-2 rounded mt-1 text-xs font-mono">
+                                    {`NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+NEXT_PUBLIC_SITE_URL=http://localhost:3000`}
+                                </pre>
+                            </div>
+                            <div>
+                                <strong className="text-[#FBF7FA]">Database Connection Errors:</strong>
+                                <p>Run the SQL commands from <code className="bg-[rgba(0,0,0,0.20)] px-1 rounded">DATABASE_SETUP_COMPLETE.sql</code> in your Supabase SQL Editor.</p>
+                            </div>
+                            <div>
+                                <strong className="text-[#FBF7FA]">Permission Errors:</strong>
+                                <p>Check your Row Level Security (RLS) policies in Supabase and ensure the <code className="bg-[rgba(0,0,0,0.20)] px-1 rounded">profiles</code> table has proper policies.</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
         </div>
     )
