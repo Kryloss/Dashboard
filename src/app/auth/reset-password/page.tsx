@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, Suspense } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import {
@@ -17,57 +17,61 @@ import Link from 'next/link'
 
 function ResetPasswordForm() {
     const router = useRouter()
+    const searchParams = useSearchParams()
     const [password, setPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [isValidSession, setIsValidSession] = useState<boolean | null>(null)
 
-    useEffect(() => {
-        const verifySession = async () => {
+        useEffect(() => {
+        const handlePasswordReset = async () => {
             const supabase = createClient()
-
+            
             try {
-                // Wait a moment in case we just came from the auth callback
-                await new Promise(resolve => setTimeout(resolve, 200))
-
-                console.log('Verifying session for password reset...')
-
-                // Check if there's a valid session from the reset link
-                const { data: { session }, error } = await supabase.auth.getSession()
-
-                console.log('Session check result:', { hasSession: !!session, error: error?.message })
-
+                console.log('Handling password reset flow...')
+                
+                // Get the code from URL parameters
+                const code = searchParams.get('code')
+                console.log('Reset code from URL:', code ? 'Present' : 'Missing')
+                
+                if (!code) {
+                    console.log('No code parameter found in URL')
+                    setIsValidSession(false)
+                    setError('Invalid reset link. Missing verification code.')
+                    return
+                }
+                
+                // Exchange the code for a session
+                console.log('Exchanging code for session...')
+                const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+                
                 if (error) {
-                    console.error('Session error:', error)
+                    console.error('Code exchange error:', error)
                     setIsValidSession(false)
-                    setError(`Session error: ${error.message}`)
+                    setError(`Invalid or expired reset link: ${error.message}`)
                     return
                 }
-
-                if (!session) {
-                    console.log('No session found')
+                
+                if (!data.session) {
+                    console.log('No session established from code')
                     setIsValidSession(false)
-                    setError('Invalid or expired reset link. Please request a new one.')
+                    setError('Failed to establish session from reset link.')
                     return
                 }
-
-                // Verify this is actually a recovery session
-                const user = session.user
-                console.log('Session found for user:', user.email)
-                console.log('User app metadata:', user.app_metadata)
-                console.log('User user metadata:', user.user_metadata)
-
+                
+                console.log('Session successfully established for user:', data.session.user.email)
                 setIsValidSession(true)
+                
             } catch (err) {
-                console.error('Session verification failed:', err)
+                console.error('Password reset handling failed:', err)
                 setIsValidSession(false)
-                setError('Failed to verify reset link. Please try again.')
+                setError('Failed to process reset link. Please request a new one.')
             }
         }
 
-        verifySession()
-    }, [])
+        handlePasswordReset()
+    }, [searchParams])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -194,6 +198,7 @@ function ResetPasswordForm() {
                                 <div className="text-[#4AA7FF] mb-1">Debug Info:</div>
                                 <div className="text-[#9CA9B7] space-y-1">
                                     <div>Session Valid: {isValidSession === null ? 'Checking...' : isValidSession ? 'Yes' : 'No'}</div>
+                                    <div>Reset Code: {searchParams.get('code') ? 'Present' : 'Missing'}</div>
                                     <div>URL: {typeof window !== 'undefined' ? window.location.href : 'N/A'}</div>
                                 </div>
                             </div>
