@@ -27,16 +27,43 @@ function ResetPasswordForm() {
         const verifySession = async () => {
             const supabase = createClient()
 
-            // Check if there's a valid session from the reset link
-            const { data: { session }, error } = await supabase.auth.getSession()
+            try {
+                // Wait a moment in case we just came from the auth callback
+                await new Promise(resolve => setTimeout(resolve, 200))
 
-            if (error || !session) {
+                console.log('Verifying session for password reset...')
+
+                // Check if there's a valid session from the reset link
+                const { data: { session }, error } = await supabase.auth.getSession()
+
+                console.log('Session check result:', { hasSession: !!session, error: error?.message })
+
+                if (error) {
+                    console.error('Session error:', error)
+                    setIsValidSession(false)
+                    setError(`Session error: ${error.message}`)
+                    return
+                }
+
+                if (!session) {
+                    console.log('No session found')
+                    setIsValidSession(false)
+                    setError('Invalid or expired reset link. Please request a new one.')
+                    return
+                }
+
+                // Verify this is actually a recovery session
+                const user = session.user
+                console.log('Session found for user:', user.email)
+                console.log('User app metadata:', user.app_metadata)
+                console.log('User user metadata:', user.user_metadata)
+
+                setIsValidSession(true)
+            } catch (err) {
+                console.error('Session verification failed:', err)
                 setIsValidSession(false)
-                setError('Invalid or expired reset link. Please request a new one.')
-                return
+                setError('Failed to verify reset link. Please try again.')
             }
-
-            setIsValidSession(true)
         }
 
         verifySession()
@@ -160,6 +187,17 @@ function ResetPasswordForm() {
                         <CardDescription className="text-[#9CA9B7]">
                             Enter your new password below
                         </CardDescription>
+
+                        {/* Debug info - remove in production */}
+                        {process.env.NODE_ENV === 'development' && (
+                            <div className="mt-2 p-2 bg-[rgba(37,122,218,0.10)] border border-[rgba(37,122,218,0.35)] rounded text-xs">
+                                <div className="text-[#4AA7FF] mb-1">Debug Info:</div>
+                                <div className="text-[#9CA9B7] space-y-1">
+                                    <div>Session Valid: {isValidSession === null ? 'Checking...' : isValidSession ? 'Yes' : 'No'}</div>
+                                    <div>URL: {typeof window !== 'undefined' ? window.location.href : 'N/A'}</div>
+                                </div>
+                            </div>
+                        )}
                     </CardHeader>
 
                     <CardContent className="space-y-6">

@@ -13,7 +13,22 @@ export default function AuthCallbackPage() {
             const supabase = createClient()
 
             try {
-                // Handle the auth callback (this processes URL fragments/codes)
+                // First, let Supabase process any auth tokens from the URL hash
+                console.log('Processing auth callback...')
+
+                // Get the URL hash which contains the auth tokens for password reset
+                const hashParams = new URLSearchParams(window.location.hash.substring(1))
+                const urlSearchParams = new URLSearchParams(window.location.search)
+                const type = hashParams.get('type') || urlSearchParams.get('type')
+
+                console.log('Auth callback type:', type)
+                console.log('URL hash:', window.location.hash)
+                console.log('URL search:', window.location.search)
+
+                // Wait a moment for Supabase to process the tokens
+                await new Promise(resolve => setTimeout(resolve, 100))
+
+                // Now check for the session
                 const { data: authData, error: authError } = await supabase.auth.getSession()
 
                 if (authError) {
@@ -25,14 +40,11 @@ export default function AuthCallbackPage() {
 
                 if (authData.session) {
                     const user = authData.session.user
-
-                    // Check the URL parameters to determine the flow type
-                    const urlParams = new URLSearchParams(window.location.search)
-                    const type = urlParams.get('type')
+                    console.log('Session established for user:', user.email)
 
                     // Handle password recovery flow
                     if (type === 'recovery') {
-                        console.log('Password recovery flow detected')
+                        console.log('Password recovery flow detected - redirecting to reset password page')
                         router.push('/auth/reset-password')
                         return
                     }
@@ -75,7 +87,8 @@ export default function AuthCallbackPage() {
                 } else {
                     // No session found, redirect to login
                     console.log('No session found in callback')
-                    router.push('/login?message=Please sign in to continue')
+                    setError('Unable to establish session from the link')
+                    setTimeout(() => router.push('/login?message=Please try requesting a new reset link'), 3000)
                 }
             } catch (err) {
                 console.error('Callback handling error:', err)
