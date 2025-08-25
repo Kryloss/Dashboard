@@ -43,25 +43,30 @@ function LoginForm() {
         try {
             const supabase = createClient()
 
+            // Use NEXT_PUBLIC_SITE_URL for production, fallback to window.location.origin for dev
+            const redirectUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
+            console.log('OAuth redirect URL:', `${redirectUrl}/auth/callback`)
+
             const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
-                options: { redirectTo: `${window.location.origin}/dashboard` },
+                options: { redirectTo: `${redirectUrl}/auth/callback` },
             })
 
-            if (data?.url) {
-                window.location.href = data.url
-                return
-            }
-
             if (error) {
-                console.error(error.message)
-                setError(error.message)
+                console.error('OAuth initiation error:', error)
+                setError(`OAuth error: ${error.message}`)
                 setIsGoogleLoading(false)
                 return
             }
 
-            // Fallback if neither data.url nor error
-            setError('Failed to initiate Google sign-in')
+            if (data?.url) {
+                console.log('Redirecting to:', data.url)
+                window.location.href = data.url
+                return
+            }
+
+            // Fallback if no URL returned
+            setError('Failed to initiate Google sign-in - no redirect URL')
             setIsGoogleLoading(false)
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Failed to sign in with Google'
