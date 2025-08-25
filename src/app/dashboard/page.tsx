@@ -25,10 +25,36 @@ export default async function DashboardPage() {
     return (
         <div className="min-h-screen bg-[#0B0C0D] pt-6">
             <div className="container mx-auto max-w-7xl px-6">
+                {/* Username Prompt for Google OAuth users */}
+                {profile && !profile.username && (
+                    <div className="mb-6">
+                        <Card className="bg-[rgba(37,122,218,0.10)] border-[rgba(37,122,218,0.35)] rounded-2xl">
+                            <CardContent className="p-6">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h3 className="text-[#4AA7FF] font-semibold mb-1">
+                                            Complete Your Profile
+                                        </h3>
+                                        <p className="text-[#9CA9B7] text-sm">
+                                            Please set a username to complete your account setup and enable username login.
+                                        </p>
+                                    </div>
+                                    <Button
+                                        asChild
+                                        className="rounded-full bg-gradient-to-br from-[#114EB2] via-[#257ADA] to-[#4AA7FF] text-white shadow-[0_0_60px_rgba(37,122,218,0.35)] hover:from-[#257ADA] hover:to-[#90C9FF] hover:shadow-[0_0_72px_rgba(74,167,255,0.35)] hover:-translate-y-0.5 focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#121922] active:brightness-95 transition-all"
+                                    >
+                                        <Link href="/profile">Set Username</Link>
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
+
                 {/* Welcome Section */}
                 <div className="mb-8">
                     <h1 className="text-4xl md:text-5xl font-extrabold text-[#FBF7FA] mb-4 tracking-tight">
-                        Welcome back{profile?.full_name ? `, ${profile.full_name}` : ''}!
+                        Welcome back{profile?.username || profile?.full_name ? `, ${profile.username || profile.full_name}` : ''}!
                     </h1>
                     <p className="text-xl text-[#9CA9B7]">
                         Access your productivity tools and manage your account from your dashboard.
@@ -148,8 +174,8 @@ export default async function DashboardPage() {
                                 <p className="text-[#FBF7FA] font-medium">{user.email}</p>
                             </div>
                             <div>
-                                <p className="text-sm text-[#556274] mb-1">Full Name</p>
-                                <p className="text-[#FBF7FA] font-medium">{profile?.full_name || 'Not set'}</p>
+                                <p className="text-sm text-[#556274] mb-1">Username</p>
+                                <p className="text-[#FBF7FA] font-medium">{profile?.username || 'Not set'}</p>
                             </div>
                             <div>
                                 <p className="text-sm text-[#556274] mb-1">Account Status</p>
