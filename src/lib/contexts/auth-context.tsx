@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { User, Session } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
@@ -33,8 +33,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const router = useRouter()
     const supabase = createClient()
 
-    // Fetch profile data
-    const fetchProfile = async (userId: string) => {
+    // Fetch profile data - memoized with useCallback
+    const fetchProfile = useCallback(async (userId: string) => {
         try {
             const { data, error } = await supabase
                 .from('profiles')
@@ -52,25 +52,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.error('Error fetching profile:', error)
             return null
         }
-    }
+    }, [supabase])
 
     // Refresh profile data
-    const refreshProfile = async () => {
+    const refreshProfile = useCallback(async () => {
         if (user) {
             const updatedProfile = await fetchProfile(user.id)
             setProfile(updatedProfile)
         }
-    }
+    }, [user, fetchProfile])
 
     // Update profile optimistically
-    const updateProfile = async (updates: Partial<Profile>) => {
+    const updateProfile = useCallback(async (updates: Partial<Profile>) => {
         if (profile) {
             setProfile({ ...profile, ...updates })
         }
-    }
+    }, [profile])
 
     // Sign out function
-    const signOut = async () => {
+    const signOut = useCallback(async () => {
         try {
             await supabase.auth.signOut()
             setUser(null)
@@ -80,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch (error) {
             console.error('Error signing out:', error)
         }
-    }
+    }, [supabase.auth, router])
 
     useEffect(() => {
         // Get initial session
@@ -134,7 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         )
 
         return () => subscription.unsubscribe()
-    }, [router, supabase.auth])
+    }, [router, supabase.auth, fetchProfile])
 
     const value: AuthContextType = {
         user,

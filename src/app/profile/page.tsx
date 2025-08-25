@@ -4,7 +4,7 @@ import { useAuthRedirect } from '@/lib/hooks/use-auth-redirect'
 import ProfileForm from '@/components/profile-form'
 
 export default function ProfilePage() {
-    const { user, profile, loading } = useAuthRedirect({ requireAuth: true })
+    const { user, loading } = useAuthRedirect({ requireAuth: true })
 
     // Show loading state
     if (loading) {
