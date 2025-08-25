@@ -47,20 +47,8 @@ export function useAuth() {
                     case 'USER_UPDATED':
                         console.log('User updated:', currentSession?.user?.email)
                         break
-                    case 'USER_DELETED':
-                        console.log('User deleted')
-                        break
-                    case 'MFA_CHALLENGE_VERIFIED':
-                        console.log('MFA challenge verified')
-                        break
                     case 'PASSWORD_RECOVERY':
                         console.log('Password recovery initiated')
-                        break
-                    case 'MFA_FACTOR_CREATED':
-                        console.log('MFA factor created')
-                        break
-                    case 'MFA_FACTOR_DELETED':
-                        console.log('MFA factor deleted')
                         break
                     default:
                         console.log('Unknown auth event:', event)

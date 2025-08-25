@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "Bash(cmd /c \"npm run build\")",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "mcp__vercel__deploy_to_vercel",
+      "Bash(npm run build:*)",
+      "Bash(npx next:*)",
+      "Bash(dir:*)",
+      "mcp__ide__getDiagnostics"
     ],
     "deny": [],
     "ask": []

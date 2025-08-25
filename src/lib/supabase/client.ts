@@ -15,31 +15,27 @@ export function createClient() {
         })
 
         // Return a mock client that will show clear errors
+        const mockError = () => {
+            throw new Error('Supabase not configured. Check your environment variables.')
+        }
+        
         return {
             from: () => ({
                 select: () => ({
                     eq: () => ({
-                        single: async () => {
-                            throw new Error('Supabase not configured. Check your environment variables.')
-                        }
+                        single: mockError
                     })
                 })
             }),
             auth: {
-                getSession: async () => {
-                    throw new Error('Supabase not configured. Check your environment variables.')
-                },
-                getUser: async () => {
-                    throw new Error('Supabase not configured. Check your environment variables.')
-                },
+                getSession: mockError,
+                getUser: mockError,
                 onAuthStateChange: () => ({
                     data: { subscription: { unsubscribe: () => { } } }
                 }),
-                signOut: async () => {
-                    throw new Error('Supabase not configured. Check your environment variables.')
-                }
+                signOut: mockError
             }
-        } as SupabaseClient
+        } as unknown as SupabaseClient
     }
 
     try {
@@ -48,7 +44,7 @@ export function createClient() {
         // Test the connection
         client.from('profiles').select('count').limit(0).then(() => {
             console.log('✅ Supabase connection successful')
-        }).catch((error) => {
+        }, (error: unknown) => {
             console.error('❌ Supabase connection failed:', error)
         })
 
