@@ -31,6 +31,31 @@ function ResetPasswordForm() {
             try {
                 console.log('Handling password reset flow...')
 
+                // Check for Supabase error parameters first
+                const urlError = searchParams.get('error')
+                const errorCode = searchParams.get('error_code')
+                const errorDescription = searchParams.get('error_description')
+
+                if (urlError || errorCode) {
+                    console.log('Supabase error detected:', { urlError, errorCode, errorDescription })
+
+                    let errorMessage = 'Invalid or expired reset link.'
+
+                    if (errorCode === 'otp_expired') {
+                        errorMessage = 'This reset link has expired. Please request a new password reset.'
+                    } else if (errorCode === 'invalid_token') {
+                        errorMessage = 'This reset link is invalid or has already been used.'
+                    } else if (urlError === 'access_denied') {
+                        errorMessage = 'Access denied. This reset link may have expired or been used already.'
+                    } else if (errorDescription) {
+                        errorMessage = decodeURIComponent(errorDescription)
+                    }
+
+                    setIsValidSession(false)
+                    setError(errorMessage)
+                    return
+                }
+
                 // Get the code from URL parameters or hash
                 let code = searchParams.get('code')
 
@@ -190,7 +215,16 @@ function ResetPasswordForm() {
                                     <li>• The link may have already been used</li>
                                     <li>• Your email client may have &quot;prefetched&quot; the link for security scanning</li>
                                     <li>• The link may have been modified by email tracking systems</li>
+                                    <li>• The link was clicked too late after the email was sent</li>
                                 </ul>
+
+                                <div className="mt-3 p-2 bg-[rgba(0,0,0,0.20)] rounded text-xs">
+                                    <div className="text-[#4AA7FF] font-medium mb-1">Technical Details:</div>
+                                    <div className="text-[#556274]">
+                                        Supabase processed your reset link and found it expired/invalid.
+                                        The error was: <code className="text-[#9CA9B7]">{searchParams.get('error_code') || 'unknown'}</code>
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="text-center">
@@ -251,6 +285,8 @@ function ResetPasswordForm() {
                                 <div className="text-[#9CA9B7] space-y-1">
                                     <div>Session Valid: {isValidSession === null ? 'Checking...' : isValidSession ? 'Yes' : 'No'}</div>
                                     <div>Reset Code: {searchParams.get('code') ? 'Present' : 'Missing'}</div>
+                                    <div>Error: {searchParams.get('error') || 'None'}</div>
+                                    <div>Error Code: {searchParams.get('error_code') || 'None'}</div>
                                     <div>URL: {typeof window !== 'undefined' ? window.location.href : 'N/A'}</div>
                                 </div>
                             </div>
