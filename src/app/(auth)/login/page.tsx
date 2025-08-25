@@ -15,7 +15,7 @@ import Link from "next/link"
 import { signIn } from "@/lib/actions/auth"
 import { createClient } from "@/lib/supabase/client"
 import { AuthHealthCheck } from "@/components/database-health-check"
-import { useState, useTransition, useEffect } from "react"
+import { useState, useTransition, useEffect, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { useAuthRedirect } from "@/lib/hooks/use-auth-redirect"
 
@@ -26,7 +26,7 @@ function LoginForm() {
     const [isGoogleLoading, setIsGoogleLoading] = useState(false)
     const searchParams = useSearchParams()
     const router = useRouter()
-
+    
     // Redirect if already authenticated
     useAuthRedirect({ redirectIfAuthenticated: true })
 
@@ -235,5 +235,16 @@ function LoginForm() {
 }
 
 export default function LoginPage() {
-    return <LoginForm />
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-[#000000] flex items-center justify-center">
+                <div className="text-center">
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#4AA7FF]"></div>
+                    <p className="text-[#9CA9B7] mt-4">Loading...</p>
+                </div>
+            </div>
+        }>
+            <LoginForm />
+        </Suspense>
+    )
 }

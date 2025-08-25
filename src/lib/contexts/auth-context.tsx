@@ -4,14 +4,7 @@ import { createContext, useContext, useEffect, useState, ReactNode, useCallback 
 import { createClient } from '@/lib/supabase/client'
 import { User, Session } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
-
-interface Profile {
-    id: string
-    email: string
-    username: string | null
-    full_name: string | null
-    updated_at: string
-}
+import type { Profile } from '@/lib/types/database.types'
 
 interface AuthContextType {
     user: User | null
@@ -38,7 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             const { data, error } = await supabase
                 .from('profiles')
-                .select('*')
+                .select('id, email, username, full_name, avatar_url, created_at, updated_at')
                 .eq('id', userId)
                 .single()
 

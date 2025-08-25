@@ -15,17 +15,17 @@ import Link from "next/link"
 import { signUp } from "@/lib/actions/auth"
 import { createClient } from "@/lib/supabase/client"
 import { AuthHealthCheck } from "@/components/database-health-check"
-import { useState, useTransition } from "react"
+import { useState, useTransition, Suspense } from "react"
 import { useRouter } from "next/navigation"
 import { useAuthRedirect } from "@/lib/hooks/use-auth-redirect"
 
-export default function SignupPage() {
+function SignupForm() {
     const [error, setError] = useState<string | null>(null)
     const [message, setMessage] = useState<string | null>(null)
     const [isPending, startTransition] = useTransition()
     const [isGoogleLoading, setIsGoogleLoading] = useState(false)
     const router = useRouter()
-
+    
     // Redirect if already authenticated
     useAuthRedirect({ redirectIfAuthenticated: true })
 
@@ -267,12 +267,26 @@ export default function SignupPage() {
                 <div className="text-center mt-6">
                     <Link
                         href="/"
-                        className="text-[#9CA9B7] hover:text-[#FBF7FA] text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#000000] rounded"
+                        className="text-[#257ADA] hover:text-[#4AA7FF] text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#000000] rounded"
                     >
                         ← Back to home
                     </Link>
                 </div>
             </div>
         </div>
+    )
+}
+
+export default function SignupPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-[#000000] flex items-center justify-center">
+                <div className="text-center">
+                    <div className="text-[#9CA9B7] text-lg">Loading...</div>
+                </div>
+            </div>
+        }>
+            <SignupForm />
+        </Suspense>
     )
 }
