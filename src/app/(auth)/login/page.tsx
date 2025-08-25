@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { signIn } from "@/lib/actions/auth"
 import { createClient } from "@/lib/supabase/client"
+import { AuthHealthCheck } from "@/components/database-health-check"
 import { useState, useTransition, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 
@@ -78,7 +79,10 @@ function LoginForm() {
                 }}
             />
 
-            <div className="relative z-10 w-full max-w-md">
+            <div className="relative z-10 w-full max-w-md space-y-6">
+                {/* Health Check for debugging */}
+                <AuthHealthCheck />
+
                 <Card className="bg-[#121922] border-[#2A3442] shadow-[0_14px_40px_rgba(0,0,0,0.55)] rounded-2xl">
                     {/* Accent edge glow */}
                     <div
