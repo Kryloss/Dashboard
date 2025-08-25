@@ -15,20 +15,25 @@ export default function AuthCallbackPage() {
             return
         }
 
-        // Set timeout to prevent infinite loading
+        // Set aggressive timeout to prevent infinite loading
         const timeoutId = setTimeout(() => {
             if (!hasProcessed.current) {
-                console.log('Auth callback timed out - redirecting to homepage')
+                console.log('Auth callback timed out after 1 second - redirecting to homepage')
                 hasProcessed.current = true
-                setError('Authentication timed out')
-                // Redirect to homepage instead of login to avoid loops
-                router.push('/?message=Authentication completed but took longer than expected')
+                // Don't show error, just redirect quickly
+                router.push('/')
             }
-        }, 10000) // 10 second timeout (reduced for faster fallback)
+        }, 1000) // 1 second timeout for very fast fallback
 
         const handleAuthCallback = async () => {
             hasProcessed.current = true
             const supabase = createClient()
+
+            // Add backup redirect in case auth processing hangs
+            const backupRedirectId = setTimeout(() => {
+                console.log('Backup redirect triggered after 800ms')
+                router.push('/')
+            }, 800) // Backup redirect before main timeout
 
             try {
                 console.log('Processing auth callback...')
@@ -50,7 +55,7 @@ export default function AuthCallbackPage() {
                     console.error('OAuth error:', error_param, error_description)
                     clearTimeout(timeoutId)
                     setError(`OAuth error: ${error_description || error_param}`)
-                    setTimeout(() => router.push('/login?message=OAuth authentication failed'), 2000)
+                    setTimeout(() => router.push('/login?message=OAuth authentication failed'), 500)
                     return
                 }
 
@@ -64,7 +69,7 @@ export default function AuthCallbackPage() {
                             console.error('Code exchange error:', error)
                             clearTimeout(timeoutId)
                             setError('Failed to exchange authorization code')
-                            setTimeout(() => router.push('/login?message=Authentication failed during code exchange'), 2000)
+                            setTimeout(() => router.push('/login?message=Authentication failed during code exchange'), 500)
                             return
                         }
 
@@ -83,21 +88,22 @@ export default function AuthCallbackPage() {
                                 // Continue even if profile creation fails
                             }
                             
-                            // Redirect to homepage for OAuth flows
-                            router.push('/')
+                            // Redirect to homepage immediately for OAuth flows
+                            clearTimeout(backupRedirectId)
+                            setTimeout(() => router.push('/'), 100) // Very quick redirect
                             return
                         } else {
                             console.error('No session or user found after code exchange')
                             clearTimeout(timeoutId)
                             setError('Failed to establish session after code exchange')
-                            setTimeout(() => router.push('/login?message=Session establishment failed'), 2000)
+                            setTimeout(() => router.push('/login?message=Session establishment failed'), 500)
                             return
                         }
                     } catch (codeExchangeError) {
                         console.error('Code exchange failed with exception:', codeExchangeError)
                         clearTimeout(timeoutId)
                         setError('Code exchange failed')
-                        setTimeout(() => router.push('/login?message=Authentication process failed'), 2000)
+                        setTimeout(() => router.push('/login?message=Authentication process failed'), 500)
                         return
                     }
                 }
@@ -116,7 +122,7 @@ export default function AuthCallbackPage() {
                     console.error('Auth callback error:', authError)
                     clearTimeout(timeoutId)
                     setError('Authentication failed')
-                    setTimeout(() => router.push('/login?message=Authentication failed'), 2000)
+                    setTimeout(() => router.push('/login?message=Authentication failed'), 500)
                     return
                 }
 
@@ -128,14 +134,16 @@ export default function AuthCallbackPage() {
                     // Handle password recovery flow
                     if (type === 'recovery') {
                         console.log('Password recovery flow detected - redirecting to reset password page')
-                        router.push('/auth/reset-password')
+                        clearTimeout(backupRedirectId)
+                        setTimeout(() => router.push('/auth/reset-password'), 100)
                         return
                     }
 
                     // Handle email confirmation
                     if (type === 'signup') {
                         console.log('Email confirmation flow detected')
-                        router.push('/?message=Email confirmed! Welcome to Kryloss.')
+                        clearTimeout(backupRedirectId)
+                        setTimeout(() => router.push('/?message=Email confirmed! Welcome to Kryloss.'), 100)
                         return
                     }
 
@@ -147,24 +155,27 @@ export default function AuthCallbackPage() {
                         // Continue even if profile handling fails
                     }
                     
-                    // Redirect to homepage for regular sign-in flows
-                    router.push('/')
+                    // Redirect to homepage immediately for regular sign-in flows
+                    clearTimeout(backupRedirectId)
+                    setTimeout(() => router.push('/'), 100) // Very quick redirect
                 } else {
                     // No session found, redirect to login
                     console.log('No session found in callback')
                     clearTimeout(timeoutId)
                     setError('Unable to establish session')
-                    setTimeout(() => router.push('/login?message=Authentication failed. Please try again.'), 3000)
+                    setTimeout(() => router.push('/login?message=Authentication failed. Please try again.'), 500)
                 }
             } catch (err) {
                 console.error('Callback handling error:', err)
                 clearTimeout(timeoutId)
+                clearTimeout(backupRedirectId)
                 setError('Something went wrong during authentication')
                 // Redirect to homepage instead of login to avoid loops
-                setTimeout(() => router.push('/?message=Authentication completed with some issues'), 2000)
+                setTimeout(() => router.push('/?message=Authentication completed with some issues'), 500)
             } finally {
-                // Ensure we always mark as processed
+                // Ensure we always mark as processed and clear all timeouts
                 hasProcessed.current = true
+                clearTimeout(backupRedirectId)
             }
         }
 
