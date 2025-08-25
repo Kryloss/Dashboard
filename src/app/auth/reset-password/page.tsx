@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef, Suspense } from 'react'
+import { useEffect, useState, useRef, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -25,6 +25,14 @@ function ResetPasswordForm() {
     const [isValidSession, setIsValidSession] = useState<boolean | null>(null)
     const hasProcessed = useRef(false)
 
+    // Memoize search params to prevent unnecessary re-runs
+    const searchParamsData = useMemo(() => ({
+        urlError: searchParams.get('error'),
+        errorCode: searchParams.get('error_code'),
+        errorDescription: searchParams.get('error_description'),
+        code: searchParams.get('code')
+    }), [searchParams])
+
     useEffect(() => {
         // Prevent re-running if already processing or completed
         if (isValidSession !== null || hasProcessed.current) {
@@ -48,9 +56,7 @@ function ResetPasswordForm() {
                 console.log('Handling password reset flow...')
 
                 // Check for Supabase error parameters (fallback for old links)
-                const urlError = searchParams.get('error')
-                const errorCode = searchParams.get('error_code')
-                const errorDescription = searchParams.get('error_description')
+                const { urlError, errorCode, errorDescription, code } = searchParamsData
 
                 if (urlError || errorCode) {
                     console.log('Supabase error detected (old flow):', { urlError, errorCode, errorDescription })
@@ -81,28 +87,28 @@ function ResetPasswordForm() {
                 }
 
                 // Get the code from URL parameters (direct flow)
-                let code = searchParams.get('code')
+                let resetCode = code
 
                 // Fallback: check URL hash for tokens (old flow)
-                if (!code && typeof window !== 'undefined') {
+                if (!resetCode && typeof window !== 'undefined') {
                     const hashParams = new URLSearchParams(window.location.hash.substring(1))
-                    code = hashParams.get('access_token') || hashParams.get('token_hash')
+                    resetCode = hashParams.get('access_token') || hashParams.get('token_hash')
                 }
 
-                console.log('Reset code from URL:', code ? 'Present' : 'Missing')
+                console.log('Reset code from URL:', resetCode ? 'Present' : 'Missing')
 
-                if (!code) {
+                if (!resetCode) {
                     console.log('No code parameter found in URL search params or hash')
                     setIsValidSession(false)
                     setError('Invalid reset link. Missing verification code. Please request a new reset link.')
                     return
                 }
 
-                console.log('Processing reset code:', code.substring(0, 8) + '...')
+                console.log('Processing reset code:', resetCode.substring(0, 8) + '...')
 
                 // Verify the OTP code for password recovery
                 const { data, error } = await supabase.auth.verifyOtp({
-                    token_hash: code,
+                    token_hash: resetCode,
                     type: 'recovery'
                 })
 
@@ -150,7 +156,7 @@ function ResetPasswordForm() {
 
         // Cleanup timeout on unmount
         return () => clearTimeout(timeoutId)
-    }, []) // Remove searchParams dependency to prevent re-runs
+    }, [searchParamsData]) // Include memoized search params
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()

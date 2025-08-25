@@ -140,7 +140,7 @@ export default function AuthCallbackPage() {
         }
 
         // Helper function for profile creation
-        const handleProfileCreation = async (supabase: ReturnType<typeof createClient>, user: { id: string; email?: string; user_metadata?: any }) => {
+        const handleProfileCreation = async (supabase: ReturnType<typeof createClient>, user: { id: string; email?: string; user_metadata?: Record<string, unknown> }) => {
             try {
                 const { data: existingProfile } = await supabase
                     .from('profiles')
