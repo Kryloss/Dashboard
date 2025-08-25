@@ -48,30 +48,40 @@ export default function SignupPage() {
 
         try {
             const supabase = createClient()
+
+            // Use NEXT_PUBLIC_SITE_URL for production, fallback to window.location.origin for development
+            const redirectUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
+            console.log('OAuth redirect URL:', `${redirectUrl}/dashboard`)
+
             const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: `${window.location.origin}/dashboard`,
+                    redirectTo: `${redirectUrl}/dashboard`,
                 },
             })
 
             if (error) {
-                setError(error.message)
+                console.error('OAuth initiation error:', error)
+                setError(`OAuth error: ${error.message}`)
                 setIsGoogleLoading(false)
                 return
             }
 
+            console.log('OAuth response:', data)
+
             // If data.url exists and we need to manually redirect
             if (data?.url) {
+                console.log('Redirecting to:', data.url)
                 window.location.href = data.url
                 return
             }
 
             // If no URL returned, something went wrong
-            setError('Failed to initiate Google sign-up')
+            setError('Failed to initiate Google sign-up - no redirect URL')
             setIsGoogleLoading(false)
-        } catch {
-            setError('Failed to sign up with Google')
+        } catch (err) {
+            console.error('OAuth exception:', err)
+            setError(`Failed to sign up with Google: ${err}`)
             setIsGoogleLoading(false)
         }
     }
@@ -86,7 +96,7 @@ export default function SignupPage() {
             />
 
             <div className="relative z-10 w-full max-w-md space-y-6">
-                {/* Health Check for debugging */}
+                {/* Health Check Component */}
                 <AuthHealthCheck />
 
                 <Card className="bg-[#121922] border-[#2A3442] shadow-[0_14px_40px_rgba(0,0,0,0.55)] rounded-2xl">

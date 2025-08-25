@@ -99,7 +99,7 @@ export function AuthHealthCheck() {
     }
 
     return (
-        <Card className="bg-[rgba(37,122,218,0.10)] border-[rgba(37,122,218,0.35)] rounded-2xl mb-6">
+        <Card className="bg-[rgba(37,122,218,0.10)] border-[rgba(37,122,218,0.35)] rounded-2xl">
             <CardHeader>
                 <CardTitle className="text-[#4AA7FF] text-sm font-semibold">
                     🔧 Auth Health Check
@@ -145,7 +145,6 @@ export function AuthHealthCheck() {
     )
 }
 
-// Full health check for authenticated pages
 export default function DatabaseHealthCheck() {
     const [status, setStatus] = useState<HealthStatus>({
         auth: 'checking',
