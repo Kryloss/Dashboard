@@ -59,7 +59,7 @@ export default function AuthCallbackPage() {
                 if (error_param) {
                     console.error('OAuth error:', error_param, error_description)
                     clearTimeout(timeoutId)
-                    
+
                     // Provide more specific error messages
                     let userFriendlyError = 'OAuth authentication failed'
                     if (error_param === 'access_denied') {
@@ -69,7 +69,7 @@ export default function AuthCallbackPage() {
                     } else if (error_description) {
                         userFriendlyError = error_description
                     }
-                    
+
                     setError(`OAuth error: ${userFriendlyError}`)
                     setTimeout(() => router.push(`/login?message=${encodeURIComponent(userFriendlyError)}`), 1000)
                     return
@@ -233,8 +233,11 @@ export default function AuthCallbackPage() {
                 if (!existingProfile) {
                     console.log('Creating profile for new user:', user.email || 'unknown email')
 
+                    // Generate a new UUID for the profile (don't use user.id from auth)
+                    const profileId = crypto.randomUUID()
+
                     const profileData = {
-                        id: user.id,
+                        id: profileId, // Use generated UUID instead of auth user ID
                         email: user.email || null,
                         username: null, // Will prompt user to set username
                         full_name: typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : null,
@@ -253,7 +256,7 @@ export default function AuthCallbackPage() {
                             details: profileError.details,
                             hint: profileError.hint
                         })
-                        
+
                         // Try to provide more helpful error information
                         if (profileError.code === '42501') {
                             console.error('Permission denied - check RLS policies on profiles table')
@@ -261,8 +264,10 @@ export default function AuthCallbackPage() {
                             console.error('Unique constraint violation - user might already exist')
                         } else if (profileError.code === '23502') {
                             console.error('Not null constraint violation - check required fields')
+                        } else if (profileError.code === '23503') {
+                            console.error('Foreign key constraint violation - check table relationships')
                         }
-                        
+
                         console.log('Continuing with auth flow despite profile creation failure')
                     } else {
                         console.log('Profile created successfully for:', user.email || user.id)
