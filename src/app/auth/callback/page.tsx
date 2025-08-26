@@ -27,7 +27,10 @@ export default function AuthCallbackPage() {
 
         const handleAuthCallback = async () => {
             hasProcessed.current = true
+            
+            console.log('Creating Supabase client for callback...')
             const supabase = createClient()
+            console.log('Supabase client created:', !!supabase)
 
             // Add backup redirect in case auth processing hangs
             const backupRedirectId = setTimeout(() => {
@@ -62,14 +65,36 @@ export default function AuthCallbackPage() {
                 // For OAuth flows (Google, etc.) - exchange code for session
                 if (code) {
                     console.log('Exchanging OAuth code for session...')
+                    console.log('Code length:', code.length)
+                    console.log('Code preview:', code.substring(0, 20) + '...')
+                    
                     try {
+                        console.log('Attempting code exchange...')
                         const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+                        console.log('Code exchange response:', { 
+                            hasData: !!data, 
+                            hasError: !!error,
+                            hasSession: !!data?.session,
+                            hasUser: !!data?.session?.user 
+                        })
                         
                         if (error) {
-                            console.error('Code exchange error:', error)
+                            console.error('Code exchange error details:', {
+                                message: error.message,
+                                status: error.status,
+                                error_code: error.error_code,
+                                details: error.details,
+                                full_error: error
+                            })
+                            
+                            // Check for specific error types
+                            if (error.message?.includes('invalid_grant') || error.message?.includes('code')) {
+                                console.log('Detected authorization code issue - might be expired or already used')
+                            }
+                            
                             clearTimeout(timeoutId)
-                            setError('Failed to exchange authorization code')
-                            setTimeout(() => router.push('/login?message=Authentication failed during code exchange'), 500)
+                            setError(`Failed to exchange authorization code: ${error.message}`)
+                            setTimeout(() => router.push(`/login?message=Authentication failed: ${encodeURIComponent(error.message)}`), 500)
                             return
                         }
 
