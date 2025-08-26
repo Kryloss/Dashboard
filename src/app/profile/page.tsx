@@ -43,7 +43,7 @@ export default async function ProfilePage({
                         id: user.id,
                         email: user.email!,
                         username: null,
-                        full_name: user.user_metadata?.full_name || null,
+                        full_name: typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : null,
                     }
                 ])
                 .select('id, email, username, full_name')

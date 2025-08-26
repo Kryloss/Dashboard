@@ -244,7 +244,7 @@ export async function handleGoogleCallback() {
 
         // Send welcome email
         try {
-            await sendWelcomeEmail(user.email!, user.user_metadata?.full_name || 'New User')
+            await sendWelcomeEmail(user.email!, typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : 'New User')
         } catch (emailError) {
             console.error('Welcome email error:', emailError)
         }

@@ -205,7 +205,7 @@ export default function AuthCallbackPage() {
         }
 
         // Helper function for profile creation
-        const handleProfileCreation = async (supabase: ReturnType<typeof createClient>, user: { id: string; email?: string; user_metadata?: Record<string, unknown> }) => {
+        const handleProfileCreation = async (supabase: ReturnType<typeof createClient>, user: { id: string; email?: string; user_metadata?: Record<string, any> }) => {
             if (!user?.id) {
                 console.error('Cannot create profile: user ID is missing')
                 return
@@ -232,7 +232,7 @@ export default function AuthCallbackPage() {
                         id: user.id,
                         email: user.email || null,
                         username: null, // Will prompt user to set username
-                        full_name: (user.user_metadata?.full_name as string) || null,
+                        full_name: typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : null,
                     }
 
                     const { error: profileError } = await supabase
