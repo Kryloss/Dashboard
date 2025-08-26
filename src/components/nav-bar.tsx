@@ -39,15 +39,15 @@ export function NavBar() {
     useEffect(() => {
         async function checkMultipleAuthMethods() {
             let accountSignedIn = false
-            
+
             console.log('NavBar: Starting auth check with user:', user)
-            
+
             // Method 1: Check if user exists from AuthContext
             if (user) {
                 console.log('NavBar: Auth method 1 - User from context:', user.email)
                 accountSignedIn = true
             }
-            
+
             // Method 2: Check session directly from Supabase
             if (!accountSignedIn) {
                 try {
@@ -60,7 +60,7 @@ export function NavBar() {
                     console.log('NavBar: Auth method 2 failed:', err)
                 }
             }
-            
+
             // Method 3: Check for stored auth token
             if (!accountSignedIn) {
                 try {
@@ -73,13 +73,13 @@ export function NavBar() {
                     console.log('NavBar: Auth method 3 failed:', err)
                 }
             }
-            
+
             // Method 4: Check Account Information - if email is present
             if (!accountSignedIn && user?.email) {
                 console.log('NavBar: Auth method 4 - Account Information check - Email present:', user.email)
                 accountSignedIn = true
             }
-            
+
             // If any method confirms sign-in, fetch profile for display
             if (accountSignedIn && user) {
                 try {
@@ -92,7 +92,7 @@ export function NavBar() {
                     if (error && error.code !== 'PGRST116') {
                         console.error('Profile fetch error:', error)
                     }
-                    
+
                     setProfile(profile || null)
                     console.log('NavBar: Profile loaded -', {
                         profileExists: !!profile,
@@ -105,30 +105,24 @@ export function NavBar() {
             } else {
                 setProfile(null)
             }
-            
+
             setHasAccount(accountSignedIn)
             setLocalLoading(false)
-            
+
             console.log('NavBar: Final auth state -', {
                 accountSignedIn,
                 user: user?.email || 'No user',
                 userExists: !!user,
-                profile: profile?.username || 'No username',
+                profileExists: !!profile,
                 hasAccountState: accountSignedIn,
                 willShowButton: accountSignedIn && user
             })
-            
-            console.log('NavBar: Auth methods summary -', {
-                method1_userContext: !!user,
-                method2_session: 'checked above',
-                method3_token: 'checked above', 
-                method4_email: !!(user?.email),
-                finalResult: accountSignedIn
-            })
+
+            console.log('NavBar: Auth check complete -', { accountSignedIn, userExists: !!user })
         }
 
         checkMultipleAuthMethods()
-    }, [user, supabase])
+    }, [user, supabase, profile])
 
     // Add a timeout to prevent infinite loading
     useEffect(() => {
@@ -154,16 +148,11 @@ export function NavBar() {
 
     // Sync local loading with auth context loading, but with fallback
     useEffect(() => {
-        console.log('NavBar: Auth state update -', { 
-            loading, 
-            localLoading, 
-            isAuthenticated, 
+        console.log('NavBar: Auth state -', {
+            loading,
+            localLoading,
             hasAccount,
-            user: user?.email || 'No user',
-            userObject: user,
-            shouldShowAccount: user || hasAccount,
-            shouldShowLoading: loading || localLoading,
-            finalConditionResult: (loading || localLoading) ? 'LOADING' : (user || hasAccount) ? 'SHOW_ACCOUNT' : 'SHOW_LOGIN'
+            userExists: !!user
         })
         if (!loading) {
             // Give a small delay to allow auth context to fully initialize
@@ -173,7 +162,7 @@ export function NavBar() {
             }, 100)
             return () => clearTimeout(delayId)
         }
-    }, [loading, localLoading, isAuthenticated, hasAccount, user])
+    }, [loading, isAuthenticated, hasAccount, user, localLoading])
 
     // Close mobile menu when clicking outside
     useEffect(() => {
@@ -292,18 +281,6 @@ export function NavBar() {
 
                 {/* Auth Buttons / User Menu - Desktop */}
                 <div className="hidden md:flex items-center space-x-2">
-                    {(() => {
-                        console.log('NavBar: Rendering decision -', {
-                            loading,
-                            localLoading,
-                            hasAccount,
-                            user: !!user,
-                            userEmail: user?.email,
-                            condition1: loading || localLoading,
-                            condition2: user || hasAccount
-                        })
-                        return null
-                    })()}
                     {(loading || localLoading) ? (
                         <div className="w-8 h-8 rounded-full bg-[#121922] animate-pulse"></div>
                     ) : user || hasAccount ? (
@@ -401,7 +378,7 @@ export function NavBar() {
                                     <div className="text-sm text-[#9CA9B7]">{subdomain.description}</div>
                                 </Link>
                             ))}
-                            
+
                             <Link
                                 href="/docs"
                                 className="block px-2 py-2 text-[#FBF7FA] hover:text-white hover:bg-white/5 rounded-md transition-colors font-medium"
@@ -436,7 +413,7 @@ export function NavBar() {
                                             </div>
                                         </div>
                                     </div>
-                                    
+
                                     <Link
                                         href="/dashboard"
                                         className="block px-2 py-2 text-[#FBF7FA] hover:text-white hover:bg-white/5 rounded-md transition-colors"
@@ -444,7 +421,7 @@ export function NavBar() {
                                     >
                                         Dashboard
                                     </Link>
-                                    
+
                                     <Link
                                         href="/profile"
                                         className="block px-2 py-2 text-[#FBF7FA] hover:text-white hover:bg-white/5 rounded-md transition-colors"
@@ -452,7 +429,7 @@ export function NavBar() {
                                     >
                                         Profile
                                     </Link>
-                                    
+
                                     <button
                                         onClick={() => {
                                             handleSignOut()

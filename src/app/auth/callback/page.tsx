@@ -27,10 +27,8 @@ export default function AuthCallbackPage() {
 
         const handleAuthCallback = async () => {
             hasProcessed.current = true
-            
-            console.log('Creating Supabase client for callback...')
+
             const supabase = createClient()
-            console.log('Supabase client created:', !!supabase)
 
             // Add backup redirect in case auth processing hangs
             const backupRedirectId = setTimeout(() => {
@@ -44,7 +42,7 @@ export default function AuthCallbackPage() {
 
                 const urlSearchParams = new URLSearchParams(window.location.search)
                 const hashParams = new URLSearchParams(window.location.hash.substring(1))
-                
+
                 // Get parameters from both URL search and hash
                 const code = urlSearchParams.get('code')
                 const type = hashParams.get('type') || urlSearchParams.get('type')
@@ -67,31 +65,29 @@ export default function AuthCallbackPage() {
                     console.log('Exchanging OAuth code for session...')
                     console.log('Code length:', code.length)
                     console.log('Code preview:', code.substring(0, 20) + '...')
-                    
+
                     try {
                         console.log('Attempting code exchange...')
                         const { data, error } = await supabase.auth.exchangeCodeForSession(code)
-                        console.log('Code exchange response:', { 
-                            hasData: !!data, 
+                        console.log('Code exchange response:', {
+                            hasData: !!data,
                             hasError: !!error,
                             hasSession: !!data?.session,
-                            hasUser: !!data?.session?.user 
+                            hasUser: !!data?.session?.user
                         })
-                        
+
                         if (error) {
                             console.error('Code exchange error details:', {
                                 message: error.message,
                                 status: error.status,
-                                error_code: error.error_code,
-                                details: error.details,
                                 full_error: error
                             })
-                            
+
                             // Check for specific error types
                             if (error.message?.includes('invalid_grant') || error.message?.includes('code')) {
                                 console.log('Detected authorization code issue - might be expired or already used')
                             }
-                            
+
                             clearTimeout(timeoutId)
                             setError(`Failed to exchange authorization code: ${error.message}`)
                             setTimeout(() => router.push(`/login?message=Authentication failed: ${encodeURIComponent(error.message)}`), 500)
@@ -101,7 +97,7 @@ export default function AuthCallbackPage() {
                         if (data?.session?.user) {
                             console.log('OAuth session established for user:', data.session.user.email || 'unknown')
                             clearTimeout(timeoutId)
-                            
+
                             // Continue with profile creation/verification below
                             const user = data.session.user
 
@@ -112,7 +108,7 @@ export default function AuthCallbackPage() {
                                 console.error('Profile creation failed, continuing with redirect:', profileError)
                                 // Continue even if profile creation fails
                             }
-                            
+
                             // Redirect to homepage immediately for OAuth flows
                             clearTimeout(backupRedirectId)
                             setTimeout(() => router.push('/'), 100) // Very quick redirect
@@ -179,7 +175,7 @@ export default function AuthCallbackPage() {
                         console.error('Profile handling failed, continuing with redirect:', profileError)
                         // Continue even if profile handling fails
                     }
-                    
+
                     // Redirect to homepage immediately for regular sign-in flows
                     clearTimeout(backupRedirectId)
                     setTimeout(() => router.push('/'), 100) // Very quick redirect
@@ -227,7 +223,7 @@ export default function AuthCallbackPage() {
 
                 if (!existingProfile) {
                     console.log('Creating profile for new user:', user.email || 'unknown email')
-                    
+
                     const profileData = {
                         id: user.id,
                         email: user.email || null,
@@ -245,7 +241,7 @@ export default function AuthCallbackPage() {
                             code: profileError.code,
                             details: profileError.details
                         })
-                        
+
                         // Don't throw here - continue with auth flow
                         // The profile page can handle missing profiles
                         console.log('Continuing with auth flow despite profile creation failure')

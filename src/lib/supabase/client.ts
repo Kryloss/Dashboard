@@ -39,19 +39,7 @@ export function createClient() {
     }
 
     try {
-        console.log('Creating Supabase client with URL:', supabaseUrl ? 'present' : 'missing')
-        console.log('Creating Supabase client with key:', supabaseAnonKey ? 'present' : 'missing')
-        
         const client = createBrowserClient(supabaseUrl, supabaseAnonKey)
-
-        // Test the connection
-        client.from('profiles').select('count').limit(0).then(() => {
-            console.log('✅ Supabase connection successful')
-        }, (error: unknown) => {
-            console.error('❌ Supabase connection failed:', error)
-        })
-
-        console.log('Supabase client created successfully')
         return client
     } catch (error) {
         console.error('Failed to create Supabase client:', error)
