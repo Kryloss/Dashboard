@@ -45,12 +45,12 @@ function LoginForm() {
 
             // Use NEXT_PUBLIC_SITE_URL for production, fallback to window.location.origin for dev
             const redirectUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
-            console.log('OAuth redirect URL:', `${redirectUrl}/auth/callback`)
+            console.log('OAuth redirect URL:', `${redirectUrl}/dashboard`)
 
             const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: `${redirectUrl}/auth/callback`,
+                    redirectTo: `${redirectUrl}/dashboard`,
                     queryParams: {
                         access_type: 'offline',
                         prompt: 'consent',
