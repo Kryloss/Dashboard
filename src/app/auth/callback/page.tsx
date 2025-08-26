@@ -59,8 +59,19 @@ export default function AuthCallbackPage() {
                 if (error_param) {
                     console.error('OAuth error:', error_param, error_description)
                     clearTimeout(timeoutId)
-                    setError(`OAuth error: ${error_description || error_param}`)
-                    setTimeout(() => router.push('/login?message=OAuth authentication failed'), 1000)
+                    
+                    // Provide more specific error messages
+                    let userFriendlyError = 'OAuth authentication failed'
+                    if (error_param === 'access_denied') {
+                        userFriendlyError = 'Access denied - please try signing in again'
+                    } else if (error_param === 'invalid_request') {
+                        userFriendlyError = 'Invalid request - please try again'
+                    } else if (error_description) {
+                        userFriendlyError = error_description
+                    }
+                    
+                    setError(`OAuth error: ${userFriendlyError}`)
+                    setTimeout(() => router.push(`/login?message=${encodeURIComponent(userFriendlyError)}`), 1000)
                     return
                 }
 
@@ -84,11 +95,13 @@ export default function AuthCallbackPage() {
                             console.log('OAuth session established for user:', data.session.user.email || 'unknown')
                             clearTimeout(timeoutId)
 
-                            // Handle profile creation
+                            // Handle profile creation with better error handling
                             try {
                                 await handleProfileCreation(supabase, data.session.user)
                             } catch (profileError) {
                                 console.error('Profile creation failed, continuing with redirect:', profileError)
+                                // Even if profile creation fails, we can still proceed
+                                // The user will be prompted to create their profile later
                             }
 
                             // Redirect to homepage - ensure we go to localhost if we're on localhost
@@ -112,11 +125,13 @@ export default function AuthCallbackPage() {
                                 return
                             }
 
-                            // Handle profile creation
+                            // Handle profile creation with better error handling
                             try {
                                 await handleProfileCreation(supabase, retryData.session.user)
                             } catch (profileError) {
                                 console.error('Profile creation failed, continuing with redirect:', profileError)
+                                // Even if profile creation fails, we can still proceed
+                                // The user will be prompted to create their profile later
                             }
 
                             // Redirect to homepage
@@ -166,11 +181,13 @@ export default function AuthCallbackPage() {
                     console.log('Session found for user:', user.email || 'unknown')
                     clearTimeout(timeoutId)
 
-                    // Handle profile creation
+                    // Handle profile creation with better error handling
                     try {
                         await handleProfileCreation(supabase, user)
                     } catch (profileError) {
                         console.error('Profile handling failed, continuing with redirect:', profileError)
+                        // Even if profile creation fails, we can still proceed
+                        // The user will be prompted to create their profile later
                     }
 
                     // Redirect to homepage - ensure we go to localhost if we're on localhost
@@ -221,6 +238,8 @@ export default function AuthCallbackPage() {
                         email: user.email || null,
                         username: null, // Will prompt user to set username
                         full_name: typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : null,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
                     }
 
                     const { error: profileError } = await supabase
@@ -231,8 +250,19 @@ export default function AuthCallbackPage() {
                         console.error('Profile creation error:', {
                             message: profileError.message,
                             code: profileError.code,
-                            details: profileError.details
+                            details: profileError.details,
+                            hint: profileError.hint
                         })
+                        
+                        // Try to provide more helpful error information
+                        if (profileError.code === '42501') {
+                            console.error('Permission denied - check RLS policies on profiles table')
+                        } else if (profileError.code === '23505') {
+                            console.error('Unique constraint violation - user might already exist')
+                        } else if (profileError.code === '23502') {
+                            console.error('Not null constraint violation - check required fields')
+                        }
+                        
                         console.log('Continuing with auth flow despite profile creation failure')
                     } else {
                         console.log('Profile created successfully for:', user.email || user.id)

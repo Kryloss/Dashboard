@@ -256,8 +256,6 @@ export async function handleGoogleCallback() {
 
 // Server-only email utility using Supabase
 async function sendWelcomeEmail(email: string, name: string) {
-    const supabase = await createClient()
-
     try {
         // Use Supabase's built-in email system with the "Confirm signup" template
         // This will use the email template you've already configured in Supabase
