@@ -95,8 +95,8 @@ export function NavBar() {
                     
                     setProfile(profile || null)
                     console.log('NavBar: Profile loaded -', {
-                        username: profile?.username,
-                        displayLetter: profile?.username ? profile.username[0].toUpperCase() : 'K'
+                        profileExists: !!profile,
+                        hasUsername: !!(profile?.username)
                     })
                 } catch (err) {
                     console.error('Profile fetch failed:', err)
