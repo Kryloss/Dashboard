@@ -26,6 +26,13 @@ export async function signUp(formData: FormData) {
     const data = {
         email: email,
         password: formData.get('password') as string,
+        options: {
+            emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+            data: {
+                username: username ? username.toLowerCase() : null,
+                full_name: null,
+            }
+        }
     }
 
     const { error, data: authData } = await supabase.auth.signUp(data)
@@ -51,14 +58,6 @@ export async function signUp(formData: FormData) {
             console.error('Profile creation error:', profileError.message, profileError.code, profileError.details)
             // Don't fail signup completely if profile creation fails
             // The profile page will handle creating it if missing
-        }
-
-        // Send welcome email after successful signup
-        try {
-            await sendWelcomeEmail(authData.user.email!, username)
-        } catch (emailError) {
-            console.error('Welcome email error:', emailError)
-            // Don't fail the signup if email fails
         }
     }
 
@@ -242,12 +241,8 @@ export async function handleGoogleCallback() {
             console.error('Profile creation error:', profileError)
         }
 
-        // Send welcome email
-        try {
-            await sendWelcomeEmail(user.email!, typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : 'New User')
-        } catch (emailError) {
-            console.error('Welcome email error:', emailError)
-        }
+        // Welcome email will be sent automatically by Supabase when user confirms their account
+        // No need to manually send it here
     }
 
     // Check if username is missing and redirect to set it
@@ -258,29 +253,5 @@ export async function handleGoogleCallback() {
     redirect('/dashboard')
 }
 
-// Server-only email utility
-async function sendWelcomeEmail(email: string, name: string) {
-    if (!process.env.RESEND_API_KEY) {
-        console.warn('RESEND_API_KEY not found, skipping welcome email')
-        return
-    }
-
-    const { Resend } = await import('resend')
-    const { WelcomeEmail } = await import('@/emails/welcome-email')
-
-    const resend = new Resend(process.env.RESEND_API_KEY)
-
-    const fromEmail = process.env.RESEND_FROM || 'Kryloss <no-reply@kryloss.com>'
-
-    try {
-        await resend.emails.send({
-            from: fromEmail,
-            to: [email],
-            subject: 'Welcome to Kryloss - Your Account is Ready!',
-            react: WelcomeEmail({ fullName: name }),
-        })
-    } catch (error) {
-        console.error('Failed to send welcome email:', error)
-        throw error
-    }
-}
+// Note: Welcome emails are now handled automatically by Supabase's built-in email system
+// using the "Confirm signup" template you've configured in your Supabase dashboard
