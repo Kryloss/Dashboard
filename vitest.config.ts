@@ -6,6 +6,8 @@ export default defineConfig({
         environment: 'node',
         globals: true,
         setupFiles: ['./src/test/setup.ts'],
+        // Exclude PostCSS processing during tests
+        css: false,
     },
     resolve: {
         alias: {
