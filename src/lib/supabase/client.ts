@@ -18,7 +18,7 @@ export function createClient() {
         const mockError = () => {
             throw new Error('Supabase not configured. Check your environment variables.')
         }
-        
+
         return {
             from: () => ({
                 select: () => ({
@@ -39,7 +39,14 @@ export function createClient() {
     }
 
     try {
-        const client = createBrowserClient(supabaseUrl, supabaseAnonKey)
+        const client = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+            auth: {
+                flowType: 'pkce',
+                autoRefreshToken: true,
+                persistSession: true,
+                detectSessionInUrl: true
+            }
+        })
         return client
     } catch (error) {
         console.error('Failed to create Supabase client:', error)

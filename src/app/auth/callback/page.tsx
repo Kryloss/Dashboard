@@ -18,79 +18,65 @@ export default function AuthCallbackPage() {
         // Set aggressive timeout to prevent infinite loading
         const timeoutId = setTimeout(() => {
             if (!hasProcessed.current) {
-                console.log('Auth callback timed out after 1 second - redirecting to homepage')
+                console.log('Auth callback timed out after 2 seconds - redirecting to homepage')
                 hasProcessed.current = true
-                // Don't show error, just redirect quickly
-                router.push('/')
+                // Ensure we redirect to localhost if we're on localhost
+                const redirectTarget = window.location.hostname.includes('localhost') ? '/' : '/'
+                router.push(redirectTarget)
             }
-        }, 1000) // 1 second timeout for very fast fallback
+        }, 2000)
 
         const handleAuthCallback = async () => {
             hasProcessed.current = true
 
-            const supabase = createClient()
+            // Check if environment variables are set
+            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+            const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-            // Add backup redirect in case auth processing hangs
-            const backupRedirectId = setTimeout(() => {
-                console.log('Backup redirect triggered after 800ms')
-                router.push('/')
-            }, 800) // Backup redirect before main timeout
+            if (!supabaseUrl || !supabaseAnonKey) {
+                console.error('Missing Supabase environment variables')
+                clearTimeout(timeoutId)
+                setError('Configuration error: Missing Supabase credentials. Please check your environment variables.')
+                setTimeout(() => router.push('/login?message=Configuration error: Please contact support.'), 3000)
+                return
+            }
+
+            const supabase = createClient()
 
             try {
                 console.log('Processing auth callback...')
                 console.log('URL:', window.location.href)
 
-                const urlSearchParams = new URLSearchParams(window.location.search)
-                const hashParams = new URLSearchParams(window.location.hash.substring(1))
+                // Get the current URL and extract the hash fragment
+                const url = new URL(window.location.href)
+                const hashParams = new URLSearchParams(url.hash.substring(1))
+                const searchParams = new URLSearchParams(url.search)
 
-                // Get parameters from both URL search and hash
-                const code = urlSearchParams.get('code')
-                const type = hashParams.get('type') || urlSearchParams.get('type')
-                const error_param = urlSearchParams.get('error')
-                const error_description = urlSearchParams.get('error_description')
+                // Check for OAuth errors first
+                const error_param = searchParams.get('error') || hashParams.get('error')
+                const error_description = searchParams.get('error_description') || hashParams.get('error_description')
 
-                console.log('Callback parameters:', { code: code ? 'present' : 'missing', type, error_param })
-
-                // Handle OAuth errors
                 if (error_param) {
                     console.error('OAuth error:', error_param, error_description)
                     clearTimeout(timeoutId)
                     setError(`OAuth error: ${error_description || error_param}`)
-                    setTimeout(() => router.push('/login?message=OAuth authentication failed'), 500)
+                    setTimeout(() => router.push('/login?message=OAuth authentication failed'), 1000)
                     return
                 }
 
-                // For OAuth flows (Google, etc.) - exchange code for session
-                if (code) {
-                    console.log('Exchanging OAuth code for session...')
-                    console.log('Code length:', code.length)
-                    console.log('Code preview:', code.substring(0, 20) + '...')
+                // For OAuth flows, we need to handle the hash fragment
+                if (url.hash) {
+                    console.log('Processing OAuth hash fragment...')
 
                     try {
-                        console.log('Attempting code exchange...')
-                        const { data, error } = await supabase.auth.exchangeCodeForSession(code)
-                        console.log('Code exchange response:', {
-                            hasData: !!data,
-                            hasError: !!error,
-                            hasSession: !!data?.session,
-                            hasUser: !!data?.session?.user
-                        })
+                        // Let Supabase handle the OAuth callback automatically
+                        const { data, error } = await supabase.auth.getSession()
 
                         if (error) {
-                            console.error('Code exchange error details:', {
-                                message: error.message,
-                                status: error.status,
-                                full_error: error
-                            })
-
-                            // Check for specific error types
-                            if (error.message?.includes('invalid_grant') || error.message?.includes('code')) {
-                                console.log('Detected authorization code issue - might be expired or already used')
-                            }
-
+                            console.error('Session retrieval error:', error)
                             clearTimeout(timeoutId)
-                            setError(`Failed to exchange authorization code: ${error.message}`)
-                            setTimeout(() => router.push(`/login?message=Authentication failed: ${encodeURIComponent(error.message)}`), 500)
+                            setError(`Session error: ${error.message}`)
+                            setTimeout(() => router.push('/login?message=Authentication failed'), 1000)
                             return
                         }
 
@@ -98,105 +84,111 @@ export default function AuthCallbackPage() {
                             console.log('OAuth session established for user:', data.session.user.email || 'unknown')
                             clearTimeout(timeoutId)
 
-                            // Continue with profile creation/verification below
-                            const user = data.session.user
-
-                            // Check if profile exists and create if needed
+                            // Handle profile creation
                             try {
-                                await handleProfileCreation(supabase, user)
+                                await handleProfileCreation(supabase, data.session.user)
                             } catch (profileError) {
                                 console.error('Profile creation failed, continuing with redirect:', profileError)
-                                // Continue even if profile creation fails
                             }
 
-                            // Redirect to homepage immediately for OAuth flows
-                            clearTimeout(backupRedirectId)
-                            setTimeout(() => router.push('/'), 100) // Very quick redirect
+                            // Redirect to homepage - ensure we go to localhost if we're on localhost
+                            const redirectTarget = window.location.hostname.includes('localhost') ? '/' : '/'
+                            console.log('Redirecting to homepage:', redirectTarget)
+                            setTimeout(() => router.push(redirectTarget), 500)
                             return
                         } else {
-                            console.error('No session or user found after code exchange')
+                            console.log('No session found after OAuth callback')
+                            // Wait a bit more for the session to be established
+                            await new Promise(resolve => setTimeout(resolve, 1000))
+
+                            // Try again
+                            const { data: retryData, error: retryError } = await supabase.auth.getSession()
+
+                            if (retryError || !retryData?.session?.user) {
+                                console.error('Still no session after retry')
+                                clearTimeout(timeoutId)
+                                setError('Failed to establish session after OAuth callback')
+                                setTimeout(() => router.push('/login?message=Authentication failed'), 1000)
+                                return
+                            }
+
+                            // Handle profile creation
+                            try {
+                                await handleProfileCreation(supabase, retryData.session.user)
+                            } catch (profileError) {
+                                console.error('Profile creation failed, continuing with redirect:', profileError)
+                            }
+
+                            // Redirect to homepage
                             clearTimeout(timeoutId)
-                            setError('Failed to establish session after code exchange')
-                            setTimeout(() => router.push('/login?message=Session establishment failed'), 500)
+                            setTimeout(() => router.push('/'), 500)
                             return
                         }
-                    } catch (codeExchangeError) {
-                        console.error('Code exchange failed with exception:', codeExchangeError)
+                    } catch (oauthError) {
+                        console.error('OAuth processing error:', oauthError)
                         clearTimeout(timeoutId)
-                        setError('Code exchange failed')
-                        setTimeout(() => router.push('/login?message=Authentication process failed'), 500)
+                        setError('OAuth processing failed')
+                        setTimeout(() => router.push('/login?message=Authentication failed'), 1000)
                         return
                     }
                 }
 
-                // For hash-based flows (password reset, email confirmation)
-                if (window.location.hash && !code) {
-                    console.log('Processing hash-based auth flow...')
-                    // Wait a moment for Supabase to automatically process the tokens
-                    await new Promise(resolve => setTimeout(resolve, 500))
+                // For other flows (password reset, email confirmation)
+                const type = searchParams.get('type')
+
+                if (type === 'recovery') {
+                    console.log('Password recovery flow detected')
+                    clearTimeout(timeoutId)
+                    setTimeout(() => router.push('/auth/reset-password'), 500)
+                    return
                 }
 
-                // Check for existing session
+                if (type === 'signup') {
+                    console.log('Email confirmation flow detected')
+                    clearTimeout(timeoutId)
+                    setTimeout(() => router.push('/?message=Email confirmed! Welcome to Kryloss.'), 500)
+                    return
+                }
+
+                // Default: check for existing session and redirect
                 const { data: authData, error: authError } = await supabase.auth.getSession()
 
                 if (authError) {
-                    console.error('Auth callback error:', authError)
+                    console.error('Auth session check error:', authError)
                     clearTimeout(timeoutId)
-                    setError('Authentication failed')
-                    setTimeout(() => router.push('/login?message=Authentication failed'), 500)
+                    setError('Authentication check failed')
+                    setTimeout(() => router.push('/login?message=Authentication failed'), 1000)
                     return
                 }
 
                 if (authData?.session?.user) {
                     const user = authData.session.user
-                    console.log('Session established for user:', user.email || 'unknown')
+                    console.log('Session found for user:', user.email || 'unknown')
                     clearTimeout(timeoutId)
 
-                    // Handle password recovery flow
-                    if (type === 'recovery') {
-                        console.log('Password recovery flow detected - redirecting to reset password page')
-                        clearTimeout(backupRedirectId)
-                        setTimeout(() => router.push('/auth/reset-password'), 100)
-                        return
-                    }
-
-                    // Handle email confirmation
-                    if (type === 'signup') {
-                        console.log('Email confirmation flow detected')
-                        clearTimeout(backupRedirectId)
-                        setTimeout(() => router.push('/?message=Email confirmed! Welcome to Kryloss.'), 100)
-                        return
-                    }
-
-                    // Default login flow - check if profile exists and create if needed
+                    // Handle profile creation
                     try {
                         await handleProfileCreation(supabase, user)
                     } catch (profileError) {
                         console.error('Profile handling failed, continuing with redirect:', profileError)
-                        // Continue even if profile handling fails
                     }
 
-                    // Redirect to homepage immediately for regular sign-in flows
-                    clearTimeout(backupRedirectId)
-                    setTimeout(() => router.push('/'), 100) // Very quick redirect
+                    // Redirect to homepage - ensure we go to localhost if we're on localhost
+                    const redirectTarget = window.location.hostname.includes('localhost') ? '/' : '/'
+                    console.log('Redirecting to homepage:', redirectTarget)
+                    setTimeout(() => router.push(redirectTarget), 500)
                 } else {
                     // No session found, redirect to login
                     console.log('No session found in callback')
                     clearTimeout(timeoutId)
                     setError('Unable to establish session')
-                    setTimeout(() => router.push('/login?message=Authentication failed. Please try again.'), 500)
+                    setTimeout(() => router.push('/login?message=Authentication failed. Please try again.'), 1000)
                 }
             } catch (err) {
                 console.error('Callback handling error:', err)
                 clearTimeout(timeoutId)
-                clearTimeout(backupRedirectId)
                 setError('Something went wrong during authentication')
-                // Redirect to homepage instead of login to avoid loops
-                setTimeout(() => router.push('/?message=Authentication completed with some issues'), 500)
-            } finally {
-                // Ensure we always mark as processed and clear all timeouts
-                hasProcessed.current = true
-                clearTimeout(backupRedirectId)
+                setTimeout(() => router.push('/login?message=Authentication failed'), 1000)
             }
         }
 
@@ -241,9 +233,6 @@ export default function AuthCallbackPage() {
                             code: profileError.code,
                             details: profileError.details
                         })
-
-                        // Don't throw here - continue with auth flow
-                        // The profile page can handle missing profiles
                         console.log('Continuing with auth flow despite profile creation failure')
                     } else {
                         console.log('Profile created successfully for:', user.email || user.id)
@@ -253,7 +242,6 @@ export default function AuthCallbackPage() {
                 }
             } catch (profileErr) {
                 console.error('Profile handling error:', profileErr)
-                // Don't re-throw - continue with auth flow even if profile creation fails
                 console.log('Continuing with auth flow despite profile handling error')
             }
         }
@@ -267,8 +255,28 @@ export default function AuthCallbackPage() {
     if (error) {
         return (
             <div className="min-h-screen bg-[#000000] flex items-center justify-center">
-                <div className="text-center">
-                    <p className="text-red-400 mb-4">{error}</p>
+                <div className="text-center max-w-md mx-auto p-6">
+                    <div className="mb-6">
+                        <div className="inline-block w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-4">
+                            <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                            </svg>
+                        </div>
+                        <h2 className="text-xl font-semibold text-[#FBF7FA] mb-2">Authentication Error</h2>
+                        <p className="text-red-400 text-sm leading-relaxed">{error}</p>
+                    </div>
+
+                    {error.includes('Configuration error') && (
+                        <div className="mb-6 p-4 bg-[#1E293B] border border-[#334155] rounded-lg">
+                            <h3 className="text-[#FBF7FA] font-medium mb-2">How to Fix This:</h3>
+                            <ol className="text-[#9CA9B7] text-sm space-y-1 list-decimal list-inside">
+                                <li>Create a <code className="bg-[#0F172A] px-1 rounded">.env.local</code> file in your project root</li>
+                                <li>Add your Supabase credentials from the <code className="bg-[#0F172A] px-1 rounded">env.example</code> file</li>
+                                <li>Restart your development server</li>
+                            </ol>
+                        </div>
+                    )}
+
                     <p className="text-[#9CA9B7] text-sm">Redirecting...</p>
                 </div>
             </div>

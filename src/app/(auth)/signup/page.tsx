@@ -47,16 +47,47 @@ export default function SignupPage() {
         setError(null)
 
         try {
+            // Check if environment variables are set
+            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+            const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+            if (!supabaseUrl || !supabaseAnonKey) {
+                setError('Configuration error: Missing Supabase credentials. Please check your environment variables.')
+                setIsGoogleLoading(false)
+                return
+            }
+
             const supabase = createClient()
 
-            // Use NEXT_PUBLIC_SITE_URL for production, fallback to window.location.origin for dev
-            const redirectUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
-            console.log('OAuth redirect URL:', `${redirectUrl}/dashboard`)
+            // Determine the correct redirect URL based on current environment
+            let redirectUrl: string
+
+            if (typeof window !== 'undefined') {
+                // We're in the browser
+                const currentOrigin = window.location.origin
+                const isLocalhost = currentOrigin.includes('localhost') || currentOrigin.includes('127.0.0.1')
+
+                if (isLocalhost) {
+                    // Always use localhost for local development
+                    redirectUrl = 'http://localhost:3000'
+                    console.log('Local development detected, using localhost:3000')
+                } else {
+                    // Production environment - use environment variable or current origin
+                    redirectUrl = process.env.NEXT_PUBLIC_SITE_URL || currentOrigin
+                    console.log('Production environment detected, using:', redirectUrl)
+                }
+            } else {
+                // Fallback for SSR
+                redirectUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+            }
+
+            const callbackUrl = `${redirectUrl}/auth/callback`
+            console.log('OAuth redirect URL:', callbackUrl)
 
             const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: `${redirectUrl}/dashboard`,
+                    redirectTo: callbackUrl,
                     queryParams: {
                         access_type: 'offline',
                         prompt: 'consent',
