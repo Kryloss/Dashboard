@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { signOut } from '@/lib/actions/auth'
+import { signOut, triggerWelcomeEmail } from '@/lib/actions/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
 
@@ -63,7 +63,7 @@ export default async function DashboardPage() {
                 </div>
 
                 {/* Quick Actions */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     {/* Healthify Card */}
                     <Card className="group bg-[#121922] border-[#2A3442] shadow-[0_8px_24px_rgba(0,0,0,0.40)] hover:bg-[#0F101A] hover:shadow-[0_14px_40px_rgba(0,0,0,0.55)] hover:-translate-y-0.5 transition-all duration-300 rounded-2xl">
                         <div
@@ -146,6 +146,36 @@ export default async function DashboardPage() {
                             >
                                 <Link href="/profile">Manage Profile →</Link>
                             </Button>
+                        </CardContent>
+                    </Card>
+
+                    {/* Welcome Email Test Card */}
+                    <Card className="group bg-[#121922] border-[#2A3442] shadow-[0_8px_24px_rgba(0,0,0,0.40)] hover:bg-[#0F101A] hover:shadow-[0_14px_40px_rgba(0,0,0,0.55)] hover:-translate-y-0.5 transition-all duration-300 rounded-2xl">
+                        <div
+                            className="absolute top-0 left-0 right-0 h-[1px] rounded-t-2xl"
+                            style={{
+                                background: "linear-gradient(180deg, rgba(37,122,218,0.35) 0%, rgba(0,0,0,0) 100%)"
+                            }}
+                        />
+
+                        <CardHeader>
+                            <CardTitle className="text-[#FBF7FA] text-xl font-bold group-hover:text-white transition-colors">
+                                Test Welcome Email
+                            </CardTitle>
+                            <CardDescription className="text-[#9CA9B7]">
+                                Send yourself a welcome email to test the email functionality.
+                            </CardDescription>
+                        </CardHeader>
+
+                        <CardContent>
+                            <form action={triggerWelcomeEmail}>
+                                <Button
+                                    type="submit"
+                                    className="w-full rounded-full bg-gradient-to-br from-[#114EB2] via-[#257ADA] to-[#4AA7FF] text-white shadow-[0_0_60px_rgba(37,122,218,0.35)] hover:from-[#257ADA] hover:to-[#90C9FF] hover:shadow-[0_0_72px_rgba(74,167,255,0.35)] hover:-translate-y-0.5 focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#121922] active:brightness-95 transition-all"
+                                >
+                                    Send Welcome Email →
+                                </Button>
+                            </form>
                         </CardContent>
                     </Card>
                 </div>

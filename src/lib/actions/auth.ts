@@ -141,6 +141,33 @@ export async function updatePassword(formData: FormData) {
     redirect('/dashboard?message=Password updated successfully')
 }
 
+export async function triggerWelcomeEmail() {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: 'Not authenticated' }
+    }
+
+    // Get user profile for name
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('username, full_name')
+        .eq('id', user.id)
+        .single()
+
+    const name = profile?.username || profile?.full_name || user.email?.split('@')[0] || 'User'
+
+    try {
+        await sendWelcomeEmail(user.email!, name)
+        return { message: 'Welcome email sent successfully!' }
+    } catch (error) {
+        console.error('Welcome email trigger error:', error)
+        return { error: 'Failed to send welcome email. Check logs for details.' }
+    }
+}
+
 export async function updateProfile(formData: FormData) {
     const supabase = await createClient()
 
