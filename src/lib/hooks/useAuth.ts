@@ -12,17 +12,29 @@ export function useAuth() {
         // Get initial session
         const getInitialSession = async () => {
             try {
+                console.log('useAuth: Getting initial session...')
                 const { data: { session: initialSession } } = await supabase.auth.getSession()
+                console.log('useAuth: Initial session:', initialSession?.user?.email || 'No user')
                 setSession(initialSession)
                 setUser(initialSession?.user ?? null)
             } catch (error) {
-                console.error('Error getting initial session:', error)
+                console.error('useAuth: Error getting initial session:', error)
+                // If Supabase fails, still resolve loading to prevent infinite loading
+                setSession(null)
+                setUser(null)
             } finally {
+                console.log('useAuth: Setting loading to false')
                 setLoading(false)
             }
         }
 
-        getInitialSession()
+        // Add timeout failsafe in case getSession hangs
+        const timeoutId = setTimeout(() => {
+            console.warn('useAuth: getSession timed out after 3 seconds, resolving loading state')
+            setLoading(false)
+        }, 3000)
+
+        getInitialSession().finally(() => clearTimeout(timeoutId))
 
         // Listen for auth state changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
