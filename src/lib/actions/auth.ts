@@ -147,7 +147,7 @@ export async function triggerWelcomeEmail() {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
-        return { error: 'Not authenticated' }
+        redirect('/login?error=Not authenticated')
     }
 
     // Get user profile for name
@@ -161,10 +161,12 @@ export async function triggerWelcomeEmail() {
 
     try {
         await sendWelcomeEmail(user.email!, name)
-        return { message: 'Welcome email sent successfully!' }
+        revalidatePath('/dashboard')
+        redirect('/dashboard?message=Welcome email sent successfully!')
     } catch (error) {
         console.error('Welcome email trigger error:', error)
-        return { error: 'Failed to send welcome email. Check logs for details.' }
+        revalidatePath('/dashboard')
+        redirect('/dashboard?error=Failed to send welcome email. Check logs for details.')
     }
 }
 
@@ -285,7 +287,7 @@ export async function handleGoogleCallback() {
 async function sendWelcomeEmail(email: string, name: string) {
     try {
         const supabase = await createClient()
-        
+
         // Use Supabase's resend confirmation email functionality
         // This will send the "Confirm signup" template configured in Supabase
         const { error } = await supabase.auth.resend({
