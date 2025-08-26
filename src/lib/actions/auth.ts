@@ -283,25 +283,29 @@ export async function handleGoogleCallback() {
     redirect('/dashboard')
 }
 
-// Server-only email utility using Supabase
+// Server-only email utility using proper email service
 async function sendWelcomeEmail(email: string, name: string) {
     try {
+        // Use the Edge Function to send welcome emails
         const supabase = await createClient()
 
-        // Use Supabase's resend confirmation email functionality
-        // This will send the "Confirm signup" template configured in Supabase
-        const { error } = await supabase.auth.resend({
-            type: 'signup',
-            email: email,
-            options: {
-                // Use the same redirect URL pattern as reset password
-                emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
+        // Call the Edge Function to send the welcome email
+        const { data, error } = await supabase.functions.invoke('send-welcome-email', {
+            body: {
+                user: { id: 'welcome-user', email: email },
+                email: email,
+                name: name
             }
         })
 
         if (error) {
-            console.error('Welcome email error:', error.message)
+            console.error('Edge Function error:', error.message)
             throw new Error(`Failed to send welcome email: ${error.message}`)
+        }
+
+        if (!data || !data.success) {
+            console.error('Edge Function returned error:', data)
+            throw new Error('Edge Function failed to send welcome email')
         }
 
         console.log(`Welcome email sent successfully to ${email} for user ${name}`)
