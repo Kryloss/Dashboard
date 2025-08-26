@@ -257,23 +257,25 @@ export async function handleGoogleCallback() {
 // Server-only email utility using Supabase
 async function sendWelcomeEmail(email: string, name: string) {
     try {
-        // Use Supabase's built-in email system with the "Confirm signup" template
-        // This will use the email template you've already configured in Supabase
-        // We'll send it immediately after account creation, not as a confirmation
-        // Send welcome email using Supabase's built-in email system
-        // This will use the "Confirm signup" template you've configured in Supabase
-        // We'll send it immediately after account creation, not as a confirmation
+        const supabase = await createClient()
+        
+        // Use Supabase's resend confirmation email functionality
+        // This will send the "Confirm signup" template configured in Supabase
+        const { error } = await supabase.auth.resend({
+            type: 'signup',
+            email: email,
+            options: {
+                // Use the same redirect URL pattern as reset password
+                emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
+            }
+        })
 
-        // Note: The resend method might not be available in all Supabase versions
-        // For now, we'll log that the welcome email would be sent
-        console.log(`Welcome email would be sent to ${email} for user ${name}`)
+        if (error) {
+            console.error('Welcome email error:', error.message)
+            throw new Error(`Failed to send welcome email: ${error.message}`)
+        }
 
-        // TODO: To implement actual email sending, you can:
-        // 1. Use Supabase's built-in email triggers (recommended)
-        // 2. Create a Supabase Edge Function
-        // 3. Use an external email service like Resend, SendGrid, etc.
-
-        // No error handling needed for now since we're just logging
+        console.log(`Welcome email sent successfully to ${email} for user ${name}`)
     } catch (error) {
         console.error('Failed to send welcome email:', error)
         throw error
