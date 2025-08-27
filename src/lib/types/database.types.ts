@@ -10,6 +10,7 @@ export interface Database {
                     avatar_url: string | null
                     created_at: string
                     updated_at: string
+                    welcomed_at: string | null
                 }
                 Insert: {
                     id: string
@@ -19,6 +20,7 @@ export interface Database {
                     avatar_url?: string | null
                     created_at?: string
                     updated_at?: string
+                    welcomed_at?: string | null
                 }
                 Update: {
                     id?: string
@@ -28,6 +30,7 @@ export interface Database {
                     avatar_url?: string | null
                     created_at?: string
                     updated_at?: string
+                    welcomed_at?: string | null
                 }
             }
         }

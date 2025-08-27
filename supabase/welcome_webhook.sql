@@ -1,6 +1,9 @@
 -- Enable network HTTP from Postgres
 create extension if not exists pg_net;
 
+-- Add welcomed_at column if it doesn't exist
+alter table public.profiles add column if not exists welcomed_at timestamp with time zone;
+
 -- Trigger function: POST to our Next.js webhook when a profile is created
 create or replace function public.notify_welcome()
 returns trigger
@@ -18,6 +21,11 @@ begin
     return new;
   end if;
 
+  -- Only act if this is a new profile (welcomed_at is null)
+  if new.welcomed_at is not null then
+    return new;
+  end if;
+
   -- Fire-and-forget HTTP POST; ignore response (best effort)
   perform net.http_post(
     url := _url,
@@ -28,10 +36,8 @@ begin
     body := jsonb_build_object('email', new.email, 'username', new.username)
   );
 
-  -- Mark welcomed_at so we know it was triggered (optional; requires column)
-  if new.welcomed_at is null then
-    update public.profiles set welcomed_at = now() where id = new.id;
-  end if;
+  -- Mark welcomed_at so we know it was triggered
+  update public.profiles set welcomed_at = now() where id = new.id;
 
   return new;
 end;

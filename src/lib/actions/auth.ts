@@ -53,13 +53,8 @@ export async function signUp(formData: FormData) {
             // The profile page will handle creating it if missing
         }
 
-        // Send welcome email immediately after successful signup
-        try {
-            await sendWelcomeEmail(authData.user.email!, username)
-        } catch (emailError) {
-            console.error('Welcome email error:', emailError)
-            // Don't fail the signup if email fails
-        }
+        // Welcome email will be sent automatically by database trigger
+        // No need to manually send it here
     }
 
     revalidatePath('/')
@@ -159,15 +154,10 @@ export async function triggerWelcomeEmail() {
 
     const name = profile?.username || profile?.full_name || user.email?.split('@')[0] || 'User'
 
-    try {
-        await sendWelcomeEmail(user.email!, name)
-        revalidatePath('/dashboard')
-        redirect('/dashboard?message=Welcome email sent successfully!')
-    } catch (error) {
-        console.error('Welcome email trigger error:', error)
-        revalidatePath('/dashboard')
-        redirect('/dashboard?error=Failed to send welcome email. Check logs for details.')
-    }
+    // Welcome emails are now sent automatically via database trigger
+    // This function is kept for backward compatibility but no longer sends emails
+    revalidatePath('/dashboard')
+    redirect('/dashboard?message=Welcome emails are now sent automatically when profiles are created.')
 }
 
 export async function updateProfile(formData: FormData) {
@@ -283,34 +273,4 @@ export async function handleGoogleCallback() {
     redirect('/dashboard')
 }
 
-// Server-only email utility using proper email service
-async function sendWelcomeEmail(email: string, name: string) {
-    try {
-        // Use the Edge Function to send welcome emails
-        const supabase = await createClient()
 
-        // Call the Edge Function to send the welcome email
-        const { data, error } = await supabase.functions.invoke('send-welcome-email', {
-            body: {
-                user: { id: 'welcome-user', email: email },
-                email: email,
-                name: name
-            }
-        })
-
-        if (error) {
-            console.error('Edge Function error:', error.message)
-            throw new Error(`Failed to send welcome email: ${error.message}`)
-        }
-
-        if (!data || !data.success) {
-            console.error('Edge Function returned error:', data)
-            throw new Error('Edge Function failed to send welcome email')
-        }
-
-        console.log(`Welcome email sent successfully to ${email} for user ${name}`)
-    } catch (error) {
-        console.error('Failed to send welcome email:', error)
-        throw error
-    }
-}

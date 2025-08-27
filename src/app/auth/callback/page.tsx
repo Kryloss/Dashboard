@@ -233,11 +233,9 @@ export default function AuthCallbackPage() {
                 if (!existingProfile) {
                     console.log('Creating profile for new user:', user.email || 'unknown email')
 
-                    // Generate a new UUID for the profile (don't use user.id from auth)
-                    const profileId = crypto.randomUUID()
-
+                    // Use the auth user ID to ensure database triggers work correctly
                     const profileData = {
-                        id: profileId, // Use generated UUID instead of auth user ID
+                        id: user.id, // Use auth user ID for database trigger compatibility
                         email: user.email || null,
                         username: null, // Will prompt user to set username
                         full_name: typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : null,
