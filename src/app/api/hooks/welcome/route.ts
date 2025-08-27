@@ -50,25 +50,46 @@ export async function POST(request: NextRequest) {
 
         const { email, username } = body;
 
-        // Replay protection
+        // Enhanced logging for debugging
+        console.log(`Welcome webhook triggered for: ${email} (username: ${username || 'not set'})`);
+        console.log(`Request headers:`, Object.fromEntries(request.headers.entries()));
+        console.log(`Request body:`, body);
+
+        // Replay protection with more flexible logic
         const now = Date.now();
         const lastSent = replayCache.get(email);
+
         if (lastSent && (now - lastSent) < REPLAY_WINDOW_MS) {
-            console.log(`Skipping duplicate welcome email for ${email} (replay protection)`);
-            return NextResponse.json({ ok: true, skipped: 'duplicate' });
+            console.log(`Skipping duplicate welcome email for ${email} (replay protection - last sent: ${new Date(lastSent).toISOString()})`);
+            return NextResponse.json({ ok: true, skipped: 'duplicate', lastSent: new Date(lastSent).toISOString() });
         }
 
         // Send welcome email
+        console.log(`Attempting to send welcome email to ${email}...`);
         await sendWelcome(email, username);
 
         // Mark as sent in replay cache
         replayCache.set(email, now);
 
-        console.log(`Welcome email sent successfully to ${email}`);
-        return NextResponse.json({ ok: true });
+        console.log(`Welcome email sent successfully to ${email} at ${new Date(now).toISOString()}`);
+        return NextResponse.json({
+            ok: true,
+            sentAt: new Date(now).toISOString(),
+            email: email,
+            username: username
+        });
 
     } catch (error) {
         console.error('Error processing welcome webhook:', error);
+
+        // More detailed error logging
+        if (error instanceof Error) {
+            console.error('Error details:', {
+                message: error.message,
+                stack: error.stack,
+                name: error.name
+            });
+        }
 
         // Don't leak internal details to client
         return NextResponse.json(

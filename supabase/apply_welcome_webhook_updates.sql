@@ -1,8 +1,21 @@
+-- Apply Welcome Webhook Updates
+-- This script ensures welcome emails are sent for ALL new account registrations
+-- including both built-in registration and Google OAuth users
+
 -- Enable network HTTP from Postgres
 create extension if not exists pg_net;
 
 -- Add welcomed_at column if it doesn't exist
 alter table public.profiles add column if not exists welcomed_at timestamp with time zone;
+
+-- Drop existing triggers and functions to recreate them
+drop trigger if exists on_auth_user_created on auth.users;
+drop trigger if exists trg_profiles_welcome on public.profiles;
+drop trigger if exists trg_profiles_welcome_backup on public.profiles;
+
+drop function if exists public.handle_new_user();
+drop function if exists public.notify_welcome();
+drop function if exists public.ensure_welcome_email();
 
 -- Auto-create profile for every new auth user (email+password, Google, GitHub, etc.)
 create or replace function public.handle_new_user()
@@ -20,12 +33,11 @@ end;
 $$;
 
 -- Trigger that creates profile whenever a user is created in auth.users
-drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
 after insert on auth.users
 for each row execute procedure public.handle_new_user();
 
--- Trigger function: POST to our Next.js webhook when a profile is created
+-- Main trigger function: POST to our Next.js webhook when a profile is created
 create or replace function public.notify_welcome()
 returns trigger
 language plpgsql
@@ -36,7 +48,6 @@ declare
   _url text := 'https://kryloss.com/api/hooks/welcome';
   _secret text := current_setting('app.supabase_webhook_secret', true);
   _auth text := case when _secret is null or _secret = '' then '' else 'Bearer ' || _secret end;
-  _user_verified boolean;
   _retry_count integer := 0;
   _max_retries integer := 3;
   _retry_delay integer := 1000; -- 1 second
@@ -86,13 +97,12 @@ begin
 end;
 $$;
 
--- Trigger that sends welcome email when profile is created
-drop trigger if exists trg_profiles_welcome on public.profiles;
+-- Main trigger that sends welcome email when profile is created
 create trigger trg_profiles_welcome
 after insert on public.profiles
 for each row execute procedure public.notify_welcome();
 
--- Additional trigger: Handle cases where profile creation might be delayed
+-- Backup trigger: Handle cases where profile creation might be delayed
 -- This ensures Google OAuth users get welcome emails even if profile creation is delayed
 create or replace function public.ensure_welcome_email()
 returns trigger
@@ -128,8 +138,7 @@ begin
 end;
 $$;
 
--- Trigger that ensures welcome email is sent (backup trigger)
-drop trigger if exists trg_profiles_welcome_backup on public.profiles;
+-- Backup trigger that ensures welcome email is sent
 create trigger trg_profiles_welcome_backup
 after insert on public.profiles
 for each row execute procedure public.ensure_welcome_email();
@@ -147,7 +156,6 @@ declare
   _auth text := case when _secret is null or _secret = '' then '' else 'Bearer ' || _secret end;
   _profile_id uuid;
   _profile_username text;
-  _result text;
 begin
   -- Find the profile for this email
   select id, username into _profile_id, _profile_username
@@ -238,3 +246,11 @@ begin
   order by p.created_at desc;
 end;
 $$;
+
+-- Grant execute permissions on the functions
+grant execute on function public.manual_trigger_welcome(text) to authenticated;
+grant execute on function public.check_welcome_status(text) to authenticated;
+grant execute on function public.list_pending_welcomes() to authenticated;
+
+-- Test the setup
+select 'Welcome webhook setup completed successfully!' as status;
