@@ -7,7 +7,7 @@ export function getSubdomains() {
             name: "Healss",
             url: isDevelopment ? "http://healss.localhost:3001" : "https://healss.kryloss.com",
             description: "Health & fitness tracking platform",
-            route: "/healss-subdomain"
+            route: "/healss"
         },
         {
             name: "Notify",
@@ -24,7 +24,7 @@ export const subdomains = [
         name: "Healss",
         url: "https://healss.kryloss.com",
         description: "Health & fitness tracking platform",
-        route: "/healss-subdomain"
+        route: "/healss"
     },
     {
         name: "Notify",

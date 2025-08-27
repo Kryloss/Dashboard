@@ -8,8 +8,8 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        source: '/:path*',
-        destination: '/:path*',
+        source: '/',
+        destination: '/healss',
         has: [
           {
             type: 'host',
@@ -19,7 +19,27 @@ const nextConfig: NextConfig = {
       },
       {
         source: '/:path*',
-        destination: '/:path*',
+        destination: '/healss/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'healss.localhost:3001',
+          },
+        ],
+      },
+      {
+        source: '/',
+        destination: '/healss',
+        has: [
+          {
+            type: 'host',
+            value: 'healss.kryloss.com',
+          },
+        ],
+      },
+      {
+        source: '/:path*',
+        destination: '/healss/:path*',
         has: [
           {
             type: 'host',
