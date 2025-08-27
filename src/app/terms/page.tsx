@@ -154,7 +154,7 @@ export default function TermsOfServicePage() {
                                         </p>
                                         <ul className="text-[#9CA9B7] leading-relaxed mb-4 space-y-2 list-disc list-inside">
                                             <li><strong className="text-[#FBF7FA]">Main Dashboard:</strong> Central hub for accessing all tools and services</li>
-                                            <li><strong className="text-[#FBF7FA]">Healthify:</strong> Health analytics and tracking platform</li>
+                                            <li><strong className="text-[#FBF7FA]">Healss:</strong> Health analytics and tracking platform</li>
                                             <li><strong className="text-[#FBF7FA]">Notify:</strong> Smart notification management system</li>
                                             <li><strong className="text-[#FBF7FA]">Additional Tools:</strong> Future productivity services as they become available</li>
                                         </ul>

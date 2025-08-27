@@ -64,7 +64,7 @@ export default async function DashboardPage() {
 
                 {/* Quick Actions */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    {/* Healthify Card */}
+                    {/* Healss Card */}
                     <Card className="group bg-[#121922] border-[#2A3442] shadow-[0_8px_24px_rgba(0,0,0,0.40)] hover:bg-[#0F101A] hover:shadow-[0_14px_40px_rgba(0,0,0,0.55)] hover:-translate-y-0.5 transition-all duration-300 rounded-2xl">
                         <div
                             className="absolute top-0 left-0 right-0 h-[1px] rounded-t-2xl"
@@ -75,7 +75,7 @@ export default async function DashboardPage() {
 
                         <CardHeader>
                             <CardTitle className="text-[#FBF7FA] text-xl font-bold group-hover:text-white transition-colors">
-                                Healthify
+                                Healss
                             </CardTitle>
                             <CardDescription className="text-[#9CA9B7]">
                                 Advanced health analytics with AI-powered insights and comprehensive tracking.
@@ -87,7 +87,7 @@ export default async function DashboardPage() {
                                 asChild
                                 className="w-full rounded-full bg-gradient-to-br from-[#114EB2] via-[#257ADA] to-[#4AA7FF] text-white shadow-[0_0_60px_rgba(37,122,218,0.35)] hover:from-[#257ADA] hover:to-[#90C9FF] hover:shadow-[0_0_72px_rgba(74,167,255,0.35)] hover:-translate-y-0.5 focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#121922] active:brightness-95 transition-all"
                             >
-                                <Link href="https://healthify.kryloss.com">Launch Healthify →</Link>
+                                <Link href="https://healss.kryloss.com">Launch Healss →</Link>
                             </Button>
                         </CardContent>
                     </Card>

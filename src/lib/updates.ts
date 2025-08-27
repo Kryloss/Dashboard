@@ -17,10 +17,10 @@ export const updates: Update[] = [
         "id": "9"
     },
     {
-        "title": "Healthify 0 - Advanced Health Analytics",
+        "title": "Healss 0 - Advanced Health Analytics",
         "summary": "Introducing comprehensive health dashboards with AI-powered insights, custom metric tracking, and seamless wearable integration. Now with support for sleep pattern analysis and nutrition recommendations.",
         "date": "2024-01-15",
-        "link": "https://healthify.kryloss.com/updates/v2-0-launch",
+        "link": "https://healss.kryloss.com/updates/v2-0-launch",
         "category": "Product Launch",
         "id": "1"
     },

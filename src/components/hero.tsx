@@ -70,7 +70,7 @@ export function Hero() {
                         asChild
                         className="rounded-full bg-white text-[#0B0C0D] shadow-[0_8px_20px_rgba(0,0,0,0.25)] hover:bg-[#F2F4F7] hover:shadow-[0_10px_26px_rgba(0,0,0,0.30)] active:bg-[#E6E9EF] transition-all px-8 py-3"
                     >
-                        <Link href="https://healthify.kryloss.com">Explore Tools</Link>
+                        <Link href="https://healss.kryloss.com" target="_blank" rel="noopener noreferrer">Explore Healss</Link>
                     </Button>
                 </div>
             </div>

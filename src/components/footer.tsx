@@ -25,10 +25,10 @@ export function Footer() {
                         <ul className="space-y-3">
                             <li>
                                 <Link
-                                    href="https://healthify.kryloss.com"
+                                    href="https://healss.kryloss.com"
                                     className="text-[#9CA9B7] text-sm hover:text-[#4AA7FF] transition-colors focus:outline-none focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#121922] rounded"
                                 >
-                                    Healthify
+                                    Healss
                                 </Link>
                             </li>
                             <li>

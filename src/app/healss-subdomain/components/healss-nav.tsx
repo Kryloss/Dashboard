@@ -3,15 +3,6 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import {
-    NavigationMenu,
-    NavigationMenuContent,
-    NavigationMenuItem,
-    NavigationMenuLink,
-    NavigationMenuList,
-    NavigationMenuTrigger,
-    navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu"
-import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
@@ -20,73 +11,64 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { getSubdomains, subdomains } from "@/lib/subdomains"
 import { cn } from "@/lib/utils"
 import { useAuthContext } from "@/lib/contexts/AuthContext"
 import { createClient } from "@/lib/supabase/client"
 import { useState, useEffect, useRef } from "react"
 import type { Profile } from "@/lib/types/database.types"
+import { usePathname } from "next/navigation"
 
-export function NavBar() {
+export function HealssNav() {
     const { user, loading, signOut: authSignOut, isAuthenticated } = useAuthContext()
     const [profile, setProfile] = useState<Profile | null>(null)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
     const [localLoading, setLocalLoading] = useState(true)
     const [hasAccount, setHasAccount] = useState(false)
-    const [dynamicSubdomains, setDynamicSubdomains] = useState(subdomains)
     const mobileMenuRef = useRef<HTMLDivElement>(null)
     const supabase = createClient()
+    // const router = useRouter() // Unused - removed to fix build warning
+    const pathname = usePathname()
 
-    // Update subdomains on client side
-    useEffect(() => {
-        setDynamicSubdomains(getSubdomains())
-    }, [])
+    const tabs = [
+        { name: "Workout", href: "/healss-subdomain", isActive: pathname === "/healss-subdomain" },
+        { name: "Nutrition", href: "/healss-subdomain/nutrition", isActive: pathname === "/healss-subdomain/nutrition" },
+        { name: "Progress", href: "/healss-subdomain/progress", isActive: pathname === "/healss-subdomain/progress" }
+    ]
 
     useEffect(() => {
         async function checkMultipleAuthMethods() {
             let accountSignedIn = false
 
-            console.log('NavBar: Starting auth check with user:', user)
-
-            // Method 1: Check if user exists from AuthContext
             if (user) {
-                console.log('NavBar: Auth method 1 - User from context:', user.email)
                 accountSignedIn = true
             }
 
-            // Method 2: Check session directly from Supabase
             if (!accountSignedIn) {
                 try {
                     const { data: { session } } = await supabase.auth.getSession()
                     if (session?.user) {
-                        console.log('NavBar: Auth method 2 - Session user:', session.user.email)
                         accountSignedIn = true
                     }
                 } catch (err) {
-                    console.log('NavBar: Auth method 2 failed:', err)
+                    console.log('Auth method 2 failed:', err)
                 }
             }
 
-            // Method 3: Check for stored auth token
             if (!accountSignedIn) {
                 try {
                     const { data: { user: tokenUser } } = await supabase.auth.getUser()
                     if (tokenUser) {
-                        console.log('NavBar: Auth method 3 - Token user:', tokenUser.email)
                         accountSignedIn = true
                     }
                 } catch (err) {
-                    console.log('NavBar: Auth method 3 failed:', err)
+                    console.log('Auth method 3 failed:', err)
                 }
             }
 
-            // Method 4: Check Account Information - if email is present
             if (!accountSignedIn && user?.email) {
-                console.log('NavBar: Auth method 4 - Account Information check - Email present:', user.email)
                 accountSignedIn = true
             }
 
-            // If any method confirms sign-in, fetch profile for display
             if (accountSignedIn && user) {
                 try {
                     const { data: profile, error } = await supabase
@@ -100,10 +82,6 @@ export function NavBar() {
                     }
 
                     setProfile(profile || null)
-                    console.log('NavBar: Profile loaded -', {
-                        profileExists: !!profile,
-                        hasUsername: !!(profile?.username)
-                    })
                 } catch (err) {
                     console.error('Profile fetch failed:', err)
                     setProfile(null)
@@ -114,63 +92,38 @@ export function NavBar() {
 
             setHasAccount(accountSignedIn)
             setLocalLoading(false)
-
-            console.log('NavBar: Final auth state -', {
-                accountSignedIn,
-                user: user?.email || 'No user',
-                userExists: !!user,
-                profileExists: !!profile,
-                hasAccountState: accountSignedIn,
-                willShowButton: accountSignedIn && user
-            })
-
-            console.log('NavBar: Auth check complete -', { accountSignedIn, userExists: !!user })
         }
 
         checkMultipleAuthMethods()
     }, [user, supabase, profile])
 
-    // Add a timeout to prevent infinite loading
     useEffect(() => {
         const timeoutId = setTimeout(() => {
             if (localLoading) {
-                console.warn('Navigation loading timed out after 5 seconds - forcing show of auth buttons')
                 setLocalLoading(false)
             }
-        }, 5000) // 5 second timeout
+        }, 5000)
 
         return () => clearTimeout(timeoutId)
     }, [localLoading])
 
-    // Emergency fallback - force loading to false after component mount
     useEffect(() => {
         const emergencyTimeoutId = setTimeout(() => {
-            console.warn('NavBar: Emergency timeout - forcing loading state to resolve')
             setLocalLoading(false)
-        }, 2000) // 2 second emergency timeout
+        }, 2000)
 
         return () => clearTimeout(emergencyTimeoutId)
     }, [])
 
-    // Sync local loading with auth context loading, but with fallback
     useEffect(() => {
-        console.log('NavBar: Auth state -', {
-            loading,
-            localLoading,
-            hasAccount,
-            userExists: !!user
-        })
         if (!loading) {
-            // Give a small delay to allow auth context to fully initialize
             const delayId = setTimeout(() => {
-                console.log('NavBar: Setting local loading to false')
                 setLocalLoading(false)
             }, 100)
             return () => clearTimeout(delayId)
         }
     }, [loading, isAuthenticated, hasAccount, user, localLoading])
 
-    // Close mobile menu when clicking outside
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
@@ -187,6 +140,7 @@ export function NavBar() {
     async function handleSignOut() {
         await authSignOut()
     }
+
     return (
         <header className="sticky top-0 z-50 w-full border-b border-[#1C2430] bg-[#0B0C0D]/80 backdrop-blur">
             <div className="flex h-16 w-full items-center justify-between px-4">
@@ -200,65 +154,23 @@ export function NavBar() {
                     </Link>
                 </div>
 
-                {/* Center Navigation - Responsive */}
+                {/* Center Navigation - Healss Tabs */}
                 <div className="hidden md:flex items-center space-x-6">
-                    {/* Individual tool links - show on larger screens (lg+) */}
-                    <div className="hidden lg:flex items-center space-x-6">
-                        {dynamicSubdomains.map((subdomain) => (
+                    <div className="flex items-center space-x-6">
+                        {tabs.map((tab) => (
                             <Link
-                                key={subdomain.name}
-                                href={subdomain.url}
-                                className="text-[#9CA9B7] hover:text-[#FBF7FA] transition-colors px-3 py-2 rounded-md hover:bg-white/5"
+                                key={tab.name}
+                                href={tab.href}
+                                className={cn(
+                                    "px-3 py-2 rounded-md transition-colors",
+                                    tab.isActive
+                                        ? "text-[#FBF7FA] bg-white/10 border border-[#2A3442]"
+                                        : "text-[#9CA9B7] hover:text-[#FBF7FA] hover:bg-white/5"
+                                )}
                             >
-                                {subdomain.name}
+                                {tab.name}
                             </Link>
                         ))}
-                        <Link
-                            href="/docs"
-                            className="text-[#9CA9B7] hover:text-[#FBF7FA] transition-colors px-3 py-2 rounded-md hover:bg-white/5"
-                        >
-                            Documentation
-                        </Link>
-                    </div>
-
-                    {/* Tools dropdown menu - show on medium screens only */}
-                    <div className="lg:hidden">
-                        <NavigationMenu>
-                            <NavigationMenuList>
-                                <NavigationMenuItem>
-                                    <NavigationMenuTrigger className="bg-transparent text-[#9CA9B7] hover:text-[#FBF7FA] hover:bg-white/5 data-[state=open]:bg-white/5 data-[state=open]:text-[#FBF7FA]">
-                                        Tools
-                                    </NavigationMenuTrigger>
-                                    <NavigationMenuContent>
-                                        <ul className="grid w-[300px] gap-3 p-4 bg-[#121922] border border-[#2A3442]">
-                                            {dynamicSubdomains.map((subdomain) => (
-                                                <ListItem
-                                                    key={subdomain.name}
-                                                    title={subdomain.name}
-                                                    href={subdomain.url}
-                                                >
-                                                    {subdomain.description}
-                                                </ListItem>
-                                            ))}
-                                        </ul>
-                                    </NavigationMenuContent>
-                                </NavigationMenuItem>
-
-                                <NavigationMenuItem>
-                                    <NavigationMenuLink asChild>
-                                        <Link
-                                            href="/docs"
-                                            className={cn(
-                                                navigationMenuTriggerStyle(),
-                                                "bg-transparent text-[#9CA9B7] hover:text-[#FBF7FA] hover:bg-white/5"
-                                            )}
-                                        >
-                                            Documentation
-                                        </Link>
-                                    </NavigationMenuLink>
-                                </NavigationMenuItem>
-                            </NavigationMenuList>
-                        </NavigationMenu>
                     </div>
                 </div>
 
@@ -296,7 +208,7 @@ export function NavBar() {
                                     <Avatar className="h-8 w-8">
                                         <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.username || 'User'} />
                                         <AvatarFallback className="bg-[#0F101A] text-[#FBF7FA] text-xs font-semibold border border-[#2A3442]">
-                                            {profile?.username ? profile.username[0].toUpperCase() : 'K'}
+                                            {profile?.username ? profile.username[0].toUpperCase() : 'H'}
                                         </AvatarFallback>
                                     </Avatar>
                                 </Button>
@@ -307,7 +219,7 @@ export function NavBar() {
                                         <Avatar className="h-10 w-10">
                                             <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.username || 'User'} />
                                             <AvatarFallback className="bg-[#0F101A] text-[#FBF7FA] text-sm font-semibold border border-[#2A3442]">
-                                                {profile?.username ? profile.username[0].toUpperCase() : 'K'}
+                                                {profile?.username ? profile.username[0].toUpperCase() : 'H'}
                                             </AvatarFallback>
                                         </Avatar>
                                         <div className="flex flex-col space-y-1">
@@ -371,27 +283,23 @@ export function NavBar() {
                         {/* Mobile Navigation Links */}
                         <div className="space-y-2">
                             <div className="text-sm font-semibold text-[#9CA9B7] uppercase tracking-wide px-2">
-                                Tools
+                                Healss
                             </div>
-                            {dynamicSubdomains.map((subdomain) => (
+                            {tabs.map((tab) => (
                                 <Link
-                                    key={subdomain.name}
-                                    href={subdomain.url}
-                                    className="block px-2 py-2 text-[#FBF7FA] hover:text-white hover:bg-white/5 rounded-md transition-colors"
+                                    key={tab.name}
+                                    href={tab.href}
+                                    className={cn(
+                                        "block px-2 py-2 rounded-md transition-colors",
+                                        tab.isActive
+                                            ? "text-white bg-white/10 font-medium"
+                                            : "text-[#FBF7FA] hover:text-white hover:bg-white/5"
+                                    )}
                                     onClick={() => setMobileMenuOpen(false)}
                                 >
-                                    <div className="font-medium">{subdomain.name}</div>
-                                    <div className="text-sm text-[#9CA9B7]">{subdomain.description}</div>
+                                    {tab.name}
                                 </Link>
                             ))}
-
-                            <Link
-                                href="/docs"
-                                className="block px-2 py-2 text-[#FBF7FA] hover:text-white hover:bg-white/5 rounded-md transition-colors font-medium"
-                                onClick={() => setMobileMenuOpen(false)}
-                            >
-                                Documentation
-                            </Link>
                         </div>
 
                         {/* Mobile Auth Section */}
@@ -407,7 +315,7 @@ export function NavBar() {
                                         <Avatar className="h-8 w-8">
                                             <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.username || 'User'} />
                                             <AvatarFallback className="bg-[#0F101A] text-[#FBF7FA] text-xs font-semibold border border-[#2A3442]">
-                                                {profile?.username ? profile.username[0].toUpperCase() : 'K'}
+                                                {profile?.username ? profile.username[0].toUpperCase() : 'H'}
                                             </AvatarFallback>
                                         </Avatar>
                                         <div>
@@ -469,28 +377,5 @@ export function NavBar() {
                 </div>
             )}
         </header>
-    )
-}
-
-function ListItem({
-    title,
-    children,
-    href,
-    ...props
-}: React.ComponentPropsWithoutRef<"li"> & { href: string }) {
-    return (
-        <li {...props}>
-            <NavigationMenuLink asChild>
-                <Link
-                    href={href}
-                    className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-[#0F101A] hover:text-[#FBF7FA] focus:bg-[#0F101A] focus:text-[#FBF7FA] text-[#9CA9B7]"
-                >
-                    <div className="text-sm font-medium leading-none text-[#FBF7FA]">{title}</div>
-                    <p className="line-clamp-2 text-sm leading-snug text-[#9CA9B7]">
-                        {children}
-                    </p>
-                </Link>
-            </NavigationMenuLink>
-        </li>
     )
 }

@@ -3,6 +3,24 @@ import { updateSession } from './src/lib/supabase/middleware'
 
 export async function middleware(request: NextRequest) {
     try {
+        // Handle subdomain routing first
+        const hostname = request.headers.get('host') || ''
+        const url = request.nextUrl.clone()
+
+        // Check for healss subdomain
+        if (hostname.includes('healss.')) {
+            // For healss subdomain, rewrite to serve the healss app at root
+            if (url.pathname === '/') {
+                url.pathname = '/healss'
+                return NextResponse.rewrite(url)
+            } else {
+                // For other paths, serve them from the healss context
+                url.pathname = `/healss${url.pathname}`
+                return NextResponse.rewrite(url)
+            }
+        }
+
+        // Continue with Supabase session handling
         return await updateSession(request)
     } catch (error) {
         console.error('Middleware error:', error)

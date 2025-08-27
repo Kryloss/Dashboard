@@ -131,7 +131,7 @@ export default function PrivacyPolicyPage() {
                                     <section id="introduction" className="mb-12">
                                         <h2 className="text-2xl font-bold text-[#FBF7FA] mb-4">Introduction & Scope</h2>
                                         <p className="text-[#9CA9B7] leading-relaxed mb-4">
-                                            This Privacy Policy applies to the Kryloss platform (kryloss.com) and all associated subdomains and services, including but not limited to Healthify (healthify.kryloss.com) and Notify (notify.kryloss.com). Kryloss operates as a centralized productivity dashboard providing access to various tools and services.
+                                            This Privacy Policy applies to the Kryloss platform (kryloss.com) and all associated subdomains and services, including but not limited to Healss (healss.kryloss.com) and Notify (notify.kryloss.com). Kryloss operates as a centralized productivity dashboard providing access to various tools and services.
                                         </p>
                                         <p className="text-[#9CA9B7] leading-relaxed">
                                             By using our services, you agree to the collection and use of information in accordance with this policy. This policy governs your use of the Service and explains how we collect, safeguard and disclose information that results from your use of our Service.
