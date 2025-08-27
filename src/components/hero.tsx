@@ -35,7 +35,7 @@ export function Hero() {
                 </p>
 
                 {/* Featured Image Placeholder */}
-                <div className="mb-8">
+                <div className="mb-4">
                     <div className="relative w-full max-w-2xl mx-auto h-[300px] rounded-2xl bg-[#121922] border border-[#2A3442] shadow-[0_8px_24px_rgba(0,0,0,0.40)] overflow-hidden">
                         <div className="absolute inset-0 flex items-center justify-center">
                             <div className="text-center">
@@ -56,7 +56,7 @@ export function Hero() {
                 </div>
 
                 {/* CTA Buttons */}
-                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
                     <Button
                         size="lg"
                         asChild

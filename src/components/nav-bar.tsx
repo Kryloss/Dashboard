@@ -288,7 +288,7 @@ export function NavBar() {
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                                     <Avatar className="h-8 w-8">
-                                        <AvatarImage src={profile?.avatar_url || ''} alt={profile?.username || 'User'} />
+                                        <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.username || 'User'} />
                                         <AvatarFallback className="bg-[#0F101A] text-[#FBF7FA] text-xs font-semibold border border-[#2A3442]">
                                             {profile?.username ? profile.username[0].toUpperCase() : 'K'}
                                         </AvatarFallback>
@@ -299,7 +299,7 @@ export function NavBar() {
                                 <DropdownMenuLabel className="font-normal p-4">
                                     <div className="flex items-center space-x-3">
                                         <Avatar className="h-10 w-10">
-                                            <AvatarImage src={profile?.avatar_url || ''} alt={profile?.username || 'User'} />
+                                            <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.username || 'User'} />
                                             <AvatarFallback className="bg-[#0F101A] text-[#FBF7FA] text-sm font-semibold border border-[#2A3442]">
                                                 {profile?.username ? profile.username[0].toUpperCase() : 'K'}
                                             </AvatarFallback>
@@ -399,7 +399,7 @@ export function NavBar() {
                                 <div className="space-y-2">
                                     <div className="flex items-center space-x-3 px-2 py-2">
                                         <Avatar className="h-8 w-8">
-                                            <AvatarImage src={profile?.avatar_url || ''} alt={profile?.username || 'User'} />
+                                            <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.username || 'User'} />
                                             <AvatarFallback className="bg-[#0F101A] text-[#FBF7FA] text-xs font-semibold border border-[#2A3442]">
                                                 {profile?.username ? profile.username[0].toUpperCase() : 'K'}
                                             </AvatarFallback>

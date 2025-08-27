@@ -244,4 +244,157 @@ export async function handleGoogleCallback() {
     redirect('/dashboard')
 }
 
+export async function uploadProfileImage(formData: FormData) {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: 'Not authenticated' }
+    }
+
+    const file = formData.get('image') as File
+
+    if (!file) {
+        return { error: 'No image file provided' }
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+        return { error: 'File must be an image' }
+    }
+
+    // Validate file size (1MB limit - images should be resized client-side to 256x256)
+    if (file.size > 1 * 1024 * 1024) {
+        return { error: 'Image size must be less than 1MB. Please resize your image to 256x256 pixels.' }
+    }
+
+    try {
+        // Get current profile to check if there's an existing avatar
+        const { data: currentProfile } = await supabase
+            .from('profiles')
+            .select('avatar_url')
+            .eq('id', user.id)
+            .single()
+
+        // Generate unique filename
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${user.id}-${Date.now()}.${fileExt}`
+
+        // Upload to Supabase Storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('avatars')
+            .upload(fileName, file, {
+                cacheControl: '3600',
+                upsert: false
+            })
+
+        if (uploadError) {
+            console.error('Upload error:', uploadError)
+            return { error: 'Failed to upload image' }
+        }
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(fileName)
+
+        // Update profile with new avatar URL
+        const { error: updateError } = await supabase
+            .from('profiles')
+            .update({
+                avatar_url: publicUrl,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', user.id)
+
+        if (updateError) {
+            console.error('Profile update error:', updateError)
+            return { error: 'Failed to update profile with new image' }
+        }
+
+        // Delete old avatar file if it exists
+        if (currentProfile?.avatar_url) {
+            try {
+                const oldFileName = currentProfile.avatar_url.split('/').pop()
+                if (oldFileName) {
+                    await supabase.storage
+                        .from('avatars')
+                        .remove([oldFileName])
+                }
+            } catch (deleteError) {
+                console.warn('Failed to delete old avatar:', deleteError)
+                // Don't fail the upload if deletion fails
+            }
+        }
+
+        revalidatePath('/profile')
+        return {
+            message: 'Profile image updated successfully',
+            avatar_url: publicUrl
+        }
+
+    } catch (error) {
+        console.error('Image upload error:', error)
+        return { error: 'Failed to upload image' }
+    }
+}
+
+export async function removeProfileImage() {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: 'Not authenticated' }
+    }
+
+    try {
+        // Get current profile to get the avatar URL
+        const { data: currentProfile } = await supabase
+            .from('profiles')
+            .select('avatar_url')
+            .eq('id', user.id)
+            .single()
+
+        if (!currentProfile?.avatar_url) {
+            return { error: 'No profile image to remove' }
+        }
+
+        // Delete the file from storage
+        const fileName = currentProfile.avatar_url.split('/').pop()
+        if (fileName) {
+            const { error: deleteError } = await supabase.storage
+                .from('avatars')
+                .remove([fileName])
+
+            if (deleteError) {
+                console.error('File deletion error:', deleteError)
+                return { error: 'Failed to delete image file' }
+            }
+        }
+
+        // Update profile to remove avatar URL
+        const { error: updateError } = await supabase
+            .from('profiles')
+            .update({
+                avatar_url: null,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', user.id)
+
+        if (updateError) {
+            console.error('Profile update error:', updateError)
+            return { error: 'Failed to update profile' }
+        }
+
+        revalidatePath('/profile')
+        return { message: 'Profile image removed successfully' }
+
+    } catch (error) {
+        console.error('Image removal error:', error)
+        return { error: 'Failed to remove image' }
+    }
+}
+
 

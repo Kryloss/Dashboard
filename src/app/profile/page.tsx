@@ -23,7 +23,7 @@ export default async function ProfilePage({
     // Fetch profile data server-side
     const { data: profile, error } = await supabase
         .from('profiles')
-        .select('id, email, username, full_name') // No updated_at
+        .select('id, email, username, full_name, avatar_url') // Added avatar_url
         .eq('id', user.id)
         .single()
 
