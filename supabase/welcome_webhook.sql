@@ -4,6 +4,27 @@ create extension if not exists pg_net;
 -- Add welcomed_at column if it doesn't exist
 alter table public.profiles add column if not exists welcomed_at timestamp with time zone;
 
+-- Auto-create profile for every new auth user (email+password, Google, GitHub, etc.)
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.profiles (id, email, created_at, updated_at)
+  values (new.id, new.email, now(), now())
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
+
+-- Trigger that creates profile whenever a user is created in auth.users
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+after insert on auth.users
+for each row execute procedure public.handle_new_user();
+
 -- Trigger function: POST to our Next.js webhook when a profile is created
 create or replace function public.notify_welcome()
 returns trigger
@@ -43,6 +64,7 @@ begin
 end;
 $$;
 
+-- Trigger that sends welcome email when profile is created
 drop trigger if exists trg_profiles_welcome on public.profiles;
 create trigger trg_profiles_welcome
 after insert on public.profiles

@@ -28,34 +28,14 @@ export async function signUp(formData: FormData) {
         password: formData.get('password') as string,
     }
 
-    const { error, data: authData } = await supabase.auth.signUp(data)
+    const { error } = await supabase.auth.signUp(data)
 
     if (error) {
         return { error: error.message }
     }
 
-    // Create profile
-    if (authData.user) {
-        const { error: profileError } = await supabase
-            .from('profiles')
-            .insert([
-                {
-                    id: authData.user.id,
-                    email: authData.user.email!,
-                    username: username ? username.toLowerCase() : null,
-                    full_name: null,
-                }
-            ])
-
-        if (profileError) {
-            console.error('Profile creation error:', profileError.message, profileError.code, profileError.details)
-            // Don't fail signup completely if profile creation fails
-            // The profile page will handle creating it if missing
-        }
-
-        // Welcome email will be sent automatically by database trigger
-        // No need to manually send it here
-    }
+    // Profile creation is now handled automatically by database trigger
+    // Welcome email will be sent automatically when profile is created
 
     revalidatePath('/')
     redirect('/login?message=Account created successfully! Welcome email sent.')
@@ -144,15 +124,6 @@ export async function triggerWelcomeEmail() {
     if (!user) {
         redirect('/login?error=Not authenticated')
     }
-
-    // Get user profile for name
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('username, full_name')
-        .eq('id', user.id)
-        .single()
-
-    const name = profile?.username || profile?.full_name || user.email?.split('@')[0] || 'User'
 
     // Welcome emails are now sent automatically via database trigger
     // This function is kept for backward compatibility but no longer sends emails

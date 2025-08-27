@@ -27,36 +27,14 @@ export default async function ProfilePage({
         .eq('id', user.id)
         .single()
 
-    let finalProfile = profile
-
+    // Profile creation is now handled automatically by database trigger
+    // If profile doesn't exist, it will be created automatically
     if (error) {
         console.error('Profile fetch error:', error.message, error.code, error.details)
-
-        // If profile doesn't exist, create it
-        if (error.code === 'PGRST116') { // No rows returned
-            console.log('Profile not found, creating new profile for user:', user.id)
-
-            const { data: newProfile, error: createError } = await supabase
-                .from('profiles')
-                .insert([
-                    {
-                        id: user.id,
-                        email: user.email!,
-                        username: null,
-                        full_name: typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : null,
-                    }
-                ])
-                .select('id, email, username, full_name')
-                .single()
-
-            if (createError) {
-                console.error('Profile creation error:', createError.message, createError.code, createError.details)
-            } else {
-                finalProfile = newProfile
-                console.log('Profile created successfully:', newProfile)
-            }
-        }
+        console.log('Profile not found, will be created automatically by database trigger')
     }
+
+    const finalProfile = profile
 
     return (
         <div className="min-h-screen bg-[#0B0C0D] pt-6">

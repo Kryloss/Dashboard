@@ -95,14 +95,8 @@ export default function AuthCallbackPage() {
                             console.log('OAuth session established for user:', data.session.user.email || 'unknown')
                             clearTimeout(timeoutId)
 
-                            // Handle profile creation with better error handling
-                            try {
-                                await handleProfileCreation(supabase, data.session.user)
-                            } catch (profileError) {
-                                console.error('Profile creation failed, continuing with redirect:', profileError)
-                                // Even if profile creation fails, we can still proceed
-                                // The user will be prompted to create their profile later
-                            }
+                            // Profile creation is now handled automatically by database trigger
+                            // No need for manual profile creation here
 
                             // Redirect to homepage - ensure we go to localhost if we're on localhost
                             const redirectTarget = window.location.hostname.includes('localhost') ? '/' : '/'
@@ -125,14 +119,8 @@ export default function AuthCallbackPage() {
                                 return
                             }
 
-                            // Handle profile creation with better error handling
-                            try {
-                                await handleProfileCreation(supabase, retryData.session.user)
-                            } catch (profileError) {
-                                console.error('Profile creation failed, continuing with redirect:', profileError)
-                                // Even if profile creation fails, we can still proceed
-                                // The user will be prompted to create their profile later
-                            }
+                            // Profile creation is now handled automatically by database trigger
+                            // No need for manual profile creation here
 
                             // Redirect to homepage
                             clearTimeout(timeoutId)
@@ -181,14 +169,8 @@ export default function AuthCallbackPage() {
                     console.log('Session found for user:', user.email || 'unknown')
                     clearTimeout(timeoutId)
 
-                    // Handle profile creation with better error handling
-                    try {
-                        await handleProfileCreation(supabase, user)
-                    } catch (profileError) {
-                        console.error('Profile handling failed, continuing with redirect:', profileError)
-                        // Even if profile creation fails, we can still proceed
-                        // The user will be prompted to create their profile later
-                    }
+                    // Profile creation is now handled automatically by database trigger
+                    // No need for manual profile creation here
 
                     // Redirect to homepage - ensure we go to localhost if we're on localhost
                     const redirectTarget = window.location.hostname.includes('localhost') ? '/' : '/'
@@ -209,75 +191,7 @@ export default function AuthCallbackPage() {
             }
         }
 
-        // Helper function for profile creation
-        const handleProfileCreation = async (supabase: ReturnType<typeof createClient>, user: { id: string; email?: string; user_metadata?: Record<string, unknown> }) => {
-            if (!user?.id) {
-                console.error('Cannot create profile: user ID is missing')
-                return
-            }
 
-            try {
-                // Check if profile exists
-                const { data: existingProfile, error: selectError } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', user.id)
-                    .single()
-
-                if (selectError && selectError.code !== 'PGRST116') {
-                    // PGRST116 is "not found" error, which is expected for new users
-                    console.error('Error checking existing profile:', selectError)
-                    throw selectError
-                }
-
-                if (!existingProfile) {
-                    console.log('Creating profile for new user:', user.email || 'unknown email')
-
-                    // Use the auth user ID to ensure database triggers work correctly
-                    const profileData = {
-                        id: user.id, // Use auth user ID for database trigger compatibility
-                        email: user.email || null,
-                        username: null, // Will prompt user to set username
-                        full_name: typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : null,
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString()
-                    }
-
-                    const { error: profileError } = await supabase
-                        .from('profiles')
-                        .insert([profileData])
-
-                    if (profileError) {
-                        console.error('Profile creation error:', {
-                            message: profileError.message,
-                            code: profileError.code,
-                            details: profileError.details,
-                            hint: profileError.hint
-                        })
-
-                        // Try to provide more helpful error information
-                        if (profileError.code === '42501') {
-                            console.error('Permission denied - check RLS policies on profiles table')
-                        } else if (profileError.code === '23505') {
-                            console.error('Unique constraint violation - user might already exist')
-                        } else if (profileError.code === '23502') {
-                            console.error('Not null constraint violation - check required fields')
-                        } else if (profileError.code === '23503') {
-                            console.error('Foreign key constraint violation - check table relationships')
-                        }
-
-                        console.log('Continuing with auth flow despite profile creation failure')
-                    } else {
-                        console.log('Profile created successfully for:', user.email || user.id)
-                    }
-                } else {
-                    console.log('Profile already exists for:', user.email || user.id)
-                }
-            } catch (profileErr) {
-                console.error('Profile handling error:', profileErr)
-                console.log('Continuing with auth flow despite profile handling error')
-            }
-        }
 
         handleAuthCallback()
 
