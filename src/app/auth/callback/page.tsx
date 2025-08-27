@@ -98,15 +98,10 @@ export default function AuthCallbackPage() {
                             // Profile creation is now handled automatically by database trigger
                             // No need for manual profile creation here
 
-                            // Give database trigger time to fire and create profile
-                            console.log('Waiting for profile creation and welcome email...')
-
-                            // Redirect to login with success message (same as built-in registration)
-                            const redirectTarget = window.location.hostname.includes('localhost')
-                                ? '/login?message=Account%20created%20successfully!%20Welcome%20email%20sent.'
-                                : '/login?message=Account%20created%20successfully!%20Welcome%20email%20sent.'
-                            console.log('Redirecting to login with success message:', redirectTarget)
-                            setTimeout(() => router.push(redirectTarget), 2000) // Increased delay for profile creation
+                            // Redirect to homepage - ensure we go to localhost if we're on localhost
+                            const redirectTarget = window.location.hostname.includes('localhost') ? '/' : '/'
+                            console.log('Redirecting to homepage:', redirectTarget)
+                            setTimeout(() => router.push(redirectTarget), 500)
                             return
                         } else {
                             console.log('No session found after OAuth callback')
@@ -127,12 +122,9 @@ export default function AuthCallbackPage() {
                             // Profile creation is now handled automatically by database trigger
                             // No need for manual profile creation here
 
-                            // Give database trigger time to fire and create profile
-                            console.log('Waiting for profile creation and welcome email...')
-
-                            // Redirect to login with success message (same as built-in registration)
+                            // Redirect to homepage
                             clearTimeout(timeoutId)
-                            setTimeout(() => router.push('/login?message=Account%20created%20successfully!%20Welcome%20email%20sent.'), 2000) // Increased delay for profile creation
+                            setTimeout(() => router.push('/'), 500)
                             return
                         }
                     } catch (oauthError) {
@@ -180,15 +172,10 @@ export default function AuthCallbackPage() {
                     // Profile creation is now handled automatically by database trigger
                     // No need for manual profile creation here
 
-                    // Give database trigger time to fire and create profile
-                    console.log('Waiting for profile creation and welcome email...')
-
-                    // Redirect to login with success message (same as built-in registration)
-                    const redirectTarget = window.location.hostname.includes('localhost')
-                        ? '/login?message=Account%20created%20successfully!%20Welcome%20email%20sent.'
-                        : '/login?message=Account%20created%20successfully!%20Welcome%20email%20sent.'
-                    console.log('Redirecting to login with success message:', redirectTarget)
-                    setTimeout(() => router.push(redirectTarget), 2000) // Increased delay for profile creation
+                    // Redirect to homepage - ensure we go to localhost if we're on localhost
+                    const redirectTarget = window.location.hostname.includes('localhost') ? '/' : '/'
+                    console.log('Redirecting to homepage:', redirectTarget)
+                    setTimeout(() => router.push(redirectTarget), 500)
                 } else {
                     // No session found, redirect to login
                     console.log('No session found in callback')
