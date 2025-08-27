@@ -19,10 +19,10 @@ export async function POST(request: NextRequest) {
     try {
         // Verify authorization header
         const authHeader = request.headers.get('authorization');
-        const expectedSecret = process.env.SUPABASE_WEBHOOK_SECRET;
+        const expectedSecret = process.env.WEBHOOK_SECRET;
 
         if (!expectedSecret) {
-            console.error('SUPABASE_WEBHOOK_SECRET not configured');
+            console.error('WEBHOOK_SECRET not configured');
             return NextResponse.json(
                 { error: 'Webhook not configured' },
                 { status: 500 }
