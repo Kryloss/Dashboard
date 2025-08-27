@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 export default function GifTestPage() {
-    const [testGifUrl, setTestGifUrl] = useState<string>('')
     const [uploadedGifUrl, setUploadedGifUrl] = useState<string>('')
 
     // Test with a known animated GIF

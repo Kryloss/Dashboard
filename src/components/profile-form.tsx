@@ -97,7 +97,7 @@ export default function ProfileForm({ initialProfile, user, initialMessage }: Pr
                     })
                 }
             }
-        } catch (error) {
+        } catch {
             setError('Failed to upload image')
         }
     }
@@ -258,7 +258,7 @@ export default function ProfileForm({ initialProfile, user, initialMessage }: Pr
                                                 setProfile({ ...profile, avatar_url: null })
                                             }
                                         }
-                                    } catch (error) {
+                                    } catch {
                                         setError('Failed to remove image')
                                     }
                                 }}

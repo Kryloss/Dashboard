@@ -9,7 +9,7 @@ const UPDATES_FILE = join(process.cwd(), 'src/lib/updates.ts')
 export async function GET() {
     try {
         const fileContent = readFileSync(UPDATES_FILE, 'utf-8')
-        const match = fileContent.match(/export const updates: Update\[\] = (\[[\s\S]*?\]);?\s*$/m)
+        const match = fileContent.match(/export const updates: Update\[\] = (\[[\s\S]*?\])\s*$/m)
         
         if (!match) {
             return NextResponse.json({ error: 'Could not parse updates file' }, { status: 500 })
@@ -28,6 +28,16 @@ export async function POST(request: NextRequest) {
     try {
         const { updates }: { updates: Update[] } = await request.json()
 
+        // Sort updates and normalize the structure
+        const normalizedUpdates = updates.map(update => ({
+            id: update.id,
+            title: update.title,
+            summary: update.summary,
+            date: update.date,
+            link: update.link,
+            category: update.category
+        }))
+
         // Generate the TypeScript file content
         const fileContent = `export interface Update {
     id: string
@@ -38,7 +48,7 @@ export async function POST(request: NextRequest) {
     category: string
 }
 
-export const updates: Update[] = ${JSON.stringify(updates, null, 4)}
+export const updates: Update[] = ${JSON.stringify(normalizedUpdates, null, 4)}
 `
 
         // Write to file

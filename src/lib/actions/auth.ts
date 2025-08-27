@@ -282,7 +282,7 @@ export async function uploadProfileImage(formData: FormData) {
         const fileName = `${user.id}-${Date.now()}.${fileExt}`
 
         // Upload to Supabase Storage
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
             .from('avatars')
             .upload(fileName, file, {
                 cacheControl: '3600',

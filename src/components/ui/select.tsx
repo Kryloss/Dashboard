@@ -13,7 +13,7 @@ const Select: React.FC<SelectProps> = ({ value, onValueChange, children }) => {
     <select
       value={value}
       onChange={(e) => onValueChange(e.target.value)}
-      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+      className="flex h-10 w-full items-center justify-between rounded-md border border-[#2A3442] bg-[#0F101A] px-3 py-2 text-sm text-[#FBF7FA] focus:outline-none focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
     >
       {children}
     </select>
