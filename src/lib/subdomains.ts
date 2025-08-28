@@ -4,7 +4,8 @@ export function getSubdomains() {
             name: "Healss",
             url: "https://healss.kryloss.com",
             description: "Health & fitness tracking platform",
-            route: "/healss-subdomain"
+            route: "/healss-subdomain",
+            subdomainOnly: true
         },
         {
             name: "Notify",
@@ -38,6 +39,11 @@ export function getSubdomainRoute(): string | null {
     const subdomains = getSubdomains()
     const found = subdomains.find(s => s.name.toLowerCase() === subdomain.toLowerCase())
 
+    // For subdomain-only services, return null to indicate they should use the subdomain directly
+    if (found?.subdomainOnly) {
+        return null
+    }
+
     return found ? found.route : null
 }
 
@@ -48,6 +54,17 @@ export function shouldUseSubdomainLayout(): boolean {
 
     const subdomains = getSubdomains()
     return subdomains.some(s => s.name.toLowerCase() === subdomain.toLowerCase())
+}
+
+// Function to check if current subdomain is subdomain-only
+export function isSubdomainOnly(): boolean {
+    const subdomain = getCurrentSubdomain()
+    if (!subdomain) return false
+
+    const subdomains = getSubdomains()
+    const found = subdomains.find(s => s.name.toLowerCase() === subdomain.toLowerCase())
+
+    return found?.subdomainOnly || false
 }
 
 // Function to get the current subdomain name for display purposes
@@ -67,7 +84,8 @@ export const subdomains = [
         name: "Healss",
         url: "https://healss.kryloss.com",
         description: "Health & fitness tracking platform",
-        route: "/healss-subdomain"
+        route: "/healss-subdomain",
+        subdomainOnly: true
     },
     {
         name: "Notify",
