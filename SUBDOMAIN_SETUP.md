@@ -1,113 +1,152 @@
-# Subdomain Setup for Kryloss Platform
+# Subdomain System Setup Guide
 
 ## Overview
 
-The Kryloss platform now uses subdomains to provide dedicated experiences for different services. This setup allows for better separation of concerns and improved user experience.
+This project now includes a complete subdomain routing system that automatically detects when users visit subdomains and routes them to the appropriate pages.
 
-## Current Subdomains
+## How It Works
 
-### Healss
-- **Production**: https://Healss.kryloss.com
-- **Development**: http://Healss.localhost:3000
-- **Internal Route**: `/Healss-subdomain`
+### 1. Middleware (`middleware.ts`)
+- Detects incoming requests to subdomains
+- Automatically redirects users to the correct routes
+- Handles routing for `healss.kryloss.com` → `/healss-subdomain`
 
-### Notify (Planned)
-- **Production**: https://notify.kryloss.com
-- **Development**: http://notify.localhost:3000
-- **Internal Route**: `/notify-subdomain`
+### 2. Subdomain Detection (`src/lib/subdomains.ts`)
+- Provides utility functions to detect current subdomain
+- Manages subdomain configuration and routing
+- Supports multiple subdomains (Healss, Notify, etc.)
 
-## Architecture
+### 3. Dynamic Layout (`src/components/subdomain-layout.tsx`)
+- Automatically detects if user is on a subdomain
+- Renders appropriate layout (subdomain-specific or main dashboard)
+- Prevents main navigation from showing on subdomains
 
-### File Structure
+## Subdomain Configuration
+
+### Current Subdomains
+```typescript
+{
+  'healss': '/healss-subdomain',    // healss.kryloss.com
+  'notify': '/notify-subdomain',    // notify.kryloss.com
+}
 ```
-src/app/
-├── Healss-subdomain/          # Healss subdomain content
-│   ├── layout.tsx               # Healss-specific layout
-│   └── page.tsx                 # Healss main page
-├── Healss/                   # Redirect page for old route
-│   ├── layout.tsx               # Simple redirect layout
-│   └── page.tsx                 # Redirect with auto-redirect
-└── (Healss)/                 # REMOVED - old route structure
-```
 
-### Routing Logic
+### URL Structure
+- **Main Domain**: `kryloss.com` → Main dashboard with navigation
+- **Healss Subdomain**: `healss.kryloss.com` → Healss workout tracker
+- **Notify Subdomain**: `notify.kryloss.com` → Notification system
 
-1. **Middleware** (`src/middleware.ts`): Intercepts requests and rewrites subdomain URLs to internal routes
-2. **Next.js Config** (`next.config.ts`): Handles hostname-based routing
-3. **Subdomain Configuration** (`src/lib/subdomains.ts`): Centralized subdomain management
-
-### How It Works
-
-1. User visits `Healss.kryloss.com`
-2. Middleware detects the subdomain
-3. Request is rewritten to `/Healss-subdomain`
-4. Next.js serves the appropriate content
-5. User sees the Healss interface
-
-## Development Setup
+## Testing the System
 
 ### Local Development
-To test subdomains locally:
-
-1. **Update hosts file** (Windows: `C:\Windows\System32\drivers\etc\hosts`):
-   ```
-   127.0.0.1 Healss.localhost
-   127.0.0.1 notify.localhost
+1. Start the development server:
+   ```bash
+   npm run dev
    ```
 
-2. **Access via**:
-   - http://Healss.localhost:3000
-   - http://notify.localhost:3000
+2. Test subdomain routing:
+   - Main app: `http://localhost:3000`
+   - Healss page: `http://localhost:3000/healss-subdomain`
 
-### Production Deployment
-- Ensure DNS records point subdomains to your hosting provider
-- Configure your hosting provider to handle subdomain routing
-- Update environment variables as needed
+### Production (Vercel)
+1. **DNS Configuration Required**:
+   ```
+   Type: CNAME
+   Name: healss
+   Value: cname.vercel-dns.com
+   ```
 
-## Benefits
+2. **Vercel Domain Setup**:
+   - Add `healss.kryloss.com` in Vercel project settings
+   - Set to "Production" environment
+   - No redirects needed
 
-1. **Better Separation**: Each service has its own dedicated space
-2. **Improved UX**: Users can bookmark specific services
-3. **Scalability**: Easy to add new services without affecting existing ones
-4. **SEO**: Better search engine optimization for individual services
-5. **Maintenance**: Easier to maintain and update individual services
+3. **Test URLs**:
+   - Main app: `https://kryloss.com`
+   - Healss subdomain: `https://healss.kryloss.com`
+   - Healss page: `https://healss.kryloss.com/healss-subdomain`
 
-## Migration Notes
+## How Subdomain Routing Works
 
-- Old `/Healss` route now redirects to the subdomain
-- Users are automatically redirected after 5 seconds
-- All existing functionality is preserved
-- Navigation has been updated to use subdomain URLs
+### 1. User visits `healss.kryloss.com`
+### 2. Middleware detects the `healss` subdomain
+### 3. Automatically redirects to `/healss-subdomain`
+### 4. SubdomainLayout detects subdomain and renders Healss layout
+### 5. User sees the Healss workout tracker without main navigation
 
-## Future Considerations
+## File Structure
 
-- **Authentication**: May need to handle cross-subdomain authentication
-- **Styling**: Ensure consistent design tokens across subdomains
-- **Performance**: Monitor subdomain performance and optimize as needed
-- **Analytics**: Set up proper tracking for each subdomain
+```
+src/
+├── app/
+│   ├── healss-subdomain/          # Healss subdomain pages
+│   │   ├── page.tsx              # Main workout tracker
+│   │   ├── nutrition/page.tsx    # Nutrition page
+│   │   ├── progress/page.tsx     # Progress page
+│   │   ├── layout.tsx            # Healss-specific layout
+│   │   └── components/
+│   │       └── healss-nav.tsx    # Healss navigation
+│   └── layout.tsx                # Root layout with subdomain detection
+├── components/
+│   └── subdomain-layout.tsx      # Dynamic layout selector
+├── lib/
+│   └── subdomains.ts             # Subdomain utilities
+└── middleware.ts                  # Subdomain routing middleware
+```
+
+## Adding New Subdomains
+
+1. **Update `subdomains.ts`**:
+   ```typescript
+   {
+     name: "NewApp",
+     url: "https://newapp.kryloss.com",
+     description: "New application description",
+     route: "/newapp-subdomain"
+   }
+   ```
+
+2. **Update `middleware.ts`**:
+   ```typescript
+   const subdomains = {
+     'healss': '/healss-subdomain',
+     'notify': '/notify-subdomain',
+     'newapp': '/newapp-subdomain',  // Add this line
+   }
+   ```
+
+3. **Create the subdomain pages** in `src/app/newapp-subdomain/`
 
 ## Troubleshooting
 
-### Common Issues
+### Subdomain not working?
+1. Check DNS configuration
+2. Verify Vercel domain settings
+3. Check browser console for errors
+4. Ensure middleware is properly configured
 
-1. **Subdomain not working locally**:
-   - Check hosts file configuration
-   - Restart development server
-   - Clear browser cache
+### Wrong layout showing?
+1. Check `shouldUseSubdomainLayout()` function
+2. Verify subdomain detection logic
+3. Check browser hostname parsing
 
-2. **Middleware not working**:
-   - Verify middleware.ts is in the correct location
-   - Check Next.js configuration
-   - Ensure proper import/export syntax
+### Build errors?
+1. Run `npm run build` to check for TypeScript errors
+2. Ensure all imports are correct
+3. Check for unused variables/imports
 
-3. **Styling issues**:
-   - Verify design tokens are properly imported
-   - Check CSS module conflicts
-   - Ensure consistent Tailwind configuration
+## Benefits
 
-### Debug Steps
+- **Automatic Routing**: Users automatically get the right experience
+- **Clean URLs**: `healss.kryloss.com` instead of `kryloss.com/healss-subdomain`
+- **Separate Layouts**: Each subdomain can have its own design
+- **Scalable**: Easy to add new subdomains
+- **SEO Friendly**: Each subdomain can be optimized separately
 
-1. Check browser console for errors
-2. Verify middleware execution in server logs
-3. Test routing with different hostnames
-4. Validate Next.js configuration
+## Next Steps
+
+1. **Test locally** to ensure routing works
+2. **Deploy to Vercel** and test subdomain access
+3. **Configure DNS** for production subdomains
+4. **Add more subdomains** as needed
+5. **Customize layouts** for each subdomain

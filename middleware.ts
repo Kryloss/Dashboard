@@ -1,43 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { updateSession } from './src/lib/supabase/middleware'
 
-export async function middleware(request: NextRequest) {
-    try {
-        // Handle subdomain routing first
-        const hostname = request.headers.get('host') || ''
-        const url = request.nextUrl.clone()
+// Define your subdomains and their corresponding routes
+const subdomains = {
+    'healss': '/healss-subdomain',
+    'notify': '/notify-subdomain',
+    // Add more subdomains as needed
+}
 
-        // Check for healss subdomain
-        if (hostname.includes('healss.')) {
-            // For healss subdomain, rewrite to serve the healss app at root
-            if (url.pathname === '/') {
-                url.pathname = '/healss'
-                return NextResponse.rewrite(url)
-            } else {
-                // For other paths, serve them from the healss context
-                url.pathname = `/healss${url.pathname}`
-                return NextResponse.rewrite(url)
-            }
+export function middleware(request: NextRequest) {
+    const url = request.nextUrl
+    const hostname = request.headers.get('host') || ''
+
+    // Extract subdomain from hostname
+    const subdomain = hostname.split('.')[0]
+
+    // Check if this is a subdomain we want to handle
+    if (subdomain && subdomains[subdomain as keyof typeof subdomains]) {
+        const targetRoute = subdomains[subdomain as keyof typeof subdomains]
+
+        // If user is on root of subdomain, redirect to the specific route
+        if (url.pathname === '/') {
+            const redirectUrl = new URL(targetRoute, request.url)
+            console.log(`Redirecting ${hostname}${url.pathname} to ${redirectUrl.pathname}`)
+            return NextResponse.redirect(redirectUrl)
         }
 
-        // Continue with Supabase session handling
-        return await updateSession(request)
-    } catch (error) {
-        console.error('Middleware error:', error)
-        // Return a basic response to prevent hanging
-        return NextResponse.next()
+        // If user is already on the correct route, allow it
+        if (url.pathname.startsWith(targetRoute)) {
+            return NextResponse.next()
+        }
+
+        // For any other path on the subdomain, redirect to the subdomain route
+        const redirectUrl = new URL(targetRoute, request.url)
+        console.log(`Redirecting ${hostname}${url.pathname} to ${redirectUrl.pathname}`)
+        return NextResponse.redirect(redirectUrl)
     }
+
+    // For main domain or unknown subdomains, continue normally
+    return NextResponse.next()
 }
 
 export const config = {
     matcher: [
         /*
          * Match all request paths except for the ones starting with:
+         * - api (API routes)
          * - _next/static (static files)
          * - _next/image (image optimization files)
          * - favicon.ico (favicon file)
-         * Feel free to modify this pattern to include more paths.
          */
-        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+        '/((?!api|_next/static|_next/image|favicon.ico).*)',
     ],
 }

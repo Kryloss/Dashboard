@@ -7,7 +7,7 @@ export function getSubdomains() {
             name: "Healss",
             url: isDevelopment ? "http://healss.localhost:3001" : "https://healss.kryloss.com",
             description: "Health & fitness tracking platform",
-            route: "/healss"
+            route: "/healss-subdomain"
         },
         {
             name: "Notify",
@@ -18,13 +18,48 @@ export function getSubdomains() {
     ]
 }
 
+// Function to detect current subdomain
+export function getCurrentSubdomain(): string | null {
+    if (typeof window === 'undefined') return null
+
+    const hostname = window.location.hostname
+    const parts = hostname.split('.')
+
+    // Check if we're on a subdomain (more than 2 parts: subdomain.domain.tld)
+    if (parts.length > 2) {
+        return parts[0]
+    }
+
+    return null
+}
+
+// Function to get the target route for current subdomain
+export function getSubdomainRoute(): string | null {
+    const subdomain = getCurrentSubdomain()
+    if (!subdomain) return null
+
+    const subdomains = getSubdomains()
+    const found = subdomains.find(s => s.name.toLowerCase() === subdomain.toLowerCase())
+
+    return found ? found.route : null
+}
+
+// Function to check if current page should use subdomain layout
+export function shouldUseSubdomainLayout(): boolean {
+    const subdomain = getCurrentSubdomain()
+    if (!subdomain) return false
+
+    const subdomains = getSubdomains()
+    return subdomains.some(s => s.name.toLowerCase() === subdomain.toLowerCase())
+}
+
 // Default export for compatibility
 export const subdomains = [
     {
         name: "Healss",
         url: "https://healss.kryloss.com",
         description: "Health & fitness tracking platform",
-        route: "/healss"
+        route: "/healss-subdomain"
     },
     {
         name: "Notify",
