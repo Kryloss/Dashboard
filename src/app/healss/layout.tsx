@@ -1,5 +1,3 @@
-import { HealssNav } from "./components/healss-nav"
-
 export default function HealssLayout({
     children,
 }: {
@@ -7,7 +5,6 @@ export default function HealssLayout({
 }) {
     return (
         <>
-            <HealssNav />
             {children}
         </>
     )

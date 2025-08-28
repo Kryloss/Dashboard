@@ -19,7 +19,7 @@ import type { Profile } from "@/lib/types/database.types"
 
 export function HealssNav() {
     const pathname = usePathname()
-    const { user, loading, signOut, isAuthenticated } = useAuthContext()
+    const { user, loading, signOut } = useAuthContext()
     const [profile, setProfile] = useState<Profile | null>(null)
     const [hasAccount, setHasAccount] = useState(false)
     const supabase = createClient()

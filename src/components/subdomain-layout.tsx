@@ -34,14 +34,6 @@ export function SubdomainLayout({ children }: SubdomainLayoutProps) {
         )
     }
 
-    // For subdomains, show minimal layout to avoid duplicate navigation
-    // The auth context will be shared from the main layout
-    if (isSubdomain && currentSubdomain === 'healss') {
-        return (
-            <main className="min-h-screen bg-[#0B0C0D]">{children}</main>
-        )
-    }
-
     // Always show main navigation and footer for consistent authentication experience
     // This ensures users stay signed in across both kryloss.com and healss.kryloss.com
     return (
