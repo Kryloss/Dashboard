@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { isOnSubdomain } from "@/lib/subdomains"
-import { HealssNav } from "@/app/healss/components/healss-nav"
 
 export default function ProgressPage() {
     const [isHealssSubdomain, setIsHealssSubdomain] = useState(false)
@@ -17,7 +16,6 @@ export default function ProgressPage() {
     if (isHealssSubdomain) {
         return (
             <div className="min-h-screen bg-[#0B0C0D]">
-                <HealssNav />
                 <div className="container mx-auto max-w-7xl px-6 py-8">
                     <div className="text-center mb-12">
                         <h1 className="text-4xl md:text-5xl font-extrabold text-[#FBF7FA] mb-6 tracking-tight">

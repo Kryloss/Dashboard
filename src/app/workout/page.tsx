@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { isOnSubdomain } from "@/lib/subdomains"
-import { HealssNav } from "@/app/healss/components/healss-nav"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
@@ -19,7 +18,6 @@ export default function WorkoutPage() {
     if (isHealssSubdomain) {
         return (
             <div className="min-h-screen bg-[#0B0C0D]">
-                <HealssNav />
                 {/* Healss-specific Hero */}
                 <section className="py-20 px-6">
                     <div className="container mx-auto max-w-7xl text-center">

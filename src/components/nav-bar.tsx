@@ -187,16 +187,28 @@ export function NavBar() {
     async function handleSignOut() {
         await authSignOut()
     }
+
+    const isOnHealss = window.location.hostname.includes('healss.com');
+
     return (
         <header className="sticky top-0 z-50 w-full border-b border-[#1C2430] bg-[#0B0C0D]/80 backdrop-blur">
             <div className="flex h-16 w-full items-center justify-between px-4">
                 {/* Logo */}
                 <div className="flex items-center">
                     <Link
-                        href="https://kryloss.com"
+                        href={isOnHealss ? "/workout" : "https://kryloss.com"}
                         className="flex items-center space-x-2 font-bold text-xl text-[#FBF7FA] hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#0B0C0D] rounded-md px-2 py-1"
                     >
-                        <span>Kryloss</span>
+                        {isOnHealss ? (
+                            <>
+                                <div className="w-8 h-8 bg-gradient-to-r from-[#4AA7FF] to-[#6B46C1] rounded-lg flex items-center justify-center">
+                                    <span className="text-white font-bold text-lg">H</span>
+                                </div>
+                                <span>Healss</span>
+                            </>
+                        ) : (
+                            <span>Kryloss</span>
+                        )}
                     </Link>
                 </div>
 
@@ -204,21 +216,48 @@ export function NavBar() {
                 <div className="hidden md:flex items-center space-x-6">
                     {/* Individual tool links - show on larger screens (lg+) */}
                     <div className="hidden lg:flex items-center space-x-6">
-                        {dynamicSubdomains.map((subdomain) => (
-                            <Link
-                                key={subdomain.name}
-                                href={subdomain.url}
-                                className="text-[#9CA9B7] hover:text-[#FBF7FA] transition-colors px-3 py-2 rounded-md hover:bg-white/5"
-                            >
-                                {subdomain.name}
-                            </Link>
-                        ))}
-                        <Link
-                            href="/docs"
-                            className="text-[#9CA9B7] hover:text-[#FBF7FA] transition-colors px-3 py-2 rounded-md hover:bg-white/5"
-                        >
-                            Documentation
-                        </Link>
+                        {isOnHealss ? (
+                            // Healss-specific navigation
+                            <>
+                                <Link
+                                    href="/workout"
+                                    className="text-[#9CA9B7] hover:text-[#FBF7FA] transition-colors px-3 py-2 rounded-md hover:bg-white/5"
+                                >
+                                    Workout
+                                </Link>
+                                <Link
+                                    href="/progress"
+                                    className="text-[#9CA9B7] hover:text-[#FBF7FA] transition-colors px-3 py-2 rounded-md hover:bg-white/5"
+                                >
+                                    Progress
+                                </Link>
+                                <Link
+                                    href="/nutrition"
+                                    className="text-[#9CA9B7] hover:text-[#FBF7FA] transition-colors px-3 py-2 rounded-md hover:bg-white/5"
+                                >
+                                    Nutrition
+                                </Link>
+                            </>
+                        ) : (
+                            // Main site navigation
+                            <>
+                                {dynamicSubdomains.map((subdomain) => (
+                                    <Link
+                                        key={subdomain.name}
+                                        href={subdomain.url}
+                                        className="text-[#9CA9B7] hover:text-[#FBF7FA] transition-colors px-3 py-2 rounded-md hover:bg-white/5"
+                                    >
+                                        {subdomain.name}
+                                    </Link>
+                                ))}
+                                <Link
+                                    href="/docs"
+                                    className="text-[#9CA9B7] hover:text-[#FBF7FA] transition-colors px-3 py-2 rounded-md hover:bg-white/5"
+                                >
+                                    Documentation
+                                </Link>
+                            </>
+                        )}
                     </div>
 
                     {/* Tools dropdown menu - show on medium screens only */}
