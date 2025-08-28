@@ -75,9 +75,9 @@ export function HealssNav() {
     }, [user, supabase])
 
     const navItems = [
-        { href: "/workout", label: "Workout", current: pathname === "/workout" },
-        { href: "/progress", label: "Progress", current: pathname === "/progress" },
-        { href: "/nutrition", label: "Nutrition", current: pathname === "/nutrition" },
+        { href: "https://healss.kryloss.com/workout", label: "Workout", current: pathname === "/workout" },
+        { href: "https://healss.kryloss.com/nutrition", label: "Nutrition", current: pathname === "/nutrition" },
+        { href: "https://healss.kryloss.com/progress", label: "Progress", current: pathname === "/progress" },
     ]
 
     return (
