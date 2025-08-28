@@ -8,7 +8,7 @@ export function HealssNav() {
     const pathname = usePathname()
 
     const navItems = [
-        { href: "/", label: "Home", current: pathname === "/" },
+        { href: "/workout", label: "Workout", current: pathname === "/workout" },
         { href: "/progress", label: "Progress", current: pathname === "/progress" },
         { href: "/nutrition", label: "Nutrition", current: pathname === "/nutrition" },
     ]
@@ -19,7 +19,7 @@ export function HealssNav() {
                 <div className="flex items-center justify-between h-16">
                     {/* Logo/Brand */}
                     <div className="flex items-center">
-                        <Link href="/" className="flex items-center space-x-2">
+                        <Link href="/workout" className="flex items-center space-x-2">
                             <div className="w-8 h-8 bg-gradient-to-r from-[#4AA7FF] to-[#6B46C1] rounded-lg flex items-center justify-center">
                                 <span className="text-white font-bold text-lg">H</span>
                             </div>
