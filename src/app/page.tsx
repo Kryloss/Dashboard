@@ -36,7 +36,7 @@ export default function Home() {
                 className="rounded-full bg-gradient-to-r from-[#4AA7FF] to-[#6B46C1] text-white hover:from-[#3B82F6] hover:to-[#7C3AED] transition-all px-8 py-3"
                 asChild
               >
-                <Link href="/healss/progress">Track Progress</Link>
+                <Link href="/progress">Track Progress</Link>
               </Button>
               <Button
                 variant="outline"
@@ -44,7 +44,7 @@ export default function Home() {
                 className="rounded-full border-[#2A3442] bg-transparent text-[#FBF7FA] hover:bg-white/5 hover:text-white hover:border-[#344253] transition-all px-8 py-3"
                 asChild
               >
-                <Link href="/healss/nutrition">Nutrition Tracker</Link>
+                <Link href="/nutrition">Nutrition Tracker</Link>
               </Button>
             </div>
           </div>

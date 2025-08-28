@@ -9,8 +9,8 @@ export function HealssNav() {
 
     const navItems = [
         { href: "/", label: "Home", current: pathname === "/" },
-        { href: "/healss/progress", label: "Progress", current: pathname === "/healss/progress" },
-        { href: "/healss/nutrition", label: "Nutrition", current: pathname === "/healss/nutrition" },
+        { href: "/progress", label: "Progress", current: pathname === "/progress" },
+        { href: "/nutrition", label: "Nutrition", current: pathname === "/nutrition" },
     ]
 
     return (
@@ -34,8 +34,8 @@ export function HealssNav() {
                                 key={item.href}
                                 href={item.href}
                                 className={`text-sm font-medium transition-colors ${item.current
-                                        ? "text-[#4AA7FF]"
-                                        : "text-[#9CA9B7] hover:text-[#FBF7FA]"
+                                    ? "text-[#4AA7FF]"
+                                    : "text-[#9CA9B7] hover:text-[#FBF7FA]"
                                     }`}
                             >
                                 {item.label}
