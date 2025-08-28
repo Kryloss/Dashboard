@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { NavBar } from './nav-bar'
 import { Footer } from './footer'
-import { shouldUseSubdomainLayout, getCurrentSubdomain } from '@/lib/subdomains'
+import { shouldUseSubdomainLayout } from '@/lib/subdomains'
 
 interface SubdomainLayoutProps {
     children: React.ReactNode
@@ -11,15 +11,12 @@ interface SubdomainLayoutProps {
 
 export function SubdomainLayout({ children }: SubdomainLayoutProps) {
     const [isSubdomain, setIsSubdomain] = useState<boolean | null>(null)
-    const [currentSubdomain, setCurrentSubdomain] = useState<string | null>(null)
 
     useEffect(() => {
         // Check if we're on a subdomain
         const shouldUseSubdomain = shouldUseSubdomainLayout()
-        const subdomain = getCurrentSubdomain()
 
         setIsSubdomain(shouldUseSubdomain)
-        setCurrentSubdomain(subdomain)
     }, [])
 
     // Show loading state while determining layout

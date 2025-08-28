@@ -196,7 +196,7 @@ export function NavBar() {
                 {/* Logo */}
                 <div className="flex items-center">
                     <Link
-                        href={isOnHealss ? "/workout" : "https://kryloss.com"}
+                        href={isOnHealss ? "https://healss.kryloss.com/workout" : "https://kryloss.com"}
                         className="flex items-center space-x-2 font-bold text-xl text-[#FBF7FA] hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#0B0C0D] rounded-md px-2 py-1"
                     >
                         {isOnHealss ? (
@@ -220,19 +220,19 @@ export function NavBar() {
                             // Healss-specific navigation
                             <>
                                 <Link
-                                    href="/workout"
+                                    href="https://healss.kryloss.com/workout"
                                     className="text-[#9CA9B7] hover:text-[#FBF7FA] transition-colors px-3 py-2 rounded-md hover:bg-white/5"
                                 >
                                     Workout
                                 </Link>
                                 <Link
-                                    href="/progress"
+                                    href="https://healss.kryloss.com/progress"
                                     className="text-[#9CA9B7] hover:text-[#FBF7FA] transition-colors px-3 py-2 rounded-md hover:bg-white/5"
                                 >
                                     Progress
                                 </Link>
                                 <Link
-                                    href="/nutrition"
+                                    href="https://healss.kryloss.com/nutrition"
                                     className="text-[#9CA9B7] hover:text-[#FBF7FA] transition-colors px-3 py-2 rounded-md hover:bg-white/5"
                                 >
                                     Nutrition
@@ -409,28 +409,64 @@ export function NavBar() {
                     <div className="container mx-auto px-4 py-4 space-y-4">
                         {/* Mobile Navigation Links */}
                         <div className="space-y-2">
-                            <div className="text-sm font-semibold text-[#9CA9B7] uppercase tracking-wide px-2">
-                                Tools
-                            </div>
-                            {dynamicSubdomains.map((subdomain) => (
-                                <Link
-                                    key={subdomain.name}
-                                    href={subdomain.url}
-                                    className="block px-2 py-2 text-[#FBF7FA] hover:text-white hover:bg-white/5 rounded-md transition-colors"
-                                    onClick={() => setMobileMenuOpen(false)}
-                                >
-                                    <div className="font-medium">{subdomain.name}</div>
-                                    <div className="text-sm text-[#9CA9B7]">{subdomain.description}</div>
-                                </Link>
-                            ))}
+                            {isOnHealss ? (
+                                // Healss-specific mobile navigation
+                                <>
+                                    <div className="text-sm font-semibold text-[#9CA9B7] uppercase tracking-wide px-2">
+                                        Healss Tools
+                                    </div>
+                                    <Link
+                                        href="https://healss.kryloss.com/workout"
+                                        className="block px-2 py-2 text-[#FBF7FA] hover:text-white hover:bg-white/5 rounded-md transition-colors"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                    >
+                                        <div className="font-medium">Workout</div>
+                                        <div className="text-sm text-[#9CA9B7]">Track your fitness sessions</div>
+                                    </Link>
+                                    <Link
+                                        href="https://healss.kryloss.com/progress"
+                                        className="block px-2 py-2 text-[#FBF7FA] hover:text-white hover:bg-white/5 rounded-md transition-colors"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                    >
+                                        <div className="font-medium">Progress</div>
+                                        <div className="text-sm text-[#9CA9B7]">Monitor your fitness journey</div>
+                                    </Link>
+                                    <Link
+                                        href="https://healss.kryloss.com/nutrition"
+                                        className="block px-2 py-2 text-[#FBF7FA] hover:text-white hover:bg-white/5 rounded-md transition-colors"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                    >
+                                        <div className="font-medium">Nutrition</div>
+                                        <div className="text-sm text-[#9CA9B7]">Manage your nutrition plan</div>
+                                    </Link>
+                                </>
+                            ) : (
+                                // Main site mobile navigation
+                                <>
+                                    <div className="text-sm font-semibold text-[#9CA9B7] uppercase tracking-wide px-2">
+                                        Tools
+                                    </div>
+                                    {dynamicSubdomains.map((subdomain) => (
+                                        <Link
+                                            key={subdomain.name}
+                                            href={subdomain.url}
+                                            className="block px-2 py-2 text-[#FBF7FA] hover:text-white hover:bg-white/5 rounded-md transition-colors"
+                                            onClick={() => setMobileMenuOpen(false)}
+                                        >
+                                            <div className="font-medium">{subdomain.name}</div>
+                                            <div className="text-sm text-[#9CA9B7]">{subdomain.description}</div>
+                                        </Link>
+                                    ))}
 
-                            <Link
-                                href="/docs"
-                                className="block px-2 py-2 text-[#FBF7FA] hover:text-white hover:bg-white/5 rounded-md transition-colors font-medium"
-                                onClick={() => setMobileMenuOpen(false)}
-                            >
-                                Documentation
-                            </Link>
+                                    <Link
+                                        href="/docs"
+                                        className="block px-2 py-2 text-[#FBF7FA] hover:text-white hover:bg-white/5 rounded-md transition-colors font-medium"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                    >
+                                        Documentation
+                                    </Link>
+                                </>
+                            )}
                         </div>
 
                         {/* Mobile Auth Section */}
