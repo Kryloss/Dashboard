@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { NavBar } from './nav-bar'
 import { Footer } from './footer'
-import { shouldUseSubdomainLayout } from '@/lib/subdomains'
+import { shouldUseSubdomainLayout, getCurrentSubdomain } from '@/lib/subdomains'
 
 interface SubdomainLayoutProps {
     children: React.ReactNode
@@ -11,11 +11,15 @@ interface SubdomainLayoutProps {
 
 export function SubdomainLayout({ children }: SubdomainLayoutProps) {
     const [isSubdomain, setIsSubdomain] = useState<boolean | null>(null)
+    const [currentSubdomain, setCurrentSubdomain] = useState<string | null>(null)
 
     useEffect(() => {
         // Check if we're on a subdomain
         const shouldUseSubdomain = shouldUseSubdomainLayout()
+        const subdomain = getCurrentSubdomain()
+
         setIsSubdomain(shouldUseSubdomain)
+        setCurrentSubdomain(subdomain)
     }, [])
 
     // Show loading state while determining layout
@@ -30,13 +34,13 @@ export function SubdomainLayout({ children }: SubdomainLayoutProps) {
         )
     }
 
-    // If we're on a subdomain, render without main nav/footer
-    // The subdomain will have its own layout
-    if (isSubdomain) {
+    // If we're on healss subdomain, render without main nav/footer
+    // The healss subdomain will have its own layout and content
+    if (isSubdomain && currentSubdomain === 'healss') {
         return <>{children}</>
     }
 
-    // If we're on the main domain, render with main nav/footer
+    // If we're on the main domain or other subdomains, render with main nav/footer
     return (
         <>
             <NavBar />

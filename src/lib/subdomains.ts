@@ -1,14 +1,14 @@
 export function getSubdomains() {
     return [
         {
-            name: "Healss",
+            name: "healss",
             url: "https://healss.kryloss.com",
             description: "Health & fitness tracking platform",
             route: "/healss",
             subdomainOnly: true
         },
         {
-            name: "Notify",
+            name: "notify",
             url: "https://notify.kryloss.com",
             description: "Notification management system",
             route: "/notify-subdomain"
@@ -78,17 +78,32 @@ export function getCurrentSubdomainName(): string | null {
     return found ? found.name : null
 }
 
+// Function to check if we're on a specific subdomain
+export function isOnSubdomain(subdomainName: string): boolean {
+    const currentSubdomain = getCurrentSubdomain()
+    return currentSubdomain?.toLowerCase() === subdomainName.toLowerCase()
+}
+
+// Function to get subdomain-specific metadata
+export function getSubdomainMetadata() {
+    const subdomain = getCurrentSubdomain()
+    if (!subdomain) return null
+
+    const subdomains = getSubdomains()
+    return subdomains.find(s => s.name.toLowerCase() === subdomain.toLowerCase()) || null
+}
+
 // Default export for compatibility
 export const subdomains = [
     {
-        name: "Healss",
+        name: "healss",
         url: "https://healss.kryloss.com",
         description: "Health & fitness tracking platform",
         route: "/healss",
         subdomainOnly: true
     },
     {
-        name: "Notify",
+        name: "notify",
         url: "https://notify.kryloss.com",
         description: "Notification management system",
         route: "/notify-subdomain"
