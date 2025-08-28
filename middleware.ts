@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 // Define your subdomains and their corresponding routes
 const subdomains = {
-    'healss': '/healss-subdomain',
+    'healss': '/healss',
     'notify': '/notify-subdomain',
     // Add more subdomains as needed
 }

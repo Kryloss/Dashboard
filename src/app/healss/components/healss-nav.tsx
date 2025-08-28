@@ -30,9 +30,9 @@ export function HealssNav() {
     const pathname = usePathname()
 
     const tabs = [
-        { name: "Workout", href: "/", isActive: pathname === "/healss-subdomain" || pathname === "/" },
-        { name: "Nutrition", href: "/nutrition", isActive: pathname === "/healss-subdomain/nutrition" || pathname === "/nutrition" },
-        { name: "Progress", href: "/progress", isActive: pathname === "/healss-subdomain/progress" || pathname === "/progress" }
+        { name: "Workout", href: "/", isActive: pathname === "/healss" || pathname === "/" },
+        { name: "Nutrition", href: "/nutrition", isActive: pathname === "/healss/nutrition" || pathname === "/nutrition" },
+        { name: "Progress", href: "/progress", isActive: pathname === "/healss/progress" || pathname === "/progress" }
     ]
 
     useEffect(() => {
