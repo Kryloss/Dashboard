@@ -53,6 +53,17 @@ export function shouldUseSubdomainLayout(): boolean {
     return subdomains.some(s => s.name.toLowerCase() === subdomain.toLowerCase())
 }
 
+// Function to get the current subdomain name for display purposes
+export function getCurrentSubdomainName(): string | null {
+    const subdomain = getCurrentSubdomain()
+    if (!subdomain) return null
+
+    const subdomains = getSubdomains()
+    const found = subdomains.find(s => s.name.toLowerCase() === subdomain.toLowerCase())
+
+    return found ? found.name : null
+}
+
 // Default export for compatibility
 export const subdomains = [
     {

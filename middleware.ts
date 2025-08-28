@@ -18,22 +18,25 @@ export function middleware(request: NextRequest) {
     if (subdomain && subdomains[subdomain as keyof typeof subdomains]) {
         const targetRoute = subdomains[subdomain as keyof typeof subdomains]
 
-        // If user is on root of subdomain, redirect to the specific route
+        // Instead of redirecting, rewrite the URL to serve content from the target route
+        // This keeps the user on healss.kryloss.com while serving /healss-subdomain content
+        const newUrl = request.nextUrl.clone()
+
         if (url.pathname === '/') {
-            const redirectUrl = new URL(targetRoute, request.url)
-            console.log(`Redirecting ${hostname}${url.pathname} to ${redirectUrl.pathname}`)
-            return NextResponse.redirect(redirectUrl)
-        }
-
-        // If user is already on the correct route, allow it
-        if (url.pathname.startsWith(targetRoute)) {
+            // Root path: rewrite to serve the subdomain route content
+            newUrl.pathname = targetRoute
+            console.log(`Rewriting ${hostname}${url.pathname} to serve ${targetRoute} content`)
+            return NextResponse.rewrite(newUrl)
+        } else if (url.pathname.startsWith(targetRoute)) {
+            // Already on the correct route, continue normally
             return NextResponse.next()
+        } else {
+            // Any other path: rewrite to serve from subdomain route
+            const newPath = `${targetRoute}${url.pathname}`
+            newUrl.pathname = newPath
+            console.log(`Rewriting ${hostname}${url.pathname} to serve ${newPath} content`)
+            return NextResponse.rewrite(newUrl)
         }
-
-        // For any other path on the subdomain, redirect to the subdomain route
-        const redirectUrl = new URL(targetRoute, request.url)
-        console.log(`Redirecting ${hostname}${url.pathname} to ${redirectUrl.pathname}`)
-        return NextResponse.redirect(redirectUrl)
     }
 
     // For main domain or unknown subdomains, continue normally
