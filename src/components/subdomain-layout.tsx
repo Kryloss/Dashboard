@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { NavBar } from './nav-bar'
 import { Footer } from './footer'
-import { shouldUseSubdomainLayout } from '@/lib/subdomains'
+import { shouldUseSubdomainLayout, getCurrentSubdomain } from '@/lib/subdomains'
 
 interface SubdomainLayoutProps {
     children: React.ReactNode
@@ -11,12 +11,15 @@ interface SubdomainLayoutProps {
 
 export function SubdomainLayout({ children }: SubdomainLayoutProps) {
     const [isSubdomain, setIsSubdomain] = useState<boolean | null>(null)
+    const [currentSubdomain, setCurrentSubdomain] = useState<string | null>(null)
 
     useEffect(() => {
         // Check if we're on a subdomain
         const shouldUseSubdomain = shouldUseSubdomainLayout()
-        
+        const subdomain = getCurrentSubdomain()
+
         setIsSubdomain(shouldUseSubdomain)
+        setCurrentSubdomain(subdomain)
     }, [])
 
     // Show loading state while determining layout
@@ -31,12 +34,20 @@ export function SubdomainLayout({ children }: SubdomainLayoutProps) {
         )
     }
 
+    // For subdomains, show minimal layout to avoid duplicate navigation
+    // The auth context will be shared from the main layout
+    if (isSubdomain && currentSubdomain === 'healss') {
+        return (
+            <main className="min-h-screen bg-[#0B0C0D]">{children}</main>
+        )
+    }
+
     // Always show main navigation and footer for consistent authentication experience
     // This ensures users stay signed in across both kryloss.com and healss.kryloss.com
     return (
         <>
             <NavBar />
-            <main>{children}</main>
+            <main className="min-h-screen bg-[#0B0C0D]">{children}</main>
             <Footer />
         </>
     )

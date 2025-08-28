@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { getCurrentSubdomain } from '@/lib/subdomains'
 
 export default function AuthCallbackPage() {
     const router = useRouter()
@@ -20,11 +21,20 @@ export default function AuthCallbackPage() {
             if (!hasProcessed.current) {
                 console.log('Auth callback timed out after 2 seconds - redirecting to homepage')
                 hasProcessed.current = true
-                // Ensure we redirect to localhost if we're on localhost
-                const redirectTarget = window.location.hostname.includes('localhost') ? '/' : '/'
+                // Ensure we redirect to the correct subdomain
+                const redirectTarget = getRedirectTarget()
                 router.push(redirectTarget)
             }
         }, 2000)
+
+        const getRedirectTarget = () => {
+            const subdomain = getCurrentSubdomain()
+            if (subdomain === 'healss') {
+                return '/workout'
+            }
+            // For main domain or other subdomains
+            return '/'
+        }
 
         const handleAuthCallback = async () => {
             hasProcessed.current = true
@@ -98,9 +108,9 @@ export default function AuthCallbackPage() {
                             // Profile creation is now handled automatically by database trigger
                             // No need for manual profile creation here
 
-                            // Redirect to homepage - ensure we go to localhost if we're on localhost
-                            const redirectTarget = window.location.hostname.includes('localhost') ? '/' : '/'
-                            console.log('Redirecting to homepage:', redirectTarget)
+                            // Redirect to correct subdomain
+                            const redirectTarget = getRedirectTarget()
+                            console.log('Redirecting to:', redirectTarget)
                             setTimeout(() => router.push(redirectTarget), 500)
                             return
                         } else {
@@ -122,9 +132,10 @@ export default function AuthCallbackPage() {
                             // Profile creation is now handled automatically by database trigger
                             // No need for manual profile creation here
 
-                            // Redirect to homepage
+                            // Redirect to correct subdomain
                             clearTimeout(timeoutId)
-                            setTimeout(() => router.push('/'), 500)
+                            const redirectTarget = getRedirectTarget()
+                            setTimeout(() => router.push(redirectTarget), 500)
                             return
                         }
                     } catch (oauthError) {
@@ -149,7 +160,8 @@ export default function AuthCallbackPage() {
                 if (type === 'signup') {
                     console.log('Email confirmation flow detected')
                     clearTimeout(timeoutId)
-                    setTimeout(() => router.push('/?message=Email confirmed! Welcome to Kryloss.'), 500)
+                    const redirectTarget = getRedirectTarget()
+                    setTimeout(() => router.push(`${redirectTarget}?message=Email confirmed! Welcome to Kryloss.`), 500)
                     return
                 }
 
@@ -172,9 +184,9 @@ export default function AuthCallbackPage() {
                     // Profile creation is now handled automatically by database trigger
                     // No need for manual profile creation here
 
-                    // Redirect to homepage - ensure we go to localhost if we're on localhost
-                    const redirectTarget = window.location.hostname.includes('localhost') ? '/' : '/'
-                    console.log('Redirecting to homepage:', redirectTarget)
+                    // Redirect to correct subdomain
+                    const redirectTarget = getRedirectTarget()
+                    console.log('Redirecting to:', redirectTarget)
                     setTimeout(() => router.push(redirectTarget), 500)
                 } else {
                     // No session found, redirect to login
@@ -190,8 +202,6 @@ export default function AuthCallbackPage() {
                 setTimeout(() => router.push('/login?message=Authentication failed'), 1000)
             }
         }
-
-
 
         handleAuthCallback()
 

@@ -14,9 +14,18 @@ export async function createClient() {
                 },
                 setAll(cookiesToSet) {
                     try {
-                        cookiesToSet.forEach(({ name, value, options }) =>
-                            cookieStore.set(name, value, options)
-                        )
+                        cookiesToSet.forEach(({ name, value, options }) => {
+                            // Configure cookies for cross-subdomain authentication
+                            const enhancedOptions = {
+                                ...options,
+                                domain: '.kryloss.com', // Allow cookies to be shared across all subdomains
+                                path: '/',
+                                sameSite: 'lax' as const,
+                                secure: process.env.NODE_ENV === 'production',
+                                ...options
+                            }
+                            cookieStore.set(name, value, enhancedOptions)
+                        })
                     } catch {
                         // The `setAll` method was called from a Server Component.
                         // This can be ignored if you have middleware refreshing

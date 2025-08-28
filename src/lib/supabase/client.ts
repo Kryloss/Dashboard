@@ -44,7 +44,16 @@ export function createClient() {
                 flowType: 'pkce',
                 autoRefreshToken: true,
                 persistSession: true,
-                detectSessionInUrl: true
+                detectSessionInUrl: true,
+                storageKey: 'supabase.auth.token',
+                storage: typeof window !== 'undefined' ? window.localStorage : undefined
+            },
+            // Enable cross-subdomain authentication
+            cookieOptions: {
+                domain: '.kryloss.com', // Allow cookies to be shared across all subdomains
+                path: '/',
+                sameSite: 'lax',
+                secure: process.env.NODE_ENV === 'production'
             }
         })
         return client

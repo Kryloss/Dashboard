@@ -17,6 +17,7 @@ import { createClient } from "@/lib/supabase/client"
 import { AuthHealthCheck } from "@/components/database-health-check"
 import { useState, useTransition, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
+import { getCurrentSubdomain } from "@/lib/subdomains"
 
 function LoginForm() {
     const [error, setError] = useState<string | null>(null)
@@ -53,7 +54,7 @@ function LoginForm() {
 
             const supabase = createClient()
 
-            // Determine the correct redirect URL based on current environment
+            // Determine the correct redirect URL based on current subdomain
             let redirectUrl: string
 
             if (typeof window !== 'undefined') {
@@ -66,8 +67,8 @@ function LoginForm() {
                     redirectUrl = 'http://localhost:3000'
                     console.log('Local development detected, using localhost:3000')
                 } else {
-                    // Production environment - use environment variable or current origin
-                    redirectUrl = process.env.NEXT_PUBLIC_SITE_URL || currentOrigin
+                    // Production environment - use current origin to maintain subdomain
+                    redirectUrl = currentOrigin
                     console.log('Production environment detected, using:', redirectUrl)
                 }
             } else {
@@ -112,6 +113,16 @@ function LoginForm() {
             setIsGoogleLoading(false)
         }
     }
+
+    // Get the appropriate signup link based on current subdomain
+    const getSignupLink = () => {
+        const subdomain = getCurrentSubdomain()
+        if (subdomain === 'healss') {
+            return '/signup'
+        }
+        return '/signup'
+    }
+
     return (
         <div className="min-h-screen bg-[#000000] flex items-center justify-center p-6">
             {/* Background gradient orb effect */}
@@ -227,7 +238,7 @@ function LoginForm() {
                         <div className="text-center text-sm text-[#9CA9B7]">
                             Don&apos;t have an account?{" "}
                             <Link
-                                href="/signup"
+                                href={getSignupLink()}
                                 className="text-[#257ADA] hover:text-[#4AA7FF] underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#121922] rounded"
                             >
                                 Sign up
