@@ -199,16 +199,7 @@ export function NavBar() {
                         href={isOnHealss ? "https://healss.kryloss.com/workout" : "https://kryloss.com"}
                         className="flex items-center space-x-2 font-bold text-xl text-[#FBF7FA] hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#0B0C0D] rounded-md px-2 py-1"
                     >
-                        {isOnHealss ? (
-                            <>
-                                <div className="w-8 h-8 bg-gradient-to-r from-[#4AA7FF] to-[#6B46C1] rounded-lg flex items-center justify-center">
-                                    <span className="text-white font-bold text-lg">H</span>
-                                </div>
-                                <span>Healss</span>
-                            </>
-                        ) : (
-                            <span>Kryloss</span>
-                        )}
+                        <span>Kryloss</span>
                     </Link>
                 </div>
 
