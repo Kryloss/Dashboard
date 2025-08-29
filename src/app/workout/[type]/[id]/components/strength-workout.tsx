@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { X, Play, Pause, Square, Plus, GripVertical } from "lucide-react"
+import { X, Play, Pause, Square, Plus, GripVertical, Save } from "lucide-react"
+import { WorkoutStorage } from "@/lib/workout-storage"
 
 interface Exercise {
   id: string
@@ -29,7 +30,19 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
   const [exercises, setExercises] = useState<Exercise[]>([])
   const [showAddExercise, setShowAddExercise] = useState(false)
   const [newExerciseName, setNewExerciseName] = useState("")
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false)
+  const [templateName, setTemplateName] = useState("")
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Load ongoing workout on component mount
+  useEffect(() => {
+    const ongoingWorkout = WorkoutStorage.getOngoingWorkout()
+    if (ongoingWorkout && ongoingWorkout.id === workoutId) {
+      setExercises(ongoingWorkout.exercises)
+      setTime(ongoingWorkout.elapsedTime)
+      setIsRunning(ongoingWorkout.isRunning)
+    }
+  }, [workoutId])
 
   // Stopwatch logic
   useEffect(() => {
@@ -61,11 +74,23 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
 
-  const startTimer = () => setIsRunning(true)
-  const pauseTimer = () => setIsRunning(false)
+  const startTimer = () => {
+    setIsRunning(true)
+    const ongoingWorkout = WorkoutStorage.getOngoingWorkout()
+    if (ongoingWorkout && ongoingWorkout.id === workoutId) {
+      WorkoutStorage.updateOngoingWorkoutTime(ongoingWorkout.elapsedTime, true)
+    }
+  }
+  
+  const pauseTimer = () => {
+    setIsRunning(false)
+    WorkoutStorage.updateOngoingWorkoutTime(time, false)
+  }
+  
   const resetTimer = () => {
     setIsRunning(false)
     setTime(0)
+    WorkoutStorage.updateOngoingWorkoutTime(0, false)
   }
 
   const addExercise = () => {
@@ -82,9 +107,17 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
       }]
     }
 
-    setExercises(prev => [...prev, newExercise])
+    const updatedExercises = [...exercises, newExercise]
+    setExercises(updatedExercises)
     setNewExerciseName("")
     setShowAddExercise(false)
+    
+    // Update ongoing workout
+    const ongoingWorkout = WorkoutStorage.getOngoingWorkout()
+    if (ongoingWorkout && ongoingWorkout.id === workoutId) {
+      ongoingWorkout.exercises = updatedExercises
+      WorkoutStorage.saveOngoingWorkout(ongoingWorkout)
+    }
   }
 
   const addSet = (exerciseId: string) => {
@@ -139,12 +172,36 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
 
   const finishWorkout = () => {
     resetTimer()
+    WorkoutStorage.clearOngoingWorkout()
     router.push('/workout')
   }
 
   const quitWorkout = () => {
-    // Don't reset timer - just go back
+    // Save current state but don't clear - just go back
+    const ongoingWorkout = WorkoutStorage.getOngoingWorkout()
+    if (ongoingWorkout && ongoingWorkout.id === workoutId) {
+      ongoingWorkout.exercises = exercises
+      ongoingWorkout.elapsedTime = time
+      ongoingWorkout.isRunning = isRunning
+      WorkoutStorage.saveOngoingWorkout(ongoingWorkout)
+    }
     router.push('/workout')
+  }
+
+  const saveAsTemplate = () => {
+    if (!templateName.trim() || exercises.length === 0) return
+
+    const template = WorkoutStorage.saveTemplate({
+      name: templateName.trim(),
+      type: 'strength',
+      exercises: exercises
+    })
+
+    setShowSaveTemplate(false)
+    setTemplateName("")
+    
+    // Show success feedback (optional)
+    console.log('Template saved:', template.name)
   }
 
   return (
@@ -376,8 +433,58 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
             )}
           </div>
 
+          {/* Save as Template */}
+          {exercises.length > 0 && (
+            <div className="mt-8">
+              {!showSaveTemplate ? (
+                <Button
+                  onClick={() => setShowSaveTemplate(true)}
+                  className="w-full bg-[#0E0F13] text-[#F3F4F6] border border-[#212227] rounded-full hover:bg-[#17181D] hover:border-[#2A2B31] hover:scale-[1.01] active:scale-[0.997] transition-all py-3"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  Save as Template
+                </Button>
+              ) : (
+                <div className="bg-[#121318] border border-[#212227] rounded-[20px] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)]">
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="template-name" className="text-[#A1A1AA]">Template Name</Label>
+                      <Input
+                        id="template-name"
+                        value={templateName}
+                        onChange={(e) => setTemplateName(e.target.value)}
+                        placeholder="e.g., My Push Workout, Upper Body"
+                        className="mt-1 bg-[#0E0F13] border-[#212227] text-[#F3F4F6] placeholder-[#7A7F86] rounded-[14px]"
+                        onKeyPress={(e) => e.key === 'Enter' && saveAsTemplate()}
+                      />
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button
+                        onClick={saveAsTemplate}
+                        disabled={!templateName.trim()}
+                        className="bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-full border border-[rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all"
+                      >
+                        Save Template
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setShowSaveTemplate(false)
+                          setTemplateName("")
+                        }}
+                        variant="ghost"
+                        className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Finish Workout */}
-          <div className="mt-12 pt-8 border-t border-[#212227]">
+          <div className="mt-8 pt-8 border-t border-[#212227]">
             <Button
               onClick={finishWorkout}
               className="w-full bg-gradient-to-r from-red-600 to-red-500 text-white rounded-full shadow-[0_8px_32px_rgba(220,38,38,0.28)] hover:from-red-500 hover:to-red-400 hover:shadow-[0_10px_40px_rgba(220,38,38,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all py-3"

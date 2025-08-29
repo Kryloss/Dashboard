@@ -9,16 +9,24 @@ import { QuickActionCard } from "./components/quick-action-card"
 import { StatCard } from "./components/stat-card"
 import { ActivityItem } from "./components/activity-item"
 import { WorkoutTypeDialog } from "./components/workout-type-dialog"
-import { Settings, Plus, Flame, Dumbbell, User, Timer, Bike, Target, TrendingUp, Clock, Heart, FileText } from "lucide-react"
+import { WorkoutStorage, OngoingWorkout } from "@/lib/workout-storage"
+import { Settings, Plus, Flame, Dumbbell, User, Timer, Bike, Target, TrendingUp, Clock, Heart, FileText, Play } from "lucide-react"
 
 export default function WorkoutPage() {
     const [isHealssSubdomain, setIsHealssSubdomain] = useState(false)
     const [showWorkoutDialog, setShowWorkoutDialog] = useState(false)
+    const [ongoingWorkout, setOngoingWorkout] = useState<OngoingWorkout | null>(null)
 
     useEffect(() => {
         // Check if we're on the healss subdomain
         const onHealss = isOnSubdomain('healss')
         setIsHealssSubdomain(onHealss)
+        
+        // Load ongoing workout
+        if (onHealss) {
+            const workout = WorkoutStorage.getOngoingWorkout()
+            setOngoingWorkout(workout)
+        }
     }, [])
 
     // Mock data for demonstration
@@ -80,7 +88,19 @@ export default function WorkoutPage() {
     }
 
     const handleQuickAction = (action: string) => {
-        console.log(`Quick action: ${action}`)
+        if (action === 'strength') {
+            // Start strength workout with last template immediately
+            const lastTemplate = WorkoutStorage.getLastTemplate('strength')
+            if (lastTemplate) {
+                const workout = WorkoutStorage.createWorkoutFromTemplate(lastTemplate)
+                window.location.href = `/workout/strength/${workout.id}`
+            } else {
+                // Fallback to dialog if no template found
+                setShowWorkoutDialog(true)
+            }
+        } else {
+            console.log(`Quick action: ${action}`)
+        }
     }
 
     // If we're on healss.kryloss.com, show healss content
@@ -177,6 +197,34 @@ export default function WorkoutPage() {
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                {/* Ongoing Workout */}
+                                {ongoingWorkout && (
+                                    <div className="bg-[#121318] border-2 border-[#4AA7FF] rounded-[20px] p-5 shadow-[0_0_0_1px_rgba(74,167,255,0.35),_0_8px_40px_rgba(74,167,255,0.20)] hover:shadow-[0_0_0_1px_rgba(74,167,255,0.5),_0_12px_48px_rgba(74,167,255,0.25)] hover:-translate-y-[1px] transition-all duration-200">
+                                        <div className="flex items-start justify-between mb-4">
+                                            <div className="flex items-center space-x-3">
+                                                <div className="w-10 h-10 bg-[rgba(74,167,255,0.1)] border border-[#4AA7FF] rounded-[14px] flex items-center justify-center text-[#4AA7FF]">
+                                                    <Play className="w-5 h-5" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-semibold text-[#F3F4F6] text-sm">
+                                                        {ongoingWorkout.templateName || 'Active Workout'}
+                                                    </h3>
+                                                    <p className="text-xs text-[#4AA7FF] mt-1 font-medium">
+                                                        {ongoingWorkout.isRunning ? 'In Progress' : 'Paused'} • {Math.floor(ongoingWorkout.elapsedTime / 60)}:{String(ongoingWorkout.elapsedTime % 60).padStart(2, '0')}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <Button
+                                            onClick={() => window.location.href = `/workout/${ongoingWorkout.type}/${ongoingWorkout.id}`}
+                                            className="w-full bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-full border border-[rgba(42,140,234,0.35)] shadow-[0_8px_32px_rgba(42,140,234,0.28)] hover:shadow-[0_10px_40px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all text-sm font-medium h-8"
+                                        >
+                                            Continue Workout
+                                        </Button>
+                                    </div>
+                                )}
+                                
                                 {mockData.plannedWorkouts.map((workout) => (
                                     <PlannedWorkoutCard
                                         key={workout.id}
