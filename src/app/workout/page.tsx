@@ -9,10 +9,12 @@ import { QuickActionCard } from "./components/quick-action-card"
 import { StatCard } from "./components/stat-card"
 import { ActivityItem } from "./components/activity-item"
 import { WorkoutTypeDialog } from "./components/workout-type-dialog"
-import { WorkoutStorage, OngoingWorkout } from "@/lib/workout-storage"
+import { WorkoutStorageSupabase, OngoingWorkout } from "@/lib/workout-storage-supabase"
+import { useAuth } from "@/lib/hooks/useAuth"
 import { Settings, Plus, Flame, Dumbbell, User, Timer, Bike, Target, TrendingUp, Clock, Heart, FileText, Play } from "lucide-react"
 
 export default function WorkoutPage() {
+    const { user, supabase } = useAuth()
     const [isHealssSubdomain, setIsHealssSubdomain] = useState(false)
     const [showWorkoutDialog, setShowWorkoutDialog] = useState(false)
     const [ongoingWorkout, setOngoingWorkout] = useState<OngoingWorkout | null>(null)
@@ -21,13 +23,31 @@ export default function WorkoutPage() {
         // Check if we're on the healss subdomain
         const onHealss = isOnSubdomain('healss')
         setIsHealssSubdomain(onHealss)
-        
-        // Load ongoing workout
+
+        // Initialize workout storage with user context
         if (onHealss) {
-            const workout = WorkoutStorage.getOngoingWorkout()
-            setOngoingWorkout(workout)
+            WorkoutStorageSupabase.initialize(user, supabase)
+
+            // Setup real-time callback for ongoing workout updates
+            WorkoutStorageSupabase.onOngoingWorkoutUpdate((workout) => {
+                setOngoingWorkout(workout)
+            })
+
+            // Load ongoing workout
+            const loadOngoingWorkout = async () => {
+                const workout = await WorkoutStorageSupabase.getOngoingWorkout()
+                setOngoingWorkout(workout)
+            }
+            loadOngoingWorkout()
         }
-    }, [])
+
+        // Cleanup on unmount
+        return () => {
+            if (onHealss) {
+                WorkoutStorageSupabase.cleanup()
+            }
+        }
+    }, [user, supabase])
 
     // Mock data for demonstration
     const mockData = {
@@ -87,15 +107,20 @@ export default function WorkoutPage() {
         console.log(`Editing workout ${id}`)
     }
 
-    const handleQuickAction = (action: string) => {
+    const handleQuickAction = async (action: string) => {
         if (action === 'strength') {
-            // Start strength workout with last template immediately
-            const lastTemplate = WorkoutStorage.getLastTemplate('strength')
-            if (lastTemplate) {
-                const workout = WorkoutStorage.createWorkoutFromTemplate(lastTemplate)
-                window.location.href = `/workout/strength/${workout.id}`
-            } else {
-                // Fallback to dialog if no template found
+            try {
+                // Start strength workout with last template immediately
+                const lastTemplate = await WorkoutStorageSupabase.getLastTemplate('strength')
+                if (lastTemplate) {
+                    const workout = await WorkoutStorageSupabase.createWorkoutFromTemplate(lastTemplate)
+                    window.location.href = `/workout/strength/${workout.id}`
+                } else {
+                    // Fallback to dialog if no template found
+                    setShowWorkoutDialog(true)
+                }
+            } catch (error) {
+                console.error('Failed to start quick action workout:', error)
                 setShowWorkoutDialog(true)
             }
         } else {
@@ -215,7 +240,7 @@ export default function WorkoutPage() {
                                                 </div>
                                             </div>
                                         </div>
-                                        
+
                                         <Button
                                             onClick={() => window.location.href = `/workout/${ongoingWorkout.type}/${ongoingWorkout.id}`}
                                             className="w-full bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-full border border-[rgba(42,140,234,0.35)] shadow-[0_8px_32px_rgba(42,140,234,0.28)] hover:shadow-[0_10px_40px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all text-sm font-medium h-8"
@@ -224,7 +249,7 @@ export default function WorkoutPage() {
                                         </Button>
                                     </div>
                                 )}
-                                
+
                                 {mockData.plannedWorkouts.map((workout) => (
                                     <PlannedWorkoutCard
                                         key={workout.id}

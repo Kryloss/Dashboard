@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { X, Play, Pause, Square, Plus, GripVertical, Save } from "lucide-react"
-import { WorkoutStorage } from "@/lib/workout-storage"
+import { WorkoutStorageSupabase } from "@/lib/workout-storage-supabase"
+import { useAuth } from "@/lib/hooks/useAuth"
 
 interface Exercise {
   id: string
@@ -25,6 +26,7 @@ interface StrengthWorkoutProps {
 
 export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
   const router = useRouter()
+  const { user, supabase } = useAuth()
   const [isRunning, setIsRunning] = useState(false)
   const [time, setTime] = useState(0)
   const [exercises, setExercises] = useState<Exercise[]>([])
@@ -34,15 +36,23 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
   const [templateName, setTemplateName] = useState("")
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Load ongoing workout on component mount
+  // Initialize storage and load ongoing workout on component mount
   useEffect(() => {
-    const ongoingWorkout = WorkoutStorage.getOngoingWorkout()
-    if (ongoingWorkout && ongoingWorkout.id === workoutId) {
-      setExercises(ongoingWorkout.exercises)
-      setTime(ongoingWorkout.elapsedTime)
-      setIsRunning(ongoingWorkout.isRunning)
+    const initializeAndLoad = async () => {
+      // Initialize storage with user context
+      WorkoutStorageSupabase.initialize(user, supabase)
+      
+      // Load ongoing workout
+      const ongoingWorkout = await WorkoutStorageSupabase.getOngoingWorkout()
+      if (ongoingWorkout && ongoingWorkout.id === workoutId) {
+        setExercises(ongoingWorkout.exercises)
+        setTime(ongoingWorkout.elapsedTime)
+        setIsRunning(ongoingWorkout.isRunning)
+      }
     }
-  }, [workoutId])
+    
+    initializeAndLoad()
+  }, [workoutId, user, supabase])
 
   // Stopwatch logic
   useEffect(() => {
@@ -74,26 +84,26 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
 
-  const startTimer = () => {
+  const startTimer = async () => {
     setIsRunning(true)
-    const ongoingWorkout = WorkoutStorage.getOngoingWorkout()
+    const ongoingWorkout = await WorkoutStorageSupabase.getOngoingWorkout()
     if (ongoingWorkout && ongoingWorkout.id === workoutId) {
-      WorkoutStorage.updateOngoingWorkoutTime(ongoingWorkout.elapsedTime, true)
+      await WorkoutStorageSupabase.updateOngoingWorkoutTime(ongoingWorkout.elapsedTime, true)
     }
   }
   
-  const pauseTimer = () => {
+  const pauseTimer = async () => {
     setIsRunning(false)
-    WorkoutStorage.updateOngoingWorkoutTime(time, false)
+    await WorkoutStorageSupabase.updateOngoingWorkoutTime(time, false)
   }
   
-  const resetTimer = () => {
+  const resetTimer = async () => {
     setIsRunning(false)
     setTime(0)
-    WorkoutStorage.updateOngoingWorkoutTime(0, false)
+    await WorkoutStorageSupabase.updateOngoingWorkoutTime(0, false)
   }
 
-  const addExercise = () => {
+  const addExercise = async () => {
     if (!newExerciseName.trim()) return
 
     const newExercise: Exercise = {
@@ -113,10 +123,10 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     setShowAddExercise(false)
     
     // Update ongoing workout
-    const ongoingWorkout = WorkoutStorage.getOngoingWorkout()
+    const ongoingWorkout = await WorkoutStorageSupabase.getOngoingWorkout()
     if (ongoingWorkout && ongoingWorkout.id === workoutId) {
       ongoingWorkout.exercises = updatedExercises
-      WorkoutStorage.saveOngoingWorkout(ongoingWorkout)
+      await WorkoutStorageSupabase.saveOngoingWorkout(ongoingWorkout)
     }
   }
 
@@ -170,38 +180,42 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     }))
   }
 
-  const finishWorkout = () => {
-    resetTimer()
-    WorkoutStorage.clearOngoingWorkout()
+  const finishWorkout = async () => {
+    await resetTimer()
+    await WorkoutStorageSupabase.clearOngoingWorkout()
     router.push('/workout')
   }
 
-  const quitWorkout = () => {
+  const quitWorkout = async () => {
     // Save current state but don't clear - just go back
-    const ongoingWorkout = WorkoutStorage.getOngoingWorkout()
+    const ongoingWorkout = await WorkoutStorageSupabase.getOngoingWorkout()
     if (ongoingWorkout && ongoingWorkout.id === workoutId) {
       ongoingWorkout.exercises = exercises
       ongoingWorkout.elapsedTime = time
       ongoingWorkout.isRunning = isRunning
-      WorkoutStorage.saveOngoingWorkout(ongoingWorkout)
+      await WorkoutStorageSupabase.saveOngoingWorkout(ongoingWorkout)
     }
     router.push('/workout')
   }
 
-  const saveAsTemplate = () => {
+  const saveAsTemplate = async () => {
     if (!templateName.trim() || exercises.length === 0) return
 
-    const template = WorkoutStorage.saveTemplate({
-      name: templateName.trim(),
-      type: 'strength',
-      exercises: exercises
-    })
+    try {
+      const template = await WorkoutStorageSupabase.saveTemplate({
+        name: templateName.trim(),
+        type: 'strength',
+        exercises: exercises
+      })
 
-    setShowSaveTemplate(false)
-    setTemplateName("")
-    
-    // Show success feedback (optional)
-    console.log('Template saved:', template.name)
+      setShowSaveTemplate(false)
+      setTemplateName("")
+      
+      // Show success feedback (optional)
+      console.log('Template saved:', template.name)
+    } catch (error) {
+      console.error('Failed to save template:', error)
+    }
   }
 
   return (

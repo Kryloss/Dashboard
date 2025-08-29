@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button"
 import { Dumbbell, Target, Heart, Bike, Plus, ArrowLeft } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { WorkoutStorage, WorkoutTemplate } from "@/lib/workout-storage"
+import { WorkoutStorageSupabase, WorkoutTemplate } from "@/lib/workout-storage-supabase"
 
 interface WorkoutTypeDialogProps {
   open: boolean
@@ -61,16 +61,24 @@ export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps
     }
   }, [open])
 
-  const handleWorkoutSelect = (workoutType: string, available: boolean) => {
+  const handleWorkoutSelect = async (workoutType: string, available: boolean) => {
     if (!available) return
     
     setSelectedType(workoutType)
     
     if (workoutType === 'strength') {
-      // Show templates for strength workouts
-      const strengthTemplates = WorkoutStorage.getTemplates('strength')
-      setTemplates(strengthTemplates)
-      setShowTemplates(true)
+      try {
+        // Show templates for strength workouts
+        const strengthTemplates = await WorkoutStorageSupabase.getTemplates('strength')
+        setTemplates(strengthTemplates)
+        setShowTemplates(true)
+      } catch (error) {
+        console.error('Failed to load templates:', error)
+        // Fallback to creating workout directly
+        const workoutId = `${workoutType}-${Date.now()}`
+        router.push(`/workout/${workoutType}/${workoutId}`)
+        onOpenChange(false)
+      }
     } else {
       // For other types, create workout directly (when available)
       const workoutId = `${workoutType}-${Date.now()}`
@@ -79,10 +87,14 @@ export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps
     }
   }
 
-  const handleTemplateSelect = (template: WorkoutTemplate) => {
-    const workout = WorkoutStorage.createWorkoutFromTemplate(template)
-    router.push(`/workout/${template.type}/${workout.id}`)
-    onOpenChange(false)
+  const handleTemplateSelect = async (template: WorkoutTemplate) => {
+    try {
+      const workout = await WorkoutStorageSupabase.createWorkoutFromTemplate(template)
+      router.push(`/workout/${template.type}/${workout.id}`)
+      onOpenChange(false)
+    } catch (error) {
+      console.error('Failed to create workout from template:', error)
+    }
   }
 
   const handleStartEmpty = () => {

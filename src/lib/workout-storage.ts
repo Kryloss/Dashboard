@@ -1,3 +1,5 @@
+// This file is kept for backward compatibility but the main implementation is in workout-storage-supabase.ts
+
 export interface WorkoutExercise {
   id: string
   name: string
@@ -16,6 +18,7 @@ export interface WorkoutTemplate {
   exercises: WorkoutExercise[]
   createdAt: string
   isBuiltIn?: boolean
+  userId?: string
 }
 
 export interface OngoingWorkout {
@@ -27,6 +30,16 @@ export interface OngoingWorkout {
   startTime: string
   elapsedTime: number
   isRunning: boolean
+  userId?: string
+}
+
+export interface SyncQueue {
+  id: string
+  action: 'create' | 'update' | 'delete'
+  table: 'templates' | 'ongoing_workouts'
+  data: WorkoutTemplate | OngoingWorkout
+  timestamp: number
+  retries: number
 }
 
 // Built-in templates
@@ -147,7 +160,7 @@ export class WorkoutStorage {
   static getTemplates(type?: 'strength' | 'running' | 'yoga' | 'cycling'): WorkoutTemplate[] {
     const customTemplates = this.getCustomTemplates()
     const allTemplates = [...builtInTemplates, ...customTemplates]
-    
+
     if (type) {
       return allTemplates.filter(template => template.type === type)
     }
@@ -166,21 +179,21 @@ export class WorkoutStorage {
       id: `template-${Date.now()}`,
       createdAt: new Date().toISOString()
     }
-    
+
     const existing = this.getCustomTemplates()
     const updated = [...existing, newTemplate]
-    
+
     if (typeof window !== 'undefined') {
       localStorage.setItem('workout-templates', JSON.stringify(updated))
     }
-    
+
     return newTemplate
   }
 
   static deleteTemplate(templateId: string): void {
     const existing = this.getCustomTemplates()
     const updated = existing.filter(t => t.id !== templateId)
-    
+
     if (typeof window !== 'undefined') {
       localStorage.setItem('workout-templates', JSON.stringify(updated))
     }
@@ -245,7 +258,7 @@ export class WorkoutStorage {
       elapsedTime: 0,
       isRunning: false
     }
-    
+
     this.saveOngoingWorkout(workout)
     this.setLastTemplate(template.id, template.type)
     return workout
