@@ -30,13 +30,19 @@ export default function WorkoutPage() {
 
             // Setup real-time callback for ongoing workout updates
             WorkoutStorageSupabase.onOngoingWorkoutUpdate((workout) => {
+                console.log('Ongoing workout updated:', workout)
                 setOngoingWorkout(workout)
             })
 
-            // Load ongoing workout
+            // Load ongoing workout with retry logic
             const loadOngoingWorkout = async () => {
-                const workout = await WorkoutStorageSupabase.getOngoingWorkout()
-                setOngoingWorkout(workout)
+                try {
+                    const workout = await WorkoutStorageSupabase.getOngoingWorkout()
+                    console.log('Loaded ongoing workout:', workout)
+                    setOngoingWorkout(workout)
+                } catch (error) {
+                    console.error('Failed to load ongoing workout:', error)
+                }
             }
             loadOngoingWorkout()
         }
@@ -48,6 +54,32 @@ export default function WorkoutPage() {
             }
         }
     }, [user, supabase])
+
+    // Separate effect to handle workout state updates and prevent disappearing
+    useEffect(() => {
+        if (isHealssSubdomain && ongoingWorkout) {
+            // Update timer display for running workouts
+            const updateTimer = setInterval(async () => {
+                if (ongoingWorkout.isRunning) {
+                    const currentWorkout = await WorkoutStorageSupabase.getOngoingWorkout()
+                    if (currentWorkout && currentWorkout.id === ongoingWorkout.id) {
+                        const timeDiff = Math.floor((Date.now() - new Date(currentWorkout.startTime).getTime()) / 1000)
+                        const updatedTime = currentWorkout.elapsedTime + timeDiff
+
+                        // Only update if there's a significant difference to prevent rapid updates
+                        if (Math.abs(updatedTime - ongoingWorkout.elapsedTime) > 5) {
+                            setOngoingWorkout({
+                                ...currentWorkout,
+                                elapsedTime: updatedTime
+                            })
+                        }
+                    }
+                }
+            }, 1000)
+
+            return () => clearInterval(updateTimer)
+        }
+    }, [isHealssSubdomain, ongoingWorkout?.id, ongoingWorkout?.isRunning, ongoingWorkout])
 
     // Mock data for demonstration
     const mockData = {

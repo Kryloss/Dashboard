@@ -281,10 +281,13 @@ export class WorkoutStorageSupabase {
 
   // Handle real-time updates for ongoing workouts
   private static async handleOngoingWorkoutRealtimeUpdate(payload: RealtimePostgresChangesPayload<OngoingWorkoutRow>) {
+    console.log('Handling realtime update:', payload.eventType, payload)
+
     if (payload.eventType === 'DELETE') {
       // Workout was deleted/finished on another device
       if (typeof window !== 'undefined') {
         localStorage.removeItem('ongoing-workout')
+        localStorage.removeItem('supabase-cache-ongoing-workout')
       }
       if (this.onWorkoutUpdateCallback) {
         this.onWorkoutUpdateCallback(null)
@@ -306,16 +309,20 @@ export class WorkoutStorageSupabase {
       // Update localStorage cache
       if (typeof window !== 'undefined') {
         localStorage.setItem('ongoing-workout', JSON.stringify(workout))
+        localStorage.setItem('supabase-cache-ongoing-workout', JSON.stringify(workout))
       }
 
-      // Notify callback
-      if (this.onWorkoutUpdateCallback) {
-        this.onWorkoutUpdateCallback(workout)
-      }
+      // Notify callback with a small delay to prevent race conditions
+      setTimeout(() => {
+        if (this.onWorkoutUpdateCallback) {
+          this.onWorkoutUpdateCallback(workout)
+        }
+      }, 100)
     }
   }
 
   // Handle real-time updates for templates
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private static async handleTemplatesRealtimeUpdate(_payload: RealtimePostgresChangesPayload<WorkoutTemplateRow>) {
     try {
       // Refresh templates from Supabase
@@ -688,6 +695,7 @@ export class WorkoutStorageSupabase {
     // Optimistic update
     if (typeof window !== 'undefined') {
       localStorage.setItem('ongoing-workout', JSON.stringify(workout))
+      localStorage.setItem('supabase-cache-ongoing-workout', JSON.stringify(workout))
     }
 
     // Sync to Supabase
@@ -699,15 +707,19 @@ export class WorkoutStorageSupabase {
             id: workout.id,
             user_id: this.currentUser.id,
             type: workout.type,
-            template_id: workout.templateId,
-            template_name: workout.templateName,
+            template_id: workout.templateId || null,
+            template_name: workout.templateName || null,
             exercises: workout.exercises,
             start_time: workout.startTime,
             elapsed_time: workout.elapsedTime,
             is_running: workout.isRunning
+          }, {
+            onConflict: 'user_id,type'
           })
 
         if (error) throw error
+
+        console.log('Ongoing workout saved successfully:', workout.id)
       } catch (error) {
         console.error('Failed to sync ongoing workout to Supabase:', error)
         this.addToSyncQueue('update', 'ongoing_workouts', {
@@ -722,6 +734,9 @@ export class WorkoutStorageSupabase {
           userId: this.currentUser.id
         })
       }
+    } else if (!this.isOnline) {
+      // If offline, ensure it's queued for sync
+      this.addToSyncQueue('update', 'ongoing_workouts', workout)
     }
   }
 
