@@ -86,12 +86,22 @@ export default function WorkoutPage() {
         return (
             <div className="min-h-screen bg-[#0B0B0F] text-[#F3F4F6] relative overflow-hidden">
                 {/* Hero Gradient Orb Background */}
-                <div
-                    className="absolute inset-0 opacity-80"
-                    style={{
-                        background: "radial-gradient(60% 60% at 60% 30%, rgba(42,140,234,0.55) 0%, rgba(16,62,154,0.45) 35%, rgba(23,17,70,0.30) 65%, rgba(0,0,0,0) 100%)"
-                    }}
-                />
+                <div className="absolute inset-0 opacity-80">
+                    {/* Desktop gradient */}
+                    <div 
+                        className="hidden md:block absolute inset-0"
+                        style={{
+                            background: "radial-gradient(60% 60% at 60% 30%, rgba(42,140,234,0.55) 0%, rgba(16,62,154,0.45) 35%, rgba(23,17,70,0.30) 65%, rgba(0,0,0,0) 100%)"
+                        }}
+                    />
+                    {/* Mobile gradient - centered and larger */}
+                    <div 
+                        className="block md:hidden absolute inset-0"
+                        style={{
+                            background: "radial-gradient(80% 80% at 50% 40%, rgba(42,140,234,0.55) 0%, rgba(16,62,154,0.45) 35%, rgba(23,17,70,0.30) 65%, rgba(0,0,0,0) 100%)"
+                        }}
+                    />
+                </div>
                 
                 {/* Content */}
                 <div className="relative z-10">

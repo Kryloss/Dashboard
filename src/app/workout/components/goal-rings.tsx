@@ -49,7 +49,7 @@ const sizeConfig = {
 }
 
 const ringColors = {
-  track: "rgba(255,255,255,0.08)",
+  track: "rgba(255,255,255,0.06)",
   move: {
     start: "#FF2D55",
     end: "#FF375F"
@@ -103,7 +103,7 @@ export function GoalRings({
         ref={svgRef}
         width={config.canvas}
         height={config.canvas}
-        className="drop-shadow-sm"
+        className="drop-shadow-sm opacity-95"
         style={{
           filter: 'drop-shadow(0 1px 0 rgba(255,255,255,0.05))'
         }}
