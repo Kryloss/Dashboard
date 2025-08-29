@@ -1,0 +1,216 @@
+{
+    "meta": {
+        "name": "goal_design",
+        "version": "1.0.0",
+        "frameworks": [
+            "nextjs",
+            "tailwind",
+            "shadcn/ui"
+        ],
+        "source": "Framer-like dark UI + Apple Watch ring logic",
+        "notes": [
+            "Rings render as concentric SVG circles with round caps and gradient strokes.",
+            "Use solid surfaces for cards; gradients only on progress strokes and accent CTAs.",
+            "All sizes are tokenized so the same component can scale by size key."
+        ]
+    },
+    "tokens": {
+        "ringColor": {
+            "track": "rgba(255,255,255,0.08)",
+            "moveStart": "#FF2D55",
+            "moveEnd": "#FF375F",
+            "exerciseStart": "#9BE15D",
+            "exerciseEnd": "#00E676",
+            "standStart": "#2BD2FF",
+            "standEnd": "#2A8CEA"
+        },
+        "ringGradient": {
+            "move": "linear-gradient(135deg, #FF2D55 0%, #FF375F 100%)",
+            "exercise": "linear-gradient(135deg, #9BE15D 0%, #00E676 100%)",
+            "stand": "linear-gradient(135deg, #2BD2FF 0%, #2A8CEA 100%)",
+            "halo": "radial-gradient(60% 60% at 50% 50%, rgba(42,140,234,0.45) 0%, rgba(42,140,234,0.00) 65%)"
+        },
+        "sizes": {
+            "xs": {
+                "canvas": 160,
+                "thicknessOuter": 10,
+                "thicknessMiddle": 9,
+                "thicknessInner": 8,
+                "gap": 6
+            },
+            "sm": {
+                "canvas": 200,
+                "thicknessOuter": 12,
+                "thicknessMiddle": 11,
+                "thicknessInner": 10,
+                "gap": 7
+            },
+            "md": {
+                "canvas": 260,
+                "thicknessOuter": 14,
+                "thicknessMiddle": 12,
+                "thicknessInner": 11,
+                "gap": 8
+            },
+            "lg": {
+                "canvas": 320,
+                "thicknessOuter": 16,
+                "thicknessMiddle": 14,
+                "thicknessInner": 12,
+                "gap": 10
+            }
+        },
+        "shadow": {
+            "ringHalo": "0 0 0 2px rgba(42,140,234,0.35), 0 12px 48px rgba(42,140,234,0.25)",
+            "ringInset": "inset 0 1px 0 rgba(255,255,255,0.05)"
+        },
+        "easing": {
+            "progress": "cubic-bezier(0.22, 1, 0.36, 1)",
+            "pulse": "cubic-bezier(0.4, 0, 0.2, 1)"
+        },
+        "duration": {
+            "progressMs": 1200,
+            "pulseMs": 600
+        }
+    },
+    "tailwindVars": {
+        "--ring-track": "{ringColor.track}",
+        "--ring-move-start": "{ringColor.moveStart}",
+        "--ring-move-end": "{ringColor.moveEnd}",
+        "--ring-ex-start": "{ringColor.exerciseStart}",
+        "--ring-ex-end": "{ringColor.exerciseEnd}",
+        "--ring-stand-start": "{ringColor.standStart}",
+        "--ring-stand-end": "{ringColor.standEnd}"
+    },
+    "elementStyling": {
+        "ringCard": {
+            "selectors": [
+                ".goal-ring-card",
+                "[data-ring-card]"
+            ],
+            "background": "{color.surface}",
+            "border": "1px solid {color.border}",
+            "radius": "{radius.xl}",
+            "shadow": "{shadow.innerSubtle}",
+            "padding": "20px 22px",
+            "text": "{color.textPrimary}",
+            "caption": "{color.textSecondary}"
+        },
+        "ringCanvas": {
+            "selectors": [
+                ".goal-ring",
+                "[data-goal-ring]"
+            ],
+            "background": "transparent",
+            "shadows": [
+                "{shadow.ringInset}"
+            ],
+            "a11y": {
+                "minContrastCenterText": ">= 7:1",
+                "focusRing": "{focus.offsetRing}"
+            }
+        }
+    },
+    "components": {
+        "GoalRings": {
+            "structure": [
+                "outer: Move (calories)",
+                "middle: Exercise (minutes)",
+                "inner: Stand (hours)"
+            ],
+            "render": {
+                "type": "svg",
+                "strokeLinecap": "round",
+                "useGradients": true,
+                "gradients": {
+                    "move": {
+                        "start": "{ringColor.moveStart}",
+                        "end": "{ringColor.moveEnd}"
+                    },
+                    "exercise": {
+                        "start": "{ringColor.exerciseStart}",
+                        "end": "{ringColor.exerciseEnd}"
+                    },
+                    "stand": {
+                        "start": "{ringColor.standStart}",
+                        "end": "{ringColor.standEnd}"
+                    }
+                },
+                "trackColor": "{ringColor.track}"
+            },
+            "layout": {
+                "sizeToken": "md",
+                "center": {
+                    "titleColor": "{color.textSecondary}",
+                    "valueColor": "{color.white}",
+                    "subtitleColor": "{color.textTertiary}",
+                    "typography": {
+                        "valueSizePx": 32,
+                        "titleSizePx": 12,
+                        "subtitleSizePx": 12
+                    }
+                }
+            },
+            "animation": {
+                "progressEasing": "{easing.progress}",
+                "progressDurationMs": "{duration.progressMs}",
+                "completePulse": {
+                    "enabled": true,
+                    "durationMs": "{duration.pulseMs}",
+                    "shadow": "{shadow.ringHalo}"
+                }
+            },
+            "states": {
+                "default": {
+                    "opacity": 1
+                },
+                "paused": {
+                    "opacity": 0.55
+                },
+                "complete": {
+                    "glow": "{shadow.ringHalo}"
+                },
+                "disabled": {
+                    "opacity": 0.35
+                }
+            },
+            "accessibility": {
+                "ariaRole": "img",
+                "ariaLabelTemplate": "Move {movePct}%, Exercise {exercisePct}%, Stand {standPct}% complete",
+                "focus": {
+                    "ring": "{focus.offsetRing}"
+                }
+            }
+        }
+    },
+    "selectorsAndContexts": {
+        "ringTargets": [
+            ".goal-ring",
+            "[data-goal-ring]"
+        ],
+        "ringCard": [
+            ".goal-ring-card",
+            "[data-ring-card]"
+        ],
+        "ringValue": [
+            ".goal-ring .value",
+            "[data-goal-ring-value]"
+        ]
+    },
+    "examples": {
+        "cssVarsUsage": [
+            "stroke: url(#grad-move); /* progress stroke */",
+            "stroke-dasharray: <circumference>;",
+            "stroke-dashoffset: <circumference> * (1 - progress);",
+            "track stroke: var(--ring-track);"
+        ],
+        "sizeSwap": "Pass sizeToken: 'xs'|'sm'|'md'|'lg' to scale canvas and strokes."
+    },
+    "doNotRules": [
+        "DO NOT place hero gradients on ring cards; use gradients only on progress strokes.",
+        "DO NOT use gradient fills for center text or icons; keep text solid.",
+        "DO NOT animate continuously after completion; a single pulse is allowed.",
+        "DO NOT reduce track contrast below 3:1 against surface.",
+        "DO NOT exceed card radius with the ring canvas; respect padding tokens."
+    }
+}
