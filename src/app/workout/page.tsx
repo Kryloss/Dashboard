@@ -8,6 +8,7 @@ import { PlannedWorkoutCard } from "./components/planned-workout-card"
 import { QuickActionCard } from "./components/quick-action-card"
 import { StatCard } from "./components/stat-card"
 import { ActivityItem } from "./components/activity-item"
+import { Settings, Plus, Flame, Dumbbell, User, Timer, Bike, Target, TrendingUp, Clock, Heart, FileText, Activity, Zap } from "lucide-react"
 
 export default function WorkoutPage() {
     const [isHealssSubdomain, setIsHealssSubdomain] = useState(false)
@@ -28,14 +29,14 @@ export default function WorkoutPage() {
         plannedWorkouts: [
             {
                 id: 1,
-                icon: "🏃‍♂️",
+                icon: <Target className="w-5 h-5" />,
                 name: "Morning Run",
                 duration: "30 min",
                 time: "6:00 AM"
             },
             {
                 id: 2,
-                icon: "💪",
+                icon: <Dumbbell className="w-5 h-5" />,
                 name: "Strength Training",
                 duration: "45 min",
                 time: "5:00 PM"
@@ -48,19 +49,19 @@ export default function WorkoutPage() {
         ],
         weeklyStats: [
             {
-                icon: "🔥",
+                icon: <Flame className="w-4 h-4" />,
                 label: "Total Calories",
                 value: "8,340",
                 change: { value: "12%", direction: "up" as const }
             },
             {
-                icon: "⏱️",
+                icon: <Clock className="w-4 h-4" />,
                 label: "Workout Time",
                 value: "4h 23m",
                 change: { value: "8%", direction: "up" as const }
             },
             {
-                icon: "💪",
+                icon: <Dumbbell className="w-4 h-4" />,
                 label: "Sessions",
                 value: "12",
                 change: { value: "3", direction: "up" as const }
@@ -93,7 +94,7 @@ export default function WorkoutPage() {
                                 variant="ghost"
                                 className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full"
                             >
-                                <span className="mr-2">⚙️</span>
+                                <Settings className="w-4 h-4 mr-2" />
                                 Goal Settings
                             </Button>
                         </div>
@@ -118,22 +119,24 @@ export default function WorkoutPage() {
 
                                 <div className="space-y-3">
                                     <div className="flex items-center space-x-3">
-                                        <span className="text-2xl">🔥</span>
+                                        <Flame className="w-6 h-6 text-[#FF2D55]" />
                                         <span className="text-[#F3F4F6] font-medium">1,247 / 2,000 calories</span>
                                     </div>
                                     <div className="flex items-center space-x-3">
-                                        <span className="text-2xl">💪</span>
+                                        <Dumbbell className="w-6 h-6 text-[#9BE15D]" />
                                         <span className="text-[#F3F4F6] font-medium">23 / 30 minutes</span>
                                     </div>
                                     <div className="flex items-center space-x-3">
-                                        <span className="text-2xl">🧍</span>
+                                        <User className="w-6 h-6 text-[#2BD2FF]" />
                                         <span className="text-[#F3F4F6] font-medium">8 / 12 hours</span>
                                     </div>
                                 </div>
 
                                 <div className="mt-6 p-4 bg-[#121318] border border-[#212227] rounded-[20px]">
-                                    <span className="text-[#F3F4F6] font-medium">Streak: 7 days </span>
-                                    <span className="text-2xl ml-2">🚀</span>
+                                    <div className="flex items-center space-x-2">
+                                        <span className="text-[#F3F4F6] font-medium">Streak: 7 days</span>
+                                        <TrendingUp className="w-5 h-5 text-[#4AA7FF]" />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -144,7 +147,8 @@ export default function WorkoutPage() {
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-xl font-semibold text-[#F3F4F6]">Today&apos;s Workout</h2>
                             <Button className="bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-full border border-[rgba(42,140,234,0.35)] shadow-[0_8px_32px_rgba(42,140,234,0.28)] hover:shadow-[0_10px_40px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all">
-                                + New Workout
+                                <Plus className="w-4 h-4 mr-2" />
+                                New Workout
                             </Button>
                         </div>
 
@@ -152,7 +156,7 @@ export default function WorkoutPage() {
                             {mockData.plannedWorkouts.map((workout) => (
                                 <PlannedWorkoutCard
                                     key={workout.id}
-                                    icon={<span className="text-lg">{workout.icon}</span>}
+                                    icon={workout.icon}
                                     name={workout.name}
                                     duration={workout.duration}
                                     time={workout.time}
@@ -165,7 +169,7 @@ export default function WorkoutPage() {
                             <div className="bg-[#121318] border border-[#212227] rounded-[20px] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)] hover:border-[#2A2B31] hover:-translate-y-[1px] hover:shadow-[0_0_0_1px_rgba(42,140,234,0.35),_0_8px_40px_rgba(42,140,234,0.20)] transition-all duration-200">
                                 <div className="flex items-center space-x-3 mb-4">
                                     <div className="w-10 h-10 bg-[rgba(255,255,255,0.03)] border border-[#2A2B31] rounded-[14px] flex items-center justify-center">
-                                        <span className="text-lg">📝</span>
+                                        <FileText className="w-5 h-5 text-[#F3F4F6]" />
                                     </div>
                                     <div>
                                         <h3 className="font-semibold text-[#F3F4F6] text-sm">Quick Log</h3>
@@ -188,27 +192,27 @@ export default function WorkoutPage() {
 
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
                             <QuickActionCard
-                                icon={<span className="text-xl">🏃‍♂️</span>}
+                                icon={<Target className="w-6 h-6" />}
                                 label="Running"
                                 onClick={() => handleQuickAction('running')}
                             />
                             <QuickActionCard
-                                icon={<span className="text-xl">💪</span>}
+                                icon={<Dumbbell className="w-6 h-6" />}
                                 label="Strength"
                                 onClick={() => handleQuickAction('strength')}
                             />
                             <QuickActionCard
-                                icon={<span className="text-xl">🧘‍♀️</span>}
+                                icon={<Heart className="w-6 h-6" />}
                                 label="Yoga"
                                 onClick={() => handleQuickAction('yoga')}
                             />
                             <QuickActionCard
-                                icon={<span className="text-xl">🚴‍♂️</span>}
+                                icon={<Bike className="w-6 h-6" />}
                                 label="Cycling"
                                 onClick={() => handleQuickAction('cycling')}
                             />
                             <QuickActionCard
-                                icon={<span className="text-xl">⏱️</span>}
+                                icon={<Timer className="w-6 h-6" />}
                                 label="Timer"
                                 onClick={() => handleQuickAction('timer')}
                             />
@@ -249,7 +253,7 @@ export default function WorkoutPage() {
                                 {mockData.weeklyStats.map((stat, index) => (
                                     <StatCard
                                         key={index}
-                                        icon={<span className="text-sm">{stat.icon}</span>}
+                                        icon={stat.icon}
                                         label={stat.label}
                                         value={stat.value}
                                         change={stat.change}
