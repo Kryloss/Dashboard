@@ -196,7 +196,7 @@ export function NavBar() {
                 {/* Logo */}
                 <div className="flex items-center">
                     <Link
-                        href={isOnHealss ? "https://healss.kryloss.com/workout" : "https://kryloss.com"}
+                        href="https://kryloss.com"
                         className="flex items-center space-x-2 font-bold text-xl text-[#FBF7FA] hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#0B0C0D] rounded-md px-2 py-1"
                     >
                         <span>Kryloss</span>
