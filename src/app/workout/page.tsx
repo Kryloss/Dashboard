@@ -8,10 +8,12 @@ import { PlannedWorkoutCard } from "./components/planned-workout-card"
 import { QuickActionCard } from "./components/quick-action-card"
 import { StatCard } from "./components/stat-card"
 import { ActivityItem } from "./components/activity-item"
-import { Settings, Plus, Flame, Dumbbell, User, Timer, Bike, Target, TrendingUp, Clock, Heart, FileText, Activity, Zap } from "lucide-react"
+import { WorkoutTypeDialog } from "./components/workout-type-dialog"
+import { Settings, Plus, Flame, Dumbbell, User, Timer, Bike, Target, TrendingUp, Clock, Heart, FileText } from "lucide-react"
 
 export default function WorkoutPage() {
     const [isHealssSubdomain, setIsHealssSubdomain] = useState(false)
+    const [showWorkoutDialog, setShowWorkoutDialog] = useState(false)
 
     useEffect(() => {
         // Check if we're on the healss subdomain
@@ -88,202 +90,210 @@ export default function WorkoutPage() {
                 {/* Hero Gradient Orb Background */}
                 <div className="absolute inset-0 opacity-80">
                     {/* Desktop gradient */}
-                    <div 
+                    <div
                         className="hidden md:block absolute inset-0"
                         style={{
                             background: "radial-gradient(60% 60% at 60% 30%, rgba(42,140,234,0.55) 0%, rgba(16,62,154,0.45) 35%, rgba(23,17,70,0.30) 65%, rgba(0,0,0,0) 100%)"
                         }}
                     />
                     {/* Mobile gradient - centered and larger */}
-                    <div 
+                    <div
                         className="block md:hidden absolute inset-0"
                         style={{
                             background: "radial-gradient(80% 80% at 50% 40%, rgba(42,140,234,0.55) 0%, rgba(16,62,154,0.45) 35%, rgba(23,17,70,0.30) 65%, rgba(0,0,0,0) 100%)"
                         }}
                     />
                 </div>
-                
+
                 {/* Content */}
                 <div className="relative z-10">
                     <div className="container mx-auto max-w-7xl px-6 py-8">
-                    {/* Daily Goals Section */}
-                    <section className="mb-12">
-                        <div className="flex items-center justify-between mb-6">
-                            <h1 className="text-2xl font-bold text-[#F3F4F6]">Daily Goals Progress</h1>
-                            <Button
-                                variant="ghost"
-                                className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full"
-                            >
-                                <Settings className="w-4 h-4 mr-2" />
-                                Goal Settings
-                            </Button>
-                        </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-                            <div className="flex justify-center lg:justify-start">
-                                <GoalRings
-                                    size="lg"
-                                    moveProgress={mockData.goals.move}
-                                    exerciseProgress={mockData.goals.exercise}
-                                    standProgress={mockData.goals.stand}
-                                    centerContent={{
-                                        title: "Today",
-                                        value: `${Math.round(mockData.goals.move * 100)}%`,
-                                        subtitle: "Complete"
-                                    }}
-                                />
-                            </div>
-
-                            <div className="space-y-4">
-                                <h2 className="text-xl font-semibold text-[#F3F4F6] mb-4">Today&apos;s Summary</h2>
-
-                                <div className="space-y-3">
-                                    <div className="flex items-center space-x-3">
-                                        <Flame className="w-6 h-6 text-[#FF2D55]" />
-                                        <span className="text-[#F3F4F6] font-medium">1,247 / 2,000 calories</span>
-                                    </div>
-                                    <div className="flex items-center space-x-3">
-                                        <Dumbbell className="w-6 h-6 text-[#9BE15D]" />
-                                        <span className="text-[#F3F4F6] font-medium">23 / 30 minutes</span>
-                                    </div>
-                                    <div className="flex items-center space-x-3">
-                                        <User className="w-6 h-6 text-[#2BD2FF]" />
-                                        <span className="text-[#F3F4F6] font-medium">8 / 12 hours</span>
-                                    </div>
-                                </div>
-
-                                <div className="mt-6 p-4 bg-[#121318] border border-[#212227] rounded-[20px]">
-                                    <div className="flex items-center space-x-2">
-                                        <span className="text-[#F3F4F6] font-medium">Streak: 7 days</span>
-                                        <TrendingUp className="w-5 h-5 text-[#4AA7FF]" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* Today's Workout Section */}
-                    <section className="mb-12">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-xl font-semibold text-[#F3F4F6]">Today&apos;s Workout</h2>
-                            <Button className="bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-full border border-[rgba(42,140,234,0.35)] shadow-[0_8px_32px_rgba(42,140,234,0.28)] hover:shadow-[0_10px_40px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all">
-                                <Plus className="w-4 h-4 mr-2" />
-                                New Workout
-                            </Button>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                            {mockData.plannedWorkouts.map((workout) => (
-                                <PlannedWorkoutCard
-                                    key={workout.id}
-                                    icon={workout.icon}
-                                    name={workout.name}
-                                    duration={workout.duration}
-                                    time={workout.time}
-                                    onStart={() => handleStartWorkout(workout.id)}
-                                    onEdit={() => handleEditWorkout(workout.id)}
-                                />
-                            ))}
-
-                            {/* Quick Log Card */}
-                            <div className="bg-[#121318] border border-[#212227] rounded-[20px] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)] hover:border-[#2A2B31] hover:-translate-y-[1px] hover:shadow-[0_0_0_1px_rgba(42,140,234,0.35),_0_8px_40px_rgba(42,140,234,0.20)] transition-all duration-200">
-                                <div className="flex items-center space-x-3 mb-4">
-                                    <div className="w-10 h-10 bg-[rgba(255,255,255,0.03)] border border-[#2A2B31] rounded-[14px] flex items-center justify-center">
-                                        <FileText className="w-5 h-5 text-[#F3F4F6]" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-semibold text-[#F3F4F6] text-sm">Quick Log</h3>
-                                        <p className="text-xs text-[#A1A1AA] mt-1">Log past workout</p>
-                                    </div>
-                                </div>
-                                <Button
-                                    className="w-full bg-[#0E0F13] text-[#F3F4F6] border border-[#212227] rounded-full hover:bg-[#17181D] hover:border-[#2A2B31] hover:scale-[1.01] active:scale-[0.997] transition-all text-sm font-medium h-8"
-                                    onClick={() => handleQuickAction('log')}
-                                >
-                                    Log Workout
-                                </Button>
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* Quick Actions Section */}
-                    <section className="mb-12">
-                        <h2 className="text-xl font-semibold text-[#F3F4F6] mb-6">Quick Actions</h2>
-
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-                            <QuickActionCard
-                                icon={<Target className="w-6 h-6" />}
-                                label="Running"
-                                onClick={() => handleQuickAction('running')}
-                            />
-                            <QuickActionCard
-                                icon={<Dumbbell className="w-6 h-6" />}
-                                label="Strength"
-                                onClick={() => handleQuickAction('strength')}
-                            />
-                            <QuickActionCard
-                                icon={<Heart className="w-6 h-6" />}
-                                label="Yoga"
-                                onClick={() => handleQuickAction('yoga')}
-                            />
-                            <QuickActionCard
-                                icon={<Bike className="w-6 h-6" />}
-                                label="Cycling"
-                                onClick={() => handleQuickAction('cycling')}
-                            />
-                            <QuickActionCard
-                                icon={<Timer className="w-6 h-6" />}
-                                label="Timer"
-                                onClick={() => handleQuickAction('timer')}
-                            />
-                        </div>
-                    </section>
-
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                        {/* Recent Activity Section */}
-                        <section>
+                        {/* Daily Goals Section */}
+                        <section className="mb-12">
                             <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-xl font-semibold text-[#F3F4F6]">Recent Activity</h2>
+                                <h1 className="text-2xl font-bold text-[#F3F4F6]">Daily Goals Progress</h1>
                                 <Button
                                     variant="ghost"
-                                    className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full text-sm"
+                                    className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full"
                                 >
-                                    View All
+                                    <Settings className="w-4 h-4 mr-2" />
+                                    Goal Settings
                                 </Button>
                             </div>
 
-                            <div className="bg-[#121318] border border-[#212227] rounded-[20px] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)]">
-                                {mockData.recentActivity.map((activity, index) => (
-                                    <ActivityItem
-                                        key={index}
-                                        date={activity.date}
-                                        name={activity.name}
-                                        duration={activity.duration}
-                                        progress={activity.progress}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                                <div className="flex justify-center lg:justify-start">
+                                    <GoalRings
+                                        size="lg"
+                                        moveProgress={mockData.goals.move}
+                                        exerciseProgress={mockData.goals.exercise}
+                                        standProgress={mockData.goals.stand}
+                                        centerContent={{
+                                            title: "Today",
+                                            value: `${Math.round(mockData.goals.move * 100)}%`,
+                                            subtitle: "Complete"
+                                        }}
                                     />
-                                ))}
+                                </div>
+
+                                <div className="space-y-4">
+                                    <h2 className="text-xl font-semibold text-[#F3F4F6] mb-4">Today&apos;s Summary</h2>
+
+                                    <div className="space-y-3">
+                                        <div className="flex items-center space-x-3">
+                                            <Flame className="w-6 h-6 text-[#FF2D55]" />
+                                            <span className="text-[#F3F4F6] font-medium">1,247 / 2,000 calories</span>
+                                        </div>
+                                        <div className="flex items-center space-x-3">
+                                            <Dumbbell className="w-6 h-6 text-[#9BE15D]" />
+                                            <span className="text-[#F3F4F6] font-medium">23 / 30 minutes</span>
+                                        </div>
+                                        <div className="flex items-center space-x-3">
+                                            <User className="w-6 h-6 text-[#2BD2FF]" />
+                                            <span className="text-[#F3F4F6] font-medium">8 / 12 hours</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-6 p-4 bg-[#121318] border border-[#212227] rounded-[20px]">
+                                        <div className="flex items-center space-x-2">
+                                            <span className="text-[#F3F4F6] font-medium">Streak: 7 days</span>
+                                            <TrendingUp className="w-5 h-5 text-[#4AA7FF]" />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </section>
 
-                        {/* Weekly Stats Section */}
-                        <section>
-                            <h2 className="text-xl font-semibold text-[#F3F4F6] mb-6">This Week&apos;s Progress</h2>
+                        {/* Today's Workout Section */}
+                        <section className="mb-12">
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-xl font-semibold text-[#F3F4F6]">Today&apos;s Workout</h2>
+                                <Button
+                                    onClick={() => setShowWorkoutDialog(true)}
+                                    className="bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-full border border-[rgba(42,140,234,0.35)] shadow-[0_8px_32px_rgba(42,140,234,0.28)] hover:shadow-[0_10px_40px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all">
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    New Workout
+                                </Button>
+                            </div>
 
-                            <div className="space-y-4">
-                                {mockData.weeklyStats.map((stat, index) => (
-                                    <StatCard
-                                        key={index}
-                                        icon={stat.icon}
-                                        label={stat.label}
-                                        value={stat.value}
-                                        change={stat.change}
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                {mockData.plannedWorkouts.map((workout) => (
+                                    <PlannedWorkoutCard
+                                        key={workout.id}
+                                        icon={workout.icon}
+                                        name={workout.name}
+                                        duration={workout.duration}
+                                        time={workout.time}
+                                        onStart={() => handleStartWorkout(workout.id)}
+                                        onEdit={() => handleEditWorkout(workout.id)}
                                     />
                                 ))}
+
+                                {/* Quick Log Card */}
+                                <div className="bg-[#121318] border border-[#212227] rounded-[20px] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)] hover:border-[#2A2B31] hover:-translate-y-[1px] hover:shadow-[0_0_0_1px_rgba(42,140,234,0.35),_0_8px_40px_rgba(42,140,234,0.20)] transition-all duration-200">
+                                    <div className="flex items-center space-x-3 mb-4">
+                                        <div className="w-10 h-10 bg-[rgba(255,255,255,0.03)] border border-[#2A2B31] rounded-[14px] flex items-center justify-center">
+                                            <FileText className="w-5 h-5 text-[#F3F4F6]" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-semibold text-[#F3F4F6] text-sm">Quick Log</h3>
+                                            <p className="text-xs text-[#A1A1AA] mt-1">Log past workout</p>
+                                        </div>
+                                    </div>
+                                    <Button
+                                        className="w-full bg-[#0E0F13] text-[#F3F4F6] border border-[#212227] rounded-full hover:bg-[#17181D] hover:border-[#2A2B31] hover:scale-[1.01] active:scale-[0.997] transition-all text-sm font-medium h-8"
+                                        onClick={() => handleQuickAction('log')}
+                                    >
+                                        Log Workout
+                                    </Button>
+                                </div>
                             </div>
                         </section>
+
+                        {/* Quick Actions Section */}
+                        <section className="mb-12">
+                            <h2 className="text-xl font-semibold text-[#F3F4F6] mb-6">Quick Actions</h2>
+
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                                <QuickActionCard
+                                    icon={<Target className="w-6 h-6" />}
+                                    label="Running"
+                                    onClick={() => handleQuickAction('running')}
+                                />
+                                <QuickActionCard
+                                    icon={<Dumbbell className="w-6 h-6" />}
+                                    label="Strength"
+                                    onClick={() => handleQuickAction('strength')}
+                                />
+                                <QuickActionCard
+                                    icon={<Heart className="w-6 h-6" />}
+                                    label="Yoga"
+                                    onClick={() => handleQuickAction('yoga')}
+                                />
+                                <QuickActionCard
+                                    icon={<Bike className="w-6 h-6" />}
+                                    label="Cycling"
+                                    onClick={() => handleQuickAction('cycling')}
+                                />
+                                <QuickActionCard
+                                    icon={<Timer className="w-6 h-6" />}
+                                    label="Timer"
+                                    onClick={() => handleQuickAction('timer')}
+                                />
+                            </div>
+                        </section>
+
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                            {/* Recent Activity Section */}
+                            <section>
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-xl font-semibold text-[#F3F4F6]">Recent Activity</h2>
+                                    <Button
+                                        variant="ghost"
+                                        className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full text-sm"
+                                    >
+                                        View All
+                                    </Button>
+                                </div>
+
+                                <div className="bg-[#121318] border border-[#212227] rounded-[20px] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)]">
+                                    {mockData.recentActivity.map((activity, index) => (
+                                        <ActivityItem
+                                            key={index}
+                                            date={activity.date}
+                                            name={activity.name}
+                                            duration={activity.duration}
+                                            progress={activity.progress}
+                                        />
+                                    ))}
+                                </div>
+                            </section>
+
+                            {/* Weekly Stats Section */}
+                            <section>
+                                <h2 className="text-xl font-semibold text-[#F3F4F6] mb-6">This Week&apos;s Progress</h2>
+
+                                <div className="space-y-4">
+                                    {mockData.weeklyStats.map((stat, index) => (
+                                        <StatCard
+                                            key={index}
+                                            icon={stat.icon}
+                                            label={stat.label}
+                                            value={stat.value}
+                                            change={stat.change}
+                                        />
+                                    ))}
+                                </div>
+                            </section>
+                        </div>
                     </div>
                 </div>
-                </div>
+
+                {/* Workout Type Dialog */}
+                <WorkoutTypeDialog
+                    open={showWorkoutDialog}
+                    onOpenChange={setShowWorkoutDialog}
+                />
             </div>
         )
     }
