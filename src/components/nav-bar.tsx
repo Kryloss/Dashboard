@@ -217,16 +217,16 @@ export function NavBar() {
                                     Workout
                                 </Link>
                                 <Link
-                                    href="https://healss.kryloss.com/progress"
-                                    className="text-[#9CA9B7] hover:text-[#FBF7FA] transition-colors px-3 py-2 rounded-md hover:bg-white/5"
-                                >
-                                    Progress
-                                </Link>
-                                <Link
                                     href="https://healss.kryloss.com/nutrition"
                                     className="text-[#9CA9B7] hover:text-[#FBF7FA] transition-colors px-3 py-2 rounded-md hover:bg-white/5"
                                 >
                                     Nutrition
+                                </Link>
+                                <Link
+                                    href="https://healss.kryloss.com/progress"
+                                    className="text-[#9CA9B7] hover:text-[#FBF7FA] transition-colors px-3 py-2 rounded-md hover:bg-white/5"
+                                >
+                                    Progress
                                 </Link>
                             </>
                         ) : (
@@ -238,7 +238,7 @@ export function NavBar() {
                                         href={subdomain.url}
                                         className="text-[#9CA9B7] hover:text-[#FBF7FA] transition-colors px-3 py-2 rounded-md hover:bg-white/5"
                                     >
-                                        {subdomain.name}
+                                        {subdomain.name.charAt(0).toUpperCase() + subdomain.name.slice(1)}
                                     </Link>
                                 ))}
                                 <Link
@@ -264,7 +264,7 @@ export function NavBar() {
                                             {dynamicSubdomains.map((subdomain) => (
                                                 <ListItem
                                                     key={subdomain.name}
-                                                    title={subdomain.name}
+                                                    title={subdomain.name.charAt(0).toUpperCase() + subdomain.name.slice(1)}
                                                     href={subdomain.url}
                                                 >
                                                     {subdomain.description}
@@ -415,20 +415,20 @@ export function NavBar() {
                                         <div className="text-sm text-[#9CA9B7]">Track your fitness sessions</div>
                                     </Link>
                                     <Link
-                                        href="https://healss.kryloss.com/progress"
-                                        className="block px-2 py-2 text-[#FBF7FA] hover:text-white hover:bg-white/5 rounded-md transition-colors"
-                                        onClick={() => setMobileMenuOpen(false)}
-                                    >
-                                        <div className="font-medium">Progress</div>
-                                        <div className="text-sm text-[#9CA9B7]">Monitor your fitness journey</div>
-                                    </Link>
-                                    <Link
                                         href="https://healss.kryloss.com/nutrition"
                                         className="block px-2 py-2 text-[#FBF7FA] hover:text-white hover:bg-white/5 rounded-md transition-colors"
                                         onClick={() => setMobileMenuOpen(false)}
                                     >
                                         <div className="font-medium">Nutrition</div>
                                         <div className="text-sm text-[#9CA9B7]">Manage your nutrition plan</div>
+                                    </Link>
+                                    <Link
+                                        href="https://healss.kryloss.com/progress"
+                                        className="block px-2 py-2 text-[#FBF7FA] hover:text-white hover:bg-white/5 rounded-md transition-colors"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                    >
+                                        <div className="font-medium">Progress</div>
+                                        <div className="text-sm text-[#9CA9B7]">Monitor your fitness journey</div>
                                     </Link>
                                 </>
                             ) : (
@@ -444,7 +444,7 @@ export function NavBar() {
                                             className="block px-2 py-2 text-[#FBF7FA] hover:text-white hover:bg-white/5 rounded-md transition-colors"
                                             onClick={() => setMobileMenuOpen(false)}
                                         >
-                                            <div className="font-medium">{subdomain.name}</div>
+                                            <div className="font-medium">{subdomain.name.charAt(0).toUpperCase() + subdomain.name.slice(1)}</div>
                                             <div className="text-sm text-[#9CA9B7]">{subdomain.description}</div>
                                         </Link>
                                     ))}
