@@ -806,7 +806,7 @@ export class WorkoutStorageSupabase {
       exercises: JSON.parse(JSON.stringify(template.exercises)), // Deep clone
       startTime: new Date().toISOString(),
       elapsedTime: 0,
-      isRunning: false,
+      isRunning: true, // Start the workout immediately
       userId: this.currentUser?.id
     }
 

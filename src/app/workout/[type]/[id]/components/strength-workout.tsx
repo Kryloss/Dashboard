@@ -57,6 +57,21 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         }
 
         setIsRunning(ongoingWorkout.isRunning)
+      } else {
+        // No ongoing workout found with this ID - create a new empty workout
+        const newWorkout = {
+          id: workoutId,
+          type: 'strength' as const,
+          exercises: [],
+          startTime: new Date().toISOString(),
+          elapsedTime: 0,
+          isRunning: true // Start the workout immediately so it shows in Today's Workout
+        }
+        
+        await WorkoutStorageSupabase.saveOngoingWorkout(newWorkout)
+        setExercises([])
+        setTime(0)
+        setIsRunning(true)
       }
     }
 
