@@ -18,72 +18,175 @@ export default function WorkoutPage() {
     const [isHealssSubdomain, setIsHealssSubdomain] = useState(false)
     const [showWorkoutDialog, setShowWorkoutDialog] = useState(false)
     const [ongoingWorkout, setOngoingWorkout] = useState<OngoingWorkout | null>(null)
+    const [isLoadingWorkout, setIsLoadingWorkout] = useState(false)
+
+    // Enhanced workout loading with comprehensive debugging
+    const loadOngoingWorkout = async () => {
+        if (!user || !supabase) {
+            console.log('Skipping workout load - missing user or supabase client')
+            return
+        }
+
+        console.log('Starting workout load process for user:', user.id)
+        setIsLoadingWorkout(true)
+        
+        try {
+            console.log('Querying database for ongoing workout...')
+            // Direct database query without complex caching
+            const { data, error } = await supabase
+                .from('ongoing_workouts')
+                .select('*')
+                .eq('user_id', user.id)
+                .single()
+
+            if (error) {
+                if (error.code === 'PGRST116') {
+                    // No ongoing workout found
+                    console.log('✅ No ongoing workout found in database')
+                    setOngoingWorkout(null)
+                    // Clear any stale localStorage
+                    if (typeof window !== 'undefined') {
+                        const hadLocalStorage = !!localStorage.getItem('ongoing-workout')
+                        localStorage.removeItem('ongoing-workout')
+                        localStorage.removeItem('supabase-cache-ongoing-workout')
+                        if (hadLocalStorage) {
+                            console.log('🧹 Cleared stale localStorage workout data')
+                        }
+                    }
+                } else {
+                    console.error('Database query error:', error)
+                    throw error
+                }
+            } else {
+                // Convert database row to OngoingWorkout interface
+                const workout: OngoingWorkout = {
+                    id: data.id,
+                    type: data.type as 'strength' | 'running' | 'yoga' | 'cycling',
+                    templateId: data.template_id || undefined,
+                    templateName: data.template_name || undefined,
+                    exercises: data.exercises,
+                    startTime: data.start_time,
+                    elapsedTime: data.elapsed_time,
+                    isRunning: data.is_running,
+                    userId: data.user_id
+                }
+                
+                console.log('✅ Successfully loaded ongoing workout:', {
+                    id: workout.id,
+                    type: workout.type,
+                    name: workout.templateName || 'Unnamed',
+                    exercises: workout.exercises.length,
+                    elapsedTime: workout.elapsedTime,
+                    isRunning: workout.isRunning
+                })
+                
+                setOngoingWorkout(workout)
+                
+                // Cache in localStorage for offline access
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem('ongoing-workout', JSON.stringify(workout))
+                    localStorage.setItem('ongoing-workout-timestamp', Date.now().toString())
+                    console.log('💾 Cached workout to localStorage')
+                }
+            }
+        } catch (error) {
+            console.error('❌ Failed to load ongoing workout from database:', error)
+            
+            // Fallback to localStorage if database fails
+            if (typeof window !== 'undefined') {
+                const cachedWorkout = localStorage.getItem('ongoing-workout')
+                const cacheTimestamp = localStorage.getItem('ongoing-workout-timestamp')
+                
+                console.log('🔄 Attempting localStorage fallback...', {
+                    hasCachedWorkout: !!cachedWorkout,
+                    hasCacheTimestamp: !!cacheTimestamp
+                })
+                
+                // Only use cache if it's less than 5 minutes old
+                if (cachedWorkout && cacheTimestamp) {
+                    const cacheAge = Date.now() - parseInt(cacheTimestamp)
+                    const maxCacheAge = 5 * 60 * 1000 // 5 minutes
+                    
+                    if (cacheAge < maxCacheAge) {
+                        console.log(`✅ Using cached workout (${Math.round(cacheAge/1000)}s old)`)
+                        setOngoingWorkout(JSON.parse(cachedWorkout))
+                    } else {
+                        console.log(`⚠️ Cached workout too old (${Math.round(cacheAge/1000)}s), discarding`)
+                        localStorage.removeItem('ongoing-workout')
+                        localStorage.removeItem('ongoing-workout-timestamp')
+                        setOngoingWorkout(null)
+                    }
+                } else {
+                    console.log('❌ No valid localStorage fallback available')
+                    setOngoingWorkout(null)
+                }
+            }
+        } finally {
+            setIsLoadingWorkout(false)
+            console.log('Workout load process completed')
+        }
+    }
 
     useEffect(() => {
-        // Check if we're on the healss subdomain
         const onHealss = isOnSubdomain('healss')
         setIsHealssSubdomain(onHealss)
 
-        // Initialize workout storage with user context
         if (onHealss) {
             WorkoutStorageSupabase.initialize(user, supabase)
-
-            // Setup real-time callback for ongoing workout updates
-            WorkoutStorageSupabase.onOngoingWorkoutUpdate((workout) => {
-                console.log('Ongoing workout updated via real-time:', workout)
-                if (workout === null) {
-                    console.warn('Workout was set to null - this might be causing the disappearing issue')
-                }
-                setOngoingWorkout(workout)
-            })
-
-            // Load ongoing workout with retry logic
-            const loadOngoingWorkout = async () => {
-                try {
-                    const workout = await WorkoutStorageSupabase.getOngoingWorkout()
-                    console.log('Loaded ongoing workout:', workout)
-                    setOngoingWorkout(workout)
-                } catch (error) {
-                    console.error('Failed to load ongoing workout:', error)
-                }
-            }
             loadOngoingWorkout()
-        }
-
-        // Cleanup on unmount
-        return () => {
-            if (onHealss) {
-                WorkoutStorageSupabase.cleanup()
-            }
         }
     }, [user, supabase])
 
-    // Separate effect to handle workout state updates and prevent disappearing
+    // Smart focus handling - avoid excessive reloads
     useEffect(() => {
-        if (isHealssSubdomain && ongoingWorkout && ongoingWorkout.isRunning) {
-            // Update timer display for running workouts - less frequently to prevent conflicts
-            const updateTimer = setInterval(() => {
-                // Calculate time client-side to avoid database calls
-                const timeDiff = Math.floor((Date.now() - new Date(ongoingWorkout.startTime).getTime()) / 1000)
-                const updatedTime = ongoingWorkout.elapsedTime + timeDiff
+        if (!isHealssSubdomain) return
 
-                // Only update if there's a significant difference (10 seconds) and don't fetch from database
-                if (Math.abs(updatedTime - ongoingWorkout.elapsedTime) > 10) {
-                    setOngoingWorkout(prev => {
-                        if (prev && prev.id === ongoingWorkout.id) {
-                            return {
-                                ...prev,
-                                elapsedTime: updatedTime
-                            }
-                        }
-                        return prev
-                    })
-                }
-            }, 5000) // Update every 5 seconds instead of 1 second
-
-            return () => clearInterval(updateTimer)
+        let lastFocusTime = 0
+        const handleFocus = () => {
+            const now = Date.now()
+            // Only reload if more than 30 seconds since last focus event
+            if (now - lastFocusTime > 30000) {
+                console.log('Page gained focus after significant time away, refreshing workout data')
+                loadOngoingWorkout()
+                lastFocusTime = now
+            } else {
+                console.log('Page gained focus recently, skipping reload to prevent conflicts')
+            }
         }
-    }, [isHealssSubdomain, ongoingWorkout?.id, ongoingWorkout?.isRunning, ongoingWorkout?.startTime])
+
+        window.addEventListener('focus', handleFocus)
+        return () => window.removeEventListener('focus', handleFocus)
+    }, [isHealssSubdomain, user, supabase])
+
+    // Optimized timer update - reduced frequency and smarter updates
+    useEffect(() => {
+        if (!ongoingWorkout?.isRunning) return
+
+        const updateTimer = setInterval(() => {
+            setOngoingWorkout(prev => {
+                if (!prev) return prev
+                
+                const now = Date.now()
+                const timeDiff = Math.floor((now - new Date(prev.startTime).getTime()) / 1000)
+                const currentElapsedTime = prev.elapsedTime + timeDiff
+                
+                // Only update if there's a meaningful change (prevents unnecessary renders)
+                const timeDelta = Math.abs(currentElapsedTime - prev.elapsedTime)
+                if (timeDelta < 5) {
+                    return prev // Skip update if less than 5 seconds difference
+                }
+                
+                console.log(`Timer update: ${prev.elapsedTime}s -> ${currentElapsedTime}s`)
+                
+                return {
+                    ...prev,
+                    elapsedTime: currentElapsedTime
+                }
+            })
+        }, 5000) // Update every 5 seconds instead of every second
+
+        return () => clearInterval(updateTimer)
+    }, [ongoingWorkout?.isRunning, ongoingWorkout?.startTime])
 
     // Mock data for demonstration
     const mockData = {
@@ -249,17 +352,41 @@ export default function WorkoutPage() {
                         <section className="mb-12">
                             <div className="flex items-center justify-between mb-6">
                                 <h2 className="text-xl font-semibold text-[#F3F4F6]">Today&apos;s Workout</h2>
-                                <Button
-                                    onClick={() => setShowWorkoutDialog(true)}
-                                    className="bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-full border border-[rgba(42,140,234,0.35)] shadow-[0_8px_32px_rgba(42,140,234,0.28)] hover:shadow-[0_10px_40px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all">
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    New Workout
-                                </Button>
+                                <div className="flex items-center space-x-3">
+                                    <Button
+                                        onClick={loadOngoingWorkout}
+                                        disabled={isLoadingWorkout}
+                                        variant="ghost"
+                                        className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full"
+                                    >
+                                        {isLoadingWorkout ? (
+                                            <div className="w-4 h-4 border-2 border-[#4AA7FF] border-t-transparent rounded-full animate-spin" />
+                                        ) : (
+                                            'Refresh'
+                                        )}
+                                    </Button>
+                                    <Button
+                                        onClick={() => setShowWorkoutDialog(true)}
+                                        className="bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-full border border-[rgba(42,140,234,0.35)] shadow-[0_8px_32px_rgba(42,140,234,0.28)] hover:shadow-[0_10px_40px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all">
+                                        <Plus className="w-4 h-4 mr-2" />
+                                        New Workout
+                                    </Button>
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                {/* Loading State */}
+                                {isLoadingWorkout && (
+                                    <div className="bg-[#121318] border border-[#212227] rounded-[20px] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)]">
+                                        <div className="flex items-center justify-center py-8">
+                                            <div className="w-6 h-6 border-2 border-[#4AA7FF] border-t-transparent rounded-full animate-spin" />
+                                            <span className="ml-3 text-[#A1A1AA]">Loading workout...</span>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Ongoing Workout */}
-                                {ongoingWorkout && (
+                                {!isLoadingWorkout && ongoingWorkout && (
                                     <div className="bg-[#121318] border-2 border-[#4AA7FF] rounded-[20px] p-5 shadow-[0_0_0_1px_rgba(74,167,255,0.35),_0_8px_40px_rgba(74,167,255,0.20)] hover:shadow-[0_0_0_1px_rgba(74,167,255,0.5),_0_12px_48px_rgba(74,167,255,0.25)] hover:-translate-y-[1px] transition-all duration-200">
                                         <div className="flex items-start justify-between mb-4">
                                             <div className="flex items-center space-x-3">
@@ -271,7 +398,10 @@ export default function WorkoutPage() {
                                                         {ongoingWorkout.templateName || 'Active Workout'}
                                                     </h3>
                                                     <p className="text-xs text-[#4AA7FF] mt-1 font-medium">
-                                                        {ongoingWorkout.isRunning ? 'In Progress' : 'Paused'} • {Math.floor(ongoingWorkout.elapsedTime / 60)}:{String(ongoingWorkout.elapsedTime % 60).padStart(2, '0')}
+                                                        {ongoingWorkout.isRunning ? 'In Progress' : 'Paused'} • {Math.floor((ongoingWorkout.elapsedTime || 0) / 60)}:{String((ongoingWorkout.elapsedTime || 0) % 60).padStart(2, '0')}
+                                                    </p>
+                                                    <p className="text-xs text-[#7A7F86] mt-1">
+                                                        {ongoingWorkout.exercises?.length || 0} exercise{(ongoingWorkout.exercises?.length || 0) !== 1 ? 's' : ''}
                                                     </p>
                                                 </div>
                                             </div>

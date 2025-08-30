@@ -79,57 +79,112 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     initializeAndLoad()
   }, [workoutId, user, supabase])
 
-  // Debounced auto-save function with improved conflict prevention
-  const debouncedAutoSave = async (updatedExercises: Exercise[], currentTime: number, runningState: boolean) => {
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current)
-    }
+  // Simple save function - saves immediately without debouncing
+  const saveWorkoutState = async (updatedExercises: Exercise[] = exercises) => {
+    try {
+      if (!user || !supabase) {
+        console.log('No user or supabase client, skipping save')
+        return
+      }
 
-    autoSaveTimeoutRef.current = setTimeout(async () => {
+      // Check if workout already exists to preserve start_time
+      let startTime = new Date().toISOString()
       try {
-        const ongoingWorkout = await WorkoutStorageSupabase.getOngoingWorkout()
-        if (ongoingWorkout && ongoingWorkout.id === workoutId) {
-          // Only save if there are actual changes to prevent unnecessary updates
-          const exercisesChanged = JSON.stringify(ongoingWorkout.exercises) !== JSON.stringify(updatedExercises)
-          const timeChanged = Math.abs(ongoingWorkout.elapsedTime - currentTime) > 5 // Allow 5 second tolerance
-          const stateChanged = ongoingWorkout.isRunning !== runningState
+        const { data: existingWorkout } = await supabase
+          .from('ongoing_workouts')
+          .select('start_time')
+          .eq('user_id', user.id)
+          .single()
           
-          if (exercisesChanged || timeChanged || stateChanged) {
-            const updatedWorkout = {
-              ...ongoingWorkout,
-              exercises: updatedExercises,
-              elapsedTime: currentTime,
-              isRunning: runningState
-            }
-            await WorkoutStorageSupabase.saveOngoingWorkout(updatedWorkout)
-            console.log('Auto-saved workout with changes:', updatedWorkout.id, {
-              exercisesChanged,
-              timeChanged,
-              stateChanged
-            })
-          } else {
-            console.log('Skipped auto-save - no significant changes detected')
-          }
+        if (existingWorkout) {
+          startTime = existingWorkout.start_time
         }
       } catch (error) {
-        console.error('Auto-save failed:', error)
+        // Workout doesn't exist yet, use current time
+        console.log('Creating new workout with current time')
       }
-    }, 1000) // Increased debounce to 1 second to reduce conflicts
+
+      const workoutData = {
+        id: workoutId,
+        user_id: user.id,
+        type: 'strength',
+        template_id: null,
+        template_name: null,
+        exercises: updatedExercises,
+        start_time: startTime,
+        elapsed_time: time,
+        is_running: isRunning
+      }
+
+      console.log('Saving workout state:', workoutId, 'exercises:', updatedExercises.length)
+      
+      // Fixed: Use proper conflict resolution for database constraint UNIQUE(user_id, type)
+      const { error } = await supabase
+        .from('ongoing_workouts')
+        .upsert(workoutData, {
+          onConflict: 'user_id,type'  // Match database constraint: UNIQUE(user_id, type)
+        })
+
+      if (error) {
+        console.error('Database save failed:', error.message, error)
+        
+        // Don't throw error - maintain localStorage backup instead
+        console.log('Falling back to localStorage-only storage due to database error')
+        
+        // Update localStorage as fallback
+        if (typeof window !== 'undefined') {
+          const workoutForStorage = {
+            id: workoutId,
+            type: 'strength' as const,
+            exercises: updatedExercises,
+            startTime: startTime,
+            elapsedTime: time,
+            isRunning: isRunning,
+            userId: user.id
+          }
+          localStorage.setItem('ongoing-workout', JSON.stringify(workoutForStorage))
+          localStorage.setItem('ongoing-workout-timestamp', Date.now().toString())
+          console.log('Workout saved to localStorage as fallback')
+        }
+        return // Exit gracefully without throwing
+      }
+
+      console.log('Successfully saved workout to database:', workoutId)
+      
+      // Update localStorage as backup for successful database save
+      if (typeof window !== 'undefined') {
+        const workoutForStorage = {
+          id: workoutId,
+          type: 'strength' as const,
+          exercises: updatedExercises,
+          startTime: startTime,
+          elapsedTime: time,
+          isRunning: isRunning,
+          userId: user.id
+        }
+        localStorage.setItem('ongoing-workout', JSON.stringify(workoutForStorage))
+        localStorage.setItem('ongoing-workout-timestamp', Date.now().toString())
+      }
+    } catch (error) {
+      console.error('Critical error in saveWorkoutState:', error)
+      
+      // Always maintain localStorage backup even on critical errors
+      if (typeof window !== 'undefined') {
+        const workoutForStorage = {
+          id: workoutId,
+          type: 'strength' as const,
+          exercises: updatedExercises,
+          startTime: startTime,
+          elapsedTime: time,
+          isRunning: isRunning,
+          userId: user.id
+        }
+        localStorage.setItem('ongoing-workout', JSON.stringify(workoutForStorage))
+        localStorage.setItem('ongoing-workout-timestamp', Date.now().toString())
+        console.log('Emergency localStorage save completed')
+      }
+    }
   }
-
-  // Auto-save when exercises change
-  useEffect(() => {
-    if (exercises.length > 0) {
-      debouncedAutoSave(exercises, time, isRunning)
-    }
-
-    // Cleanup timeout on unmount
-    return () => {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current)
-      }
-    }
-  }, [exercises, time, isRunning, workoutId])
 
   // Stopwatch logic
   useEffect(() => {
@@ -175,21 +230,18 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
 
   const startTimer = async () => {
     setIsRunning(true)
-    const ongoingWorkout = await WorkoutStorageSupabase.getOngoingWorkout()
-    if (ongoingWorkout && ongoingWorkout.id === workoutId) {
-      await WorkoutStorageSupabase.updateOngoingWorkoutTime(ongoingWorkout.elapsedTime, true)
-    }
+    await saveWorkoutState()
   }
 
   const pauseTimer = async () => {
     setIsRunning(false)
-    await WorkoutStorageSupabase.updateOngoingWorkoutTime(time, false)
+    await saveWorkoutState()
   }
 
   const resetTimer = async () => {
     setIsRunning(false)
     setTime(0)
-    await WorkoutStorageSupabase.updateOngoingWorkoutTime(0, false)
+    await saveWorkoutState()
   }
 
   const addExercise = async () => {
@@ -210,10 +262,13 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     setExercises(updatedExercises)
     setNewExerciseName("")
     setShowAddExercise(false)
+    
+    // Save immediately after adding exercise
+    await saveWorkoutState(updatedExercises)
   }
 
-  const addSet = (exerciseId: string) => {
-    setExercises(prev => prev.map(exercise => {
+  const addSet = async (exerciseId: string) => {
+    const updatedExercises = exercises.map(exercise => {
       if (exercise.id === exerciseId) {
         return {
           ...exercise,
@@ -226,11 +281,14 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         }
       }
       return exercise
-    }))
+    })
+    
+    setExercises(updatedExercises)
+    await saveWorkoutState(updatedExercises)
   }
 
   const updateSet = (exerciseId: string, setId: string, field: keyof Exercise['sets'][0], value: string) => {
-    setExercises(prev => prev.map(exercise => {
+    const updatedExercises = exercises.map(exercise => {
       if (exercise.id === exerciseId) {
         return {
           ...exercise,
@@ -243,15 +301,27 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         }
       }
       return exercise
-    }))
+    })
+    
+    setExercises(updatedExercises)
+    
+    // Debounced save for set updates to avoid saving on every keystroke
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current)
+    }
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      saveWorkoutState(updatedExercises)
+    }, 2000)
   }
 
-  const removeExercise = (exerciseId: string) => {
-    setExercises(prev => prev.filter(exercise => exercise.id !== exerciseId))
+  const removeExercise = async (exerciseId: string) => {
+    const updatedExercises = exercises.filter(exercise => exercise.id !== exerciseId)
+    setExercises(updatedExercises)
+    await saveWorkoutState(updatedExercises)
   }
 
-  const removeSet = (exerciseId: string, setId: string) => {
-    setExercises(prev => prev.map(exercise => {
+  const removeSet = async (exerciseId: string, setId: string) => {
+    const updatedExercises = exercises.map(exercise => {
       if (exercise.id === exerciseId) {
         return {
           ...exercise,
@@ -259,37 +329,49 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         }
       }
       return exercise
-    }))
+    })
+    
+    setExercises(updatedExercises)
+    await saveWorkoutState(updatedExercises)
   }
 
   const finishWorkout = async () => {
-    await resetTimer()
-    await WorkoutStorageSupabase.clearOngoingWorkout()
+    // Clear the workout from database
+    if (user && supabase) {
+      try {
+        const { error } = await supabase
+          .from('ongoing_workouts')
+          .delete()
+          .eq('user_id', user.id)
+          
+        if (error) {
+          console.error('Failed to clear ongoing workout:', error)
+        } else {
+          console.log('Successfully finished workout')
+        }
+      } catch (error) {
+        console.error('Error finishing workout:', error)
+      }
+    }
+    
+    // Clear from localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('ongoing-workout')
+      localStorage.removeItem('ongoing-workout-timestamp')
+    }
+    
     router.push('/workout')
   }
 
   const quitWorkout = async () => {
-    // Clear any pending auto-save timeout to avoid conflicts
+    // Clear any pending save timeout
     if (autoSaveTimeoutRef.current) {
       clearTimeout(autoSaveTimeoutRef.current)
     }
 
-    // Save current state immediately before leaving
-    try {
-      const ongoingWorkout = await WorkoutStorageSupabase.getOngoingWorkout()
-      if (ongoingWorkout && ongoingWorkout.id === workoutId) {
-        const updatedWorkout = {
-          ...ongoingWorkout,
-          exercises: exercises,
-          elapsedTime: time,
-          isRunning: isRunning
-        }
-        await WorkoutStorageSupabase.saveOngoingWorkout(updatedWorkout)
-        console.log('Workout saved before quit:', updatedWorkout.id)
-      }
-    } catch (error) {
-      console.error('Failed to save workout on quit:', error)
-    }
+    // Save current state before leaving
+    await saveWorkoutState()
+    console.log('Workout saved before quit:', workoutId)
     
     router.push('/workout')
   }

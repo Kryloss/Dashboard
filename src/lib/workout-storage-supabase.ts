@@ -190,6 +190,7 @@ export class WorkoutStorageSupabase {
   private static realtimeSubscriptions: RealtimeChannel[] = []
   private static onWorkoutUpdateCallback: ((workout: OngoingWorkout | null) => void) | null = null
   private static onTemplatesUpdateCallback: ((templates: WorkoutTemplate[]) => void) | null = null
+  private static lastSaveTime: number = 0
 
   // Initialize with user context
   static initialize(user: User | null, supabaseClient?: SupabaseClient) {
@@ -312,14 +313,48 @@ export class WorkoutStorageSupabase {
         localStorage.setItem('supabase-cache-ongoing-workout', JSON.stringify(workout))
       }
 
-      // Notify callback with a longer delay to prevent race conditions with auto-save
-      // Don't overwrite local changes immediately after they're made
+      // Notify callback with intelligent delay to prevent race conditions
+      // Check if this is our own update by comparing with localStorage
+      if (typeof window !== 'undefined') {
+        const localWorkout = localStorage.getItem('ongoing-workout')
+        if (localWorkout) {
+          const local = JSON.parse(localWorkout)
+          // If the real-time update matches our local state, skip callback to prevent loops
+          const isOwnUpdate = local.id === workout.id && 
+            Math.abs(local.elapsedTime - workout.elapsedTime) < 10 &&
+            local.isRunning === workout.isRunning
+          
+          if (isOwnUpdate) {
+            console.log('Skipping real-time callback - appears to be own update:', workout.id)
+            return
+          }
+        }
+      }
+      
+      // Use adaptive delay based on recent activity
+      const delay = this.getAdaptiveDelay()
       setTimeout(() => {
         if (this.onWorkoutUpdateCallback) {
-          console.log('Real-time update triggering callback with workout:', workout.id)
+          console.log(`Real-time update triggering callback with workout: ${workout.id} (delay: ${delay}ms)`)
           this.onWorkoutUpdateCallback(workout)
         }
-      }, 2000) // Increased delay to 2 seconds to avoid conflicting with auto-save
+      }, delay)
+    }
+  }
+
+  // Get adaptive delay based on recent save activity
+  private static getAdaptiveDelay(): number {
+    const timeSinceLastSave = Date.now() - this.lastSaveTime
+    
+    if (timeSinceLastSave < 3000) {
+      // Very recent save - use longer delay
+      return 5000
+    } else if (timeSinceLastSave < 10000) {
+      // Recent save - use medium delay
+      return 3000
+    } else {
+      // No recent saves - use shorter delay
+      return 1000
     }
   }
 
@@ -703,6 +738,9 @@ export class WorkoutStorageSupabase {
     // Sync to Supabase
     if (this.currentUser && this.supabase && this.isOnline) {
       try {
+        // Track save time for adaptive delay calculation
+        this.lastSaveTime = Date.now()
+        
         const { error } = await this.supabase
           .from('ongoing_workouts')
           .upsert({
@@ -716,7 +754,7 @@ export class WorkoutStorageSupabase {
             elapsed_time: workout.elapsedTime,
             is_running: workout.isRunning
           }, {
-            onConflict: 'id'  // Use workout ID instead of user_id,type to prevent overwriting wrong workout
+            onConflict: 'user_id,type'  // Match database constraint: UNIQUE(user_id, type)
           })
 
         if (error) throw error
