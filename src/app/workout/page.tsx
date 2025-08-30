@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { isOnSubdomain } from "@/lib/subdomains"
 import { Button } from "@/components/ui/button"
 import { GoalRings } from "./components/goal-rings"
@@ -21,7 +21,7 @@ export default function WorkoutPage() {
     const [isLoadingWorkout, setIsLoadingWorkout] = useState(false)
 
     // Enhanced workout loading with comprehensive debugging
-    const loadOngoingWorkout = async () => {
+    const loadOngoingWorkout = useCallback(async () => {
         if (!user || !supabase) {
             console.log('Skipping workout load - missing user or supabase client')
             return
@@ -29,7 +29,7 @@ export default function WorkoutPage() {
 
         console.log('Starting workout load process for user:', user.id)
         setIsLoadingWorkout(true)
-        
+
         try {
             console.log('Querying database for ongoing workout...')
             // Direct database query without complex caching
@@ -70,7 +70,7 @@ export default function WorkoutPage() {
                     isRunning: data.is_running,
                     userId: data.user_id
                 }
-                
+
                 console.log('✅ Successfully loaded ongoing workout:', {
                     id: workout.id,
                     type: workout.type,
@@ -79,9 +79,9 @@ export default function WorkoutPage() {
                     elapsedTime: workout.elapsedTime,
                     isRunning: workout.isRunning
                 })
-                
+
                 setOngoingWorkout(workout)
-                
+
                 // Cache in localStorage for offline access
                 if (typeof window !== 'undefined') {
                     localStorage.setItem('ongoing-workout', JSON.stringify(workout))
@@ -91,27 +91,27 @@ export default function WorkoutPage() {
             }
         } catch (error) {
             console.error('❌ Failed to load ongoing workout from database:', error)
-            
+
             // Fallback to localStorage if database fails
             if (typeof window !== 'undefined') {
                 const cachedWorkout = localStorage.getItem('ongoing-workout')
                 const cacheTimestamp = localStorage.getItem('ongoing-workout-timestamp')
-                
+
                 console.log('🔄 Attempting localStorage fallback...', {
                     hasCachedWorkout: !!cachedWorkout,
                     hasCacheTimestamp: !!cacheTimestamp
                 })
-                
+
                 // Only use cache if it's less than 5 minutes old
                 if (cachedWorkout && cacheTimestamp) {
                     const cacheAge = Date.now() - parseInt(cacheTimestamp)
                     const maxCacheAge = 5 * 60 * 1000 // 5 minutes
-                    
+
                     if (cacheAge < maxCacheAge) {
-                        console.log(`✅ Using cached workout (${Math.round(cacheAge/1000)}s old)`)
+                        console.log(`✅ Using cached workout (${Math.round(cacheAge / 1000)}s old)`)
                         setOngoingWorkout(JSON.parse(cachedWorkout))
                     } else {
-                        console.log(`⚠️ Cached workout too old (${Math.round(cacheAge/1000)}s), discarding`)
+                        console.log(`⚠️ Cached workout too old (${Math.round(cacheAge / 1000)}s), discarding`)
                         localStorage.removeItem('ongoing-workout')
                         localStorage.removeItem('ongoing-workout-timestamp')
                         setOngoingWorkout(null)
@@ -125,7 +125,7 @@ export default function WorkoutPage() {
             setIsLoadingWorkout(false)
             console.log('Workout load process completed')
         }
-    }
+    }, [user, supabase])
 
     useEffect(() => {
         const onHealss = isOnSubdomain('healss')
@@ -135,7 +135,7 @@ export default function WorkoutPage() {
             WorkoutStorageSupabase.initialize(user, supabase)
             loadOngoingWorkout()
         }
-    }, [user, supabase])
+    }, [user, supabase, loadOngoingWorkout])
 
     // Smart focus handling - avoid excessive reloads
     useEffect(() => {
@@ -156,7 +156,7 @@ export default function WorkoutPage() {
 
         window.addEventListener('focus', handleFocus)
         return () => window.removeEventListener('focus', handleFocus)
-    }, [isHealssSubdomain, user, supabase])
+    }, [isHealssSubdomain, user, supabase, loadOngoingWorkout])
 
     // Optimized timer update - reduced frequency and smarter updates
     useEffect(() => {
@@ -165,19 +165,19 @@ export default function WorkoutPage() {
         const updateTimer = setInterval(() => {
             setOngoingWorkout(prev => {
                 if (!prev) return prev
-                
+
                 const now = Date.now()
                 const timeDiff = Math.floor((now - new Date(prev.startTime).getTime()) / 1000)
                 const currentElapsedTime = prev.elapsedTime + timeDiff
-                
+
                 // Only update if there's a meaningful change (prevents unnecessary renders)
                 const timeDelta = Math.abs(currentElapsedTime - prev.elapsedTime)
                 if (timeDelta < 5) {
                     return prev // Skip update if less than 5 seconds difference
                 }
-                
+
                 console.log(`Timer update: ${prev.elapsedTime}s -> ${currentElapsedTime}s`)
-                
+
                 return {
                     ...prev,
                     elapsedTime: currentElapsedTime

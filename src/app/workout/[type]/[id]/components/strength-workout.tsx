@@ -68,7 +68,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
           elapsedTime: 0,
           isRunning: true // Start the workout immediately so it shows in Today's Workout
         }
-        
+
         await WorkoutStorageSupabase.saveOngoingWorkout(newWorkout)
         setExercises([])
         setTime(0)
@@ -95,11 +95,11 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
           .select('start_time')
           .eq('user_id', user.id)
           .single()
-          
+
         if (existingWorkout) {
           startTime = existingWorkout.start_time
         }
-      } catch (error) {
+      } catch {
         // Workout doesn't exist yet, use current time
         console.log('Creating new workout with current time')
       }
@@ -117,7 +117,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
       }
 
       console.log('Saving workout state:', workoutId, 'exercises:', updatedExercises.length)
-      
+
       // Fixed: Use proper conflict resolution for database constraint UNIQUE(user_id, type)
       const { error } = await supabase
         .from('ongoing_workouts')
@@ -127,10 +127,10 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
 
       if (error) {
         console.error('Database save failed:', error.message, error)
-        
+
         // Don't throw error - maintain localStorage backup instead
         console.log('Falling back to localStorage-only storage due to database error')
-        
+
         // Update localStorage as fallback
         if (typeof window !== 'undefined') {
           const workoutForStorage = {
@@ -150,7 +150,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
       }
 
       console.log('Successfully saved workout to database:', workoutId)
-      
+
       // Update localStorage as backup for successful database save
       if (typeof window !== 'undefined') {
         const workoutForStorage = {
@@ -167,14 +167,14 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
       }
     } catch (error) {
       console.error('Critical error in saveWorkoutState:', error)
-      
+
       // Always maintain localStorage backup even on critical errors
-      if (typeof window !== 'undefined') {
+      if (typeof window !== 'undefined' && user) {
         const workoutForStorage = {
           id: workoutId,
           type: 'strength' as const,
           exercises: updatedExercises,
-          startTime: startTime,
+          startTime: new Date().toISOString(),
           elapsedTime: time,
           isRunning: isRunning,
           userId: user.id
@@ -262,7 +262,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     setExercises(updatedExercises)
     setNewExerciseName("")
     setShowAddExercise(false)
-    
+
     // Save immediately after adding exercise
     await saveWorkoutState(updatedExercises)
   }
@@ -282,7 +282,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
       }
       return exercise
     })
-    
+
     setExercises(updatedExercises)
     await saveWorkoutState(updatedExercises)
   }
@@ -302,9 +302,9 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
       }
       return exercise
     })
-    
+
     setExercises(updatedExercises)
-    
+
     // Debounced save for set updates to avoid saving on every keystroke
     if (autoSaveTimeoutRef.current) {
       clearTimeout(autoSaveTimeoutRef.current)
@@ -330,7 +330,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
       }
       return exercise
     })
-    
+
     setExercises(updatedExercises)
     await saveWorkoutState(updatedExercises)
   }
@@ -343,7 +343,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
           .from('ongoing_workouts')
           .delete()
           .eq('user_id', user.id)
-          
+
         if (error) {
           console.error('Failed to clear ongoing workout:', error)
         } else {
@@ -353,13 +353,13 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         console.error('Error finishing workout:', error)
       }
     }
-    
+
     // Clear from localStorage
     if (typeof window !== 'undefined') {
       localStorage.removeItem('ongoing-workout')
       localStorage.removeItem('ongoing-workout-timestamp')
     }
-    
+
     router.push('/workout')
   }
 
@@ -372,7 +372,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     // Save current state before leaving
     await saveWorkoutState()
     console.log('Workout saved before quit:', workoutId)
-    
+
     router.push('/workout')
   }
 
