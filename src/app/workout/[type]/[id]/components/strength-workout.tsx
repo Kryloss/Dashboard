@@ -35,6 +35,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
   const [showSaveTemplate, setShowSaveTemplate] = useState(false)
   const [templateName, setTemplateName] = useState("")
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Initialize storage and load ongoing workout on component mount
   useEffect(() => {
@@ -78,7 +79,44 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     initializeAndLoad()
   }, [workoutId, user, supabase])
 
+  // Debounced auto-save function
+  const debouncedAutoSave = async (updatedExercises: Exercise[]) => {
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current)
+    }
 
+    autoSaveTimeoutRef.current = setTimeout(async () => {
+      try {
+        const ongoingWorkout = await WorkoutStorageSupabase.getOngoingWorkout()
+        if (ongoingWorkout && ongoingWorkout.id === workoutId) {
+          const updatedWorkout = {
+            ...ongoingWorkout,
+            exercises: updatedExercises,
+            elapsedTime: time,
+            isRunning: isRunning
+          }
+          await WorkoutStorageSupabase.saveOngoingWorkout(updatedWorkout)
+          console.log('Auto-saved workout:', updatedWorkout.id)
+        }
+      } catch (error) {
+        console.error('Auto-save failed:', error)
+      }
+    }, 500) // 500ms debounce delay
+  }
+
+  // Auto-save when exercises change
+  useEffect(() => {
+    if (exercises.length > 0) {
+      debouncedAutoSave(exercises)
+    }
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current)
+      }
+    }
+  }, [exercises, time, isRunning, workoutId])
 
   // Stopwatch logic
   useEffect(() => {
@@ -98,6 +136,18 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
       }
     }
   }, [isRunning])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current)
+      }
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+      }
+    }
+  }, [])
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600)
@@ -147,17 +197,6 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     setExercises(updatedExercises)
     setNewExerciseName("")
     setShowAddExercise(false)
-
-    // Update ongoing workout
-    try {
-      const ongoingWorkout = await WorkoutStorageSupabase.getOngoingWorkout()
-      if (ongoingWorkout && ongoingWorkout.id === workoutId) {
-        ongoingWorkout.exercises = updatedExercises
-        await WorkoutStorageSupabase.saveOngoingWorkout(ongoingWorkout)
-      }
-    } catch (error) {
-      console.error('Failed to update ongoing workout exercises:', error)
-    }
   }
 
   const addSet = (exerciseId: string) => {
@@ -217,8 +256,12 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
   }
 
   const quitWorkout = async () => {
-    // Save current state immediately before leaving - don't use debounced save
-    // Keep timer running unless manually paused
+    // Clear any pending auto-save timeout to avoid conflicts
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current)
+    }
+
+    // Save current state immediately before leaving
     try {
       const ongoingWorkout = await WorkoutStorageSupabase.getOngoingWorkout()
       if (ongoingWorkout && ongoingWorkout.id === workoutId) {
@@ -226,7 +269,6 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
           ...ongoingWorkout,
           exercises: exercises,
           elapsedTime: time,
-          // Keep the running state as is - don't auto-pause
           isRunning: isRunning
         }
         await WorkoutStorageSupabase.saveOngoingWorkout(updatedWorkout)
@@ -235,6 +277,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     } catch (error) {
       console.error('Failed to save workout on quit:', error)
     }
+    
     router.push('/workout')
   }
 
