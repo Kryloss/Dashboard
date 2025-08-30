@@ -30,7 +30,10 @@ export default function WorkoutPage() {
 
             // Setup real-time callback for ongoing workout updates
             WorkoutStorageSupabase.onOngoingWorkoutUpdate((workout) => {
-                console.log('Ongoing workout updated:', workout)
+                console.log('Ongoing workout updated via real-time:', workout)
+                if (workout === null) {
+                    console.warn('Workout was set to null - this might be causing the disappearing issue')
+                }
                 setOngoingWorkout(workout)
             })
 
@@ -57,29 +60,30 @@ export default function WorkoutPage() {
 
     // Separate effect to handle workout state updates and prevent disappearing
     useEffect(() => {
-        if (isHealssSubdomain && ongoingWorkout) {
-            // Update timer display for running workouts
-            const updateTimer = setInterval(async () => {
-                if (ongoingWorkout.isRunning) {
-                    const currentWorkout = await WorkoutStorageSupabase.getOngoingWorkout()
-                    if (currentWorkout && currentWorkout.id === ongoingWorkout.id) {
-                        const timeDiff = Math.floor((Date.now() - new Date(currentWorkout.startTime).getTime()) / 1000)
-                        const updatedTime = currentWorkout.elapsedTime + timeDiff
+        if (isHealssSubdomain && ongoingWorkout && ongoingWorkout.isRunning) {
+            // Update timer display for running workouts - less frequently to prevent conflicts
+            const updateTimer = setInterval(() => {
+                // Calculate time client-side to avoid database calls
+                const timeDiff = Math.floor((Date.now() - new Date(ongoingWorkout.startTime).getTime()) / 1000)
+                const updatedTime = ongoingWorkout.elapsedTime + timeDiff
 
-                        // Only update if there's a significant difference to prevent rapid updates
-                        if (Math.abs(updatedTime - ongoingWorkout.elapsedTime) > 5) {
-                            setOngoingWorkout({
-                                ...currentWorkout,
+                // Only update if there's a significant difference (10 seconds) and don't fetch from database
+                if (Math.abs(updatedTime - ongoingWorkout.elapsedTime) > 10) {
+                    setOngoingWorkout(prev => {
+                        if (prev && prev.id === ongoingWorkout.id) {
+                            return {
+                                ...prev,
                                 elapsedTime: updatedTime
-                            })
+                            }
                         }
-                    }
+                        return prev
+                    })
                 }
-            }, 1000)
+            }, 5000) // Update every 5 seconds instead of 1 second
 
             return () => clearInterval(updateTimer)
         }
-    }, [isHealssSubdomain, ongoingWorkout?.id, ongoingWorkout?.isRunning, ongoingWorkout])
+    }, [isHealssSubdomain, ongoingWorkout?.id, ongoingWorkout?.isRunning, ongoingWorkout?.startTime])
 
     // Mock data for demonstration
     const mockData = {

@@ -79,8 +79,8 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     initializeAndLoad()
   }, [workoutId, user, supabase])
 
-  // Debounced auto-save function
-  const debouncedAutoSave = async (updatedExercises: Exercise[]) => {
+  // Debounced auto-save function with improved conflict prevention
+  const debouncedAutoSave = async (updatedExercises: Exercise[], currentTime: number, runningState: boolean) => {
     if (autoSaveTimeoutRef.current) {
       clearTimeout(autoSaveTimeoutRef.current)
     }
@@ -89,25 +89,38 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
       try {
         const ongoingWorkout = await WorkoutStorageSupabase.getOngoingWorkout()
         if (ongoingWorkout && ongoingWorkout.id === workoutId) {
-          const updatedWorkout = {
-            ...ongoingWorkout,
-            exercises: updatedExercises,
-            elapsedTime: time,
-            isRunning: isRunning
+          // Only save if there are actual changes to prevent unnecessary updates
+          const exercisesChanged = JSON.stringify(ongoingWorkout.exercises) !== JSON.stringify(updatedExercises)
+          const timeChanged = Math.abs(ongoingWorkout.elapsedTime - currentTime) > 5 // Allow 5 second tolerance
+          const stateChanged = ongoingWorkout.isRunning !== runningState
+          
+          if (exercisesChanged || timeChanged || stateChanged) {
+            const updatedWorkout = {
+              ...ongoingWorkout,
+              exercises: updatedExercises,
+              elapsedTime: currentTime,
+              isRunning: runningState
+            }
+            await WorkoutStorageSupabase.saveOngoingWorkout(updatedWorkout)
+            console.log('Auto-saved workout with changes:', updatedWorkout.id, {
+              exercisesChanged,
+              timeChanged,
+              stateChanged
+            })
+          } else {
+            console.log('Skipped auto-save - no significant changes detected')
           }
-          await WorkoutStorageSupabase.saveOngoingWorkout(updatedWorkout)
-          console.log('Auto-saved workout:', updatedWorkout.id)
         }
       } catch (error) {
         console.error('Auto-save failed:', error)
       }
-    }, 500) // 500ms debounce delay
+    }, 1000) // Increased debounce to 1 second to reduce conflicts
   }
 
   // Auto-save when exercises change
   useEffect(() => {
     if (exercises.length > 0) {
-      debouncedAutoSave(exercises)
+      debouncedAutoSave(exercises, time, isRunning)
     }
 
     // Cleanup timeout on unmount

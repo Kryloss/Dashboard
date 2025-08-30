@@ -312,12 +312,14 @@ export class WorkoutStorageSupabase {
         localStorage.setItem('supabase-cache-ongoing-workout', JSON.stringify(workout))
       }
 
-      // Notify callback with a small delay to prevent race conditions
+      // Notify callback with a longer delay to prevent race conditions with auto-save
+      // Don't overwrite local changes immediately after they're made
       setTimeout(() => {
         if (this.onWorkoutUpdateCallback) {
+          console.log('Real-time update triggering callback with workout:', workout.id)
           this.onWorkoutUpdateCallback(workout)
         }
-      }, 100)
+      }, 2000) // Increased delay to 2 seconds to avoid conflicting with auto-save
     }
   }
 
@@ -714,7 +716,7 @@ export class WorkoutStorageSupabase {
             elapsed_time: workout.elapsedTime,
             is_running: workout.isRunning
           }, {
-            onConflict: 'user_id,type'
+            onConflict: 'id'  // Use workout ID instead of user_id,type to prevent overwriting wrong workout
           })
 
         if (error) throw error
