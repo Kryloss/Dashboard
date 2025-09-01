@@ -12,12 +12,25 @@ import { useAuth } from "@/lib/hooks/useAuth"
 interface Exercise {
   id: string
   name: string
+  description?: string
+  category?: string
+  targetMuscles?: string[]
+  equipment?: string
+  difficulty?: 'beginner' | 'intermediate' | 'advanced'
+  restTime?: number
   sets: Array<{
     id: string
     reps: string
     weight: string
     notes: string
+    completed?: boolean
+    restTime?: number
   }>
+  instructions?: string[]
+  tips?: string[]
+  alternatives?: string[]
+  createdAt?: string
+  updatedAt?: string
 }
 
 interface StrengthWorkoutProps {
@@ -283,12 +296,25 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     const newExercise: Exercise = {
       id: `exercise-${Date.now()}`,
       name: newExerciseName.trim(),
+      description: '',
+      category: 'general',
+      targetMuscles: [],
+      equipment: 'bodyweight',
+      difficulty: 'beginner',
+      restTime: 60,
       sets: [{
         id: `set-${Date.now()}`,
         reps: "",
         weight: "",
-        notes: ""
-      }]
+        notes: "",
+        completed: false,
+        restTime: 60
+      }],
+      instructions: [],
+      tips: [],
+      alternatives: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     }
 
     const updatedExercises = [...exercises, newExercise]
@@ -310,8 +336,11 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
             id: `set-${Date.now()}`,
             reps: "",
             weight: "",
-            notes: ""
-          }]
+            notes: "",
+            completed: false,
+            restTime: exercise.restTime || 60
+          }],
+          updatedAt: new Date().toISOString()
         }
       }
       return exercise
@@ -322,7 +351,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     await saveWorkoutState(updatedExercises)
   }
 
-  const updateSet = (exerciseId: string, setId: string, field: keyof Exercise['sets'][0], value: string) => {
+  const updateSet = (exerciseId: string, setId: string, field: keyof Exercise['sets'][0], value: string | number | boolean) => {
     const updatedExercises = exercises.map(exercise => {
       if (exercise.id === exerciseId) {
         return {
@@ -332,7 +361,8 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
               return { ...set, [field]: value }
             }
             return set
-          })
+          }),
+          updatedAt: new Date().toISOString()
         }
       }
       return exercise
@@ -361,7 +391,8 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
       if (exercise.id === exerciseId) {
         return {
           ...exercise,
-          sets: exercise.sets.filter(set => set.id !== setId)
+          sets: exercise.sets.filter(set => set.id !== setId),
+          updatedAt: new Date().toISOString()
         }
       }
       return exercise
@@ -421,12 +452,23 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     }
 
     try {
-      console.log('Saving template:', {
+      console.log('Saving enhanced template:', {
         name: templateName.trim(),
         type: 'strength',
         exerciseCount: exercises.length,
         userId: user.id,
-        exercises: exercises.map(e => ({ id: e.id, name: e.name, setCount: e.sets.length }))
+        exercises: exercises.map(e => ({
+          id: e.id,
+          name: e.name,
+          setCount: e.sets.length,
+          category: e.category,
+          equipment: e.equipment,
+          difficulty: e.difficulty,
+          hasDescription: !!e.description,
+          hasInstructions: (e.instructions?.length || 0) > 0,
+          hasTips: (e.tips?.length || 0) > 0,
+          targetMuscles: e.targetMuscles?.length || 0
+        }))
       })
 
       const template = await WorkoutStorageSupabase.saveTemplate({
@@ -439,14 +481,21 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
       setTemplateName("")
 
       // Show success feedback
-      console.log('Template saved successfully:', {
+      console.log('Enhanced template saved successfully:', {
         id: template.id,
         name: template.name,
         exerciseCount: template.exercises.length,
-        userId: template.userId
+        userId: template.userId,
+        exerciseDetails: template.exercises.map(e => ({
+          name: e.name,
+          category: e.category,
+          equipment: e.equipment,
+          difficulty: e.difficulty,
+          setCount: e.sets.length
+        }))
       })
     } catch (error) {
-      console.error('Failed to save template:', error)
+      console.error('Failed to save enhanced template:', error)
       // You could add user-facing error feedback here
     }
   }

@@ -30,12 +30,25 @@ interface WorkoutTemplateRow {
 export interface WorkoutExercise {
   id: string
   name: string
+  description?: string
+  category?: string // e.g., 'chest', 'back', 'legs', 'shoulders', 'arms', 'core'
+  targetMuscles?: string[] // e.g., ['pectorals', 'anterior deltoids', 'triceps']
+  equipment?: string // e.g., 'barbell', 'dumbbell', 'bodyweight', 'machine'
+  difficulty?: 'beginner' | 'intermediate' | 'advanced'
+  restTime?: number // rest time in seconds between sets
   sets: Array<{
     id: string
     reps: string
     weight: string
     notes: string
+    completed?: boolean
+    restTime?: number // specific rest time for this set
   }>
+  instructions?: string[] // step-by-step instructions
+  tips?: string[] // form tips and cues
+  alternatives?: string[] // alternative exercises
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface WorkoutTemplate {
@@ -81,29 +94,83 @@ const builtInTemplates: WorkoutTemplate[] = [
       {
         id: 'bench-press',
         name: 'Bench Press',
+        description: 'Classic chest exercise performed lying on a bench',
+        category: 'chest',
+        targetMuscles: ['pectorals', 'anterior deltoids', 'triceps'],
+        equipment: 'barbell',
+        difficulty: 'intermediate',
+        restTime: 120,
         sets: [
-          { id: 'set-1', reps: '8-10', weight: '', notes: 'Warm-up set' },
-          { id: 'set-2', reps: '6-8', weight: '', notes: 'Working set' },
-          { id: 'set-3', reps: '6-8', weight: '', notes: 'Working set' },
-        ]
+          { id: 'set-1', reps: '8-10', weight: '', notes: 'Warm-up set', completed: false, restTime: 60 },
+          { id: 'set-2', reps: '6-8', weight: '', notes: 'Working set', completed: false, restTime: 120 },
+          { id: 'set-3', reps: '6-8', weight: '', notes: 'Working set', completed: false, restTime: 120 },
+        ],
+        instructions: [
+          'Lie flat on a bench with your feet firmly planted on the ground',
+          'Grip the barbell with hands slightly wider than shoulder-width',
+          'Lower the bar to your chest with control',
+          'Press the bar up explosively until arms are fully extended'
+        ],
+        tips: [
+          'Keep your core tight throughout the movement',
+          'Don\'t bounce the bar off your chest',
+          'Maintain a slight arch in your back'
+        ],
+        alternatives: ['Dumbbell Bench Press', 'Incline Bench Press', 'Push-ups']
       },
       {
         id: 'shoulder-press',
         name: 'Overhead Press',
+        description: 'Shoulder exercise performed standing or seated',
+        category: 'shoulders',
+        targetMuscles: ['anterior deltoids', 'medial deltoids', 'triceps'],
+        equipment: 'barbell',
+        difficulty: 'intermediate',
+        restTime: 90,
         sets: [
-          { id: 'set-1', reps: '8-10', weight: '', notes: '' },
-          { id: 'set-2', reps: '8-10', weight: '', notes: '' },
-          { id: 'set-3', reps: '8-10', weight: '', notes: '' },
-        ]
+          { id: 'set-1', reps: '8-10', weight: '', notes: '', completed: false, restTime: 90 },
+          { id: 'set-2', reps: '8-10', weight: '', notes: '', completed: false, restTime: 90 },
+          { id: 'set-3', reps: '8-10', weight: '', notes: '', completed: false, restTime: 90 },
+        ],
+        instructions: [
+          'Stand with feet hip-width apart',
+          'Hold the barbell at shoulder level with palms facing forward',
+          'Press the bar straight up overhead',
+          'Lower with control back to starting position'
+        ],
+        tips: [
+          'Keep your core engaged',
+          'Don\'t arch your back excessively',
+          'Press straight up, not forward'
+        ],
+        alternatives: ['Dumbbell Shoulder Press', 'Arnold Press', 'Pike Push-ups']
       },
       {
         id: 'dips',
         name: 'Dips',
+        description: 'Bodyweight exercise targeting chest and triceps',
+        category: 'chest',
+        targetMuscles: ['pectorals', 'triceps', 'anterior deltoids'],
+        equipment: 'bodyweight',
+        difficulty: 'intermediate',
+        restTime: 60,
         sets: [
-          { id: 'set-1', reps: '10-12', weight: 'Bodyweight', notes: '' },
-          { id: 'set-2', reps: '10-12', weight: 'Bodyweight', notes: '' },
-          { id: 'set-3', reps: '8-10', weight: 'Bodyweight', notes: 'To failure' },
-        ]
+          { id: 'set-1', reps: '10-12', weight: 'Bodyweight', notes: '', completed: false, restTime: 60 },
+          { id: 'set-2', reps: '10-12', weight: 'Bodyweight', notes: '', completed: false, restTime: 60 },
+          { id: 'set-3', reps: '8-10', weight: 'Bodyweight', notes: 'To failure', completed: false, restTime: 60 },
+        ],
+        instructions: [
+          'Support yourself on parallel bars with arms fully extended',
+          'Lower your body by bending your elbows',
+          'Descend until shoulders are below elbows',
+          'Press back up to starting position'
+        ],
+        tips: [
+          'Lean slightly forward to target chest more',
+          'Keep your core tight',
+          'Don\'t go too deep if you feel shoulder discomfort'
+        ],
+        alternatives: ['Bench Dips', 'Diamond Push-ups', 'Assisted Dips']
       }
     ]
   },
@@ -117,29 +184,85 @@ const builtInTemplates: WorkoutTemplate[] = [
       {
         id: 'deadlift',
         name: 'Deadlift',
+        description: 'Compound exercise targeting the posterior chain',
+        category: 'back',
+        targetMuscles: ['erector spinae', 'glutes', 'hamstrings', 'lats', 'traps'],
+        equipment: 'barbell',
+        difficulty: 'advanced',
+        restTime: 180,
         sets: [
-          { id: 'set-1', reps: '5', weight: '', notes: 'Heavy set' },
-          { id: 'set-2', reps: '5', weight: '', notes: 'Heavy set' },
-          { id: 'set-3', reps: '5', weight: '', notes: 'Heavy set' },
-        ]
+          { id: 'set-1', reps: '5', weight: '', notes: 'Heavy set', completed: false, restTime: 180 },
+          { id: 'set-2', reps: '5', weight: '', notes: 'Heavy set', completed: false, restTime: 180 },
+          { id: 'set-3', reps: '5', weight: '', notes: 'Heavy set', completed: false, restTime: 180 },
+        ],
+        instructions: [
+          'Stand with feet hip-width apart, bar over mid-foot',
+          'Bend at hips and knees to grip the bar',
+          'Keep chest up and back straight',
+          'Drive through heels to lift the bar',
+          'Stand up tall, squeezing glutes at the top'
+        ],
+        tips: [
+          'Keep the bar close to your body throughout the lift',
+          'Don\'t round your back',
+          'Engage your lats before lifting'
+        ],
+        alternatives: ['Romanian Deadlift', 'Trap Bar Deadlift', 'Sumo Deadlift']
       },
       {
         id: 'pull-ups',
         name: 'Pull-ups',
+        description: 'Bodyweight exercise for upper body pulling strength',
+        category: 'back',
+        targetMuscles: ['lats', 'rhomboids', 'middle traps', 'biceps'],
+        equipment: 'bodyweight',
+        difficulty: 'intermediate',
+        restTime: 90,
         sets: [
-          { id: 'set-1', reps: '8-10', weight: 'Bodyweight', notes: '' },
-          { id: 'set-2', reps: '8-10', weight: 'Bodyweight', notes: '' },
-          { id: 'set-3', reps: '6-8', weight: 'Bodyweight', notes: '' },
-        ]
+          { id: 'set-1', reps: '8-10', weight: 'Bodyweight', notes: '', completed: false, restTime: 90 },
+          { id: 'set-2', reps: '8-10', weight: 'Bodyweight', notes: '', completed: false, restTime: 90 },
+          { id: 'set-3', reps: '6-8', weight: 'Bodyweight', notes: '', completed: false, restTime: 90 },
+        ],
+        instructions: [
+          'Hang from a pull-up bar with overhand grip',
+          'Engage your lats and pull your shoulder blades down',
+          'Pull your body up until chin clears the bar',
+          'Lower with control to full arm extension'
+        ],
+        tips: [
+          'Don\'t swing or use momentum',
+          'Focus on pulling with your back, not just arms',
+          'Keep your core tight throughout'
+        ],
+        alternatives: ['Assisted Pull-ups', 'Lat Pulldowns', 'Inverted Rows']
       },
       {
         id: 'rows',
         name: 'Barbell Rows',
+        description: 'Horizontal pulling exercise for back development',
+        category: 'back',
+        targetMuscles: ['lats', 'rhomboids', 'middle traps', 'rear delts', 'biceps'],
+        equipment: 'barbell',
+        difficulty: 'intermediate',
+        restTime: 90,
         sets: [
-          { id: 'set-1', reps: '8-10', weight: '', notes: '' },
-          { id: 'set-2', reps: '8-10', weight: '', notes: '' },
-          { id: 'set-3', reps: '8-10', weight: '', notes: '' },
-        ]
+          { id: 'set-1', reps: '8-10', weight: '', notes: '', completed: false, restTime: 90 },
+          { id: 'set-2', reps: '8-10', weight: '', notes: '', completed: false, restTime: 90 },
+          { id: 'set-3', reps: '8-10', weight: '', notes: '', completed: false, restTime: 90 },
+        ],
+        instructions: [
+          'Stand with feet hip-width apart, slight bend in knees',
+          'Hinge at hips to lean forward, keeping back straight',
+          'Pull the bar to your lower chest/upper abdomen',
+          'Squeeze shoulder blades together at the top',
+          'Lower with control to full arm extension'
+        ],
+        tips: [
+          'Keep your chest up and core engaged',
+          'Pull with your elbows, not your hands',
+          'Don\'t use momentum or swing the weight'
+        ],
+        alternatives: ['Dumbbell Rows', 'Cable Rows', 'T-Bar Rows']
       }
     ]
   },
@@ -153,30 +276,88 @@ const builtInTemplates: WorkoutTemplate[] = [
       {
         id: 'squats',
         name: 'Squats',
+        description: 'King of all exercises - compound lower body movement',
+        category: 'legs',
+        targetMuscles: ['quadriceps', 'glutes', 'hamstrings', 'calves', 'core'],
+        equipment: 'barbell',
+        difficulty: 'intermediate',
+        restTime: 120,
         sets: [
-          { id: 'set-1', reps: '8-10', weight: '', notes: 'Warm-up' },
-          { id: 'set-2', reps: '6-8', weight: '', notes: 'Working set' },
-          { id: 'set-3', reps: '6-8', weight: '', notes: 'Working set' },
-          { id: 'set-4', reps: '6-8', weight: '', notes: 'Working set' },
-        ]
+          { id: 'set-1', reps: '8-10', weight: '', notes: 'Warm-up', completed: false, restTime: 60 },
+          { id: 'set-2', reps: '6-8', weight: '', notes: 'Working set', completed: false, restTime: 120 },
+          { id: 'set-3', reps: '6-8', weight: '', notes: 'Working set', completed: false, restTime: 120 },
+          { id: 'set-4', reps: '6-8', weight: '', notes: 'Working set', completed: false, restTime: 120 },
+        ],
+        instructions: [
+          'Stand with feet shoulder-width apart, toes slightly pointed out',
+          'Place barbell on upper back, not neck',
+          'Keep chest up and core tight',
+          'Lower by pushing hips back and bending knees',
+          'Descend until thighs are parallel to floor',
+          'Drive through heels to return to standing'
+        ],
+        tips: [
+          'Keep your knees tracking over your toes',
+          'Don\'t let your knees cave inward',
+          'Maintain a neutral spine throughout'
+        ],
+        alternatives: ['Goblet Squats', 'Front Squats', 'Bulgarian Split Squats']
       },
       {
         id: 'leg-press',
         name: 'Leg Press',
+        description: 'Machine-based exercise for quadriceps and glutes',
+        category: 'legs',
+        targetMuscles: ['quadriceps', 'glutes', 'hamstrings'],
+        equipment: 'machine',
+        difficulty: 'beginner',
+        restTime: 90,
         sets: [
-          { id: 'set-1', reps: '12-15', weight: '', notes: '' },
-          { id: 'set-2', reps: '12-15', weight: '', notes: '' },
-          { id: 'set-3', reps: '12-15', weight: '', notes: '' },
-        ]
+          { id: 'set-1', reps: '12-15', weight: '', notes: '', completed: false, restTime: 90 },
+          { id: 'set-2', reps: '12-15', weight: '', notes: '', completed: false, restTime: 90 },
+          { id: 'set-3', reps: '12-15', weight: '', notes: '', completed: false, restTime: 90 },
+        ],
+        instructions: [
+          'Sit in the leg press machine with back flat against pad',
+          'Place feet shoulder-width apart on the platform',
+          'Lower the weight by bending knees to 90 degrees',
+          'Press through heels to extend legs',
+          'Don\'t lock out knees completely'
+        ],
+        tips: [
+          'Keep your knees in line with your toes',
+          'Don\'t let your lower back come off the pad',
+          'Control the weight on both the way down and up'
+        ],
+        alternatives: ['Hack Squats', 'Lunges', 'Step-ups']
       },
       {
         id: 'calf-raises',
         name: 'Calf Raises',
+        description: 'Isolation exercise for calf muscles',
+        category: 'legs',
+        targetMuscles: ['gastrocnemius', 'soleus'],
+        equipment: 'bodyweight',
+        difficulty: 'beginner',
+        restTime: 60,
         sets: [
-          { id: 'set-1', reps: '15-20', weight: '', notes: '' },
-          { id: 'set-2', reps: '15-20', weight: '', notes: '' },
-          { id: 'set-3', reps: '15-20', weight: '', notes: '' },
-        ]
+          { id: 'set-1', reps: '15-20', weight: '', notes: '', completed: false, restTime: 60 },
+          { id: 'set-2', reps: '15-20', weight: '', notes: '', completed: false, restTime: 60 },
+          { id: 'set-3', reps: '15-20', weight: '', notes: '', completed: false, restTime: 60 },
+        ],
+        instructions: [
+          'Stand on edge of step or platform with heels hanging off',
+          'Rise up onto your toes as high as possible',
+          'Hold the contraction briefly at the top',
+          'Lower slowly until you feel a stretch in your calves',
+          'Repeat for desired reps'
+        ],
+        tips: [
+          'Use full range of motion',
+          'Control the movement, don\'t bounce',
+          'You can add weight by holding dumbbells'
+        ],
+        alternatives: ['Seated Calf Raises', 'Single-leg Calf Raises', 'Donkey Calf Raises']
       }
     ]
   }
@@ -621,21 +802,88 @@ export class WorkoutStorageSupabase {
       throw new Error('No user context available for template saving')
     }
 
-    const tempId = `template-${Date.now()}`
+    // Validate template data
+    if (!template.name?.trim()) {
+      throw new Error('Template name is required')
+    }
+
+    if (!template.type) {
+      throw new Error('Template type is required')
+    }
+
+    if (!template.exercises || template.exercises.length === 0) {
+      throw new Error('Template must contain at least one exercise')
+    }
+
+    // Validate and enhance exercise data
+    const enhancedExercises = template.exercises.map(exercise => {
+      // Ensure all required fields are present
+      const enhancedExercise: WorkoutExercise = {
+        id: exercise.id || `exercise-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        name: exercise.name?.trim() || 'Unnamed Exercise',
+        description: exercise.description || '',
+        category: exercise.category || 'general',
+        targetMuscles: exercise.targetMuscles || [],
+        equipment: exercise.equipment || 'bodyweight',
+        difficulty: exercise.difficulty || 'beginner',
+        restTime: exercise.restTime || 60, // default 60 seconds
+        sets: exercise.sets?.map(set => ({
+          id: set.id || `set-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          reps: set.reps || '',
+          weight: set.weight || '',
+          notes: set.notes || '',
+          completed: set.completed || false,
+          restTime: set.restTime || exercise.restTime || 60
+        })) || [],
+        instructions: exercise.instructions || [],
+        tips: exercise.tips || [],
+        alternatives: exercise.alternatives || [],
+        createdAt: exercise.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+
+      // Ensure at least one set exists
+      if (enhancedExercise.sets.length === 0) {
+        enhancedExercise.sets = [{
+          id: `set-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          reps: '',
+          weight: '',
+          notes: '',
+          completed: false,
+          restTime: enhancedExercise.restTime
+        }]
+      }
+
+      return enhancedExercise
+    })
+
+    const tempId = `template-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     const newTemplate: WorkoutTemplate = {
       ...template,
       id: tempId,
+      name: template.name.trim(),
+      exercises: enhancedExercises,
       createdAt: new Date().toISOString(),
       userId: this.currentUser.id
     }
 
-    console.log('Saving template to database:', {
+    console.log('Saving enhanced template to database:', {
       tempId,
-      name: template.name,
-      type: template.type,
-      exerciseCount: template.exercises.length,
+      name: newTemplate.name,
+      type: newTemplate.type,
+      exerciseCount: newTemplate.exercises.length,
       userId: this.currentUser.id,
-      exercises: template.exercises.map(e => ({ id: e.id, name: e.name, setCount: e.sets.length }))
+      exercises: newTemplate.exercises.map(e => ({
+        id: e.id,
+        name: e.name,
+        setCount: e.sets.length,
+        category: e.category,
+        equipment: e.equipment,
+        difficulty: e.difficulty,
+        hasDescription: !!e.description,
+        hasInstructions: (e.instructions?.length || 0) > 0,
+        hasTips: (e.tips?.length || 0) > 0
+      }))
     })
 
     // Optimistic update - update UI immediately
@@ -652,10 +900,10 @@ export class WorkoutStorageSupabase {
           .from('workout_templates')
           .insert({
             user_id: this.currentUser.id,
-            name: template.name,
-            type: template.type,
-            exercises: template.exercises,
-            is_built_in: template.isBuiltIn || false
+            name: newTemplate.name,
+            type: newTemplate.type,
+            exercises: newTemplate.exercises, // This now contains all enhanced exercise data
+            is_built_in: newTemplate.isBuiltIn || false
           })
           .select()
           .single()
@@ -665,14 +913,20 @@ export class WorkoutStorageSupabase {
           throw error
         }
 
-        console.log('Template saved to Supabase successfully:', {
+        console.log('Enhanced template saved to Supabase successfully:', {
           id: data.id,
           name: data.name,
           exerciseCount: data.exercises.length,
-          userId: data.user_id
+          userId: data.user_id,
+          exerciseDetails: data.exercises.map((e: any) => ({
+            name: e.name,
+            category: e.category,
+            equipment: e.equipment,
+            setCount: e.sets?.length || 0
+          }))
         })
 
-        // Update with Supabase ID
+        // Update with Supabase ID and timestamp
         newTemplate.id = data.id
         newTemplate.createdAt = data.created_at
 
@@ -682,20 +936,18 @@ export class WorkoutStorageSupabase {
         )
         localStorage.setItem('workout-templates', JSON.stringify(updatedWithId))
 
+        // Clear any cached templates to force refresh
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('supabase-cache-templates-strength')
+          localStorage.removeItem('supabase-cache-templates-all')
+        }
+
       } catch (error) {
-        console.error('Failed to sync template to Supabase:', error)
-        this.addToSyncQueue('create', 'templates', {
-          id: tempId,
-          name: template.name,
-          type: template.type,
-          exercises: template.exercises,
-          createdAt: new Date().toISOString(),
-          isBuiltIn: template.isBuiltIn || false,
-          userId: this.currentUser.id
-        })
+        console.error('Failed to sync enhanced template to Supabase:', error)
+        this.addToSyncQueue('create', 'templates', newTemplate)
       }
     } else if (!this.isOnline) {
-      console.log('Offline mode: template queued for sync when online')
+      console.log('Offline mode: enhanced template queued for sync when online')
       this.addToSyncQueue('create', 'templates', newTemplate)
     }
 
