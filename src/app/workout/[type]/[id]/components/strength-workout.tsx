@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { X, Play, Pause, Square, Plus, GripVertical } from "lucide-react"
-import { WorkoutStorage, WorkoutExercise } from "@/lib/workout-storage"
+import { WorkoutStorage, WorkoutExercise, OngoingWorkout } from "@/lib/workout-storage"
 
 // Use WorkoutExercise from storage
 type Exercise = WorkoutExercise
@@ -24,19 +24,48 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     const [newExerciseName, setNewExerciseName] = useState("")
     const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
-    // Initialize with empty workout
+    // Initialize workout from storage or create new one
     useEffect(() => {
-        setExercises([])
-        setTime(0)
-        setIsRunning(false)
+        const existingWorkout = WorkoutStorage.getOngoingWorkout()
+        
+        if (existingWorkout && existingWorkout.id === workoutId) {
+            // Load existing workout
+            setExercises(existingWorkout.exercises)
+            
+            // Calculate current elapsed time if workout is running
+            if (existingWorkout.isRunning) {
+                const timeSinceStart = Math.floor((Date.now() - new Date(existingWorkout.startTime).getTime()) / 1000)
+                const currentTime = existingWorkout.elapsedTime + timeSinceStart
+                setTime(currentTime)
+            } else {
+                setTime(existingWorkout.elapsedTime)
+            }
+            
+            setIsRunning(existingWorkout.isRunning)
+        } else {
+            // Create new workout
+            const newWorkout = WorkoutStorage.createWorkout('strength', workoutId)
+            WorkoutStorage.saveOngoingWorkout(newWorkout)
+            
+            setExercises([])
+            setTime(0)
+            setIsRunning(false)
+        }
     }, [workoutId])
 
 
-    // Stopwatch logic
+    // Stopwatch logic with persistence
     useEffect(() => {
         if (isRunning) {
             intervalRef.current = setInterval(() => {
-                setTime((prevTime) => prevTime + 1)
+                setTime((prevTime) => {
+                    const newTime = prevTime + 1
+                    // Update stored workout time every 10 seconds to reduce localStorage writes
+                    if (newTime % 10 === 0) {
+                        WorkoutStorage.updateWorkoutTime(newTime, true)
+                    }
+                    return newTime
+                })
             }, 1000)
         } else {
             if (intervalRef.current) {
@@ -73,15 +102,18 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
 
     const startTimer = () => {
         setIsRunning(true)
+        WorkoutStorage.updateWorkoutTime(time, true)
     }
 
     const pauseTimer = () => {
         setIsRunning(false)
+        WorkoutStorage.updateWorkoutTime(time, false)
     }
 
     const resetTimer = () => {
         setIsRunning(false)
         setTime(0)
+        WorkoutStorage.updateWorkoutTime(0, false)
     }
 
     const addExercise = () => {
@@ -96,6 +128,13 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         setExercises(updatedExercises)
         setNewExerciseName("")
         setShowAddExercise(false)
+        
+        // Save updated exercises to ongoing workout
+        const workout = WorkoutStorage.getOngoingWorkout()
+        if (workout) {
+            workout.exercises = updatedExercises
+            WorkoutStorage.saveOngoingWorkout(workout)
+        }
     }
 
     const addSet = (exerciseId: string) => {
@@ -111,6 +150,13 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         })
 
         setExercises(updatedExercises)
+        
+        // Save updated exercises to ongoing workout
+        const workout = WorkoutStorage.getOngoingWorkout()
+        if (workout) {
+            workout.exercises = updatedExercises
+            WorkoutStorage.saveOngoingWorkout(workout)
+        }
     }
 
     const updateSet = (exerciseId: string, setId: string, field: keyof Exercise['sets'][0], value: string | number | boolean) => {
@@ -131,11 +177,28 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         })
 
         setExercises(updatedExercises)
+        
+        // Debounced save to avoid too many saves while typing
+        clearTimeout(window.setUpdateTimeout)
+        window.setUpdateTimeout = setTimeout(() => {
+            const workout = WorkoutStorage.getOngoingWorkout()
+            if (workout) {
+                workout.exercises = updatedExercises
+                WorkoutStorage.saveOngoingWorkout(workout)
+            }
+        }, 1000)
     }
 
     const removeExercise = (exerciseId: string) => {
         const updatedExercises = exercises.filter(exercise => exercise.id !== exerciseId)
         setExercises(updatedExercises)
+        
+        // Save updated exercises to ongoing workout
+        const workout = WorkoutStorage.getOngoingWorkout()
+        if (workout) {
+            workout.exercises = updatedExercises
+            WorkoutStorage.saveOngoingWorkout(workout)
+        }
     }
 
     const removeSet = (exerciseId: string, setId: string) => {
@@ -151,13 +214,29 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         })
 
         setExercises(updatedExercises)
+        
+        // Save updated exercises to ongoing workout
+        const workout = WorkoutStorage.getOngoingWorkout()
+        if (workout) {
+            workout.exercises = updatedExercises
+            WorkoutStorage.saveOngoingWorkout(workout)
+        }
     }
 
     const finishWorkout = () => {
+        WorkoutStorage.clearOngoingWorkout()
         router.push('/workout')
     }
 
     const quitWorkout = () => {
+        // Save current state before leaving (don't clear)
+        const workout = WorkoutStorage.getOngoingWorkout()
+        if (workout) {
+            workout.exercises = exercises
+            workout.elapsedTime = time
+            workout.isRunning = isRunning
+            WorkoutStorage.saveOngoingWorkout(workout)
+        }
         router.push('/workout')
     }
 

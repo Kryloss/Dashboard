@@ -4,8 +4,9 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Dumbbell, Target, Heart, Bike } from "lucide-react"
+import { Dumbbell, Target, Heart, Bike, AlertTriangle } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { WorkoutStorage } from "@/lib/workout-storage"
 
 interface WorkoutTypeDialogProps {
     open: boolean
@@ -50,10 +51,13 @@ const workoutTypes = [
 export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps) {
     const router = useRouter()
     const [selectedType, setSelectedType] = useState<string>('')
+    const [showConflictDialog, setShowConflictDialog] = useState(false)
+    const [pendingWorkoutType, setPendingWorkoutType] = useState<string>('')
 
     useEffect(() => {
         if (open) {
             setSelectedType('')
+            setShowConflictDialog(false)
         }
     }, [open])
 
@@ -61,21 +65,48 @@ export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps
         if (!available) return
 
         setSelectedType(workoutType)
+        
+        // Check if there's an ongoing workout
+        const existingWorkout = WorkoutStorage.getOngoingWorkout()
+        if (existingWorkout) {
+            // Show conflict dialog
+            setPendingWorkoutType(workoutType)
+            setShowConflictDialog(true)
+            return
+        }
+        
+        // No conflict, create new workout
+        startNewWorkout(workoutType)
+    }
+    
+    const startNewWorkout = (workoutType: string) => {
         const workoutId = `${workoutType}-${Date.now()}`
         router.push(`/workout/${workoutType}/${workoutId}`)
+        onOpenChange(false)
+        setShowConflictDialog(false)
+    }
+    
+    const handleFinishAndStart = () => {
+        WorkoutStorage.clearOngoingWorkout()
+        startNewWorkout(pendingWorkoutType)
+    }
+    
+    const handleKeepCurrent = () => {
+        setShowConflictDialog(false)
         onOpenChange(false)
     }
 
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader className="mb-4">
-                    <DialogTitle>Choose Workout Type</DialogTitle>
-                    <DialogDescription>
-                        Select the type of workout you want to start
-                    </DialogDescription>
-                </DialogHeader>
+        <>
+            <Dialog open={open && !showConflictDialog} onOpenChange={onOpenChange}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader className="mb-4">
+                        <DialogTitle>Choose Workout Type</DialogTitle>
+                        <DialogDescription>
+                            Select the type of workout you want to start
+                        </DialogDescription>
+                    </DialogHeader>
 
                 <div className="grid grid-cols-1 gap-3">
                     {workoutTypes.map((workout) => (
@@ -135,5 +166,41 @@ export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps
                 </div>
             </DialogContent>
         </Dialog>
+        
+        {/* Conflict Resolution Dialog */}
+        <Dialog open={showConflictDialog} onOpenChange={setShowConflictDialog}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader className="mb-4">
+                    <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-orange-500/20 rounded-full flex items-center justify-center">
+                            <AlertTriangle className="w-5 h-5 text-orange-500" />
+                        </div>
+                        <div>
+                            <DialogTitle>Ongoing Workout Detected</DialogTitle>
+                            <DialogDescription>
+                                You have an active workout in progress. What would you like to do?
+                            </DialogDescription>
+                        </div>
+                    </div>
+                </DialogHeader>
+                
+                <div className="space-y-3">
+                    <Button
+                        onClick={handleFinishAndStart}
+                        className="w-full bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-full border border-[rgba(42,140,234,0.35)] shadow-[0_8px_32px_rgba(42,140,234,0.28)] hover:shadow-[0_10px_40px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all"
+                    >
+                        Finish Current & Start New
+                    </Button>
+                    <Button
+                        onClick={handleKeepCurrent}
+                        variant="outline"
+                        className="w-full bg-[#0E0F13] text-[#F3F4F6] border border-[#212227] rounded-full hover:bg-[#17181D] hover:border-[#2A2B31]"
+                    >
+                        Keep Current Workout
+                    </Button>
+                </div>
+            </DialogContent>
+        </Dialog>
+        </>
     )
 }

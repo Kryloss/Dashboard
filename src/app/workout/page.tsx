@@ -9,16 +9,32 @@ import { QuickActionCard } from "./components/quick-action-card"
 import { StatCard } from "./components/stat-card"
 import { ActivityItem } from "./components/activity-item"
 import { WorkoutTypeDialog } from "./components/workout-type-dialog"
-import { Settings, Plus, Flame, Dumbbell, User, Timer, Bike, Target, TrendingUp, Clock, Heart, FileText } from "lucide-react"
+import { WorkoutStorage, OngoingWorkout } from "@/lib/workout-storage"
+import { Settings, Plus, Flame, Dumbbell, User, Timer, Bike, Target, TrendingUp, Clock, Heart, FileText, Play } from "lucide-react"
 
 export default function WorkoutPage() {
     const [isHealssSubdomain, setIsHealssSubdomain] = useState(false)
     const [showWorkoutDialog, setShowWorkoutDialog] = useState(false)
+    const [ongoingWorkout, setOngoingWorkout] = useState<OngoingWorkout | null>(null)
 
 
     useEffect(() => {
         const onHealss = isOnSubdomain('healss')
         setIsHealssSubdomain(onHealss)
+        
+        if (onHealss) {
+            // Load ongoing workout
+            const workout = WorkoutStorage.getOngoingWorkout()
+            setOngoingWorkout(workout)
+            
+            // Set up periodic check for ongoing workout updates
+            const interval = setInterval(() => {
+                const updatedWorkout = WorkoutStorage.getOngoingWorkout()
+                setOngoingWorkout(updatedWorkout)
+            }, 5000) // Check every 5 seconds
+            
+            return () => clearInterval(interval)
+        }
     }, [])
 
     // Mock data for demonstration
@@ -81,6 +97,14 @@ export default function WorkoutPage() {
 
     const handleQuickAction = (action: string) => {
         console.log(`Quick action: ${action}`)
+        
+        // Check if there's an ongoing workout
+        const existingWorkout = WorkoutStorage.getOngoingWorkout()
+        if (existingWorkout) {
+            // Finish current workout and start new one
+            WorkoutStorage.clearOngoingWorkout()
+        }
+        
         setShowWorkoutDialog(true)
     }
 
@@ -178,6 +202,55 @@ export default function WorkoutPage() {
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                {/* Ongoing Workout Card */}
+                                {ongoingWorkout && (
+                                    <div className="bg-gradient-to-br from-[#2A8CEA]/20 via-[#1659BF]/15 to-[#103E9A]/10 border-2 border-[#2A8CEA]/30 rounded-[20px] p-5 shadow-[inset_0_1px_0_rgba(42,140,234,0.15),_0_8px_32px_rgba(42,140,234,0.25)] relative overflow-hidden">
+                                        {/* Pulse animation overlay */}
+                                        <div className="absolute inset-0 bg-gradient-to-br from-[#2A8CEA]/5 to-transparent animate-pulse" />
+
+                                        <div className="relative z-10">
+                                            <div className="flex items-center space-x-3 mb-4">
+                                                <div className="w-10 h-10 bg-gradient-to-br from-[#2A8CEA] to-[#1659BF] rounded-[14px] flex items-center justify-center shadow-lg">
+                                                    <Play className="w-5 h-5 text-white" />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="flex items-center space-x-2">
+                                                        <h3 className="font-semibold text-[#F3F4F6] text-sm">Ongoing Workout</h3>
+                                                        <div className="flex items-center space-x-1">
+                                                            <div className={`w-2 h-2 rounded-full ${ongoingWorkout.isRunning ? 'bg-green-400' : 'bg-yellow-400'} animate-pulse`} />
+                                                            <span className={`text-xs font-medium ${ongoingWorkout.isRunning ? 'text-green-400' : 'text-yellow-400'}`}>
+                                                                {ongoingWorkout.isRunning ? 'Running' : 'Paused'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <p className="text-xs text-[#A1A1AA] mt-1">
+                                                        {ongoingWorkout.name || `${ongoingWorkout.type.charAt(0).toUpperCase() + ongoingWorkout.type.slice(1)} Workout`}
+                                                    </p>
+                                                    <div className="flex items-center space-x-4 mt-2 text-xs text-[#9CA3AF]">
+                                                        <div className="flex items-center space-x-1">
+                                                            <Timer className="w-3 h-3" />
+                                                            <span>{Math.floor(ongoingWorkout.elapsedTime / 60)}:{(ongoingWorkout.elapsedTime % 60).toString().padStart(2, '0')}</span>
+                                                        </div>
+                                                        <div className="flex items-center space-x-1">
+                                                            <Dumbbell className="w-3 h-3" />
+                                                            <span>{ongoingWorkout.exercises?.length || 0} exercises</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <Button
+                                                className="w-full bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-full border border-[rgba(42,140,234,0.35)] shadow-[0_8px_32px_rgba(42,140,234,0.28)] hover:shadow-[0_10px_40px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all text-sm font-medium h-9"
+                                                onClick={() => {
+                                                    window.location.href = `/workout/${ongoingWorkout.type}/${ongoingWorkout.id}`
+                                                }}
+                                            >
+                                                <Play className="w-4 h-4 mr-2" />
+                                                Continue Workout
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+                                
                                 {mockData.plannedWorkouts.map((workout) => (
                                     <PlannedWorkoutCard
                                         key={workout.id}
