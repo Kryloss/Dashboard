@@ -36,6 +36,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
   const [templateName, setTemplateName] = useState("")
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const isSavingRef = useRef(false)
 
   // Initialize storage and load ongoing workout on component mount
   useEffect(() => {
@@ -81,6 +82,14 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
 
   // Simple save function - saves immediately without debouncing
   const saveWorkoutState = async (updatedExercises: Exercise[] = exercises) => {
+    // Prevent multiple simultaneous saves
+    if (isSavingRef.current) {
+      console.log('Save already in progress, skipping duplicate save request')
+      return
+    }
+
+    isSavingRef.current = true
+
     try {
       if (!user || !supabase) {
         console.log('No user or supabase client, skipping save')
@@ -183,6 +192,9 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         localStorage.setItem('ongoing-workout-timestamp', Date.now().toString())
         console.log('Emergency localStorage save completed')
       }
+    } finally {
+      // Always reset the save lock
+      isSavingRef.current = false
     }
   }
 

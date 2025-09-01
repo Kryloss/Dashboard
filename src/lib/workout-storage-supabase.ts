@@ -191,6 +191,7 @@ export class WorkoutStorageSupabase {
   private static onWorkoutUpdateCallback: ((workout: OngoingWorkout | null) => void) | null = null
   private static onTemplatesUpdateCallback: ((templates: WorkoutTemplate[]) => void) | null = null
   private static lastSaveTime: number = 0
+  private static isSaving: boolean = false // New flag to prevent multiple simultaneous saves
 
   // Initialize with user context
   static initialize(user: User | null, supabaseClient?: SupabaseClient) {
@@ -313,48 +314,28 @@ export class WorkoutStorageSupabase {
         localStorage.setItem('supabase-cache-ongoing-workout', JSON.stringify(workout))
       }
 
-      // Notify callback with intelligent delay to prevent race conditions
       // Check if this is our own update by comparing with localStorage
       if (typeof window !== 'undefined') {
         const localWorkout = localStorage.getItem('ongoing-workout')
         if (localWorkout) {
           const local = JSON.parse(localWorkout)
           // If the real-time update matches our local state, skip callback to prevent loops
-          const isOwnUpdate = local.id === workout.id && 
+          const isOwnUpdate = local.id === workout.id &&
             Math.abs(local.elapsedTime - workout.elapsedTime) < 10 &&
             local.isRunning === workout.isRunning
-          
+
           if (isOwnUpdate) {
             console.log('Skipping real-time callback - appears to be own update:', workout.id)
             return
           }
         }
       }
-      
-      // Use adaptive delay based on recent activity
-      const delay = this.getAdaptiveDelay()
-      setTimeout(() => {
-        if (this.onWorkoutUpdateCallback) {
-          console.log(`Real-time update triggering callback with workout: ${workout.id} (delay: ${delay}ms)`)
-          this.onWorkoutUpdateCallback(workout)
-        }
-      }, delay)
-    }
-  }
 
-  // Get adaptive delay based on recent save activity
-  private static getAdaptiveDelay(): number {
-    const timeSinceLastSave = Date.now() - this.lastSaveTime
-    
-    if (timeSinceLastSave < 3000) {
-      // Very recent save - use longer delay
-      return 5000
-    } else if (timeSinceLastSave < 10000) {
-      // Recent save - use medium delay
-      return 3000
-    } else {
-      // No recent saves - use shorter delay
-      return 1000
+      // Process real-time update immediately without delays to prevent race conditions
+      if (this.onWorkoutUpdateCallback) {
+        console.log(`Real-time update triggering callback immediately with workout: ${workout.id}`)
+        this.onWorkoutUpdateCallback(workout)
+      }
     }
   }
 
@@ -729,54 +710,73 @@ export class WorkoutStorageSupabase {
   }
 
   static async saveOngoingWorkout(workout: OngoingWorkout): Promise<void> {
-    // Optimistic update
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('ongoing-workout', JSON.stringify(workout))
-      localStorage.setItem('supabase-cache-ongoing-workout', JSON.stringify(workout))
+    // Prevent multiple simultaneous saves for the same workout
+    if (this.isSaving) {
+      console.log('Save already in progress, skipping duplicate save request')
+      return
     }
 
-    // Sync to Supabase
-    if (this.currentUser && this.supabase && this.isOnline) {
-      try {
-        // Track save time for adaptive delay calculation
-        this.lastSaveTime = Date.now()
-        
-        const { error } = await this.supabase
-          .from('ongoing_workouts')
-          .upsert({
-            id: workout.id,
-            user_id: this.currentUser.id,
-            type: workout.type,
-            template_id: workout.templateId || null,
-            template_name: workout.templateName || null,
-            exercises: workout.exercises,
-            start_time: workout.startTime,
-            elapsed_time: workout.elapsedTime,
-            is_running: workout.isRunning
-          }, {
-            onConflict: 'user_id,type'  // Match database constraint: UNIQUE(user_id, type)
-          })
+    this.isSaving = true
 
-        if (error) throw error
-
-        console.log('Ongoing workout saved successfully:', workout.id)
-      } catch (error) {
-        console.error('Failed to sync ongoing workout to Supabase:', error)
-        this.addToSyncQueue('update', 'ongoing_workouts', {
-          id: workout.id,
-          type: workout.type,
-          templateId: workout.templateId,
-          templateName: workout.templateName,
-          exercises: workout.exercises,
-          startTime: workout.startTime,
-          elapsedTime: workout.elapsedTime,
-          isRunning: workout.isRunning,
-          userId: this.currentUser.id
-        })
+    try {
+      // Optimistic update to localStorage first
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('ongoing-workout', JSON.stringify(workout))
+        localStorage.setItem('supabase-cache-ongoing-workout', JSON.stringify(workout))
       }
-    } else if (!this.isOnline) {
-      // If offline, ensure it's queued for sync
-      this.addToSyncQueue('update', 'ongoing_workouts', workout)
+
+      // Sync to Supabase
+      if (this.currentUser && this.supabase && this.isOnline) {
+        try {
+          // Track save time for debugging
+          this.lastSaveTime = Date.now()
+
+          // Use proper upsert with conflict resolution
+          const { error } = await this.supabase
+            .from('ongoing_workouts')
+            .upsert({
+              id: workout.id,
+              user_id: this.currentUser.id,
+              type: workout.type,
+              template_id: workout.templateId || null,
+              template_name: workout.templateName || null,
+              exercises: workout.exercises,
+              start_time: workout.startTime,
+              elapsed_time: workout.elapsedTime,
+              is_running: workout.isRunning
+            }, {
+              onConflict: 'user_id,type'  // Match database constraint: UNIQUE(user_id, type)
+            })
+
+          if (error) {
+            console.error('Supabase upsert failed:', error)
+            throw error
+          }
+
+          console.log('Ongoing workout saved successfully:', workout.id)
+        } catch (error) {
+          console.error('Failed to sync ongoing workout to Supabase:', error)
+
+          // Add to sync queue for retry
+          this.addToSyncQueue('update', 'ongoing_workouts', {
+            id: workout.id,
+            type: workout.type,
+            templateId: workout.templateId,
+            templateName: workout.templateName,
+            exercises: workout.exercises,
+            startTime: workout.startTime,
+            elapsedTime: workout.elapsedTime,
+            isRunning: workout.isRunning,
+            userId: this.currentUser.id
+          })
+        }
+      } else if (!this.isOnline) {
+        // If offline, ensure it's queued for sync
+        this.addToSyncQueue('update', 'ongoing_workouts', workout)
+      }
+    } finally {
+      // Always reset the saving flag
+      this.isSaving = false
     }
   }
 

@@ -20,13 +20,21 @@ export default function WorkoutPage() {
     const [ongoingWorkout, setOngoingWorkout] = useState<OngoingWorkout | null>(null)
     const [isLoadingWorkout, setIsLoadingWorkout] = useState(false)
 
+    // Health logging helper function
+    const healthLog = (message: string, data?: any) => {
+        const timestamp = new Date().toISOString()
+        console.log(`[HEALTH LOG ${timestamp}] ${message}`, data ? data : '')
+    }
+
     // Enhanced workout loading with comprehensive debugging
     const loadOngoingWorkout = useCallback(async () => {
         if (!user || !supabase) {
+            healthLog('WORKOUT_LOAD_SKIP: Missing user or supabase client', { hasUser: !!user, hasSupabase: !!supabase })
             console.log('Skipping workout load - missing user or supabase client')
             return
         }
 
+        healthLog('WORKOUT_LOAD_START: Beginning workout load process', { userId: user.id })
         console.log('Starting workout load process for user:', user.id)
         setIsLoadingWorkout(true)
 
@@ -42,6 +50,7 @@ export default function WorkoutPage() {
             if (error) {
                 if (error.code === 'PGRST116') {
                     // No ongoing workout found
+                    healthLog('WORKOUT_NOT_FOUND: No ongoing workout in database', { errorCode: error.code })
                     console.log('✅ No ongoing workout found in database')
                     setOngoingWorkout(null)
                     // Clear any stale localStorage
@@ -50,10 +59,12 @@ export default function WorkoutPage() {
                         localStorage.removeItem('ongoing-workout')
                         localStorage.removeItem('supabase-cache-ongoing-workout')
                         if (hadLocalStorage) {
+                            healthLog('WORKOUT_LOCALSTORAGE_CLEAR: Cleared stale localStorage data')
                             console.log('🧹 Cleared stale localStorage workout data')
                         }
                     }
                 } else {
+                    healthLog('WORKOUT_DB_ERROR: Database query failed', { error: error.message, code: error.code })
                     console.error('Database query error:', error)
                     throw error
                 }
@@ -71,6 +82,14 @@ export default function WorkoutPage() {
                     userId: data.user_id
                 }
 
+                healthLog('WORKOUT_FOUND: Successfully loaded ongoing workout from database', {
+                    id: workout.id,
+                    type: workout.type,
+                    name: workout.templateName || 'Unnamed',
+                    exercises: workout.exercises.length,
+                    elapsedTime: workout.elapsedTime,
+                    isRunning: workout.isRunning
+                })
                 console.log('✅ Successfully loaded ongoing workout:', {
                     id: workout.id,
                     type: workout.type,
@@ -86,10 +105,12 @@ export default function WorkoutPage() {
                 if (typeof window !== 'undefined') {
                     localStorage.setItem('ongoing-workout', JSON.stringify(workout))
                     localStorage.setItem('ongoing-workout-timestamp', Date.now().toString())
+                    healthLog('WORKOUT_CACHE: Cached workout to localStorage')
                     console.log('💾 Cached workout to localStorage')
                 }
             }
         } catch (error) {
+            healthLog('WORKOUT_LOAD_ERROR: Failed to load workout from database', { error: error?.toString() })
             console.error('❌ Failed to load ongoing workout from database:', error)
 
             // Fallback to localStorage if database fails
@@ -97,6 +118,10 @@ export default function WorkoutPage() {
                 const cachedWorkout = localStorage.getItem('ongoing-workout')
                 const cacheTimestamp = localStorage.getItem('ongoing-workout-timestamp')
 
+                healthLog('WORKOUT_FALLBACK_ATTEMPT: Trying localStorage fallback', {
+                    hasCachedWorkout: !!cachedWorkout,
+                    hasCacheTimestamp: !!cacheTimestamp
+                })
                 console.log('🔄 Attempting localStorage fallback...', {
                     hasCachedWorkout: !!cachedWorkout,
                     hasCacheTimestamp: !!cacheTimestamp
@@ -108,21 +133,25 @@ export default function WorkoutPage() {
                     const maxCacheAge = 5 * 60 * 1000 // 5 minutes
 
                     if (cacheAge < maxCacheAge) {
+                        healthLog('WORKOUT_FALLBACK_SUCCESS: Using cached workout', { cacheAgeSeconds: Math.round(cacheAge / 1000) })
                         console.log(`✅ Using cached workout (${Math.round(cacheAge / 1000)}s old)`)
                         setOngoingWorkout(JSON.parse(cachedWorkout))
                     } else {
+                        healthLog('WORKOUT_FALLBACK_EXPIRED: Cached workout too old, discarding', { cacheAgeSeconds: Math.round(cacheAge / 1000) })
                         console.log(`⚠️ Cached workout too old (${Math.round(cacheAge / 1000)}s), discarding`)
                         localStorage.removeItem('ongoing-workout')
                         localStorage.removeItem('ongoing-workout-timestamp')
                         setOngoingWorkout(null)
                     }
                 } else {
+                    healthLog('WORKOUT_FALLBACK_FAILED: No valid localStorage fallback available')
                     console.log('❌ No valid localStorage fallback available')
                     setOngoingWorkout(null)
                 }
             }
         } finally {
             setIsLoadingWorkout(false)
+            healthLog('WORKOUT_LOAD_END: Workout load process completed')
             console.log('Workout load process completed')
         }
     }, [user, supabase])
@@ -131,7 +160,10 @@ export default function WorkoutPage() {
         const onHealss = isOnSubdomain('healss')
         setIsHealssSubdomain(onHealss)
 
+        healthLog('HEALSS_SUBDOMAIN_CHECK: Subdomain check completed', { onHealss, hasUser: !!user, hasSupabase: !!supabase })
+
         if (onHealss) {
+            healthLog('WORKOUT_STORAGE_INIT: Initializing WorkoutStorageSupabase')
             WorkoutStorageSupabase.initialize(user, supabase)
             loadOngoingWorkout()
         }
@@ -141,30 +173,45 @@ export default function WorkoutPage() {
     useEffect(() => {
         if (!isHealssSubdomain) return
 
+        healthLog('FOCUS_HANDLER_SETUP: Setting up focus event handler')
         let lastFocusTime = 0
         const handleFocus = () => {
             const now = Date.now()
+            const timeSinceLastFocus = now - lastFocusTime
             // Only reload if more than 30 seconds since last focus event
-            if (now - lastFocusTime > 30000) {
+            if (timeSinceLastFocus > 30000) {
+                healthLog('FOCUS_RELOAD: Page gained focus, refreshing workout data', { timeSinceLastFocus })
                 console.log('Page gained focus after significant time away, refreshing workout data')
                 loadOngoingWorkout()
                 lastFocusTime = now
             } else {
+                healthLog('FOCUS_SKIP: Page gained focus recently, skipping reload', { timeSinceLastFocus })
                 console.log('Page gained focus recently, skipping reload to prevent conflicts')
             }
         }
 
         window.addEventListener('focus', handleFocus)
-        return () => window.removeEventListener('focus', handleFocus)
+        return () => {
+            healthLog('FOCUS_HANDLER_CLEANUP: Removing focus event handler')
+            window.removeEventListener('focus', handleFocus)
+        }
     }, [isHealssSubdomain, user, supabase, loadOngoingWorkout])
 
     // Optimized timer update - reduced frequency and smarter updates
     useEffect(() => {
-        if (!ongoingWorkout?.isRunning) return
+        if (!ongoingWorkout?.isRunning) {
+            healthLog('TIMER_SKIP: No running workout, skipping timer setup', { hasWorkout: !!ongoingWorkout, isRunning: ongoingWorkout?.isRunning })
+            return
+        }
 
+        healthLog('TIMER_SETUP: Setting up workout timer', { workoutId: ongoingWorkout.id, elapsedTime: ongoingWorkout.elapsedTime })
+        
         const updateTimer = setInterval(() => {
             setOngoingWorkout(prev => {
-                if (!prev) return prev
+                if (!prev) {
+                    healthLog('TIMER_UPDATE_SKIP: No previous workout state')
+                    return prev
+                }
 
                 const now = Date.now()
                 const timeDiff = Math.floor((now - new Date(prev.startTime).getTime()) / 1000)
@@ -172,10 +219,15 @@ export default function WorkoutPage() {
 
                 // Only update if there's a meaningful change (prevents unnecessary renders)
                 const timeDelta = Math.abs(currentElapsedTime - prev.elapsedTime)
-                if (timeDelta < 5) {
-                    return prev // Skip update if less than 5 seconds difference
+                if (timeDelta < 10) { // Increased from 5 to 10 seconds to reduce updates
+                    return prev // Skip update if less than 10 seconds difference
                 }
 
+                healthLog('TIMER_UPDATE: Updating workout timer', { 
+                    from: prev.elapsedTime, 
+                    to: currentElapsedTime, 
+                    timeDelta 
+                })
                 console.log(`Timer update: ${prev.elapsedTime}s -> ${currentElapsedTime}s`)
 
                 return {
@@ -183,10 +235,31 @@ export default function WorkoutPage() {
                     elapsedTime: currentElapsedTime
                 }
             })
-        }, 5000) // Update every 5 seconds instead of every second
+        }, 10000) // Update every 10 seconds instead of every 5 seconds
 
-        return () => clearInterval(updateTimer)
+        return () => {
+            healthLog('TIMER_CLEANUP: Clearing workout timer')
+            clearInterval(updateTimer)
+        }
     }, [ongoingWorkout?.isRunning, ongoingWorkout?.startTime])
+
+    // Health logging for ongoingWorkout state changes
+    useEffect(() => {
+        healthLog('WORKOUT_STATE_CHANGE: ongoingWorkout state updated', {
+            hasWorkout: !!ongoingWorkout,
+            workoutId: ongoingWorkout?.id,
+            workoutType: ongoingWorkout?.type,
+            templateName: ongoingWorkout?.templateName,
+            isRunning: ongoingWorkout?.isRunning,
+            elapsedTime: ongoingWorkout?.elapsedTime,
+            exerciseCount: ongoingWorkout?.exercises?.length
+        })
+    }, [ongoingWorkout])
+
+    // Health logging for loading state changes
+    useEffect(() => {
+        healthLog('LOADING_STATE_CHANGE: isLoadingWorkout state updated', { isLoadingWorkout })
+    }, [isLoadingWorkout])
 
     // Mock data for demonstration
     const mockData = {
@@ -247,22 +320,29 @@ export default function WorkoutPage() {
     }
 
     const handleQuickAction = async (action: string) => {
+        healthLog('QUICK_ACTION_START: Handling quick action', { action })
         if (action === 'strength') {
             try {
+                healthLog('STRENGTH_WORKOUT_START: Starting strength workout with last template')
                 // Start strength workout with last template immediately
                 const lastTemplate = await WorkoutStorageSupabase.getLastTemplate('strength')
                 if (lastTemplate) {
+                    healthLog('STRENGTH_TEMPLATE_FOUND: Creating workout from template', { templateId: lastTemplate.id })
                     const workout = await WorkoutStorageSupabase.createWorkoutFromTemplate(lastTemplate)
+                    healthLog('STRENGTH_WORKOUT_CREATED: Redirecting to workout page', { workoutId: workout.id })
                     window.location.href = `/workout/strength/${workout.id}`
                 } else {
+                    healthLog('STRENGTH_NO_TEMPLATE: No template found, showing dialog')
                     // Fallback to dialog if no template found
                     setShowWorkoutDialog(true)
                 }
             } catch (error) {
+                healthLog('STRENGTH_WORKOUT_ERROR: Failed to start strength workout', { error: error?.toString() })
                 console.error('Failed to start quick action workout:', error)
                 setShowWorkoutDialog(true)
             }
         } else {
+            healthLog('QUICK_ACTION_OTHER: Handling other quick action', { action })
             console.log(`Quick action: ${action}`)
         }
     }
@@ -354,7 +434,10 @@ export default function WorkoutPage() {
                                 <h2 className="text-xl font-semibold text-[#F3F4F6]">Today&apos;s Workout</h2>
                                 <div className="flex items-center space-x-3">
                                     <Button
-                                        onClick={loadOngoingWorkout}
+                                        onClick={() => {
+                                            healthLog('REFRESH_BUTTON_CLICKED: Manual refresh initiated')
+                                            loadOngoingWorkout()
+                                        }}
                                         disabled={isLoadingWorkout}
                                         variant="ghost"
                                         className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full"
@@ -386,7 +469,14 @@ export default function WorkoutPage() {
                                 )}
 
                                 {/* Ongoing Workout */}
-                                {!isLoadingWorkout && ongoingWorkout && (
+                                {!isLoadingWorkout && ongoingWorkout && (() => {
+                                    healthLog('RENDER_ACTIVE_WORKOUT: Rendering Active Workout component', {
+                                        workoutId: ongoingWorkout.id,
+                                        templateName: ongoingWorkout.templateName,
+                                        isRunning: ongoingWorkout.isRunning,
+                                        elapsedTime: ongoingWorkout.elapsedTime
+                                    })
+                                    return (
                                     <div className="bg-[#121318] border-2 border-[#4AA7FF] rounded-[20px] p-5 shadow-[0_0_0_1px_rgba(74,167,255,0.35),_0_8px_40px_rgba(74,167,255,0.20)] hover:shadow-[0_0_0_1px_rgba(74,167,255,0.5),_0_12px_48px_rgba(74,167,255,0.25)] hover:-translate-y-[1px] transition-all duration-200">
                                         <div className="flex items-start justify-between mb-4">
                                             <div className="flex items-center space-x-3">
@@ -414,7 +504,13 @@ export default function WorkoutPage() {
                                             Continue Workout
                                         </Button>
                                     </div>
-                                )}
+                                    )
+                                })()}
+                                
+                                {!isLoadingWorkout && !ongoingWorkout && (() => {
+                                    healthLog('RENDER_NO_WORKOUT: No active workout to display', { isLoadingWorkout })
+                                    return null
+                                })()}
 
                                 {mockData.plannedWorkouts.map((workout) => (
                                     <PlannedWorkoutCard
