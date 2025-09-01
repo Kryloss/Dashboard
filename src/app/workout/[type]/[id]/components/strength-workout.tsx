@@ -90,13 +90,13 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
             exercises: [],
             startTime: new Date().toISOString(),
             elapsedTime: 0,
-            isRunning: true // Start the workout immediately so it shows in Today's Workout
+            isRunning: false // Don't start the workout automatically - user must manually start
           }
 
           await WorkoutStorageSupabase.saveOngoingWorkout(newWorkout)
           setExercises([])
           setTime(0)
-          setIsRunning(true)
+          setIsRunning(false)
         }
       }
     }
