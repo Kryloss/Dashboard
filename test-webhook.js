@@ -5,8 +5,8 @@
  * Run with: node test-webhook.js
  */
 
-const https = require('https');
-const http = require('http');
+import https from 'https';
+import http from 'http';
 
 // Configuration
 const WEBHOOK_URL = process.env.WEBHOOK_URL || 'http://localhost:3000/api/hooks/welcome';
@@ -35,7 +35,7 @@ function makeRequest(url, options, data) {
                         headers: res.headers,
                         body: response
                     });
-                } catch (e) {
+                } catch {
                     resolve({
                         status: res.statusCode,
                         headers: res.headers,
@@ -126,8 +126,8 @@ async function testWebhook() {
 }
 
 // Run tests
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
     testWebhook();
 }
 
-module.exports = { testWebhook };
+export { testWebhook };

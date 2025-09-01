@@ -16,7 +16,7 @@ export async function middleware(request: NextRequest) {
     const subdomain = hostname.split('.')[0]
 
     // Create Supabase client for auth checks
-    let supabaseResponse = NextResponse.next({
+    const supabaseResponse = NextResponse.next({
         request: {
             headers: request.headers,
         },
