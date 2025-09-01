@@ -328,7 +328,8 @@ export default function WorkoutPage() {
                 const lastTemplate = await WorkoutStorageSupabase.getLastTemplate('strength')
                 if (lastTemplate) {
                     healthLog('STRENGTH_TEMPLATE_FOUND: Creating workout from template', { templateId: lastTemplate.id })
-                    const workout = await WorkoutStorageSupabase.createWorkoutFromTemplate(lastTemplate)
+                    const workoutId = `strength-${Date.now()}`
+                    const workout = await WorkoutStorageSupabase.createWorkoutFromTemplate(lastTemplate, workoutId)
                     healthLog('STRENGTH_WORKOUT_CREATED: Redirecting to workout page', { workoutId: workout.id })
                     window.location.href = `/workout/strength/${workout.id}`
                 } else {
@@ -473,7 +474,7 @@ export default function WorkoutPage() {
                                     <div className="bg-gradient-to-br from-[#2A8CEA]/20 via-[#1659BF]/15 to-[#103E9A]/10 border-2 border-[#2A8CEA]/30 rounded-[20px] p-5 shadow-[inset_0_1px_0_rgba(42,140,234,0.15),_0_8px_32px_rgba(42,140,234,0.25)] relative overflow-hidden">
                                         {/* Pulse animation overlay */}
                                         <div className="absolute inset-0 bg-gradient-to-br from-[#2A8CEA]/5 to-transparent animate-pulse" />
-                                        
+
                                         <div className="relative z-10">
                                             <div className="flex items-center space-x-3 mb-4">
                                                 <div className="w-10 h-10 bg-gradient-to-br from-[#2A8CEA] to-[#1659BF] rounded-[14px] flex items-center justify-center shadow-lg">
@@ -624,7 +625,7 @@ export default function WorkoutPage() {
                                             change={stat.change}
                                         />
                                     ))}
-                                    
+
                                     {/* Health Log Card */}
                                     <div className="bg-[#121318] border border-[#212227] rounded-[20px] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)] hover:border-[#2A2B31] hover:-translate-y-[1px] hover:shadow-[0_0_0_1px_rgba(42,140,234,0.35),_0_8px_40px_rgba(42,140,234,0.20)] transition-all duration-200">
                                         <div className="flex items-center justify-between">
@@ -646,7 +647,7 @@ export default function WorkoutPage() {
                                                     console.log('Loading State:', isLoadingWorkout)
                                                     console.log('Healss Subdomain:', isHealssSubdomain)
                                                     console.log('Last Save Time:', new Date().toLocaleTimeString())
-                                                    
+
                                                     // Check localStorage
                                                     if (typeof window !== 'undefined') {
                                                         console.log('LocalStorage Data:')
@@ -654,10 +655,10 @@ export default function WorkoutPage() {
                                                         console.log('- ongoing-workout-timestamp:', localStorage.getItem('ongoing-workout-timestamp'))
                                                         console.log('- workout-templates:', localStorage.getItem('workout-templates'))
                                                     }
-                                                    
+
                                                     console.log('==========================')
                                                     healthLog('HEALTH_LOG_REQUESTED: Manual health log check requested by user')
-                                                    
+
                                                     // Show alert to user
                                                     alert('Health log data has been printed to the browser console. Press F12 to open Developer Tools and check the Console tab.')
                                                 }}

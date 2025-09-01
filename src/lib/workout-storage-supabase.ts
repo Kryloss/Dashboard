@@ -837,9 +837,9 @@ export class WorkoutStorageSupabase {
   }
 
   // Create workout from template
-  static async createWorkoutFromTemplate(template: WorkoutTemplate): Promise<OngoingWorkout> {
+  static async createWorkoutFromTemplate(template: WorkoutTemplate, customId?: string): Promise<OngoingWorkout> {
     const workout: OngoingWorkout = {
-      id: `workout-${Date.now()}`,
+      id: customId || `workout-${Date.now()}`,
       type: template.type,
       templateId: template.id,
       templateName: template.name,

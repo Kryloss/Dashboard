@@ -48,9 +48,8 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
       const ongoingWorkout = await WorkoutStorageSupabase.getOngoingWorkout()
       if (ongoingWorkout && ongoingWorkout.type === 'strength') {
         console.log('Found ongoing strength workout:', ongoingWorkout.id, 'Expected:', workoutId, 'Exercises:', ongoingWorkout.exercises.length)
-        
-        // Use the existing strength workout regardless of ID mismatch
-        // This handles the case where template creation changed the ID due to database constraints
+
+        // Always set exercises first to ensure they're visible immediately
         setExercises(ongoingWorkout.exercises)
 
         // Calculate current elapsed time if workout is running
@@ -63,7 +62,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         }
 
         setIsRunning(ongoingWorkout.isRunning)
-        
+
         // If the ID doesn't match, update the workout with the expected ID to maintain URL consistency
         if (ongoingWorkout.id !== workoutId) {
           console.log('Updating workout ID to match URL:', workoutId)
@@ -71,21 +70,25 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
             ...ongoingWorkout,
             id: workoutId
           }
+          // Save the updated workout with the correct ID
           await WorkoutStorageSupabase.saveOngoingWorkout(updatedWorkout)
+          // Ensure exercises are still set after the update
+          setExercises(updatedWorkout.exercises)
         }
       } else {
         // No ongoing workout found with this ID - wait briefly for potential database sync
         console.log('No ongoing workout found immediately, retrying once...')
-        
+
         // Brief delay to allow for database synchronization in case workout was just created
         await new Promise(resolve => setTimeout(resolve, 500))
-        
+
         // Try loading again after brief delay
         const retryWorkout = await WorkoutStorageSupabase.getOngoingWorkout()
-        if (retryWorkout && retryWorkout.id === workoutId) {
+        if (retryWorkout && retryWorkout.type === 'strength') {
           console.log('Found workout on retry with exercises:', retryWorkout.exercises.length)
+          // Set exercises immediately to ensure they're visible
           setExercises(retryWorkout.exercises)
-          
+
           if (retryWorkout.isRunning) {
             const timeSinceStart = Math.floor((Date.now() - new Date(retryWorkout.startTime).getTime()) / 1000)
             const currentTime = retryWorkout.elapsedTime + timeSinceStart
@@ -93,8 +96,20 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
           } else {
             setTime(retryWorkout.elapsedTime)
           }
-          
+
           setIsRunning(retryWorkout.isRunning)
+
+          // If the ID doesn't match, update it to maintain URL consistency
+          if (retryWorkout.id !== workoutId) {
+            console.log('Updating retry workout ID to match URL:', workoutId)
+            const updatedRetryWorkout = {
+              ...retryWorkout,
+              id: workoutId
+            }
+            await WorkoutStorageSupabase.saveOngoingWorkout(updatedRetryWorkout)
+            // Ensure exercises remain visible after ID update
+            setExercises(updatedRetryWorkout.exercises)
+          }
         } else {
           // Still no workout found - create a new empty workout
           console.log('Creating new empty workout as fallback')

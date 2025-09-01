@@ -63,9 +63,9 @@ export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps
 
   const handleWorkoutSelect = async (workoutType: string, available: boolean) => {
     if (!available) return
-    
+
     setSelectedType(workoutType)
-    
+
     if (workoutType === 'strength') {
       try {
         // Show templates for strength workouts
@@ -89,7 +89,9 @@ export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps
 
   const handleTemplateSelect = async (template: WorkoutTemplate) => {
     try {
-      const workout = await WorkoutStorageSupabase.createWorkoutFromTemplate(template)
+      // Generate a consistent workout ID based on template and timestamp
+      const workoutId = `${template.type}-${Date.now()}`
+      const workout = await WorkoutStorageSupabase.createWorkoutFromTemplate(template, workoutId)
       router.push(`/workout/${template.type}/${workout.id}`)
       onOpenChange(false)
     } catch (error) {
@@ -149,7 +151,7 @@ export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps
               <div className="w-12 h-12 rounded-[10px] flex items-center justify-center bg-[rgba(255,255,255,0.03)] border border-[#2A2B31] text-[#9BE15D]">
                 <Plus className="w-6 h-6" />
               </div>
-              
+
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-[#F3F4F6] text-sm">
                   Start Empty Workout
@@ -183,7 +185,7 @@ export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps
                       {template.exercises.length} exercise{template.exercises.length !== 1 ? 's' : ''}
                     </p>
                   </div>
-                  
+
                   <div className="flex items-center space-x-2">
                     <Dumbbell className="w-4 h-4 text-[#9BE15D]" />
                   </div>
@@ -214,7 +216,7 @@ export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps
                 )}>
                   {workout.icon}
                 </div>
-                
+
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center space-x-2">
                     <h3 className="font-semibold text-[#F3F4F6] text-sm">
