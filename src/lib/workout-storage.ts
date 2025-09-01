@@ -1,5 +1,7 @@
-// Simple workout data types for local state management only
+import { createClient } from '@/lib/supabase/client'
+import type { User, SupabaseClient } from '@supabase/supabase-js'
 
+// Workout data types for Supabase integration
 export interface WorkoutExercise {
     id: string
     name: string
@@ -33,41 +35,170 @@ export interface OngoingWorkout {
     elapsedTime: number
     isRunning: boolean
     lastActive: string
+    userId?: string
+}
+
+// Database row type (matches Supabase schema)
+interface OngoingWorkoutRow {
+    id: string
+    user_id: string
+    type: string
+    name: string | null
+    exercises: WorkoutExercise[]
+    start_time: string
+    elapsed_time: number
+    is_running: boolean
+    last_active: string
+    created_at: string
+    updated_at: string
 }
 
 export class WorkoutStorage {
-    // Simple storage class for local state management with localStorage persistence
-    private static readonly ONGOING_WORKOUT_KEY = 'ongoing-workout'
+    private static supabase: SupabaseClient | null = null
+    private static currentUser: User | null = null
 
-    // Ongoing workout management
-    static getOngoingWorkout(): OngoingWorkout | null {
-        if (typeof window === 'undefined') return null
-        
-        try {
-            const stored = localStorage.getItem(this.ONGOING_WORKOUT_KEY)
-            return stored ? JSON.parse(stored) : null
-        } catch (error) {
-            console.error('Error loading ongoing workout:', error)
-            return null
+    // Initialize with user context
+    static initialize(user: User | null, supabaseClient?: SupabaseClient) {
+        this.currentUser = user
+        if (supabaseClient) {
+            this.supabase = supabaseClient
+        } else if (typeof window !== 'undefined') {
+            this.supabase = createClient()
         }
     }
 
-    static saveOngoingWorkout(workout: OngoingWorkout): void {
-        if (typeof window === 'undefined') return
-        
+    // Get ongoing workout from Supabase (user-scoped)
+    static async getOngoingWorkout(): Promise<OngoingWorkout | null> {
+        if (!this.supabase || !this.currentUser) {
+            console.warn('No Supabase client or user - falling back to localStorage')
+            return this.getOngoingWorkoutFromLocalStorage()
+        }
+
+        try {
+            const { data, error } = await this.supabase
+                .from('ongoing_workouts')
+                .select('*')
+                .eq('user_id', this.currentUser.id)
+                .maybeSingle()
+
+            if (error) {
+                console.error('Error fetching ongoing workout:', error)
+                // Fallback to localStorage
+                return this.getOngoingWorkoutFromLocalStorage()
+            }
+
+            if (!data) return null
+
+            // Convert database row to OngoingWorkout interface
+            return this.dbRowToWorkout(data)
+
+        } catch (error) {
+            console.error('Supabase query failed:', error)
+            // Fallback to localStorage
+            return this.getOngoingWorkoutFromLocalStorage()
+        }
+    }
+
+    // Save ongoing workout to Supabase (user-scoped)
+    static async saveOngoingWorkout(workout: OngoingWorkout): Promise<void> {
+        if (!this.supabase || !this.currentUser) {
+            console.warn('No Supabase client or user - falling back to localStorage')
+            this.saveOngoingWorkoutToLocalStorage(workout)
+            return
+        }
+
         try {
             workout.lastActive = new Date().toISOString()
-            localStorage.setItem(this.ONGOING_WORKOUT_KEY, JSON.stringify(workout))
+            workout.userId = this.currentUser.id
+
+            const dbRow = this.workoutToDbRow(workout)
+
+            const { error } = await this.supabase
+                .from('ongoing_workouts')
+                .upsert(dbRow, { 
+                    onConflict: 'user_id',
+                    ignoreDuplicates: false 
+                })
+
+            if (error) {
+                console.error('Error saving ongoing workout:', error)
+                // Fallback to localStorage
+                this.saveOngoingWorkoutToLocalStorage(workout)
+                return
+            }
+
+            // Also save to localStorage as backup
+            this.saveOngoingWorkoutToLocalStorage(workout)
+
         } catch (error) {
-            console.error('Error saving ongoing workout:', error)
+            console.error('Supabase upsert failed:', error)
+            // Fallback to localStorage
+            this.saveOngoingWorkoutToLocalStorage(workout)
         }
     }
 
-    static clearOngoingWorkout(): void {
-        if (typeof window === 'undefined') return
-        localStorage.removeItem(this.ONGOING_WORKOUT_KEY)
+    // Clear ongoing workout from Supabase (user-scoped)
+    static async clearOngoingWorkout(): Promise<void> {
+        if (this.supabase && this.currentUser) {
+            try {
+                const { error } = await this.supabase
+                    .from('ongoing_workouts')
+                    .delete()
+                    .eq('user_id', this.currentUser.id)
+
+                if (error) {
+                    console.error('Error clearing ongoing workout:', error)
+                }
+            } catch (error) {
+                console.error('Supabase delete failed:', error)
+            }
+        }
+
+        // Also clear from localStorage
+        this.clearOngoingWorkoutFromLocalStorage()
     }
 
+    // Update workout time (optimized for frequent updates)
+    static async updateWorkoutTime(elapsedTime: number, isRunning: boolean): Promise<void> {
+        if (!this.supabase || !this.currentUser) {
+            // Update localStorage only
+            const workout = this.getOngoingWorkoutFromLocalStorage()
+            if (workout) {
+                workout.elapsedTime = elapsedTime
+                workout.isRunning = isRunning
+                this.saveOngoingWorkoutToLocalStorage(workout)
+            }
+            return
+        }
+
+        try {
+            const { error } = await this.supabase
+                .from('ongoing_workouts')
+                .update({
+                    elapsed_time: elapsedTime,
+                    is_running: isRunning,
+                    last_active: new Date().toISOString()
+                })
+                .eq('user_id', this.currentUser.id)
+
+            if (error) {
+                console.error('Error updating workout time:', error)
+            }
+
+            // Also update localStorage
+            const workout = this.getOngoingWorkoutFromLocalStorage()
+            if (workout) {
+                workout.elapsedTime = elapsedTime
+                workout.isRunning = isRunning
+                this.saveOngoingWorkoutToLocalStorage(workout)
+            }
+
+        } catch (error) {
+            console.error('Supabase time update failed:', error)
+        }
+    }
+
+    // Create new workout
     static createWorkout(type: OngoingWorkout['type'], id?: string): OngoingWorkout {
         return {
             id: id || `${type}-${Date.now()}`,
@@ -77,16 +208,8 @@ export class WorkoutStorage {
             startTime: new Date().toISOString(),
             elapsedTime: 0,
             isRunning: false,
-            lastActive: new Date().toISOString()
-        }
-    }
-
-    static updateWorkoutTime(elapsedTime: number, isRunning: boolean): void {
-        const workout = this.getOngoingWorkout()
-        if (workout) {
-            workout.elapsedTime = elapsedTime
-            workout.isRunning = isRunning
-            this.saveOngoingWorkout(workout)
+            lastActive: new Date().toISOString(),
+            userId: this.currentUser?.id
         }
     }
 
@@ -125,6 +248,66 @@ export class WorkoutStorage {
             notes: '',
             completed: false,
             restTime: 60
+        }
+    }
+
+    // Private helper methods for localStorage fallback
+    private static readonly ONGOING_WORKOUT_KEY = 'ongoing-workout'
+
+    private static getOngoingWorkoutFromLocalStorage(): OngoingWorkout | null {
+        if (typeof window === 'undefined') return null
+        
+        try {
+            const stored = localStorage.getItem(this.ONGOING_WORKOUT_KEY)
+            return stored ? JSON.parse(stored) : null
+        } catch (error) {
+            console.error('Error loading from localStorage:', error)
+            return null
+        }
+    }
+
+    private static saveOngoingWorkoutToLocalStorage(workout: OngoingWorkout): void {
+        if (typeof window === 'undefined') return
+        
+        try {
+            workout.lastActive = new Date().toISOString()
+            localStorage.setItem(this.ONGOING_WORKOUT_KEY, JSON.stringify(workout))
+        } catch (error) {
+            console.error('Error saving to localStorage:', error)
+        }
+    }
+
+    private static clearOngoingWorkoutFromLocalStorage(): void {
+        if (typeof window === 'undefined') return
+        localStorage.removeItem(this.ONGOING_WORKOUT_KEY)
+    }
+
+    // Database conversion helpers
+    private static dbRowToWorkout(row: OngoingWorkoutRow): OngoingWorkout {
+        return {
+            id: row.id,
+            type: row.type as OngoingWorkout['type'],
+            name: row.name || undefined,
+            exercises: row.exercises,
+            startTime: row.start_time,
+            elapsedTime: row.elapsed_time,
+            isRunning: row.is_running,
+            lastActive: row.last_active,
+            userId: row.user_id
+        }
+    }
+
+    private static workoutToDbRow(workout: OngoingWorkout): Omit<OngoingWorkoutRow, 'created_at' | 'updated_at'> {
+        return {
+            id: workout.id,
+            user_id: workout.userId || this.currentUser?.id || '',
+            type: workout.type,
+            name: workout.name || null,
+            exercises: workout.exercises,
+            start_time: workout.startTime,
+            elapsed_time: workout.elapsedTime,
+            is_running: workout.isRunning,
+            last_active: workout.lastActive
         }
     }
 }

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { X, Play, Pause, Square, Plus, GripVertical } from "lucide-react"
 import { WorkoutStorage, WorkoutExercise } from "@/lib/workout-storage"
+import { useAuth } from "@/lib/hooks/useAuth"
 
 // Use WorkoutExercise from storage
 type Exercise = WorkoutExercise
@@ -17,6 +18,7 @@ interface StrengthWorkoutProps {
 
 export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     const router = useRouter()
+    const { user, supabase } = useAuth()
     const [isRunning, setIsRunning] = useState(false)
     const [time, setTime] = useState(0)
     const [exercises, setExercises] = useState<Exercise[]>([])
@@ -26,32 +28,48 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
 
     // Initialize workout from storage or create new one
     useEffect(() => {
-        const existingWorkout = WorkoutStorage.getOngoingWorkout()
-
-        if (existingWorkout && existingWorkout.id === workoutId) {
-            // Load existing workout
-            setExercises(existingWorkout.exercises)
-
-            // Calculate current elapsed time if workout is running
-            if (existingWorkout.isRunning) {
-                const timeSinceStart = Math.floor((Date.now() - new Date(existingWorkout.startTime).getTime()) / 1000)
-                const currentTime = existingWorkout.elapsedTime + timeSinceStart
-                setTime(currentTime)
-            } else {
-                setTime(existingWorkout.elapsedTime)
+        const initializeWorkout = async () => {
+            if (!user || !supabase) {
+                console.error('No user or supabase client available')
+                return
             }
 
-            setIsRunning(existingWorkout.isRunning)
-        } else {
-            // Create new workout
-            const newWorkout = WorkoutStorage.createWorkout('strength', workoutId)
-            WorkoutStorage.saveOngoingWorkout(newWorkout)
+            // Initialize storage with user context
+            WorkoutStorage.initialize(user, supabase)
 
-            setExercises([])
-            setTime(0)
-            setIsRunning(false)
+            try {
+                const existingWorkout = await WorkoutStorage.getOngoingWorkout()
+
+                if (existingWorkout && existingWorkout.id === workoutId) {
+                    // Load existing workout
+                    setExercises(existingWorkout.exercises)
+
+                    // Calculate current elapsed time if workout is running
+                    if (existingWorkout.isRunning) {
+                        const timeSinceStart = Math.floor((Date.now() - new Date(existingWorkout.startTime).getTime()) / 1000)
+                        const currentTime = existingWorkout.elapsedTime + timeSinceStart
+                        setTime(currentTime)
+                    } else {
+                        setTime(existingWorkout.elapsedTime)
+                    }
+
+                    setIsRunning(existingWorkout.isRunning)
+                } else {
+                    // Create new workout
+                    const newWorkout = WorkoutStorage.createWorkout('strength', workoutId)
+                    await WorkoutStorage.saveOngoingWorkout(newWorkout)
+
+                    setExercises([])
+                    setTime(0)
+                    setIsRunning(false)
+                }
+            } catch (error) {
+                console.error('Error initializing workout:', error)
+            }
         }
-    }, [workoutId])
+
+        initializeWorkout()
+    }, [workoutId, user, supabase])
 
 
     // Stopwatch logic with persistence
@@ -116,7 +134,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         WorkoutStorage.updateWorkoutTime(0, false)
     }
 
-    const addExercise = () => {
+    const addExercise = async () => {
         if (!newExerciseName.trim()) return
 
         const newExercise = {
@@ -130,14 +148,18 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         setShowAddExercise(false)
 
         // Save updated exercises to ongoing workout
-        const workout = WorkoutStorage.getOngoingWorkout()
-        if (workout) {
-            workout.exercises = updatedExercises
-            WorkoutStorage.saveOngoingWorkout(workout)
+        try {
+            const workout = await WorkoutStorage.getOngoingWorkout()
+            if (workout) {
+                workout.exercises = updatedExercises
+                await WorkoutStorage.saveOngoingWorkout(workout)
+            }
+        } catch (error) {
+            console.error('Error saving exercise update:', error)
         }
     }
 
-    const addSet = (exerciseId: string) => {
+    const addSet = async (exerciseId: string) => {
         const updatedExercises = exercises.map(exercise => {
             if (exercise.id === exerciseId) {
                 return {
@@ -152,10 +174,14 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         setExercises(updatedExercises)
 
         // Save updated exercises to ongoing workout
-        const workout = WorkoutStorage.getOngoingWorkout()
-        if (workout) {
-            workout.exercises = updatedExercises
-            WorkoutStorage.saveOngoingWorkout(workout)
+        try {
+            const workout = await WorkoutStorage.getOngoingWorkout()
+            if (workout) {
+                workout.exercises = updatedExercises
+                await WorkoutStorage.saveOngoingWorkout(workout)
+            }
+        } catch (error) {
+            console.error('Error saving exercise update:', error)
         }
     }
 
@@ -180,28 +206,36 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
 
         // Debounced save to avoid too many saves while typing
         clearTimeout((window as Window & { setUpdateTimeout?: NodeJS.Timeout }).setUpdateTimeout)
-            ; (window as Window & { setUpdateTimeout?: NodeJS.Timeout }).setUpdateTimeout = setTimeout(() => {
-                const workout = WorkoutStorage.getOngoingWorkout()
-                if (workout) {
-                    workout.exercises = updatedExercises
-                    WorkoutStorage.saveOngoingWorkout(workout)
+            ; (window as Window & { setUpdateTimeout?: NodeJS.Timeout }).setUpdateTimeout = setTimeout(async () => {
+                try {
+                    const workout = await WorkoutStorage.getOngoingWorkout()
+                    if (workout) {
+                        workout.exercises = updatedExercises
+                        await WorkoutStorage.saveOngoingWorkout(workout)
+                    }
+                } catch (error) {
+                    console.error('Error in debounced save:', error)
                 }
             }, 1000)
     }
 
-    const removeExercise = (exerciseId: string) => {
+    const removeExercise = async (exerciseId: string) => {
         const updatedExercises = exercises.filter(exercise => exercise.id !== exerciseId)
         setExercises(updatedExercises)
 
         // Save updated exercises to ongoing workout
-        const workout = WorkoutStorage.getOngoingWorkout()
-        if (workout) {
-            workout.exercises = updatedExercises
-            WorkoutStorage.saveOngoingWorkout(workout)
+        try {
+            const workout = await WorkoutStorage.getOngoingWorkout()
+            if (workout) {
+                workout.exercises = updatedExercises
+                await WorkoutStorage.saveOngoingWorkout(workout)
+            }
+        } catch (error) {
+            console.error('Error saving exercise update:', error)
         }
     }
 
-    const removeSet = (exerciseId: string, setId: string) => {
+    const removeSet = async (exerciseId: string, setId: string) => {
         const updatedExercises = exercises.map(exercise => {
             if (exercise.id === exerciseId) {
                 return {
@@ -216,26 +250,38 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         setExercises(updatedExercises)
 
         // Save updated exercises to ongoing workout
-        const workout = WorkoutStorage.getOngoingWorkout()
-        if (workout) {
-            workout.exercises = updatedExercises
-            WorkoutStorage.saveOngoingWorkout(workout)
+        try {
+            const workout = await WorkoutStorage.getOngoingWorkout()
+            if (workout) {
+                workout.exercises = updatedExercises
+                await WorkoutStorage.saveOngoingWorkout(workout)
+            }
+        } catch (error) {
+            console.error('Error saving exercise update:', error)
         }
     }
 
-    const finishWorkout = () => {
-        WorkoutStorage.clearOngoingWorkout()
+    const finishWorkout = async () => {
+        try {
+            await WorkoutStorage.clearOngoingWorkout()
+        } catch (error) {
+            console.error('Error finishing workout:', error)
+        }
         router.push('/workout')
     }
 
-    const quitWorkout = () => {
-        // Save current state before leaving (don't clear)
-        const workout = WorkoutStorage.getOngoingWorkout()
-        if (workout) {
-            workout.exercises = exercises
-            workout.elapsedTime = time
-            workout.isRunning = isRunning
-            WorkoutStorage.saveOngoingWorkout(workout)
+    const quitWorkout = async () => {
+        try {
+            // Save current state before leaving (don't clear)
+            const workout = await WorkoutStorage.getOngoingWorkout()
+            if (workout) {
+                workout.exercises = exercises
+                workout.elapsedTime = time
+                workout.isRunning = isRunning
+                await WorkoutStorage.saveOngoingWorkout(workout)
+            }
+        } catch (error) {
+            console.error('Error saving workout before quit:', error)
         }
         router.push('/workout')
     }

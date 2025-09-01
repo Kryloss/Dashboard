@@ -10,9 +10,11 @@ import { StatCard } from "./components/stat-card"
 import { ActivityItem } from "./components/activity-item"
 import { WorkoutTypeDialog } from "./components/workout-type-dialog"
 import { WorkoutStorage, OngoingWorkout } from "@/lib/workout-storage"
+import { useAuth } from "@/lib/hooks/useAuth"
 import { Settings, Plus, Flame, Dumbbell, User, Timer, Bike, Target, TrendingUp, Clock, Heart, FileText, Play } from "lucide-react"
 
 export default function WorkoutPage() {
+    const { user, supabase } = useAuth()
     const [isHealssSubdomain, setIsHealssSubdomain] = useState(false)
     const [showWorkoutDialog, setShowWorkoutDialog] = useState(false)
     const [ongoingWorkout, setOngoingWorkout] = useState<OngoingWorkout | null>(null)
@@ -22,20 +24,35 @@ export default function WorkoutPage() {
         const onHealss = isOnSubdomain('healss')
         setIsHealssSubdomain(onHealss)
         
-        if (onHealss) {
+        if (onHealss && user && supabase) {
+            // Initialize storage with user context
+            WorkoutStorage.initialize(user, supabase)
+            
             // Load ongoing workout
-            const workout = WorkoutStorage.getOngoingWorkout()
-            setOngoingWorkout(workout)
+            const loadWorkout = async () => {
+                try {
+                    const workout = await WorkoutStorage.getOngoingWorkout()
+                    setOngoingWorkout(workout)
+                } catch (error) {
+                    console.error('Error loading ongoing workout:', error)
+                }
+            }
+            
+            loadWorkout()
             
             // Set up periodic check for ongoing workout updates
-            const interval = setInterval(() => {
-                const updatedWorkout = WorkoutStorage.getOngoingWorkout()
-                setOngoingWorkout(updatedWorkout)
+            const interval = setInterval(async () => {
+                try {
+                    const updatedWorkout = await WorkoutStorage.getOngoingWorkout()
+                    setOngoingWorkout(updatedWorkout)
+                } catch (error) {
+                    console.error('Error updating ongoing workout:', error)
+                }
             }, 5000) // Check every 5 seconds
             
             return () => clearInterval(interval)
         }
-    }, [])
+    }, [user, supabase])
 
     // Mock data for demonstration
     const mockData = {
@@ -95,14 +112,24 @@ export default function WorkoutPage() {
         console.log(`Editing workout ${id}`)
     }
 
-    const handleQuickAction = (action: string) => {
+    const handleQuickAction = async (action: string) => {
         console.log(`Quick action: ${action}`)
         
+        if (!user || !supabase) {
+            console.error('No user or supabase client available')
+            return
+        }
+        
         // Check if there's an ongoing workout
-        const existingWorkout = WorkoutStorage.getOngoingWorkout()
-        if (existingWorkout) {
-            // Finish current workout and start new one
-            WorkoutStorage.clearOngoingWorkout()
+        try {
+            const existingWorkout = await WorkoutStorage.getOngoingWorkout()
+            if (existingWorkout) {
+                // Finish current workout and start new one
+                await WorkoutStorage.clearOngoingWorkout()
+                setOngoingWorkout(null)
+            }
+        } catch (error) {
+            console.error('Error checking ongoing workout:', error)
         }
         
         setShowWorkoutDialog(true)

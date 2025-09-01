@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Dumbbell, Target, Heart, Bike, AlertTriangle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { WorkoutStorage } from "@/lib/workout-storage"
+import { useAuth } from "@/lib/hooks/useAuth"
 
 interface WorkoutTypeDialogProps {
     open: boolean
@@ -50,6 +51,7 @@ const workoutTypes = [
 
 export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps) {
     const router = useRouter()
+    const { user, supabase } = useAuth()
     const [selectedType, setSelectedType] = useState<string>('')
     const [showConflictDialog, setShowConflictDialog] = useState(false)
     const [pendingWorkoutType, setPendingWorkoutType] = useState<string>('')
@@ -61,22 +63,35 @@ export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps
         }
     }, [open])
 
-    const handleWorkoutSelect = (workoutType: string, available: boolean) => {
+    const handleWorkoutSelect = async (workoutType: string, available: boolean) => {
         if (!available) return
+        if (!user || !supabase) {
+            console.error('No user or supabase client available')
+            return
+        }
 
         setSelectedType(workoutType)
         
-        // Check if there's an ongoing workout
-        const existingWorkout = WorkoutStorage.getOngoingWorkout()
-        if (existingWorkout) {
-            // Show conflict dialog
-            setPendingWorkoutType(workoutType)
-            setShowConflictDialog(true)
-            return
-        }
+        // Initialize storage with user context
+        WorkoutStorage.initialize(user, supabase)
         
-        // No conflict, create new workout
-        startNewWorkout(workoutType)
+        try {
+            // Check if there's an ongoing workout
+            const existingWorkout = await WorkoutStorage.getOngoingWorkout()
+            if (existingWorkout) {
+                // Show conflict dialog
+                setPendingWorkoutType(workoutType)
+                setShowConflictDialog(true)
+                return
+            }
+            
+            // No conflict, create new workout
+            startNewWorkout(workoutType)
+        } catch (error) {
+            console.error('Error checking for ongoing workout:', error)
+            // Proceed with creating new workout on error
+            startNewWorkout(workoutType)
+        }
     }
     
     const startNewWorkout = (workoutType: string) => {
@@ -86,9 +101,15 @@ export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps
         setShowConflictDialog(false)
     }
     
-    const handleFinishAndStart = () => {
-        WorkoutStorage.clearOngoingWorkout()
-        startNewWorkout(pendingWorkoutType)
+    const handleFinishAndStart = async () => {
+        try {
+            await WorkoutStorage.clearOngoingWorkout()
+            startNewWorkout(pendingWorkoutType)
+        } catch (error) {
+            console.error('Error finishing current workout:', error)
+            // Proceed with new workout anyway
+            startNewWorkout(pendingWorkoutType)
+        }
     }
     
     const handleKeepCurrent = () => {
