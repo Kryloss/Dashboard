@@ -1,31 +1,31 @@
 import { createClient } from '@/lib/supabase/client'
 import type { User, SupabaseClient } from '@supabase/supabase-js'
 
-// Database row types (matching the actual database schema)
-interface OngoingWorkoutRow {
-    id: string
-    user_id: string
-    type: string
-    template_id: string | null
-    template_name: string | null
-    exercises: WorkoutExercise[]
-    start_time: string
-    elapsed_time: number
-    is_running: boolean
-    created_at: string
-    updated_at: string
-}
+// Database row types (matching the actual database schema) - kept for future use
+// interface OngoingWorkoutRow {
+//     id: string
+//     user_id: string
+//     type: string
+//     template_id: string | null
+//     template_name: string | null
+//     exercises: WorkoutExercise[]
+//     start_time: string
+//     elapsed_time: number
+//     is_running: boolean
+//     created_at: string
+//     updated_at: string
+// }
 
-interface WorkoutTemplateRow {
-    id: string
-    user_id: string
-    name: string
-    type: string
-    exercises: WorkoutExercise[]
-    is_built_in: boolean
-    created_at: string
-    updated_at: string
-}
+// interface WorkoutTemplateRow {
+//     id: string
+//     user_id: string
+//     name: string
+//     type: string
+//     exercises: WorkoutExercise[]
+//     is_built_in: boolean
+//     created_at: string
+//     updated_at: string
+// }
 
 export interface WorkoutExercise {
     id: string
@@ -540,12 +540,6 @@ export class WorkoutStorageSupabase {
             return
         }
 
-        // Ensure workout has proper user ID
-        const workoutWithUser = {
-            ...workout,
-            userId: this.currentUser.id
-        }
-
         // Sync to Supabase
         if (this.supabase) {
             try {
@@ -637,7 +631,7 @@ export class WorkoutStorageSupabase {
         return templates.find(t => t.isBuiltIn) || templates[0] || null
     }
 
-    static setLastTemplate(templateId: string, type: 'strength' | 'running' | 'yoga' | 'cycling'): void {
+    static setLastTemplate(_templateId: string, _type: 'strength' | 'running' | 'yoga' | 'cycling'): void {
         // No localStorage functionality - do nothing
     }
 

@@ -182,7 +182,7 @@ export class WorkoutStorage {
         return newTemplate
     }
 
-    static deleteTemplate(templateId: string): void {
+    static deleteTemplate(_templateId: string): void {
         // No localStorage functionality - do nothing
     }
 
@@ -192,7 +192,7 @@ export class WorkoutStorage {
         return null
     }
 
-    static saveOngoingWorkout(workout: OngoingWorkout): void {
+    static saveOngoingWorkout(_workout: OngoingWorkout): void {
         // No localStorage functionality - do nothing
     }
 
@@ -200,7 +200,7 @@ export class WorkoutStorage {
         // No localStorage functionality - do nothing
     }
 
-    static updateOngoingWorkoutTime(elapsedTime: number, isRunning: boolean): void {
+    static updateOngoingWorkoutTime(_elapsedTime: number, _isRunning: boolean): void {
         // No localStorage functionality - do nothing
     }
 
@@ -211,7 +211,7 @@ export class WorkoutStorage {
         return builtInTemplate || null
     }
 
-    static setLastTemplate(templateId: string, type: 'strength' | 'running' | 'yoga' | 'cycling'): void {
+    static setLastTemplate(_templateId: string, _type: 'strength' | 'running' | 'yoga' | 'cycling'): void {
         // No localStorage functionality - do nothing
     }
 
