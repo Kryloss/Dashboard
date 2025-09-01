@@ -60,20 +60,44 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
 
         setIsRunning(ongoingWorkout.isRunning)
       } else {
-        // No ongoing workout found with this ID - create a new empty workout
-        const newWorkout = {
-          id: workoutId,
-          type: 'strength' as const,
-          exercises: [],
-          startTime: new Date().toISOString(),
-          elapsedTime: 0,
-          isRunning: true // Start the workout immediately so it shows in Today's Workout
-        }
+        // No ongoing workout found with this ID - wait briefly for potential database sync
+        console.log('No ongoing workout found immediately, retrying once...')
+        
+        // Brief delay to allow for database synchronization in case workout was just created
+        await new Promise(resolve => setTimeout(resolve, 500))
+        
+        // Try loading again after brief delay
+        const retryWorkout = await WorkoutStorageSupabase.getOngoingWorkout()
+        if (retryWorkout && retryWorkout.id === workoutId) {
+          console.log('Found workout on retry with exercises:', retryWorkout.exercises.length)
+          setExercises(retryWorkout.exercises)
+          
+          if (retryWorkout.isRunning) {
+            const timeSinceStart = Math.floor((Date.now() - new Date(retryWorkout.startTime).getTime()) / 1000)
+            const currentTime = retryWorkout.elapsedTime + timeSinceStart
+            setTime(currentTime)
+          } else {
+            setTime(retryWorkout.elapsedTime)
+          }
+          
+          setIsRunning(retryWorkout.isRunning)
+        } else {
+          // Still no workout found - create a new empty workout
+          console.log('Creating new empty workout as fallback')
+          const newWorkout = {
+            id: workoutId,
+            type: 'strength' as const,
+            exercises: [],
+            startTime: new Date().toISOString(),
+            elapsedTime: 0,
+            isRunning: true // Start the workout immediately so it shows in Today's Workout
+          }
 
-        await WorkoutStorageSupabase.saveOngoingWorkout(newWorkout)
-        setExercises([])
-        setTime(0)
-        setIsRunning(true)
+          await WorkoutStorageSupabase.saveOngoingWorkout(newWorkout)
+          setExercises([])
+          setTime(0)
+          setIsRunning(true)
+        }
       }
     }
 
@@ -508,6 +532,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                     <Label htmlFor="exercise-name" className="text-[#A1A1AA]">Exercise Name</Label>
                     <Input
                       id="exercise-name"
+                      name="exercise-name"
                       value={newExerciseName}
                       onChange={(e) => setNewExerciseName(e.target.value)}
                       placeholder="e.g., Bench Press, Squats, Deadlift"
@@ -578,6 +603,8 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                       </div>
                       <div className="col-span-3">
                         <Input
+                          id={`reps-${exercise.id}-${set.id}`}
+                          name={`reps-${exercise.id}-${set.id}`}
                           value={set.reps}
                           onChange={(e) => updateSet(exercise.id, set.id, 'reps', e.target.value)}
                           placeholder="12"
@@ -586,6 +613,8 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                       </div>
                       <div className="col-span-3">
                         <Input
+                          id={`weight-${exercise.id}-${set.id}`}
+                          name={`weight-${exercise.id}-${set.id}`}
                           value={set.weight}
                           onChange={(e) => updateSet(exercise.id, set.id, 'weight', e.target.value)}
                           placeholder="135 lbs"
@@ -594,6 +623,8 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                       </div>
                       <div className="col-span-4">
                         <Input
+                          id={`notes-${exercise.id}-${set.id}`}
+                          name={`notes-${exercise.id}-${set.id}`}
                           value={set.notes}
                           onChange={(e) => updateSet(exercise.id, set.id, 'notes', e.target.value)}
                           placeholder="Notes..."
@@ -655,6 +686,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                       <Label htmlFor="template-name" className="text-[#A1A1AA]">Template Name</Label>
                       <Input
                         id="template-name"
+                        name="template-name"
                         value={templateName}
                         onChange={(e) => setTemplateName(e.target.value)}
                         placeholder="e.g., My Push Workout, Upper Body"
