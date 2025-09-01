@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { X, Play, Pause, Square, Plus, GripVertical } from "lucide-react"
-import { WorkoutStorage, WorkoutExercise, OngoingWorkout } from "@/lib/workout-storage"
+import { WorkoutStorage, WorkoutExercise } from "@/lib/workout-storage"
 
 // Use WorkoutExercise from storage
 type Exercise = WorkoutExercise
@@ -27,11 +27,11 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     // Initialize workout from storage or create new one
     useEffect(() => {
         const existingWorkout = WorkoutStorage.getOngoingWorkout()
-        
+
         if (existingWorkout && existingWorkout.id === workoutId) {
             // Load existing workout
             setExercises(existingWorkout.exercises)
-            
+
             // Calculate current elapsed time if workout is running
             if (existingWorkout.isRunning) {
                 const timeSinceStart = Math.floor((Date.now() - new Date(existingWorkout.startTime).getTime()) / 1000)
@@ -40,13 +40,13 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
             } else {
                 setTime(existingWorkout.elapsedTime)
             }
-            
+
             setIsRunning(existingWorkout.isRunning)
         } else {
             // Create new workout
             const newWorkout = WorkoutStorage.createWorkout('strength', workoutId)
             WorkoutStorage.saveOngoingWorkout(newWorkout)
-            
+
             setExercises([])
             setTime(0)
             setIsRunning(false)
@@ -128,7 +128,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         setExercises(updatedExercises)
         setNewExerciseName("")
         setShowAddExercise(false)
-        
+
         // Save updated exercises to ongoing workout
         const workout = WorkoutStorage.getOngoingWorkout()
         if (workout) {
@@ -150,7 +150,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         })
 
         setExercises(updatedExercises)
-        
+
         // Save updated exercises to ongoing workout
         const workout = WorkoutStorage.getOngoingWorkout()
         if (workout) {
@@ -177,22 +177,22 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         })
 
         setExercises(updatedExercises)
-        
+
         // Debounced save to avoid too many saves while typing
-        clearTimeout(window.setUpdateTimeout)
-        window.setUpdateTimeout = setTimeout(() => {
-            const workout = WorkoutStorage.getOngoingWorkout()
-            if (workout) {
-                workout.exercises = updatedExercises
-                WorkoutStorage.saveOngoingWorkout(workout)
-            }
-        }, 1000)
+        clearTimeout((window as Window & { setUpdateTimeout?: NodeJS.Timeout }).setUpdateTimeout)
+            ; (window as Window & { setUpdateTimeout?: NodeJS.Timeout }).setUpdateTimeout = setTimeout(() => {
+                const workout = WorkoutStorage.getOngoingWorkout()
+                if (workout) {
+                    workout.exercises = updatedExercises
+                    WorkoutStorage.saveOngoingWorkout(workout)
+                }
+            }, 1000)
     }
 
     const removeExercise = (exerciseId: string) => {
         const updatedExercises = exercises.filter(exercise => exercise.id !== exerciseId)
         setExercises(updatedExercises)
-        
+
         // Save updated exercises to ongoing workout
         const workout = WorkoutStorage.getOngoingWorkout()
         if (workout) {
@@ -214,7 +214,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         })
 
         setExercises(updatedExercises)
-        
+
         // Save updated exercises to ongoing workout
         const workout = WorkoutStorage.getOngoingWorkout()
         if (workout) {
