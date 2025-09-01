@@ -212,5 +212,5 @@
         "DO NOT animate continuously after completion; a single pulse is allowed.",
         "DO NOT reduce track contrast below 3:1 against surface.",
         "DO NOT exceed card radius with the ring canvas; respect padding tokens."
-    }
+    ]
 }
