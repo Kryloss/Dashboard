@@ -918,7 +918,7 @@ export class WorkoutStorageSupabase {
           name: data.name,
           exerciseCount: data.exercises.length,
           userId: data.user_id,
-          exerciseDetails: data.exercises.map((e: any) => ({
+          exerciseDetails: data.exercises.map((e: WorkoutExercise) => ({
             name: e.name,
             category: e.category,
             equipment: e.equipment,

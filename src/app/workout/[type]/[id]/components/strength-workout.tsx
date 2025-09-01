@@ -137,15 +137,6 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         } else {
           // Still no workout found - create a new empty workout
           console.log('Creating new empty workout as fallback for user:', user.id)
-          const newWorkout = {
-            id: workoutId,
-            type: 'strength' as const,
-            exercises: [],
-            startTime: new Date().toISOString(),
-            elapsedTime: 0,
-            isRunning: false, // Don't start the workout automatically - user must manually start
-            userId: user.id // Ensure user ID is properly set
-          }
 
           // Don't auto-save during initialization - only save when user makes changes
           console.log('Created new empty workout during initialization - no auto-save triggered')
