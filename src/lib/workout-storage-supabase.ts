@@ -615,13 +615,28 @@ export class WorkoutStorageSupabase {
   }
 
   static async saveTemplate(template: Omit<WorkoutTemplate, 'id' | 'createdAt'>): Promise<WorkoutTemplate> {
+    // Ensure we have user context
+    if (!this.currentUser) {
+      console.error('Cannot save template: no user context available')
+      throw new Error('No user context available for template saving')
+    }
+
     const tempId = `template-${Date.now()}`
     const newTemplate: WorkoutTemplate = {
       ...template,
       id: tempId,
       createdAt: new Date().toISOString(),
-      userId: this.currentUser?.id
+      userId: this.currentUser.id
     }
+
+    console.log('Saving template to database:', {
+      tempId,
+      name: template.name,
+      type: template.type,
+      exerciseCount: template.exercises.length,
+      userId: this.currentUser.id,
+      exercises: template.exercises.map(e => ({ id: e.id, name: e.name, setCount: e.sets.length }))
+    })
 
     // Optimistic update - update UI immediately
     const existing = this.getCustomTemplatesLocal()
@@ -631,7 +646,7 @@ export class WorkoutStorageSupabase {
     }
 
     // Sync to Supabase
-    if (this.currentUser && this.supabase && this.isOnline) {
+    if (this.supabase && this.isOnline) {
       try {
         const { data, error } = await this.supabase
           .from('workout_templates')
@@ -645,7 +660,17 @@ export class WorkoutStorageSupabase {
           .select()
           .single()
 
-        if (error) throw error
+        if (error) {
+          console.error('Supabase insert error:', error)
+          throw error
+        }
+
+        console.log('Template saved to Supabase successfully:', {
+          id: data.id,
+          name: data.name,
+          exerciseCount: data.exercises.length,
+          userId: data.user_id
+        })
 
         // Update with Supabase ID
         newTemplate.id = data.id
@@ -669,6 +694,9 @@ export class WorkoutStorageSupabase {
           userId: this.currentUser.id
         })
       }
+    } else if (!this.isOnline) {
+      console.log('Offline mode: template queued for sync when online')
+      this.addToSyncQueue('create', 'templates', newTemplate)
     }
 
     return newTemplate

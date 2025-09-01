@@ -406,9 +406,29 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
   }
 
   const saveAsTemplate = async () => {
-    if (!templateName.trim() || exercises.length === 0) return
+    if (!templateName.trim() || exercises.length === 0) {
+      console.log('Cannot save template: missing name or exercises', {
+        hasName: !!templateName.trim(),
+        exerciseCount: exercises.length
+      })
+      return
+    }
+
+    // Ensure we have user context
+    if (!user || !supabase) {
+      console.error('Cannot save template: no user or supabase client available')
+      return
+    }
 
     try {
+      console.log('Saving template:', {
+        name: templateName.trim(),
+        type: 'strength',
+        exerciseCount: exercises.length,
+        userId: user.id,
+        exercises: exercises.map(e => ({ id: e.id, name: e.name, setCount: e.sets.length }))
+      })
+
       const template = await WorkoutStorageSupabase.saveTemplate({
         name: templateName.trim(),
         type: 'strength',
@@ -418,10 +438,16 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
       setShowSaveTemplate(false)
       setTemplateName("")
 
-      // Show success feedback (optional)
-      console.log('Template saved:', template.name)
+      // Show success feedback
+      console.log('Template saved successfully:', {
+        id: template.id,
+        name: template.name,
+        exerciseCount: template.exercises.length,
+        userId: template.userId
+      })
     } catch (error) {
       console.error('Failed to save template:', error)
+      // You could add user-facing error feedback here
     }
   }
 

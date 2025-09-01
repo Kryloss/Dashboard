@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Dumbbell, Target, Heart, Bike, Plus, ArrowLeft } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { WorkoutStorageSupabase, WorkoutTemplate } from "@/lib/workout-storage-supabase"
+import { useAuth } from "@/lib/hooks/useAuth"
 
 interface WorkoutTypeDialogProps {
   open: boolean
@@ -50,6 +51,7 @@ const workoutTypes = [
 
 export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps) {
   const router = useRouter()
+  const { user, supabase } = useAuth()
   const [selectedType, setSelectedType] = useState<string>('')
   const [showTemplates, setShowTemplates] = useState(false)
   const [templates, setTemplates] = useState<WorkoutTemplate[]>([])
@@ -61,6 +63,14 @@ export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps
     }
   }, [open])
 
+  // Initialize WorkoutStorageSupabase when dialog opens
+  useEffect(() => {
+    if (open && user && supabase) {
+      console.log('Initializing WorkoutStorageSupabase in dialog for user:', user.id)
+      WorkoutStorageSupabase.initialize(user, supabase)
+    }
+  }, [open, user, supabase])
+
   const handleWorkoutSelect = async (workoutType: string, available: boolean) => {
     if (!available) return
 
@@ -68,9 +78,29 @@ export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps
 
     if (workoutType === 'strength') {
       try {
+        // Ensure we have user context before loading templates
+        if (!user || !supabase) {
+          console.error('No user or supabase client available for template loading')
+          // Fallback to creating workout directly
+          const workoutId = `${workoutType}-${Date.now()}`
+          router.push(`/workout/${workoutType}/${workoutId}`)
+          onOpenChange(false)
+          return
+        }
+
+        console.log('Loading strength templates for user:', user.id)
         // Show templates for strength workouts
         const strengthTemplates = await WorkoutStorageSupabase.getTemplates('strength')
-        console.log('Loaded strength templates:', strengthTemplates.length, strengthTemplates)
+        console.log('Loaded strength templates:', {
+          count: strengthTemplates.length,
+          templates: strengthTemplates.map(t => ({
+            id: t.id,
+            name: t.name,
+            exerciseCount: t.exercises.length,
+            isBuiltIn: t.isBuiltIn,
+            userId: t.userId
+          }))
+        })
         setTemplates(strengthTemplates)
         setShowTemplates(true)
       } catch (error) {
