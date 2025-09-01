@@ -468,49 +468,6 @@ export default function WorkoutPage() {
                                     </div>
                                 )}
 
-                                {/* Ongoing Workout */}
-                                {!isLoadingWorkout && ongoingWorkout && (() => {
-                                    healthLog('RENDER_ACTIVE_WORKOUT: Rendering Active Workout component', {
-                                        workoutId: ongoingWorkout.id,
-                                        templateName: ongoingWorkout.templateName,
-                                        isRunning: ongoingWorkout.isRunning,
-                                        elapsedTime: ongoingWorkout.elapsedTime
-                                    })
-                                    return (
-                                        <div className="bg-[#121318] border-2 border-[#4AA7FF] rounded-[20px] p-5 shadow-[0_0_0_1px_rgba(74,167,255,0.35),_0_8px_40px_rgba(74,167,255,0.20)] hover:shadow-[0_0_0_1px_rgba(74,167,255,0.5),_0_12px_48px_rgba(74,167,255,0.25)] hover:-translate-y-[1px] transition-all duration-200">
-                                            <div className="flex items-start justify-between mb-4">
-                                                <div className="flex items-center space-x-3">
-                                                    <div className="w-10 h-10 bg-[rgba(74,167,255,0.1)] border border-[#4AA7FF] rounded-[14px] flex items-center justify-center text-[#4AA7FF]">
-                                                        <Play className="w-5 h-5" />
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="font-semibold text-[#F3F4F6] text-sm">
-                                                            {ongoingWorkout.templateName || 'Active Workout'}
-                                                        </h3>
-                                                        <p className="text-xs text-[#4AA7FF] mt-1 font-medium">
-                                                            {ongoingWorkout.isRunning ? 'In Progress' : 'Paused'} • {Math.floor((ongoingWorkout.elapsedTime || 0) / 60)}:{String((ongoingWorkout.elapsedTime || 0) % 60).padStart(2, '0')}
-                                                        </p>
-                                                        <p className="text-xs text-[#7A7F86] mt-1">
-                                                            {ongoingWorkout.exercises?.length || 0} exercise{(ongoingWorkout.exercises?.length || 0) !== 1 ? 's' : ''}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <Button
-                                                onClick={() => window.location.href = `/workout/${ongoingWorkout.type}/${ongoingWorkout.id}`}
-                                                className="w-full bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-full border border-[rgba(42,140,234,0.35)] shadow-[0_8px_32px_rgba(42,140,234,0.28)] hover:shadow-[0_10px_40px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all text-sm font-medium h-8"
-                                            >
-                                                Continue Workout
-                                            </Button>
-                                        </div>
-                                    )
-                                })()}
-
-                                {!isLoadingWorkout && !ongoingWorkout && (() => {
-                                    healthLog('RENDER_NO_WORKOUT: No active workout to display', { isLoadingWorkout })
-                                    return null
-                                })()}
 
                                 {mockData.plannedWorkouts.map((workout) => (
                                     <PlannedWorkoutCard
