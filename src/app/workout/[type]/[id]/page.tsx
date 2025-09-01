@@ -9,14 +9,14 @@ export default function WorkoutSessionPage() {
     const params = useParams()
     const router = useRouter()
     const [isHealssSubdomain, setIsHealssSubdomain] = useState(false)
-    
+
     const workoutType = params.type as string
     const workoutId = params.id as string
 
     useEffect(() => {
         const onHealss = isOnSubdomain('healss')
         setIsHealssSubdomain(onHealss)
-        
+
         if (!onHealss) {
             return
         }
@@ -46,7 +46,7 @@ export default function WorkoutSessionPage() {
             <div className="text-center">
                 <h1 className="text-2xl font-bold text-[#F3F4F6] mb-4">Page Not Found</h1>
                 <p className="text-[#A1A1AA]">
-                    {!isHealssSubdomain 
+                    {!isHealssSubdomain
                         ? "This page is only available on the healss subdomain."
                         : "Invalid workout type or this workout type is not available yet."
                     }
