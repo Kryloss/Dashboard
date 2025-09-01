@@ -37,6 +37,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const isSavingRef = useRef(false)
+  const isInitializingRef = useRef(true)
 
   // Initialize storage and load ongoing workout on component mount
   useEffect(() => {
@@ -70,10 +71,13 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
             ...ongoingWorkout,
             id: workoutId
           }
-          // Save the updated workout with the correct ID
-          await WorkoutStorageSupabase.saveOngoingWorkout(updatedWorkout)
-          // Ensure exercises are still set after the update
+          // Update local state first to ensure exercises are visible
           setExercises(updatedWorkout.exercises)
+          // Save the updated workout with the correct ID using component's save method
+          // Use setTimeout to ensure state is updated before saving
+          setTimeout(() => {
+            saveWorkoutState(updatedWorkout.exercises)
+          }, 100)
         }
       } else {
         // No ongoing workout found with this ID - wait briefly for potential database sync
@@ -106,9 +110,13 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
               ...retryWorkout,
               id: workoutId
             }
-            await WorkoutStorageSupabase.saveOngoingWorkout(updatedRetryWorkout)
-            // Ensure exercises remain visible after ID update
+            // Update local state first to ensure exercises are visible
             setExercises(updatedRetryWorkout.exercises)
+            // Save the updated workout with the correct ID using component's save method
+            // Use setTimeout to ensure state is updated before saving
+            setTimeout(() => {
+              saveWorkoutState(updatedRetryWorkout.exercises)
+            }, 100)
           }
         } else {
           // Still no workout found - create a new empty workout
@@ -130,7 +138,10 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
       }
     }
 
-    initializeAndLoad()
+    initializeAndLoad().finally(() => {
+      // Mark initialization as complete
+      isInitializingRef.current = false
+    })
   }, [workoutId, user, supabase])
 
   // Simple save function - saves immediately without debouncing
@@ -138,6 +149,19 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     // Prevent multiple simultaneous saves
     if (isSavingRef.current) {
       console.log('Save already in progress, skipping duplicate save request')
+      return
+    }
+
+    console.log('saveWorkoutState called with exercises:', updatedExercises.length, 'Current state exercises:', exercises.length)
+
+    // Prevent saving during initialization or if no exercises to save
+    if (isInitializingRef.current) {
+      console.log('Skipping save - still initializing')
+      return
+    }
+
+    if (updatedExercises.length === 0 && exercises.length === 0) {
+      console.log('Skipping save - no exercises to save and none in state')
       return
     }
 
