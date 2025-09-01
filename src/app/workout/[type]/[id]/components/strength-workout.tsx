@@ -73,11 +73,8 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
           }
           // Update local state first to ensure exercises are visible
           setExercises(updatedWorkout.exercises)
-          // Save the updated workout with the correct ID using component's save method
-          // Use setTimeout to ensure state is updated before saving
-          setTimeout(() => {
-            saveWorkoutState(updatedWorkout.exercises)
-          }, 100)
+          // Don't auto-save during initialization - only save when user makes changes
+          console.log('Updated workout ID during initialization - no auto-save triggered')
         }
       } else {
         // No ongoing workout found with this ID - wait briefly for potential database sync
@@ -112,11 +109,8 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
             }
             // Update local state first to ensure exercises are visible
             setExercises(updatedRetryWorkout.exercises)
-            // Save the updated workout with the correct ID using component's save method
-            // Use setTimeout to ensure state is updated before saving
-            setTimeout(() => {
-              saveWorkoutState(updatedRetryWorkout.exercises)
-            }, 100)
+            // Don't auto-save during initialization - only save when user makes changes
+            console.log('Updated retry workout ID during initialization - no auto-save triggered')
           }
         } else {
           // Still no workout found - create a new empty workout
@@ -130,7 +124,8 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
             isRunning: false // Don't start the workout automatically - user must manually start
           }
 
-          await WorkoutStorageSupabase.saveOngoingWorkout(newWorkout)
+          // Don't auto-save during initialization - only save when user makes changes
+          console.log('Created new empty workout during initialization - no auto-save triggered')
           setExercises([])
           setTime(0)
           setIsRunning(false)
@@ -154,12 +149,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
 
     console.log('saveWorkoutState called with exercises:', updatedExercises.length, 'Current state exercises:', exercises.length)
 
-    // Prevent saving during initialization or if no exercises to save
-    if (isInitializingRef.current) {
-      console.log('Skipping save - still initializing')
-      return
-    }
-
+    // Only save if there are exercises to save or if this is a user action (not initialization)
     if (updatedExercises.length === 0 && exercises.length === 0) {
       console.log('Skipping save - no exercises to save and none in state')
       return
@@ -319,17 +309,21 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
 
   const startTimer = async () => {
     setIsRunning(true)
+    // Save current workout state when user starts the workout
+    console.log('User started workout - saving current state')
     await saveWorkoutState()
   }
 
   const pauseTimer = async () => {
     setIsRunning(false)
+    console.log('User paused workout - saving current state')
     await saveWorkoutState()
   }
 
   const resetTimer = async () => {
     setIsRunning(false)
     setTime(0)
+    console.log('User reset workout - saving current state')
     await saveWorkoutState()
   }
 
@@ -353,6 +347,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     setShowAddExercise(false)
 
     // Save immediately after adding exercise
+    console.log('User added exercise - saving current state')
     await saveWorkoutState(updatedExercises)
   }
 
@@ -373,6 +368,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     })
 
     setExercises(updatedExercises)
+    console.log('User added set - saving current state')
     await saveWorkoutState(updatedExercises)
   }
 
@@ -406,6 +402,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
   const removeExercise = async (exerciseId: string) => {
     const updatedExercises = exercises.filter(exercise => exercise.id !== exerciseId)
     setExercises(updatedExercises)
+    console.log('User removed exercise - saving current state')
     await saveWorkoutState(updatedExercises)
   }
 
@@ -421,6 +418,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     })
 
     setExercises(updatedExercises)
+    console.log('User removed set - saving current state')
     await saveWorkoutState(updatedExercises)
   }
 
