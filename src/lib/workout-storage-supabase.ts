@@ -752,20 +752,50 @@ export class WorkoutStorageSupabase {
       return
     }
 
+    // Ensure we have user context
+    if (!this.currentUser) {
+      console.error('Cannot save workout: no user context available')
+      return
+    }
+
     this.isSaving = true
 
     try {
+      // Ensure workout has proper user ID
+      const workoutWithUser = {
+        ...workout,
+        userId: this.currentUser.id
+      }
+
       // Optimistic update to localStorage first
       if (typeof window !== 'undefined') {
-        localStorage.setItem('ongoing-workout', JSON.stringify(workout))
-        localStorage.setItem('supabase-cache-ongoing-workout', JSON.stringify(workout))
+        localStorage.setItem('ongoing-workout', JSON.stringify(workoutWithUser))
+        localStorage.setItem('supabase-cache-ongoing-workout', JSON.stringify(workoutWithUser))
       }
 
       // Sync to Supabase
-      if (this.currentUser && this.supabase && this.isOnline) {
+      if (this.supabase && this.isOnline) {
         try {
           // Track save time for debugging
           this.lastSaveTime = Date.now()
+
+          // Check if workout already exists to preserve start_time
+          let startTime = workout.startTime
+          try {
+            const { data: existingWorkout } = await this.supabase
+              .from('ongoing_workouts')
+              .select('start_time')
+              .eq('user_id', this.currentUser.id)
+              .eq('type', workout.type)
+              .single()
+
+            if (existingWorkout) {
+              startTime = existingWorkout.start_time
+            }
+          } catch {
+            // Workout doesn't exist yet, use provided start time
+            console.log('Creating new workout with provided start time')
+          }
 
           // Use proper upsert with conflict resolution
           const { error } = await this.supabase
@@ -777,7 +807,7 @@ export class WorkoutStorageSupabase {
               template_id: workout.templateId || null,
               template_name: workout.templateName || null,
               exercises: workout.exercises,
-              start_time: workout.startTime,
+              start_time: startTime,
               elapsed_time: workout.elapsedTime,
               is_running: workout.isRunning
             }, {
@@ -789,26 +819,16 @@ export class WorkoutStorageSupabase {
             throw error
           }
 
-          console.log('Ongoing workout saved successfully:', workout.id)
+          console.log('Ongoing workout saved successfully:', workout.id, 'for user:', this.currentUser.id)
         } catch (error) {
           console.error('Failed to sync ongoing workout to Supabase:', error)
 
           // Add to sync queue for retry
-          this.addToSyncQueue('update', 'ongoing_workouts', {
-            id: workout.id,
-            type: workout.type,
-            templateId: workout.templateId,
-            templateName: workout.templateName,
-            exercises: workout.exercises,
-            startTime: workout.startTime,
-            elapsedTime: workout.elapsedTime,
-            isRunning: workout.isRunning,
-            userId: this.currentUser.id
-          })
+          this.addToSyncQueue('update', 'ongoing_workouts', workoutWithUser)
         }
       } else if (!this.isOnline) {
         // If offline, ensure it's queued for sync
-        this.addToSyncQueue('update', 'ongoing_workouts', workout)
+        this.addToSyncQueue('update', 'ongoing_workouts', workoutWithUser)
       }
     } finally {
       // Always reset the saving flag
@@ -817,13 +837,20 @@ export class WorkoutStorageSupabase {
   }
 
   static async clearOngoingWorkout(): Promise<void> {
+    // Ensure we have user context
+    if (!this.currentUser) {
+      console.error('Cannot clear workout: no user context available')
+      return
+    }
+
     // Optimistic update
     if (typeof window !== 'undefined') {
       localStorage.removeItem('ongoing-workout')
+      localStorage.removeItem('supabase-cache-ongoing-workout')
     }
 
     // Sync to Supabase
-    if (this.currentUser && this.supabase && this.isOnline) {
+    if (this.supabase && this.isOnline) {
       try {
         const { error } = await this.supabase
           .from('ongoing_workouts')
@@ -831,6 +858,7 @@ export class WorkoutStorageSupabase {
           .eq('user_id', this.currentUser.id)
 
         if (error) throw error
+        console.log('Successfully cleared ongoing workout for user:', this.currentUser.id)
       } catch (error) {
         console.error('Failed to clear ongoing workout from Supabase:', error)
         // For delete operations, we need a minimal workout object

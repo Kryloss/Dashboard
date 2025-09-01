@@ -42,13 +42,20 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
   // Initialize storage and load ongoing workout on component mount
   useEffect(() => {
     const initializeAndLoad = async () => {
+      // Only proceed if we have user context
+      if (!user || !supabase) {
+        console.log('No user or supabase client available, skipping initialization')
+        isInitializingRef.current = false
+        return
+      }
+
       // Initialize storage with user context
       WorkoutStorageSupabase.initialize(user, supabase)
 
       // Load ongoing workout for this type (strength)
       const ongoingWorkout = await WorkoutStorageSupabase.getOngoingWorkout()
       if (ongoingWorkout && ongoingWorkout.type === 'strength') {
-        console.log('Found ongoing strength workout:', ongoingWorkout.id, 'Expected:', workoutId, 'Exercises:', ongoingWorkout.exercises.length)
+        console.log('Found ongoing strength workout:', ongoingWorkout.id, 'Expected:', workoutId, 'Exercises:', ongoingWorkout.exercises.length, 'User:', user.id)
 
         // Always set exercises first to ensure they're visible immediately
         setExercises(ongoingWorkout.exercises)
@@ -69,7 +76,8 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
           console.log('Updating workout ID to match URL:', workoutId)
           const updatedWorkout = {
             ...ongoingWorkout,
-            id: workoutId
+            id: workoutId,
+            userId: user.id // Ensure user ID is properly set
           }
           // Update local state first to ensure exercises are visible
           setExercises(updatedWorkout.exercises)
@@ -86,7 +94,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         // Try loading again after brief delay
         const retryWorkout = await WorkoutStorageSupabase.getOngoingWorkout()
         if (retryWorkout && retryWorkout.type === 'strength') {
-          console.log('Found workout on retry with exercises:', retryWorkout.exercises.length)
+          console.log('Found workout on retry with exercises:', retryWorkout.exercises.length, 'User:', user.id)
           // Set exercises immediately to ensure they're visible
           setExercises(retryWorkout.exercises)
 
@@ -105,7 +113,8 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
             console.log('Updating retry workout ID to match URL:', workoutId)
             const updatedRetryWorkout = {
               ...retryWorkout,
-              id: workoutId
+              id: workoutId,
+              userId: user.id // Ensure user ID is properly set
             }
             // Update local state first to ensure exercises are visible
             setExercises(updatedRetryWorkout.exercises)
@@ -114,14 +123,15 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
           }
         } else {
           // Still no workout found - create a new empty workout
-          console.log('Creating new empty workout as fallback')
+          console.log('Creating new empty workout as fallback for user:', user.id)
           const newWorkout = {
             id: workoutId,
             type: 'strength' as const,
             exercises: [],
             startTime: new Date().toISOString(),
             elapsedTime: 0,
-            isRunning: false // Don't start the workout automatically - user must manually start
+            isRunning: false, // Don't start the workout automatically - user must manually start
+            userId: user.id // Ensure user ID is properly set
           }
 
           // Don't auto-save during initialization - only save when user makes changes
@@ -147,7 +157,13 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
       return
     }
 
-    console.log('saveWorkoutState called with exercises:', updatedExercises.length, 'Current state exercises:', exercises.length)
+    console.log('saveWorkoutState called with exercises:', updatedExercises.length, 'Current state exercises:', exercises.length, 'User:', user?.id)
+
+    // Only save if we have user context
+    if (!user || !supabase) {
+      console.log('No user or supabase client, skipping save')
+      return
+    }
 
     // Only save if there are exercises to save or if this is a user action (not initialization)
     if (updatedExercises.length === 0 && exercises.length === 0) {
@@ -158,89 +174,23 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     isSavingRef.current = true
 
     try {
-      if (!user || !supabase) {
-        console.log('No user or supabase client, skipping save')
-        return
-      }
-
-      // Check if workout already exists to preserve start_time
-      let startTime = new Date().toISOString()
-      try {
-        const { data: existingWorkout } = await supabase
-          .from('ongoing_workouts')
-          .select('start_time')
-          .eq('user_id', user.id)
-          .single()
-
-        if (existingWorkout) {
-          startTime = existingWorkout.start_time
-        }
-      } catch {
-        // Workout doesn't exist yet, use current time
-        console.log('Creating new workout with current time')
-      }
-
-      const workoutData = {
+      // Use the WorkoutStorageSupabase layer for consistent user association
+      const workoutToSave = {
         id: workoutId,
-        user_id: user.id,
-        type: 'strength',
-        template_id: null,
-        template_name: null,
+        type: 'strength' as const,
         exercises: updatedExercises,
-        start_time: startTime,
-        elapsed_time: time,
-        is_running: isRunning
+        startTime: new Date().toISOString(), // Will be updated by storage layer if workout exists
+        elapsedTime: time,
+        isRunning: isRunning,
+        userId: user.id
       }
 
-      console.log('Saving workout state:', workoutId, 'exercises:', updatedExercises.length)
+      console.log('Saving workout state via WorkoutStorageSupabase:', workoutId, 'exercises:', updatedExercises.length, 'user:', user.id)
 
-      // Fixed: Use proper conflict resolution for database constraint UNIQUE(user_id, type)
-      const { error } = await supabase
-        .from('ongoing_workouts')
-        .upsert(workoutData, {
-          onConflict: 'user_id,type'  // Match database constraint: UNIQUE(user_id, type)
-        })
+      // Use the storage layer which handles user association properly
+      await WorkoutStorageSupabase.saveOngoingWorkout(workoutToSave)
 
-      if (error) {
-        console.error('Database save failed:', error.message, error)
-
-        // Don't throw error - maintain localStorage backup instead
-        console.log('Falling back to localStorage-only storage due to database error')
-
-        // Update localStorage as fallback
-        if (typeof window !== 'undefined') {
-          const workoutForStorage = {
-            id: workoutId,
-            type: 'strength' as const,
-            exercises: updatedExercises,
-            startTime: startTime,
-            elapsedTime: time,
-            isRunning: isRunning,
-            userId: user.id
-          }
-          localStorage.setItem('ongoing-workout', JSON.stringify(workoutForStorage))
-          localStorage.setItem('ongoing-workout-timestamp', Date.now().toString())
-          console.log('Workout saved to localStorage as fallback')
-        }
-        return // Exit gracefully without throwing
-      }
-
-      console.log('Successfully saved workout to database:', workoutId)
-
-      // Update localStorage as backup for successful database save
-      if (typeof window !== 'undefined') {
-        const workoutForStorage = {
-          id: workoutId,
-          type: 'strength' as const,
-          exercises: updatedExercises,
-          startTime: startTime,
-          elapsedTime: time,
-          isRunning: isRunning,
-          userId: user.id
-        }
-        localStorage.setItem('ongoing-workout', JSON.stringify(workoutForStorage))
-        localStorage.setItem('ongoing-workout-timestamp', Date.now().toString())
-      }
+      console.log('Successfully saved workout via WorkoutStorageSupabase:', workoutId)
     } catch (error) {
       console.error('Critical error in saveWorkoutState:', error)
 
@@ -423,25 +373,17 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
   }
 
   const finishWorkout = async () => {
-    // Clear the workout from database
+    // Clear the workout using the storage layer
     if (user && supabase) {
       try {
-        const { error } = await supabase
-          .from('ongoing_workouts')
-          .delete()
-          .eq('user_id', user.id)
-
-        if (error) {
-          console.error('Failed to clear ongoing workout:', error)
-        } else {
-          console.log('Successfully finished workout')
-        }
+        await WorkoutStorageSupabase.clearOngoingWorkout()
+        console.log('Successfully finished workout via WorkoutStorageSupabase')
       } catch (error) {
         console.error('Error finishing workout:', error)
       }
     }
 
-    // Clear from localStorage
+    // Clear from localStorage as backup
     if (typeof window !== 'undefined') {
       localStorage.removeItem('ongoing-workout')
       localStorage.removeItem('ongoing-workout-timestamp')
