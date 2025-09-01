@@ -528,7 +528,15 @@ export class WorkoutStorageSupabase {
   // Template management with Supabase sync
   static async getTemplates(type?: 'strength' | 'running' | 'yoga' | 'cycling'): Promise<WorkoutTemplate[]> {
     const supabaseOperation = async () => {
-      if (!this.supabase || !this.currentUser) return []
+      if (!this.supabase || !this.currentUser) {
+        // If no user or supabase, return built-in templates only
+        const filtered = type ? builtInTemplates.filter(template => template.type === type) : builtInTemplates
+        return filtered.map(template => ({
+          ...template,
+          isBuiltIn: template.isBuiltIn || false,
+          userId: template.userId || undefined
+        }))
+      }
 
       let query = this.supabase
         .from('workout_templates')
@@ -543,7 +551,8 @@ export class WorkoutStorageSupabase {
       const { data, error } = await query
       if (error) throw error
 
-      return data?.map(item => ({
+      // Get user-created templates from database
+      const userTemplates = data?.map(item => ({
         id: item.id,
         name: item.name,
         type: item.type,
@@ -552,12 +561,38 @@ export class WorkoutStorageSupabase {
         isBuiltIn: item.is_built_in,
         userId: item.user_id
       })) || []
+
+      console.log('Loaded templates from Supabase:', {
+        userTemplates: userTemplates.length,
+        builtInTemplates: builtInTemplates.length,
+        type: type || 'all'
+      })
+
+      // Combine built-in templates with user-created templates
+      const allTemplates = [...builtInTemplates, ...userTemplates]
+      const filtered = type ? allTemplates.filter(template => template.type === type) : allTemplates
+
+      // Ensure all templates have consistent structure
+      return filtered.map(template => ({
+        ...template,
+        isBuiltIn: template.isBuiltIn || false,
+        userId: template.userId || undefined
+      }))
     }
 
     const localStorageOperation = () => {
       const customTemplates = this.getCustomTemplatesLocal()
       const allTemplates = [...builtInTemplates, ...customTemplates]
       const filtered = type ? allTemplates.filter(template => template.type === type) : allTemplates
+
+      console.log('Loaded templates from localStorage:', {
+        customTemplates: customTemplates.length,
+        builtInTemplates: builtInTemplates.length,
+        total: allTemplates.length,
+        filtered: filtered.length,
+        type: type || 'all'
+      })
+
       // Ensure all templates have consistent structure
       return filtered.map(template => ({
         ...template,
@@ -580,9 +615,10 @@ export class WorkoutStorageSupabase {
   }
 
   static async saveTemplate(template: Omit<WorkoutTemplate, 'id' | 'createdAt'>): Promise<WorkoutTemplate> {
+    const tempId = `template-${Date.now()}`
     const newTemplate: WorkoutTemplate = {
       ...template,
-      id: `template-${Date.now()}`,
+      id: tempId,
       createdAt: new Date().toISOString(),
       userId: this.currentUser?.id
     }
@@ -615,16 +651,16 @@ export class WorkoutStorageSupabase {
         newTemplate.id = data.id
         newTemplate.createdAt = data.created_at
 
-        // Update localStorage with correct ID
+        // Update localStorage with correct ID using the stored tempId
         const updatedWithId = updated.map(t =>
-          t.id === `template-${Date.now()}` ? newTemplate : t
+          t.id === tempId ? newTemplate : t
         )
         localStorage.setItem('workout-templates', JSON.stringify(updatedWithId))
 
       } catch (error) {
         console.error('Failed to sync template to Supabase:', error)
         this.addToSyncQueue('create', 'templates', {
-          id: `template-${Date.now()}`,
+          id: tempId,
           name: template.name,
           type: template.type,
           exercises: template.exercises,

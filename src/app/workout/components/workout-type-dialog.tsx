@@ -70,6 +70,7 @@ export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps
       try {
         // Show templates for strength workouts
         const strengthTemplates = await WorkoutStorageSupabase.getTemplates('strength')
+        console.log('Loaded strength templates:', strengthTemplates.length, strengthTemplates)
         setTemplates(strengthTemplates)
         setShowTemplates(true)
       } catch (error) {
@@ -89,9 +90,11 @@ export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps
 
   const handleTemplateSelect = async (template: WorkoutTemplate) => {
     try {
+      console.log('Creating workout from template:', template.name, template.id, template.exercises.length)
       // Generate a consistent workout ID based on template and timestamp
       const workoutId = `${template.type}-${Date.now()}`
       const workout = await WorkoutStorageSupabase.createWorkoutFromTemplate(template, workoutId)
+      console.log('Created workout:', workout.id, workout.exercises.length)
       router.push(`/workout/${template.type}/${workout.id}`)
       onOpenChange(false)
     } catch (error) {
