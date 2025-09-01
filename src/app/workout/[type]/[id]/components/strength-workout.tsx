@@ -44,9 +44,13 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
       // Initialize storage with user context
       WorkoutStorageSupabase.initialize(user, supabase)
 
-      // Load ongoing workout
+      // Load ongoing workout for this type (strength)
       const ongoingWorkout = await WorkoutStorageSupabase.getOngoingWorkout()
-      if (ongoingWorkout && ongoingWorkout.id === workoutId) {
+      if (ongoingWorkout && ongoingWorkout.type === 'strength') {
+        console.log('Found ongoing strength workout:', ongoingWorkout.id, 'Expected:', workoutId, 'Exercises:', ongoingWorkout.exercises.length)
+        
+        // Use the existing strength workout regardless of ID mismatch
+        // This handles the case where template creation changed the ID due to database constraints
         setExercises(ongoingWorkout.exercises)
 
         // Calculate current elapsed time if workout is running
@@ -59,6 +63,16 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         }
 
         setIsRunning(ongoingWorkout.isRunning)
+        
+        // If the ID doesn't match, update the workout with the expected ID to maintain URL consistency
+        if (ongoingWorkout.id !== workoutId) {
+          console.log('Updating workout ID to match URL:', workoutId)
+          const updatedWorkout = {
+            ...ongoingWorkout,
+            id: workoutId
+          }
+          await WorkoutStorageSupabase.saveOngoingWorkout(updatedWorkout)
+        }
       } else {
         // No ongoing workout found with this ID - wait briefly for potential database sync
         console.log('No ongoing workout found immediately, retrying once...')
