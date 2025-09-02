@@ -125,58 +125,14 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         }
     }, [isRunning, exercises])
 
-    // Handle page visibility changes to ensure timer continues in background
-    useEffect(() => {
-        const handleVisibilityChange = () => {
-            if (document.hidden && isRunning) {
-                // Page is hidden but timer should continue running
-                // Save current state to ensure persistence
-                const currentDisplayTime = time
-                WorkoutStorage.getOngoingWorkout().then(workout => {
-                    if (workout) {
-                        const adjustedStartTime = new Date(Date.now() - (currentDisplayTime * 1000)).toISOString()
-                        WorkoutStorage.saveOngoingWorkout({
-                            ...workout,
-                            exercises,
-                            elapsedTime: currentDisplayTime,
-                            startTime: adjustedStartTime,
-                            isRunning: true
-                        }).catch(error => {
-                            console.error('Error saving workout on visibility change:', error)
-                        })
-                    }
-                }).catch(error => {
-                    console.error('Error getting workout on visibility change:', error)
-                })
-            } else if (!document.hidden && isRunning) {
-                // Page is visible again, sync timer with stored time
-                WorkoutStorage.getOngoingWorkout().then(workout => {
-                    if (workout) {
-                        const currentElapsedTime = WorkoutStorage.getCurrentElapsedTime()
-                        setTime(currentElapsedTime)
-                    }
-                }).catch(error => {
-                    console.error('Error syncing timer on visibility change:', error)
-                })
-            }
-        }
-
-        document.addEventListener('visibilitychange', handleVisibilityChange)
-        
-        return () => {
-            document.removeEventListener('visibilitychange', handleVisibilityChange)
-        }
-    }, [isRunning, time, exercises])
-
-    // Cleanup on unmount - but don't interfere with background timer
+    // Cleanup on unmount
     useEffect(() => {
         return () => {
-            // Only clear interval if timer is not running (to preserve background timer)
-            if (intervalRef.current && !isRunning) {
+            if (intervalRef.current) {
                 clearInterval(intervalRef.current)
             }
         }
-    }, [isRunning])
+    }, [])
 
     const formatTime = (seconds: number) => {
         const hours = Math.floor(seconds / 3600)
@@ -397,11 +353,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     }
 
     const finishWorkout = async () => {
-        // Stop the timer first
-        setIsRunning(false)
-        
         try {
-            // Clear the ongoing workout completely
             await WorkoutStorage.clearOngoingWorkout()
         } catch (error) {
             console.error('Error finishing workout:', error)
@@ -410,24 +362,15 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     }
 
     const quitWorkout = async () => {
-        // Save current state before leaving (don't clear) - preserve timer state
+        // Save current state before leaving (don't clear) - use real-time elapsed time
         try {
             const workout = await WorkoutStorage.getOngoingWorkout()
             if (workout) {
-                // Use current displayed time to preserve exact timer state
-                const currentDisplayTime = time
-                
-                // If timer is running, adjust startTime for accurate background calculation
-                let adjustedStartTime = workout.startTime
-                if (isRunning) {
-                    adjustedStartTime = new Date(Date.now() - (currentDisplayTime * 1000)).toISOString()
-                }
-                
+                const currentElapsedTime = WorkoutStorage.getCurrentElapsedTime()
                 await WorkoutStorage.saveOngoingWorkout({
                     ...workout,
                     exercises,
-                    elapsedTime: currentDisplayTime,
-                    startTime: adjustedStartTime,
+                    elapsedTime: currentElapsedTime,
                     isRunning // Keep the timer running state - timer continues in background!
                 })
             }
