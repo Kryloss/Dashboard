@@ -79,31 +79,34 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     }, [workoutId, user, supabase])
 
 
-    // Real-time timer display using timestamp calculation
+    // Timer display using simple counter (no real-time calculation)
     useEffect(() => {
         if (isRunning) {
-            // Only update timer display when running
+            // Only update timer display when running - use simple counter
             intervalRef.current = setInterval(() => {
-                const currentElapsedTime = WorkoutStorage.getCurrentElapsedTime()
-                setTime(currentElapsedTime)
+                setTime(prevTime => {
+                    const newTime = prevTime + 1
 
-                // Save exercises periodically for running workouts
-                if (currentElapsedTime % 60 === 0) {
-                    WorkoutStorage.getOngoingWorkout().then(workout => {
-                        if (workout) {
-                            WorkoutStorage.saveOngoingWorkout({
-                                ...workout,
-                                exercises,
-                                elapsedTime: currentElapsedTime,
-                                isRunning: true
-                            }).catch(error => {
-                                console.error('Error saving exercises during timer update:', error)
-                            })
-                        }
-                    }).catch(error => {
-                        console.error('Error getting workout during timer update:', error)
-                    })
-                }
+                    // Save exercises periodically for running workouts
+                    if (newTime % 60 === 0) {
+                        WorkoutStorage.getOngoingWorkout().then(workout => {
+                            if (workout) {
+                                WorkoutStorage.saveOngoingWorkout({
+                                    ...workout,
+                                    exercises,
+                                    elapsedTime: newTime,
+                                    isRunning: true
+                                }).catch(error => {
+                                    console.error('Error saving exercises during timer update:', error)
+                                })
+                            }
+                        }).catch(error => {
+                            console.error('Error getting workout during timer update:', error)
+                        })
+                    }
+
+                    return newTime
+                })
             }, 1000)
         } else {
             // When paused, clear interval and keep current time display
@@ -146,17 +149,19 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         setIsRunning(true)
         // When starting/resuming, use current displayed time to prevent time jumps
         const currentDisplayTime = time
-        WorkoutStorage.updateWorkoutTime(currentDisplayTime, true)
 
         // Update the workout in storage with current exercises
         try {
             const workout = await WorkoutStorage.getOngoingWorkout()
             if (workout) {
+                // Calculate start time for accurate real-time calculation
+                const startTime = new Date(Date.now() - (currentDisplayTime * 1000)).toISOString()
                 await WorkoutStorage.saveOngoingWorkout({
                     ...workout,
                     exercises,
                     elapsedTime: currentDisplayTime,
-                    isRunning: true
+                    isRunning: true,
+                    startTime: startTime
                 })
             }
         } catch (error) {
@@ -170,7 +175,6 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         setIsRunning(false)
         // Keep the current displayed time
         setTime(currentDisplayTime)
-        WorkoutStorage.updateWorkoutTime(currentDisplayTime, false)
 
         // Update the workout in storage with current exercises
         try {
@@ -189,20 +193,24 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     }
 
     const resetTimer = async () => {
+        // Stop the timer first
         setIsRunning(false)
+        // Reset to 0 immediately
         setTime(0)
-        WorkoutStorage.updateWorkoutTime(0, false)
 
-        // Update the workout in storage with current exercises
+        // Update storage with reset values
         try {
             const workout = await WorkoutStorage.getOngoingWorkout()
             if (workout) {
-                await WorkoutStorage.saveOngoingWorkout({
+                // Create a new workout with reset values
+                const resetWorkout = {
                     ...workout,
                     exercises,
                     elapsedTime: 0,
-                    isRunning: false
-                })
+                    isRunning: false,
+                    startTime: new Date().toISOString() // Reset start time
+                }
+                await WorkoutStorage.saveOngoingWorkout(resetWorkout)
             }
         } catch (error) {
             console.error('Error updating workout on reset:', error)
