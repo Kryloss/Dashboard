@@ -198,11 +198,12 @@ export class WorkoutStorage {
                     return this.getOngoingWorkoutFromLocalStorage()
                 }
 
-                // Explicit user_id filter for debugging
+                // Explicit user_id filter with null check for security
                 const { data, error } = await this.supabase
                     .from('ongoing_workouts')
                     .select('*')
                     .eq('user_id', this.currentUser.id)
+                    .not('user_id', 'is', null)
                     .single()
 
                 console.log('WorkoutStorage.getOngoingWorkout - Query result:', { data, error })
@@ -243,18 +244,20 @@ export class WorkoutStorage {
                     .from('ongoing_workouts')
                     .select('id')
                     .eq('user_id', this.currentUser.id)
+                    .not('user_id', 'is', null)
                     .single()
 
                 let error: Error | null = null
 
                 if (existingWorkout) {
-                    // Update existing workout
+                    // Update existing workout with security check
                     const updateResult = await this.supabase
                         .from('ongoing_workouts')
                         .update({
                             ...dbWorkout,
                         })
                         .eq('user_id', this.currentUser.id)
+                        .not('user_id', 'is', null)
                     error = updateResult.error
                 } else {
                     // Insert new workout
@@ -294,6 +297,7 @@ export class WorkoutStorage {
                     .from('ongoing_workouts')
                     .delete()
                     .eq('user_id', this.currentUser.id)
+                    .not('user_id', 'is', null)
 
                 if (error) throw error
 
@@ -349,11 +353,12 @@ export class WorkoutStorage {
                     return this.getTemplatesFromLocalStorage(type)
                 }
 
+                // Build secure query with explicit auth checks
                 let query = this.supabase
                     .from('workout_templates')
                     .select('*')
-                    .or(`user_id.eq.${this.currentUser.id},is_built_in.eq.true`)
-                    .order('is_built_in', { ascending: false }) // User templates first
+                    .or(`and(user_id.eq.${this.currentUser.id},user_id.not.is.null),and(is_built_in.eq.true,user_id.is.null)`)
+                    .order('is_built_in', { ascending: false }) // Built-in templates first
                     .order('created_at', { ascending: false })
 
                 if (type) {
@@ -449,6 +454,8 @@ export class WorkoutStorage {
                     .delete()
                     .eq('id', templateId)
                     .eq('user_id', this.currentUser.id) // Ensure user can only delete their own
+                    .not('user_id', 'is', null)
+                    .eq('is_built_in', false) // Prevent deletion of built-in templates
 
                 if (error) throw error
 
@@ -721,6 +728,7 @@ export class WorkoutStorage {
                         .from('ongoing_workouts')
                         .select('id')
                         .eq('user_id', this.currentUser!.id)
+                        .not('user_id', 'is', null)
                         .single()
 
                     if (existingWorkout) {
@@ -731,6 +739,7 @@ export class WorkoutStorage {
                                 ...dbWorkout,
                             })
                             .eq('user_id', this.currentUser!.id)
+                            .not('user_id', 'is', null)
                         if (updateError) throw updateError
                     } else {
                         // Insert new workout
@@ -750,6 +759,7 @@ export class WorkoutStorage {
                     .from('ongoing_workouts')
                     .delete()
                     .eq('user_id', this.currentUser!.id)
+                    .not('user_id', 'is', null)
                 if (deleteError) throw deleteError
                 break
 
@@ -780,6 +790,8 @@ export class WorkoutStorage {
                         .delete()
                         .eq('id', operation.data)
                         .eq('user_id', this.currentUser!.id)
+                        .not('user_id', 'is', null)
+                        .eq('is_built_in', false)
                     if (deleteError) throw deleteError
                 }
                 break
@@ -855,6 +867,7 @@ export class WorkoutStorage {
             const { data: workouts, error: workoutsError } = await this.supabase
                 .from('ongoing_workouts')
                 .select('id, user_id')
+                .not('user_id', 'is', null)
                 .limit(10)
 
             console.log('🔍 Ongoing workouts query result:', {
@@ -883,6 +896,7 @@ export class WorkoutStorage {
                 .from('ongoing_workouts')
                 .select('id, user_id')
                 .eq('user_id', this.currentUser.id)
+                .not('user_id', 'is', null)
 
             console.log('🔍 User-specific workouts:', {
                 count: userWorkouts?.length || 0,
