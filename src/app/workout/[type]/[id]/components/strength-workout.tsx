@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
-import { X, Play, Pause, Square, Plus, GripVertical, BookOpen } from "lucide-react"
+import { X, Play, Pause, Square, Plus, GripVertical, BookOpen, Edit3, Check, X as XIcon } from "lucide-react"
 import { WorkoutStorage, WorkoutExercise } from "@/lib/workout-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
 
@@ -31,6 +31,11 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     const [templateName, setTemplateName] = useState("")
     const [isSavingTemplate, setIsSavingTemplate] = useState(false)
     const [templateSaveError, setTemplateSaveError] = useState<string | null>(null)
+    
+    // Workout name editing
+    const [workoutName, setWorkoutName] = useState<string>("")
+    const [isEditingName, setIsEditingName] = useState(false)
+    const [tempWorkoutName, setTempWorkoutName] = useState("")
 
     const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -51,6 +56,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                 if (existingWorkout && existingWorkout.workoutId === workoutId) {
                     // Load existing workout
                     setExercises(existingWorkout.exercises)
+                    setWorkoutName(existingWorkout.name || "")
 
                     // If the workout was running when page was closed, calculate background elapsed time
                     if (existingWorkout.isRunning) {
@@ -78,6 +84,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                     setExercises([])
                     setTime(0)
                     setIsRunning(false)
+                    setWorkoutName(newWorkout.name || "")
                 }
             } catch (error) {
                 console.error('Error initializing workout:', error)
@@ -426,6 +433,35 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         }
     }
 
+    const startEditingName = () => {
+        setTempWorkoutName(workoutName || "")
+        setIsEditingName(true)
+    }
+
+    const saveWorkoutName = async () => {
+        const newName = tempWorkoutName.trim()
+        setWorkoutName(newName)
+        setIsEditingName(false)
+
+        // Update the workout in storage
+        try {
+            const workout = await WorkoutStorage.getOngoingWorkout()
+            if (workout) {
+                await WorkoutStorage.saveOngoingWorkout({
+                    ...workout,
+                    name: newName || undefined
+                })
+            }
+        } catch (error) {
+            console.error('Error updating workout name:', error)
+        }
+    }
+
+    const cancelEditingName = () => {
+        setTempWorkoutName("")
+        setIsEditingName(false)
+    }
+
     const finishWorkout = async () => {
         // Stop the timer first
         setIsRunning(false)
@@ -485,8 +521,50 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                 <div className="container mx-auto max-w-4xl px-6 py-8">
                     {/* Header */}
                     <div className="flex items-center justify-between mb-8">
-                        <div>
-                            <h1 className="text-2xl font-bold text-[#F3F4F6]">Strength Training</h1>
+                        <div className="flex-1 mr-4">
+                            {isEditingName ? (
+                                <div className="flex items-center space-x-2">
+                                    <Input
+                                        value={tempWorkoutName}
+                                        onChange={(e) => setTempWorkoutName(e.target.value)}
+                                        placeholder="Enter workout name..."
+                                        className="text-2xl font-bold bg-[#0E0F13] border-[#212227] text-[#F3F4F6] placeholder-[#7A7F86] rounded-[14px] h-auto py-2"
+                                        onKeyPress={(e) => e.key === 'Enter' && saveWorkoutName()}
+                                        onBlur={saveWorkoutName}
+                                        autoFocus
+                                    />
+                                    <Button
+                                        onClick={saveWorkoutName}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="text-green-400 hover:text-green-300 hover:bg-green-500/10 rounded-full"
+                                    >
+                                        <Check className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                        onClick={cancelEditingName}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="text-[#A1A1AA] hover:text-red-400 hover:bg-red-500/10 rounded-full"
+                                    >
+                                        <XIcon className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="flex items-center space-x-2 group">
+                                    <h1 className="text-2xl font-bold text-[#F3F4F6]">
+                                        {workoutName || "Strength Training"}
+                                    </h1>
+                                    <Button
+                                        onClick={startEditingName}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full w-8 h-8"
+                                    >
+                                        <Edit3 className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            )}
                             <p className="text-sm text-[#A1A1AA] mt-1">Workout ID: {workoutId}</p>
                         </div>
                         <Button
