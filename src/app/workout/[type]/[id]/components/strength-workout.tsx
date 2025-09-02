@@ -67,29 +67,39 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
 
     // Real-time timer display using timestamp calculation
     useEffect(() => {
-        // Update timer display every second regardless of running state
-        intervalRef.current = setInterval(() => {
+        if (isRunning) {
+            // Only update timer display when running
+            intervalRef.current = setInterval(() => {
+                const currentElapsedTime = WorkoutStorage.getCurrentElapsedTime()
+                setTime(currentElapsedTime)
+                
+                // Save exercises periodically for running workouts
+                if (currentElapsedTime % 60 === 0) {
+                    WorkoutStorage.getOngoingWorkout().then(workout => {
+                        if (workout) {
+                            WorkoutStorage.saveOngoingWorkout({
+                                ...workout,
+                                exercises,
+                                elapsedTime: currentElapsedTime,
+                                isRunning: true
+                            }).catch(error => {
+                                console.error('Error saving exercises during timer update:', error)
+                            })
+                        }
+                    }).catch(error => {
+                        console.error('Error getting workout during timer update:', error)
+                    })
+                }
+            }, 1000)
+        } else {
+            // When paused, clear interval but update time once to sync with storage
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current)
+            }
+            // Sync display with stored time when paused
             const currentElapsedTime = WorkoutStorage.getCurrentElapsedTime()
             setTime(currentElapsedTime)
-            
-            // Save exercises periodically for running workouts
-            if (isRunning && currentElapsedTime % 60 === 0) {
-                WorkoutStorage.getOngoingWorkout().then(workout => {
-                    if (workout) {
-                        WorkoutStorage.saveOngoingWorkout({
-                            ...workout,
-                            exercises,
-                            elapsedTime: currentElapsedTime,
-                            isRunning: true
-                        }).catch(error => {
-                            console.error('Error saving exercises during timer update:', error)
-                        })
-                    }
-                }).catch(error => {
-                    console.error('Error getting workout during timer update:', error)
-                })
-            }
-        }, 1000)
+        }
 
         return () => {
             if (intervalRef.current) {
