@@ -413,7 +413,7 @@ export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps
                             <div>
                                 <DialogTitle>Delete Template</DialogTitle>
                                 <DialogDescription>
-                                    Are you sure you want to delete "{templateToDelete?.name}"? This action cannot be undone.
+                                    Are you sure you want to delete &quot;{templateToDelete?.name}&quot;? This action cannot be undone.
                                 </DialogDescription>
                             </div>
                         </div>
