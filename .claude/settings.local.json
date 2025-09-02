@@ -12,7 +12,8 @@
       "Bash(cmd /c \"npm install @radix-ui/react-select\")",
       "Bash(cmd /c \"type C:\\Users\\mrRep\\Desktop\\Dashboard\\design.json\")",
       "Bash(cmd /c:*)",
-      "Bash(del \"C:\\Users\\mrRep\\Desktop\\Dashboard\\src\\lib\\workout-storage-supabase.ts\")"
+      "Bash(del \"C:\\Users\\mrRep\\Desktop\\Dashboard\\src\\lib\\workout-storage-supabase.ts\")",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": [],

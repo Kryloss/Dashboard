@@ -24,6 +24,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     const [exercises, setExercises] = useState<Exercise[]>([])
     const [showAddExercise, setShowAddExercise] = useState(false)
     const [newExerciseName, setNewExerciseName] = useState("")
+
     const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
     // Initialize workout from storage or create new one
@@ -40,7 +41,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
             try {
                 const existingWorkout = await WorkoutStorage.getOngoingWorkout()
 
-                if (existingWorkout && existingWorkout.id === workoutId) {
+                if (existingWorkout && existingWorkout.workoutId === workoutId) {
                     // Load existing workout
                     setExercises(existingWorkout.exercises)
 
@@ -151,11 +152,13 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         try {
             const workout = await WorkoutStorage.getOngoingWorkout()
             if (workout) {
-                workout.exercises = updatedExercises
-                await WorkoutStorage.saveOngoingWorkout(workout)
+                await WorkoutStorage.saveOngoingWorkout({
+                    ...workout,
+                    exercises: updatedExercises
+                })
             }
         } catch (error) {
-            console.error('Error saving exercise update:', error)
+            console.error('Error saving workout:', error)
         }
     }
 
@@ -177,11 +180,13 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         try {
             const workout = await WorkoutStorage.getOngoingWorkout()
             if (workout) {
-                workout.exercises = updatedExercises
-                await WorkoutStorage.saveOngoingWorkout(workout)
+                await WorkoutStorage.saveOngoingWorkout({
+                    ...workout,
+                    exercises: updatedExercises
+                })
             }
         } catch (error) {
-            console.error('Error saving exercise update:', error)
+            console.error('Error saving workout:', error)
         }
     }
 
@@ -227,11 +232,13 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         try {
             const workout = await WorkoutStorage.getOngoingWorkout()
             if (workout) {
-                workout.exercises = updatedExercises
-                await WorkoutStorage.saveOngoingWorkout(workout)
+                await WorkoutStorage.saveOngoingWorkout({
+                    ...workout,
+                    exercises: updatedExercises
+                })
             }
         } catch (error) {
-            console.error('Error saving exercise update:', error)
+            console.error('Error saving workout:', error)
         }
     }
 
@@ -253,11 +260,13 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         try {
             const workout = await WorkoutStorage.getOngoingWorkout()
             if (workout) {
-                workout.exercises = updatedExercises
-                await WorkoutStorage.saveOngoingWorkout(workout)
+                await WorkoutStorage.saveOngoingWorkout({
+                    ...workout,
+                    exercises: updatedExercises
+                })
             }
         } catch (error) {
-            console.error('Error saving exercise update:', error)
+            console.error('Error saving workout:', error)
         }
     }
 
@@ -271,17 +280,19 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     }
 
     const quitWorkout = async () => {
+        // Save current state before leaving (don't clear)
         try {
-            // Save current state before leaving (don't clear)
             const workout = await WorkoutStorage.getOngoingWorkout()
             if (workout) {
-                workout.exercises = exercises
-                workout.elapsedTime = time
-                workout.isRunning = isRunning
-                await WorkoutStorage.saveOngoingWorkout(workout)
+                await WorkoutStorage.saveOngoingWorkout({
+                    ...workout,
+                    exercises,
+                    elapsedTime: time,
+                    isRunning
+                })
             }
         } catch (error) {
-            console.error('Error saving workout before quit:', error)
+            console.error('Error saving workout state:', error)
         }
         router.push('/workout')
     }

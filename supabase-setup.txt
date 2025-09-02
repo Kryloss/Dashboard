@@ -1,0 +1,314 @@
+-- Supabase Database Setup for Workout App
+-- Copy and paste this SQL into your Supabase SQL Editor
+
+-- ============================================================================
+-- TABLE CREATION
+-- ============================================================================
+
+-- Ongoing workouts table (one per user)
+CREATE TABLE IF NOT EXISTS ongoing_workouts (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    workout_id TEXT NOT NULL, -- The URL-friendly ID (e.g., "strength-1234567890")
+    type TEXT NOT NULL CHECK (type IN ('strength', 'running', 'yoga', 'cycling')),
+    name TEXT,
+    exercises JSONB NOT NULL DEFAULT '[]',
+    start_time TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    elapsed_time INTEGER NOT NULL DEFAULT 0, -- in seconds
+    is_running BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    
+    -- Ensure only one ongoing workout per user
+    CONSTRAINT unique_user_ongoing_workout UNIQUE (user_id)
+);
+
+-- Workout templates table
+CREATE TABLE IF NOT EXISTS workout_templates (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE, -- NULL for built-in templates
+    name TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type IN ('strength', 'running', 'yoga', 'cycling')),
+    exercises JSONB NOT NULL DEFAULT '[]',
+    is_built_in BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Workout history table (for completed workouts)
+CREATE TABLE IF NOT EXISTS workout_history (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    workout_id TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type IN ('strength', 'running', 'yoga', 'cycling')),
+    name TEXT,
+    exercises JSONB NOT NULL DEFAULT '[]',
+    start_time TIMESTAMPTZ NOT NULL,
+    end_time TIMESTAMPTZ NOT NULL,
+    duration INTEGER NOT NULL, -- in seconds
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================================
+-- INDEXES
+-- ============================================================================
+
+-- Optimize queries by user_id
+CREATE INDEX IF NOT EXISTS idx_ongoing_workouts_user_id ON ongoing_workouts(user_id);
+CREATE INDEX IF NOT EXISTS idx_workout_templates_user_id ON workout_templates(user_id);
+CREATE INDEX IF NOT EXISTS idx_workout_history_user_id ON workout_history(user_id);
+
+-- Optimize template queries
+CREATE INDEX IF NOT EXISTS idx_workout_templates_type ON workout_templates(type);
+CREATE INDEX IF NOT EXISTS idx_workout_templates_built_in ON workout_templates(is_built_in);
+
+-- Optimize history queries
+CREATE INDEX IF NOT EXISTS idx_workout_history_type ON workout_history(type);
+CREATE INDEX IF NOT EXISTS idx_workout_history_start_time ON workout_history(start_time);
+
+-- ============================================================================
+-- ROW LEVEL SECURITY (RLS)
+-- ============================================================================
+
+-- Enable RLS on all tables
+ALTER TABLE ongoing_workouts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE workout_templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE workout_history ENABLE ROW LEVEL SECURITY;
+
+-- Ongoing workouts policies
+CREATE POLICY "Users can view their own ongoing workouts" ON ongoing_workouts
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own ongoing workouts" ON ongoing_workouts
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own ongoing workouts" ON ongoing_workouts
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own ongoing workouts" ON ongoing_workouts
+    FOR DELETE USING (auth.uid() = user_id);
+
+-- Workout templates policies
+CREATE POLICY "Users can view their own templates and built-in templates" ON workout_templates
+    FOR SELECT USING (auth.uid() = user_id OR is_built_in = true);
+
+CREATE POLICY "Users can insert their own templates" ON workout_templates
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own templates" ON workout_templates
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own templates" ON workout_templates
+    FOR DELETE USING (auth.uid() = user_id);
+
+-- Workout history policies
+CREATE POLICY "Users can view their own workout history" ON workout_history
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own workout history" ON workout_history
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own workout history" ON workout_history
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own workout history" ON workout_history
+    FOR DELETE USING (auth.uid() = user_id);
+
+-- ============================================================================
+-- TRIGGERS
+-- ============================================================================
+
+-- Function to update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Apply the trigger to tables that need updated_at
+CREATE TRIGGER update_ongoing_workouts_updated_at
+    BEFORE UPDATE ON ongoing_workouts
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_workout_templates_updated_at
+    BEFORE UPDATE ON workout_templates
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ============================================================================
+-- BUILT-IN WORKOUT TEMPLATES
+-- ============================================================================
+
+-- Insert built-in strength workout templates
+INSERT INTO workout_templates (name, type, exercises, is_built_in) VALUES
+('Push Day', 'strength', '[
+  {
+    "id": "push-1",
+    "name": "Bench Press",
+    "description": "Chest, shoulders, and triceps compound movement",
+    "category": "compound",
+    "targetMuscles": ["chest", "shoulders", "triceps"],
+    "equipment": "barbell",
+    "difficulty": "intermediate",
+    "restTime": 180,
+    "sets": [
+      {"id": "set-1", "reps": "8-10", "weight": "", "notes": "", "completed": false, "restTime": 180},
+      {"id": "set-2", "reps": "8-10", "weight": "", "notes": "", "completed": false, "restTime": 180},
+      {"id": "set-3", "reps": "8-10", "weight": "", "notes": "", "completed": false, "restTime": 180}
+    ],
+    "instructions": ["Lie flat on bench", "Grip bar slightly wider than shoulders", "Lower bar to chest", "Press up explosively"],
+    "tips": ["Keep shoulder blades retracted", "Control the descent", "Full range of motion"]
+  },
+  {
+    "id": "push-2",
+    "name": "Overhead Press",
+    "description": "Standing shoulder press for deltoid strength",
+    "category": "compound",
+    "targetMuscles": ["shoulders", "triceps", "core"],
+    "equipment": "barbell",
+    "difficulty": "intermediate",
+    "restTime": 150,
+    "sets": [
+      {"id": "set-1", "reps": "6-8", "weight": "", "notes": "", "completed": false, "restTime": 150},
+      {"id": "set-2", "reps": "6-8", "weight": "", "notes": "", "completed": false, "restTime": 150},
+      {"id": "set-3", "reps": "6-8", "weight": "", "notes": "", "completed": false, "restTime": 150}
+    ],
+    "instructions": ["Stand with feet shoulder-width apart", "Grip bar at shoulder width", "Press straight up overhead", "Lower with control"],
+    "tips": ["Keep core tight", "Do not arch back excessively", "Full lockout at top"]
+  },
+  {
+    "id": "push-3",
+    "name": "Dips",
+    "description": "Bodyweight tricep and chest exercise",
+    "category": "compound",
+    "targetMuscles": ["triceps", "chest", "shoulders"],
+    "equipment": "parallel bars",
+    "difficulty": "intermediate",
+    "restTime": 120,
+    "sets": [
+      {"id": "set-1", "reps": "8-12", "weight": "bodyweight", "notes": "", "completed": false, "restTime": 120},
+      {"id": "set-2", "reps": "8-12", "weight": "bodyweight", "notes": "", "completed": false, "restTime": 120},
+      {"id": "set-3", "reps": "8-12", "weight": "bodyweight", "notes": "", "completed": false, "restTime": 120}
+    ],
+    "instructions": ["Grip parallel bars", "Start with arms extended", "Lower body by bending elbows", "Push back up to start"],
+    "tips": ["Lean slightly forward for chest emphasis", "Keep elbows close to body", "Control the movement"]
+  }
+]', true),
+
+('Pull Day', 'strength', '[
+  {
+    "id": "pull-1",
+    "name": "Deadlift",
+    "description": "Full body compound movement targeting posterior chain",
+    "category": "compound",
+    "targetMuscles": ["hamstrings", "glutes", "back", "traps"],
+    "equipment": "barbell",
+    "difficulty": "advanced",
+    "restTime": 240,
+    "sets": [
+      {"id": "set-1", "reps": "5", "weight": "", "notes": "", "completed": false, "restTime": 240},
+      {"id": "set-2", "reps": "5", "weight": "", "notes": "", "completed": false, "restTime": 240},
+      {"id": "set-3", "reps": "5", "weight": "", "notes": "", "completed": false, "restTime": 240}
+    ],
+    "instructions": ["Stand with feet hip-width apart", "Grip bar with hands just outside legs", "Keep back straight, chest up", "Drive through heels to stand"],
+    "tips": ["Keep bar close to body", "Engage lats", "Neutral spine throughout"]
+  },
+  {
+    "id": "pull-2",
+    "name": "Pull-ups",
+    "description": "Upper body pulling exercise for back and biceps",
+    "category": "compound",
+    "targetMuscles": ["lats", "rhomboids", "biceps"],
+    "equipment": "pull-up bar",
+    "difficulty": "intermediate",
+    "restTime": 180,
+    "sets": [
+      {"id": "set-1", "reps": "6-10", "weight": "bodyweight", "notes": "", "completed": false, "restTime": 180},
+      {"id": "set-2", "reps": "6-10", "weight": "bodyweight", "notes": "", "completed": false, "restTime": 180},
+      {"id": "set-3", "reps": "6-10", "weight": "bodyweight", "notes": "", "completed": false, "restTime": 180}
+    ],
+    "instructions": ["Hang from bar with palms facing away", "Pull chest to bar", "Lower with control", "Full extension at bottom"],
+    "tips": ["Engage lats first", "Avoid swinging", "Think about pulling elbows down"]
+  },
+  {
+    "id": "pull-3",
+    "name": "Barbell Rows",
+    "description": "Horizontal pulling exercise for back thickness",
+    "category": "compound",
+    "targetMuscles": ["lats", "rhomboids", "rear delts", "biceps"],
+    "equipment": "barbell",
+    "difficulty": "intermediate",
+    "restTime": 150,
+    "sets": [
+      {"id": "set-1", "reps": "8-10", "weight": "", "notes": "", "completed": false, "restTime": 150},
+      {"id": "set-2", "reps": "8-10", "weight": "", "notes": "", "completed": false, "restTime": 150},
+      {"id": "set-3", "reps": "8-10", "weight": "", "notes": "", "completed": false, "restTime": 150}
+    ],
+    "instructions": ["Hinge at hips with knees slightly bent", "Grip bar with palms down", "Pull bar to lower chest", "Squeeze shoulder blades"],
+    "tips": ["Keep torso stable", "Pull with elbows, not hands", "Control the weight"]
+  }
+]', true),
+
+('Leg Day', 'strength', '[
+  {
+    "id": "leg-1",
+    "name": "Squats",
+    "description": "Fundamental leg exercise targeting quads, glutes, and core",
+    "category": "compound",
+    "targetMuscles": ["quadriceps", "glutes", "hamstrings", "core"],
+    "equipment": "barbell",
+    "difficulty": "intermediate",
+    "restTime": 180,
+    "sets": [
+      {"id": "set-1", "reps": "8-10", "weight": "", "notes": "", "completed": false, "restTime": 180},
+      {"id": "set-2", "reps": "8-10", "weight": "", "notes": "", "completed": false, "restTime": 180},
+      {"id": "set-3", "reps": "8-10", "weight": "", "notes": "", "completed": false, "restTime": 180}
+    ],
+    "instructions": ["Stand with feet shoulder-width apart", "Descend by sitting back and down", "Keep knees in line with toes", "Drive through heels to stand"],
+    "tips": ["Keep chest up", "Go to parallel or below", "Maintain knee alignment"]
+  },
+  {
+    "id": "leg-2",
+    "name": "Romanian Deadlift",
+    "description": "Hip-hinge movement targeting hamstrings and glutes",
+    "category": "compound",
+    "targetMuscles": ["hamstrings", "glutes", "lower back"],
+    "equipment": "barbell",
+    "difficulty": "intermediate",
+    "restTime": 150,
+    "sets": [
+      {"id": "set-1", "reps": "10-12", "weight": "", "notes": "", "completed": false, "restTime": 150},
+      {"id": "set-2", "reps": "10-12", "weight": "", "notes": "", "completed": false, "restTime": 150},
+      {"id": "set-3", "reps": "10-12", "weight": "", "notes": "", "completed": false, "restTime": 150}
+    ],
+    "instructions": ["Start standing with bar at hip level", "Hinge at hips, push them back", "Lower bar along legs", "Return to standing position"],
+    "tips": ["Feel stretch in hamstrings", "Keep bar close to legs", "Maintain neutral spine"]
+  },
+  {
+    "id": "leg-3",
+    "name": "Walking Lunges",
+    "description": "Unilateral leg exercise for strength and stability",
+    "category": "compound",
+    "targetMuscles": ["quadriceps", "glutes", "hamstrings", "calves"],
+    "equipment": "dumbbells",
+    "difficulty": "beginner",
+    "restTime": 120,
+    "sets": [
+      {"id": "set-1", "reps": "12 each leg", "weight": "", "notes": "", "completed": false, "restTime": 120},
+      {"id": "set-2", "reps": "12 each leg", "weight": "", "notes": "", "completed": false, "restTime": 120},
+      {"id": "set-3", "reps": "12 each leg", "weight": "", "notes": "", "completed": false, "restTime": 120}
+    ],
+    "instructions": ["Step forward into lunge position", "Lower back knee toward ground", "Push off front foot to next lunge", "Alternate legs with each step"],
+    "tips": ["Keep torso upright", "Long steps", "Control the descent"]
+  }
+]', true);
+
+-- ============================================================================
+-- COMPLETION MESSAGE
+-- ============================================================================
+
+-- You can run this query to verify the setup worked:
+-- SELECT 'Setup complete!' as status;
+-- SELECT COUNT(*) as template_count FROM workout_templates WHERE is_built_in = true;

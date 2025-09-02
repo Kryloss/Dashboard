@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { isOnSubdomain } from "@/lib/subdomains"
 import { Button } from "@/components/ui/button"
 import { GoalRings } from "./components/goal-rings"
@@ -19,40 +19,34 @@ export default function WorkoutPage() {
     const [showWorkoutDialog, setShowWorkoutDialog] = useState(false)
     const [ongoingWorkout, setOngoingWorkout] = useState<OngoingWorkout | null>(null)
 
+    const loadOngoingWorkout = useCallback(async () => {
+        if (!user || !supabase) return
+
+        try {
+            const workout = await WorkoutStorage.getOngoingWorkout()
+            setOngoingWorkout(workout)
+        } catch (error) {
+            console.error('Error loading ongoing workout:', error)
+        }
+    }, [user, supabase])
 
     useEffect(() => {
         const onHealss = isOnSubdomain('healss')
         setIsHealssSubdomain(onHealss)
-        
+
         if (onHealss && user && supabase) {
             // Initialize storage with user context
             WorkoutStorage.initialize(user, supabase)
-            
-            // Load ongoing workout
-            const loadWorkout = async () => {
-                try {
-                    const workout = await WorkoutStorage.getOngoingWorkout()
-                    setOngoingWorkout(workout)
-                } catch (error) {
-                    console.error('Error loading ongoing workout:', error)
-                }
-            }
-            
-            loadWorkout()
-            
+            loadOngoingWorkout()
+
             // Set up periodic check for ongoing workout updates
-            const interval = setInterval(async () => {
-                try {
-                    const updatedWorkout = await WorkoutStorage.getOngoingWorkout()
-                    setOngoingWorkout(updatedWorkout)
-                } catch (error) {
-                    console.error('Error updating ongoing workout:', error)
-                }
-            }, 5000) // Check every 5 seconds
-            
+            const interval = setInterval(() => {
+                loadOngoingWorkout()
+            }, 30000) // Check every 30 seconds
+
             return () => clearInterval(interval)
         }
-    }, [user, supabase])
+    }, [user, supabase, loadOngoingWorkout])
 
     // Mock data for demonstration
     const mockData = {
@@ -113,26 +107,37 @@ export default function WorkoutPage() {
     }
 
     const handleQuickAction = async (action: string) => {
-        console.log(`Quick action: ${action}`)
-        
         if (!user || !supabase) {
-            console.error('No user or supabase client available')
+            console.error('User must be authenticated to start workouts')
             return
         }
-        
-        // Check if there's an ongoing workout
-        try {
-            const existingWorkout = await WorkoutStorage.getOngoingWorkout()
-            if (existingWorkout) {
-                // Finish current workout and start new one
-                await WorkoutStorage.clearOngoingWorkout()
-                setOngoingWorkout(null)
+
+        if (action === 'strength') {
+            try {
+
+                // Check if there's an existing ongoing workout
+                const existingWorkout = await WorkoutStorage.getOngoingWorkout()
+                if (existingWorkout) {
+                    // Clear existing workout
+                    await WorkoutStorage.clearOngoingWorkout()
+                    setOngoingWorkout(null)
+                }
+
+                // Create new workout and navigate to it
+                const workoutId = `strength-${Date.now()}`
+                const newWorkout = WorkoutStorage.createWorkout('strength', workoutId)
+                await WorkoutStorage.saveOngoingWorkout(newWorkout)
+
+                window.location.href = `/workout/strength/${workoutId}`
+            } catch (error) {
+                console.error('Error starting workout:', error)
+            } finally {
+                // Loading state handled
             }
-        } catch (error) {
-            console.error('Error checking ongoing workout:', error)
+        } else {
+            console.log(`Quick action: ${action}`)
+            setShowWorkoutDialog(true)
         }
-        
-        setShowWorkoutDialog(true)
     }
 
     // If we're on healss.kryloss.com, show healss content
@@ -268,7 +273,7 @@ export default function WorkoutPage() {
                                             <Button
                                                 className="w-full bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-full border border-[rgba(42,140,234,0.35)] shadow-[0_8px_32px_rgba(42,140,234,0.28)] hover:shadow-[0_10px_40px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all text-sm font-medium h-9"
                                                 onClick={() => {
-                                                    window.location.href = `/workout/${ongoingWorkout.type}/${ongoingWorkout.id}`
+                                                    window.location.href = `/workout/${ongoingWorkout.type}/${ongoingWorkout.workoutId}`
                                                 }}
                                             >
                                                 <Play className="w-4 h-4 mr-2" />
@@ -277,7 +282,7 @@ export default function WorkoutPage() {
                                         </div>
                                     </div>
                                 )}
-                                
+
                                 {mockData.plannedWorkouts.map((workout) => (
                                     <PlannedWorkoutCard
                                         key={workout.id}
