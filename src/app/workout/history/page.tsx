@@ -81,12 +81,23 @@ export default function WorkoutHistoryPage() {
                 notes: updatedActivity.notes
             })
 
+            // Update local state with the updated activity
             setActivities(prev => prev.map(a =>
-                a.id === updatedActivity.id ? updatedActivity : a
+                a.id === updatedActivity.id ? { 
+                    ...a, 
+                    name: updatedActivity.name,
+                    exercises: updatedActivity.exercises,
+                    durationSeconds: updatedActivity.durationSeconds,
+                    notes: updatedActivity.notes,
+                    updatedAt: new Date().toISOString()
+                } : a
             ))
+            
+            // Close the modal
             setEditingActivity(null)
         } catch (error) {
             console.error('Error updating activity:', error)
+            throw error // Re-throw to let the modal handle the error
         }
     }
 
