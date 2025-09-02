@@ -72,7 +72,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
             intervalRef.current = setInterval(() => {
                 const currentElapsedTime = WorkoutStorage.getCurrentElapsedTime()
                 setTime(currentElapsedTime)
-                
+
                 // Save exercises periodically for running workouts
                 if (currentElapsedTime % 60 === 0) {
                     WorkoutStorage.getOngoingWorkout().then(workout => {
@@ -92,18 +92,18 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                 }
             }, 1000)
         } else {
-            // When paused, clear interval but update time once to sync with storage
+            // When paused, clear interval and keep current time display
             if (intervalRef.current) {
                 clearInterval(intervalRef.current)
+                intervalRef.current = null
             }
-            // Sync display with stored time when paused
-            const currentElapsedTime = WorkoutStorage.getCurrentElapsedTime()
-            setTime(currentElapsedTime)
+            // Don't update time when paused - keep the last displayed time
         }
 
         return () => {
             if (intervalRef.current) {
                 clearInterval(intervalRef.current)
+                intervalRef.current = null
             }
         }
     }, [isRunning, exercises])
@@ -130,18 +130,18 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
 
     const startTimer = async () => {
         setIsRunning(true)
-        // When starting/resuming, use stored elapsed time to prevent time jumps
-        const workout = await WorkoutStorage.getOngoingWorkout()
-        const storedElapsedTime = workout?.elapsedTime || 0
-        WorkoutStorage.updateWorkoutTime(storedElapsedTime, true)
+        // When starting/resuming, use current displayed time to prevent time jumps
+        const currentDisplayTime = time
+        WorkoutStorage.updateWorkoutTime(currentDisplayTime, true)
 
         // Update the workout in storage with current exercises
         try {
+            const workout = await WorkoutStorage.getOngoingWorkout()
             if (workout) {
                 await WorkoutStorage.saveOngoingWorkout({
                     ...workout,
                     exercises,
-                    elapsedTime: storedElapsedTime,
+                    elapsedTime: currentDisplayTime,
                     isRunning: true
                 })
             }
@@ -151,12 +151,12 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     }
 
     const pauseTimer = async () => {
-        // Get real-time elapsed time before pausing
-        const currentElapsedTime = WorkoutStorage.getCurrentElapsedTime()
+        // Use current displayed time when pausing to prevent time jumps
+        const currentDisplayTime = time
         setIsRunning(false)
-        // Set the time state immediately to prevent jumping
-        setTime(currentElapsedTime)
-        WorkoutStorage.updateWorkoutTime(currentElapsedTime, false)
+        // Keep the current displayed time
+        setTime(currentDisplayTime)
+        WorkoutStorage.updateWorkoutTime(currentDisplayTime, false)
 
         // Update the workout in storage with current exercises
         try {
@@ -165,7 +165,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                 await WorkoutStorage.saveOngoingWorkout({
                     ...workout,
                     exercises,
-                    elapsedTime: currentElapsedTime,
+                    elapsedTime: currentDisplayTime,
                     isRunning: false
                 })
             }

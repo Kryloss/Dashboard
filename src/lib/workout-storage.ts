@@ -357,11 +357,11 @@ export class WorkoutStorage {
         }
 
         if (!workout.isRunning) {
-            // If paused, return the stored elapsed time
+            // If paused, return the stored elapsed time (no real-time calculation)
             return workout.elapsedTime
         }
 
-        // If running, calculate real-time elapsed time
+        // If running, calculate real-time elapsed time based on startTime
         const now = Date.now()
         const startTime = new Date(workout.startTime).getTime()
         const realTimeElapsed = Math.floor((now - startTime) / 1000)
@@ -563,16 +563,16 @@ export class WorkoutStorage {
         try {
             const stored = localStorage.getItem(this.ONGOING_WORKOUT_KEY)
             if (!stored) return null
-            
+
             const workout = JSON.parse(stored) as OngoingWorkout
-            
+
             // Security check: ensure workout belongs to current user
             if (this.currentUser && workout.userId && workout.userId !== this.currentUser.id) {
                 console.warn('Clearing localStorage workout that belongs to different user')
                 localStorage.removeItem(this.ONGOING_WORKOUT_KEY)
                 return null
             }
-            
+
             return workout
         } catch (error) {
             console.error('Error loading ongoing workout from localStorage:', error)
