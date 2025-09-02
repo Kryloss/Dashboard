@@ -130,18 +130,18 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
 
     const startTimer = async () => {
         setIsRunning(true)
-        // Get current real-time elapsed time and start from there
-        const currentElapsedTime = WorkoutStorage.getCurrentElapsedTime()
-        WorkoutStorage.updateWorkoutTime(currentElapsedTime, true)
+        // When starting/resuming, use stored elapsed time to prevent time jumps
+        const workout = await WorkoutStorage.getOngoingWorkout()
+        const storedElapsedTime = workout?.elapsedTime || 0
+        WorkoutStorage.updateWorkoutTime(storedElapsedTime, true)
 
         // Update the workout in storage with current exercises
         try {
-            const workout = await WorkoutStorage.getOngoingWorkout()
             if (workout) {
                 await WorkoutStorage.saveOngoingWorkout({
                     ...workout,
                     exercises,
-                    elapsedTime: currentElapsedTime,
+                    elapsedTime: storedElapsedTime,
                     isRunning: true
                 })
             }

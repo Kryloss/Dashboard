@@ -350,6 +350,12 @@ export class WorkoutStorage {
         const workout = this.getOngoingWorkoutFromLocalStorage()
         if (!workout) return 0
 
+        // Security check: ensure workout belongs to current user
+        if (this.currentUser && workout.userId && workout.userId !== this.currentUser.id) {
+            console.warn('Workout data belongs to different user, returning 0')
+            return 0
+        }
+
         if (!workout.isRunning) {
             // If paused, return the stored elapsed time
             return workout.elapsedTime
@@ -556,7 +562,18 @@ export class WorkoutStorage {
 
         try {
             const stored = localStorage.getItem(this.ONGOING_WORKOUT_KEY)
-            return stored ? JSON.parse(stored) : null
+            if (!stored) return null
+            
+            const workout = JSON.parse(stored) as OngoingWorkout
+            
+            // Security check: ensure workout belongs to current user
+            if (this.currentUser && workout.userId && workout.userId !== this.currentUser.id) {
+                console.warn('Clearing localStorage workout that belongs to different user')
+                localStorage.removeItem(this.ONGOING_WORKOUT_KEY)
+                return null
+            }
+            
+            return workout
         } catch (error) {
             console.error('Error loading ongoing workout from localStorage:', error)
             return null
