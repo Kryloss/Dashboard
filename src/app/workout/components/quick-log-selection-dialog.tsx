@@ -1,13 +1,13 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Dumbbell, Target, Heart, Bike, FileText, Plus, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { WorkoutStorage } from "@/lib/workout-storage"
+import { WorkoutStorage, WorkoutTemplate } from "@/lib/workout-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
 
 interface QuickLogSelectionDialogProps {
@@ -51,27 +51,20 @@ export function QuickLogSelectionDialog({ open, onOpenChange, onProceedToQuickLo
     const { user, supabase } = useAuth()
     const [selectedType, setSelectedType] = useState<string>('')
     const [selectedTemplate, setSelectedTemplate] = useState<string>('')
-    const [templates, setTemplates] = useState<any[]>([])
+    const [templates, setTemplates] = useState<WorkoutTemplate[]>([])
     const [isLoadingTemplates, setIsLoadingTemplates] = useState(false)
     const [step, setStep] = useState<'type' | 'template'>('type')
 
-    // Load templates when workout type is selected
-    useEffect(() => {
-        if (selectedType && user && supabase) {
-            loadTemplates()
-        }
-    }, [selectedType, user, supabase])
-
-    const loadTemplates = async () => {
+    const loadTemplates = useCallback(async () => {
         if (!user || !supabase) return
-        
+
         setIsLoadingTemplates(true)
         try {
             // Initialize storage
             WorkoutStorage.initialize(user, supabase)
-            
+
             // Get templates for the selected workout type
-            const userTemplates = await WorkoutStorage.getTemplates(selectedType as any)
+            const userTemplates = await WorkoutStorage.getTemplates(selectedType as 'strength' | 'running' | 'yoga' | 'cycling')
             setTemplates(userTemplates)
         } catch (error) {
             console.error('Error loading templates:', error)
@@ -79,7 +72,14 @@ export function QuickLogSelectionDialog({ open, onOpenChange, onProceedToQuickLo
         } finally {
             setIsLoadingTemplates(false)
         }
-    }
+    }, [user, supabase, selectedType])
+
+    // Load templates when workout type is selected
+    useEffect(() => {
+        if (selectedType && user && supabase) {
+            loadTemplates()
+        }
+    }, [selectedType, user, supabase, loadTemplates])
 
     const handleClose = () => {
         // Reset state
@@ -123,7 +123,7 @@ export function QuickLogSelectionDialog({ open, onOpenChange, onProceedToQuickLo
                                 {step === 'type' ? 'Choose Workout Type' : 'Choose Template (Optional)'}
                             </DialogTitle>
                             <DialogDescription>
-                                {step === 'type' 
+                                {step === 'type'
                                     ? 'Select the type of workout you want to log'
                                     : `Select a ${selectedWorkoutType?.name.toLowerCase()} template or start from scratch`
                                 }
@@ -198,7 +198,7 @@ export function QuickLogSelectionDialog({ open, onOpenChange, onProceedToQuickLo
                             {/* Template selection */}
                             <div>
                                 <Label className="text-sm font-medium text-[#F3F4F6] mb-3 block">Templates</Label>
-                                
+
                                 <ScrollArea className="max-h-[200px]">
                                     <div className="space-y-2">
                                         {/* Start from scratch option */}

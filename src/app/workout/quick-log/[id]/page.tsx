@@ -27,16 +27,16 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
     const [exercises, setExercises] = useState<Exercise[]>([])
     const [showAddExercise, setShowAddExercise] = useState(false)
     const [newExerciseName, setNewExerciseName] = useState("")
-    
+
     // Duration state (hours and minutes)
     const [hours, setHours] = useState(0)
     const [minutes, setMinutes] = useState(0)
-    
+
     // Workout name editing
     const [workoutName, setWorkoutName] = useState<string>("")
     const [isEditingName, setIsEditingName] = useState(false)
     const [tempWorkoutName, setTempWorkoutName] = useState("")
-    
+
     // Date/Time dialog for logging
     const [showDateTimeDialog, setShowDateTimeDialog] = useState(false)
     const [selectedDate, setSelectedDate] = useState(() => {
@@ -47,7 +47,7 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
         const now = new Date()
         return now.toTimeString().slice(0, 5)
     })
-    
+
     // Cancel/Log confirmation dialog
     const [showQuitDialog, setShowQuitDialog] = useState(false)
 
@@ -77,7 +77,8 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
             // Load template if specified
             if (templateId) {
                 try {
-                    const template = await WorkoutStorage.getTemplate(templateId)
+                    const templates = await WorkoutStorage.getTemplates(workoutType as 'strength' | 'running' | 'yoga' | 'cycling')
+                    const template = templates.find(t => t.id === templateId)
                     if (template) {
                         setWorkoutName(template.name)
                         setExercises(template.exercises || [])
@@ -206,7 +207,7 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
                 completedAt,
                 userId: user?.id
             })
-            
+
             console.log('Quick log workout saved to history')
         } catch (error) {
             console.error('Error saving quick log workout:', error)
@@ -526,10 +527,10 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
                     </div>
                 </div>
             </div>
-            
+
             {/* Date/Time Dialog */}
-            <Dialog 
-                open={showDateTimeDialog} 
+            <Dialog
+                open={showDateTimeDialog}
                 onOpenChange={setShowDateTimeDialog}
             >
                 <DialogContent className="max-w-md">
@@ -539,7 +540,7 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
                             When did you complete this workout?
                         </DialogDescription>
                     </DialogHeader>
-                    
+
                     <div className="py-4 space-y-4">
                         <div className="grid grid-cols-2 gap-3">
                             <div>
@@ -568,7 +569,7 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
                             </div>
                         </div>
                     </div>
-                    
+
                     <DialogFooter className="gap-2">
                         <Button
                             onClick={() => setShowDateTimeDialog(false)}
@@ -588,8 +589,8 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
             </Dialog>
 
             {/* Quit Confirmation Dialog */}
-            <Dialog 
-                open={showQuitDialog} 
+            <Dialog
+                open={showQuitDialog}
                 onOpenChange={setShowQuitDialog}
             >
                 <DialogContent className="max-w-md">
@@ -599,7 +600,7 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
                             You have unsaved data. What would you like to do?
                         </DialogDescription>
                     </DialogHeader>
-                    
+
                     <DialogFooter className="gap-2 sm:gap-2 flex-col sm:flex-col">
                         <Button
                             onClick={confirmLogWorkout}
