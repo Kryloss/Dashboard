@@ -30,7 +30,7 @@ const getWorkoutTypes = (mode: 'new-workout' | 'quick-log') => [
         name: 'Running',
         description: 'Cardio and endurance training',
         icon: <Target className="w-8 h-8" />,
-        available: mode === 'quick-log', // Available for Quick Log
+        available: false, // In development for both modes
         color: 'text-[#FF2D55]'
     },
     {
@@ -38,7 +38,7 @@ const getWorkoutTypes = (mode: 'new-workout' | 'quick-log') => [
         name: 'Yoga',
         description: 'Flexibility and mindfulness',
         icon: <Heart className="w-8 h-8" />,
-        available: mode === 'quick-log', // Available for Quick Log
+        available: false, // In development for both modes
         color: 'text-[#2BD2FF]'
     },
     {
@@ -46,7 +46,7 @@ const getWorkoutTypes = (mode: 'new-workout' | 'quick-log') => [
         name: 'Cycling',
         description: 'Indoor and outdoor cycling',
         icon: <Bike className="w-8 h-8" />,
-        available: mode === 'quick-log', // Available for Quick Log
+        available: false, // In development for both modes
         color: 'text-[#FF375F]'
     }
 ]
