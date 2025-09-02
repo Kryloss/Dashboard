@@ -25,6 +25,7 @@ export default function WorkoutPage() {
     const [ongoingWorkout, setOngoingWorkout] = useState<OngoingWorkout | null>(null)
     const [recentActivities, setRecentActivities] = useState<WorkoutActivity[]>([])
     const [isLoadingActivities, setIsLoadingActivities] = useState(true)
+    const [liveWorkoutTime, setLiveWorkoutTime] = useState(0)
 
 
 
@@ -42,6 +43,14 @@ export default function WorkoutPage() {
                 try {
                     const workout = await WorkoutStorage.getOngoingWorkout()
                     setOngoingWorkout(workout)
+                    
+                    // Initialize live workout time
+                    if (workout?.isRunning) {
+                        const backgroundElapsedTime = WorkoutStorage.getBackgroundElapsedTime()
+                        setLiveWorkoutTime(backgroundElapsedTime)
+                    } else if (workout) {
+                        setLiveWorkoutTime(workout.elapsedTime)
+                    }
                 } catch (error) {
                     console.error('Error loading ongoing workout:', error)
                 }
@@ -65,6 +74,14 @@ export default function WorkoutPage() {
                 try {
                     const workout = await WorkoutStorage.getOngoingWorkout()
                     setOngoingWorkout(workout)
+                    
+                    // If workout is running, calculate live time
+                    if (workout?.isRunning) {
+                        const backgroundElapsedTime = WorkoutStorage.getBackgroundElapsedTime()
+                        setLiveWorkoutTime(backgroundElapsedTime)
+                    } else if (workout) {
+                        setLiveWorkoutTime(workout.elapsedTime)
+                    }
                 } catch (error) {
                     console.error('Error loading ongoing workout:', error)
                 }
@@ -84,6 +101,25 @@ export default function WorkoutPage() {
         }
     }, [user, supabase])
 
+    // Real-time timer effect for ongoing workouts
+    useEffect(() => {
+        let timerInterval: NodeJS.Timeout | null = null
+        
+        if (ongoingWorkout?.isRunning) {
+            // Update timer every second when workout is running
+            timerInterval = setInterval(() => {
+                const backgroundElapsedTime = WorkoutStorage.getBackgroundElapsedTime()
+                setLiveWorkoutTime(backgroundElapsedTime)
+            }, 1000)
+        }
+        
+        return () => {
+            if (timerInterval) {
+                clearInterval(timerInterval)
+            }
+        }
+    }, [ongoingWorkout?.isRunning])
+
     // Manual refresh function for when activities might have changed
     const refreshRecentActivities = useCallback(async () => {
         if (!user || !supabase) return
@@ -95,6 +131,13 @@ export default function WorkoutPage() {
             console.error('Error refreshing recent activities:', error)
         }
     }, [user, supabase])
+
+    // Helper function to format time (minutes:seconds)
+    const formatWorkoutTime = (seconds: number) => {
+        const minutes = Math.floor(seconds / 60)
+        const secs = seconds % 60
+        return `${minutes}:${secs.toString().padStart(2, '0')}`
+    }
 
     // Helper function to format activity data for ActivityItem component
     const formatActivityDate = (dateString: string) => {
@@ -353,7 +396,7 @@ export default function WorkoutPage() {
                                                     <div className="flex items-center space-x-4 mt-2 text-xs text-[#9CA3AF]">
                                                         <div className="flex items-center space-x-1">
                                                             <Timer className="w-3 h-3" />
-                                                            <span>{Math.floor(ongoingWorkout.elapsedTime / 60)}:{(ongoingWorkout.elapsedTime % 60).toString().padStart(2, '0')}</span>
+                                                            <span>{formatWorkoutTime(liveWorkoutTime)}</span>
                                                         </div>
                                                         <div className="flex items-center space-x-1">
                                                             <Dumbbell className="w-3 h-3" />
