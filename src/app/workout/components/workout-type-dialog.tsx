@@ -4,7 +4,8 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Dumbbell, Target, Heart, Bike, AlertTriangle } from "lucide-react"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Dumbbell, Target, Heart, Bike, AlertTriangle, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { WorkoutStorage, WorkoutTemplate } from "@/lib/workout-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
@@ -57,6 +58,9 @@ export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps
     const [templates, setTemplates] = useState<WorkoutTemplate[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [showConflictDialog, setShowConflictDialog] = useState(false)
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+    const [templateToDelete, setTemplateToDelete] = useState<WorkoutTemplate | null>(null)
+    const [isDeleting, setIsDeleting] = useState(false)
 
     useEffect(() => {
         if (open) {
@@ -180,6 +184,37 @@ export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps
         onOpenChange(false)
     }
 
+    const handleDeleteTemplate = async (template: WorkoutTemplate) => {
+        setTemplateToDelete(template)
+        setShowDeleteConfirm(true)
+    }
+
+    const confirmDeleteTemplate = async () => {
+        if (!templateToDelete || !user) return
+
+        setIsDeleting(true)
+        try {
+            await WorkoutStorage.deleteTemplate(templateToDelete.id)
+            
+            // Remove from local state
+            setTemplates(prevTemplates => 
+                prevTemplates.filter(t => t.id !== templateToDelete.id)
+            )
+            
+            setShowDeleteConfirm(false)
+            setTemplateToDelete(null)
+        } catch (error) {
+            console.error('Error deleting template:', error)
+        } finally {
+            setIsDeleting(false)
+        }
+    }
+
+    const cancelDeleteTemplate = () => {
+        setShowDeleteConfirm(false)
+        setTemplateToDelete(null)
+    }
+
 
     return (
         <>
@@ -266,40 +301,58 @@ export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2A8CEA]"></div>
                         </div>
                     ) : (
-                        <div className="space-y-3">
-                            {/* Empty workout option */}
-                            <button
-                                onClick={handleStartEmpty}
-                                className="w-full flex items-center space-x-4 p-4 rounded-[14px] border bg-[#0E0F13] border-[#212227] hover:border-[#2A2B31] hover:bg-[#17181D] cursor-pointer hover:scale-[1.01] active:scale-[0.99] transition-all text-left"
-                            >
-                                <div className="w-12 h-12 rounded-[10px] flex items-center justify-center bg-[rgba(255,255,255,0.03)] border border-[#2A2B31]">
-                                    <Dumbbell className="w-8 h-8 text-[#9BE15D]" />
-                                </div>
-                                <div className="flex-1">
-                                    <h3 className="font-semibold text-[#F3F4F6] text-sm">Empty Workout</h3>
-                                    <p className="text-xs text-[#A1A1AA] mt-1">Start fresh and add exercises as you go</p>
-                                </div>
-                            </button>
-
-                            {/* Templates */}
-                            {templates.map((template) => (
+                        <ScrollArea className="h-[400px] -mx-2 px-2">
+                            <div className="space-y-3">
+                                {/* Empty workout option */}
                                 <button
-                                    key={template.id}
-                                    onClick={() => handleTemplateSelect(template)}
+                                    onClick={handleStartEmpty}
                                     className="w-full flex items-center space-x-4 p-4 rounded-[14px] border bg-[#0E0F13] border-[#212227] hover:border-[#2A2B31] hover:bg-[#17181D] cursor-pointer hover:scale-[1.01] active:scale-[0.99] transition-all text-left"
                                 >
                                     <div className="w-12 h-12 rounded-[10px] flex items-center justify-center bg-[rgba(255,255,255,0.03)] border border-[#2A2B31]">
-                                        <Target className="w-8 h-8 text-[#9BE15D]" />
+                                        <Dumbbell className="w-8 h-8 text-[#9BE15D]" />
                                     </div>
                                     <div className="flex-1">
-                                        <h3 className="font-semibold text-[#F3F4F6] text-sm">{template.name}</h3>
-                                        <p className="text-xs text-[#A1A1AA] mt-1">
-                                            {template.exercises?.length || 0} exercises
-                                        </p>
+                                        <h3 className="font-semibold text-[#F3F4F6] text-sm">Empty Workout</h3>
+                                        <p className="text-xs text-[#A1A1AA] mt-1">Start fresh and add exercises as you go</p>
                                     </div>
                                 </button>
-                            ))}
-                        </div>
+
+                                {/* Templates */}
+                                {templates.map((template) => (
+                                    <div
+                                        key={template.id}
+                                        className="w-full flex items-center space-x-4 p-4 rounded-[14px] border bg-[#0E0F13] border-[#212227] hover:border-[#2A2B31] hover:bg-[#17181D] transition-all group"
+                                    >
+                                        <div className="w-12 h-12 rounded-[10px] flex items-center justify-center bg-[rgba(255,255,255,0.03)] border border-[#2A2B31]">
+                                            <Target className="w-8 h-8 text-[#9BE15D]" />
+                                        </div>
+                                        <button
+                                            onClick={() => handleTemplateSelect(template)}
+                                            className="flex-1 cursor-pointer text-left hover:scale-[1.01] active:scale-[0.99] transition-all"
+                                        >
+                                            <h3 className="font-semibold text-[#F3F4F6] text-sm">{template.name}</h3>
+                                            <p className="text-xs text-[#A1A1AA] mt-1">
+                                                {template.exercises?.length || 0} exercises
+                                            </p>
+                                        </button>
+                                        {/* Delete button - only show for user templates (not built-in) */}
+                                        {!template.isBuiltIn && (
+                                            <Button
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    handleDeleteTemplate(template)
+                                                }}
+                                                variant="ghost"
+                                                size="icon"
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity text-[#A1A1AA] hover:text-red-400 hover:bg-red-500/10 rounded-full w-8 h-8"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </ScrollArea>
                     )}
 
                     <div className="flex justify-between space-x-2 mt-6">
@@ -344,6 +397,44 @@ export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps
                             className="w-full bg-[#0E0F13] text-[#F3F4F6] border border-[#212227] rounded-full hover:bg-[#17181D] hover:border-[#2A2B31]"
                         >
                             Keep Current Workout
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Template Confirmation Dialog */}
+            <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader className="mb-4">
+                        <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center">
+                                <Trash2 className="w-5 h-5 text-red-500" />
+                            </div>
+                            <div>
+                                <DialogTitle>Delete Template</DialogTitle>
+                                <DialogDescription>
+                                    Are you sure you want to delete "{templateToDelete?.name}"? This action cannot be undone.
+                                </DialogDescription>
+                            </div>
+                        </div>
+                    </DialogHeader>
+
+                    <div className="flex justify-end space-x-2">
+                        <Button
+                            onClick={cancelDeleteTemplate}
+                            variant="secondary"
+                            className="bg-[#0E0F13] text-[#F3F4F6] border border-[#212227] rounded-full hover:bg-[#17181D] hover:border-[#2A2B31]"
+                            disabled={isDeleting}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={confirmDeleteTemplate}
+                            variant="destructive"
+                            className="bg-gradient-to-r from-red-600 to-red-500 text-white rounded-full hover:from-red-500 hover:to-red-400"
+                            disabled={isDeleting}
+                        >
+                            {isDeleting ? 'Deleting...' : 'Delete'}
                         </Button>
                     </div>
                 </DialogContent>
