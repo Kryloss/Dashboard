@@ -44,7 +44,8 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                 if (existingWorkout && existingWorkout.workoutId === workoutId) {
                     // Load existing workout
                     setExercises(existingWorkout.exercises)
-                    setTime(existingWorkout.elapsedTime)
+                    // Use real-time elapsed time calculation
+                    setTime(WorkoutStorage.getCurrentElapsedTime())
                     setIsRunning(existingWorkout.isRunning)
                 } else {
                     // Create new workout
@@ -64,41 +65,31 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     }, [workoutId, user, supabase])
 
 
-    // Stopwatch logic with persistence
+    // Real-time timer display using timestamp calculation
     useEffect(() => {
-        if (isRunning) {
-            intervalRef.current = setInterval(() => {
-                setTime((prevTime) => {
-                    const newTime = prevTime + 1
-                    // Update stored workout time every 10 seconds to reduce localStorage writes
-                    if (newTime % 10 === 0) {
-                        WorkoutStorage.updateWorkoutTime(newTime, true)
-                        // Also save exercises every minute to ensure they're not lost
-                        if (newTime % 60 === 0) {
-                            WorkoutStorage.getOngoingWorkout().then(workout => {
-                                if (workout) {
-                                    WorkoutStorage.saveOngoingWorkout({
-                                        ...workout,
-                                        exercises,
-                                        elapsedTime: newTime,
-                                        isRunning: true
-                                    }).catch(error => {
-                                        console.error('Error saving exercises during timer update:', error)
-                                    })
-                                }
-                            }).catch(error => {
-                                console.error('Error getting workout during timer update:', error)
-                            })
-                        }
+        // Update timer display every second regardless of running state
+        intervalRef.current = setInterval(() => {
+            const currentElapsedTime = WorkoutStorage.getCurrentElapsedTime()
+            setTime(currentElapsedTime)
+            
+            // Save exercises periodically for running workouts
+            if (isRunning && currentElapsedTime % 60 === 0) {
+                WorkoutStorage.getOngoingWorkout().then(workout => {
+                    if (workout) {
+                        WorkoutStorage.saveOngoingWorkout({
+                            ...workout,
+                            exercises,
+                            elapsedTime: currentElapsedTime,
+                            isRunning: true
+                        }).catch(error => {
+                            console.error('Error saving exercises during timer update:', error)
+                        })
                     }
-                    return newTime
+                }).catch(error => {
+                    console.error('Error getting workout during timer update:', error)
                 })
-            }, 1000)
-        } else {
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current)
             }
-        }
+        }, 1000)
 
         return () => {
             if (intervalRef.current) {
@@ -129,7 +120,9 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
 
     const startTimer = async () => {
         setIsRunning(true)
-        WorkoutStorage.updateWorkoutTime(time, true)
+        // Get current real-time elapsed time and start from there
+        const currentElapsedTime = WorkoutStorage.getCurrentElapsedTime()
+        WorkoutStorage.updateWorkoutTime(currentElapsedTime, true)
 
         // Update the workout in storage with current exercises
         try {
@@ -138,7 +131,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                 await WorkoutStorage.saveOngoingWorkout({
                     ...workout,
                     exercises,
-                    elapsedTime: time,
+                    elapsedTime: currentElapsedTime,
                     isRunning: true
                 })
             }
@@ -148,8 +141,10 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     }
 
     const pauseTimer = async () => {
+        // Get real-time elapsed time before pausing
+        const currentElapsedTime = WorkoutStorage.getCurrentElapsedTime()
         setIsRunning(false)
-        WorkoutStorage.updateWorkoutTime(time, false)
+        WorkoutStorage.updateWorkoutTime(currentElapsedTime, false)
 
         // Update the workout in storage with current exercises
         try {
@@ -158,7 +153,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                 await WorkoutStorage.saveOngoingWorkout({
                     ...workout,
                     exercises,
-                    elapsedTime: time,
+                    elapsedTime: currentElapsedTime,
                     isRunning: false
                 })
             }
@@ -333,15 +328,16 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     }
 
     const quitWorkout = async () => {
-        // Save current state before leaving (don't clear)
+        // Save current state before leaving (don't clear) - use real-time elapsed time
         try {
             const workout = await WorkoutStorage.getOngoingWorkout()
             if (workout) {
+                const currentElapsedTime = WorkoutStorage.getCurrentElapsedTime()
                 await WorkoutStorage.saveOngoingWorkout({
                     ...workout,
                     exercises,
-                    elapsedTime: time,
-                    isRunning
+                    elapsedTime: currentElapsedTime,
+                    isRunning // Keep the timer running state - timer continues in background!
                 })
             }
         } catch (error) {

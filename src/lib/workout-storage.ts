@@ -333,6 +333,25 @@ export class WorkoutStorage {
         }
     }
 
+    // Calculate real-time elapsed time for running workouts
+    static getCurrentElapsedTime(): number {
+        const workout = this.getOngoingWorkoutFromLocalStorage()
+        if (!workout) return 0
+
+        if (!workout.isRunning) {
+            // If paused, return the stored elapsed time
+            return workout.elapsedTime
+        }
+
+        // If running, calculate real-time elapsed time
+        const now = Date.now()
+        const startTime = new Date(workout.startTime).getTime()
+        const realTimeElapsed = Math.floor((now - startTime) / 1000)
+
+        // Return the calculated elapsed time (should match or be slightly ahead of stored elapsedTime)
+        return Math.max(realTimeElapsed, workout.elapsedTime)
+    }
+
     // ============================================================================
     // WORKOUT TEMPLATES MANAGEMENT
     // ============================================================================
