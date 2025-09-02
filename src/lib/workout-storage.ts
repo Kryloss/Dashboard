@@ -362,6 +362,7 @@ export class WorkoutStorage {
         }
 
         // If running, calculate real-time elapsed time based on startTime
+        // This ensures the timer continues running even when the page is not active
         const now = Date.now()
         const startTime = new Date(workout.startTime).getTime()
         const realTimeElapsed = Math.floor((now - startTime) / 1000)
