@@ -97,6 +97,9 @@ export class WorkoutStorage {
 
     // Initialize with user and supabase client
     static initialize(user: User | null, supabaseClient?: SupabaseClient) {
+        console.log('WorkoutStorage.initialize - User:', user?.id, user?.email)
+        console.log('WorkoutStorage.initialize - Has supabaseClient:', !!supabaseClient)
+        
         this.currentUser = user
         if (supabaseClient) {
             this.supabase = supabaseClient
@@ -106,11 +109,26 @@ export class WorkoutStorage {
                 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
             )
         }
+        
+        // Verify the supabase client has the correct auth context
+        if (this.supabase) {
+            this.supabase.auth.getUser().then(({ data: authUser, error }) => {
+                console.log('WorkoutStorage.initialize - Supabase auth context:', {
+                    userId: authUser.user?.id,
+                    email: authUser.user?.email,
+                    matchesPassedUser: authUser.user?.id === user?.id,
+                    error
+                })
+            })
+        }
 
         // Sync any queued operations when initializing
         if (this.currentUser && this.supabase) {
             this.processSyncQueue()
             this.setupRealtimeSync()
+
+            // Debug database connection and RLS (remove this in production)
+            this.debugDatabaseConnection()
 
             // Set up automatic sync on connection recovery
             this.onConnectionChange((online) => {
@@ -165,18 +183,34 @@ export class WorkoutStorage {
     // ============================================================================
 
     static async getOngoingWorkout(): Promise<OngoingWorkout | null> {
+        // Debug: Log current user information
+        console.log('WorkoutStorage.getOngoingWorkout - Current user:', this.currentUser?.id, this.currentUser?.email)
+        
         // Try Supabase first if user is authenticated
         if (this.currentUser && this.supabase) {
             try {
+                // Debug: Check current auth user in Supabase
+                const { data: authUser } = await this.supabase.auth.getUser()
+                console.log('WorkoutStorage.getOngoingWorkout - Supabase auth user:', authUser.user?.id, authUser.user?.email)
+                
+                if (!authUser.user) {
+                    console.warn('WorkoutStorage.getOngoingWorkout - No authenticated user in Supabase context')
+                    return this.getOngoingWorkoutFromLocalStorage()
+                }
+                
+                // Explicit user_id filter for debugging
                 const { data, error } = await this.supabase
                     .from('ongoing_workouts')
                     .select('*')
                     .eq('user_id', this.currentUser.id)
                     .single()
 
+                console.log('WorkoutStorage.getOngoingWorkout - Query result:', { data, error })
+
                 if (error) {
                     if (error.code === 'PGRST116') {
                         // No ongoing workout found in database
+                        console.log('WorkoutStorage.getOngoingWorkout - No ongoing workout found in database')
                         return null
                     }
                     throw error
@@ -191,6 +225,7 @@ export class WorkoutStorage {
         }
 
         // Fallback to localStorage
+        console.log('WorkoutStorage.getOngoingWorkout - Falling back to localStorage')
         return this.getOngoingWorkoutFromLocalStorage()
     }
 
@@ -274,9 +309,21 @@ export class WorkoutStorage {
     // ============================================================================
 
     static async getTemplates(type?: 'strength' | 'running' | 'yoga' | 'cycling'): Promise<WorkoutTemplate[]> {
+        // Debug: Log current user information
+        console.log('WorkoutStorage.getTemplates - Current user:', this.currentUser?.id, this.currentUser?.email, 'Type:', type)
+        
         // Try Supabase first if user is authenticated
         if (this.currentUser && this.supabase) {
             try {
+                // Debug: Check current auth user in Supabase
+                const { data: authUser } = await this.supabase.auth.getUser()
+                console.log('WorkoutStorage.getTemplates - Supabase auth user:', authUser.user?.id, authUser.user?.email)
+                
+                if (!authUser.user) {
+                    console.warn('WorkoutStorage.getTemplates - No authenticated user in Supabase context')
+                    return this.getTemplatesFromLocalStorage(type)
+                }
+                
                 let query = this.supabase
                     .from('workout_templates')
                     .select('*')
@@ -290,6 +337,12 @@ export class WorkoutStorage {
 
                 const { data, error } = await query
 
+                console.log('WorkoutStorage.getTemplates - Query result:', { 
+                    dataCount: data?.length || 0, 
+                    error,
+                    sampleData: data?.slice(0, 2).map(t => ({ id: t.id, name: t.name, user_id: t.user_id, is_built_in: t.is_built_in }))
+                })
+
                 if (error) throw error
 
                 return (data || []).map(this.convertDbTemplateToApp)
@@ -300,6 +353,7 @@ export class WorkoutStorage {
         }
 
         // Fallback to localStorage (will have limited built-in templates)
+        console.log('WorkoutStorage.getTemplates - Falling back to localStorage')
         return this.getTemplatesFromLocalStorage(type)
     }
 
@@ -734,6 +788,67 @@ export class WorkoutStorage {
         }
 
         throw lastError
+    }
+
+    // Debug utility to check database connection and RLS
+    static async debugDatabaseConnection(): Promise<void> {
+        if (!this.supabase || !this.currentUser) {
+            console.log('🔍 Debug: No supabase client or user available')
+            return
+        }
+
+        console.log('🔍 Debug: Checking database connection and RLS...')
+        
+        try {
+            // Check current auth user
+            const { data: authUser, error: authError } = await this.supabase.auth.getUser()
+            console.log('🔍 Auth user:', {
+                id: authUser.user?.id,
+                email: authUser.user?.email,
+                error: authError
+            })
+
+            // Check if we can query tables (should respect RLS)
+            const { data: workouts, error: workoutsError } = await this.supabase
+                .from('ongoing_workouts')
+                .select('id, user_id')
+                .limit(10)
+
+            console.log('🔍 Ongoing workouts query result:', {
+                count: workouts?.length || 0,
+                userIds: workouts?.map(w => w.user_id).slice(0, 3),
+                error: workoutsError
+            })
+
+            const { data: templates, error: templatesError } = await this.supabase
+                .from('workout_templates')
+                .select('id, user_id, name, is_built_in')
+                .limit(10)
+
+            console.log('🔍 Templates query result:', {
+                count: templates?.length || 0,
+                sample: templates?.slice(0, 3).map(t => ({ 
+                    name: t.name, 
+                    user_id: t.user_id, 
+                    is_built_in: t.is_built_in 
+                })),
+                error: templatesError
+            })
+
+            // Test explicit user filter
+            const { data: userWorkouts, error: userWorkoutsError } = await this.supabase
+                .from('ongoing_workouts')
+                .select('id, user_id')
+                .eq('user_id', this.currentUser.id)
+
+            console.log('🔍 User-specific workouts:', {
+                count: userWorkouts?.length || 0,
+                error: userWorkoutsError
+            })
+
+        } catch (error) {
+            console.error('🔍 Debug error:', error)
+        }
     }
 
     // Debounced save for frequent updates like timer

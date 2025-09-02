@@ -1,0 +1,134 @@
+-- Fix for workout data isolation issue
+-- Run this SQL in your Supabase SQL Editor to fix RLS policies
+
+-- First, let's check if RLS is actually enabled and working
+-- You can run these queries to debug:
+
+-- Check current auth user:
+-- SELECT auth.uid(), auth.email();
+
+-- Check if there are any ongoing_workouts that shouldn't be visible:
+-- SELECT id, user_id, name FROM ongoing_workouts;
+
+-- Check if there are templates showing for wrong users:
+-- SELECT id, user_id, name, is_built_in FROM workout_templates;
+
+-- ============================================================================
+-- FIX RLS POLICIES
+-- ============================================================================
+
+-- Drop existing policies to recreate them
+DROP POLICY IF EXISTS "Users can view their own ongoing workouts" ON ongoing_workouts;
+DROP POLICY IF EXISTS "Users can insert their own ongoing workouts" ON ongoing_workouts;
+DROP POLICY IF EXISTS "Users can update their own ongoing workouts" ON ongoing_workouts;
+DROP POLICY IF EXISTS "Users can delete their own ongoing workouts" ON ongoing_workouts;
+
+DROP POLICY IF EXISTS "Users can view their own templates and built-in templates" ON workout_templates;
+DROP POLICY IF EXISTS "Users can insert their own templates" ON workout_templates;
+DROP POLICY IF EXISTS "Users can update their own templates" ON workout_templates;
+DROP POLICY IF EXISTS "Users can delete their own templates" ON workout_templates;
+
+-- Recreate ongoing_workouts policies with explicit auth checks
+CREATE POLICY "Users can view own ongoing workouts" ON ongoing_workouts
+    FOR SELECT USING (
+        auth.uid() IS NOT NULL AND 
+        auth.uid() = user_id
+    );
+
+CREATE POLICY "Users can insert own ongoing workouts" ON ongoing_workouts
+    FOR INSERT WITH CHECK (
+        auth.uid() IS NOT NULL AND 
+        auth.uid() = user_id
+    );
+
+CREATE POLICY "Users can update own ongoing workouts" ON ongoing_workouts
+    FOR UPDATE USING (
+        auth.uid() IS NOT NULL AND 
+        auth.uid() = user_id
+    );
+
+CREATE POLICY "Users can delete own ongoing workouts" ON ongoing_workouts
+    FOR DELETE USING (
+        auth.uid() IS NOT NULL AND 
+        auth.uid() = user_id
+    );
+
+-- Recreate workout_templates policies with explicit auth checks
+CREATE POLICY "Users can view own templates and built-in templates" ON workout_templates
+    FOR SELECT USING (
+        auth.uid() IS NOT NULL AND 
+        (auth.uid() = user_id OR is_built_in = true)
+    );
+
+CREATE POLICY "Users can insert own templates" ON workout_templates
+    FOR INSERT WITH CHECK (
+        auth.uid() IS NOT NULL AND 
+        auth.uid() = user_id
+    );
+
+CREATE POLICY "Users can update own templates" ON workout_templates
+    FOR UPDATE USING (
+        auth.uid() IS NOT NULL AND 
+        auth.uid() = user_id
+    );
+
+CREATE POLICY "Users can delete own templates" ON workout_templates
+    FOR DELETE USING (
+        auth.uid() IS NOT NULL AND 
+        auth.uid() = user_id
+    );
+
+-- Also fix workout_history policies
+DROP POLICY IF EXISTS "Users can view their own workout history" ON workout_history;
+DROP POLICY IF EXISTS "Users can insert their own workout history" ON workout_history;
+DROP POLICY IF EXISTS "Users can update their own workout history" ON workout_history;
+DROP POLICY IF EXISTS "Users can delete their own workout history" ON workout_history;
+
+CREATE POLICY "Users can view own workout history" ON workout_history
+    FOR SELECT USING (
+        auth.uid() IS NOT NULL AND 
+        auth.uid() = user_id
+    );
+
+CREATE POLICY "Users can insert own workout history" ON workout_history
+    FOR INSERT WITH CHECK (
+        auth.uid() IS NOT NULL AND 
+        auth.uid() = user_id
+    );
+
+CREATE POLICY "Users can update own workout history" ON workout_history
+    FOR UPDATE USING (
+        auth.uid() IS NOT NULL AND 
+        auth.uid() = user_id
+    );
+
+CREATE POLICY "Users can delete own workout history" ON workout_history
+    FOR DELETE USING (
+        auth.uid() IS NOT NULL AND 
+        auth.uid() = user_id
+    );
+
+-- ============================================================================
+-- VERIFY RLS IS WORKING
+-- ============================================================================
+
+-- After running the above, test with these queries:
+-- (These should only return data for the current authenticated user)
+
+-- SELECT 'Auth user:' as label, auth.uid() as user_id, auth.email() as email
+-- UNION ALL
+-- SELECT 'Ongoing workouts for current user:', count(*)::text, '' FROM ongoing_workouts
+-- UNION ALL  
+-- SELECT 'Templates for current user (including built-in):', count(*)::text, '' FROM workout_templates;
+
+-- If you're still seeing data from other users, the issue might be:
+-- 1. RLS is not enabled (run: ALTER TABLE table_name ENABLE ROW LEVEL SECURITY;)
+-- 2. You're using the service_role key instead of anon key in your app
+-- 3. Your Supabase client is not properly authenticated
+
+-- Check if RLS is enabled:
+-- SELECT schemaname, tablename, rowsecurity 
+-- FROM pg_tables 
+-- WHERE tablename IN ('ongoing_workouts', 'workout_templates', 'workout_history');
+
+-- Result should show rowsecurity = true for all tables
