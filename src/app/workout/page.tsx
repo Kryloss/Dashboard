@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import { isOnSubdomain } from "@/lib/subdomains"
 import { Button } from "@/components/ui/button"
 import { GoalRings } from "./components/goal-rings"
@@ -9,15 +10,18 @@ import { QuickActionCard } from "./components/quick-action-card"
 import { StatCard } from "./components/stat-card"
 import { ActivityItem } from "./components/activity-item"
 import { WorkoutTypeDialog } from "./components/workout-type-dialog"
-import { WorkoutStorage, OngoingWorkout } from "@/lib/workout-storage"
+import { WorkoutStorage, OngoingWorkout, WorkoutActivity } from "@/lib/workout-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { Settings, Plus, Flame, Dumbbell, User, Timer, Bike, Target, TrendingUp, Clock, Heart, FileText, Play } from "lucide-react"
 
 export default function WorkoutPage() {
+    const router = useRouter()
     const { user, supabase } = useAuth()
     const [isHealssSubdomain, setIsHealssSubdomain] = useState(false)
     const [showWorkoutDialog, setShowWorkoutDialog] = useState(false)
     const [ongoingWorkout, setOngoingWorkout] = useState<OngoingWorkout | null>(null)
+    const [recentActivities, setRecentActivities] = useState<WorkoutActivity[]>([])
+    const [isLoadingActivities, setIsLoadingActivities] = useState(true)
 
     const loadOngoingWorkout = useCallback(async () => {
         if (!user || !supabase) return
@@ -30,6 +34,20 @@ export default function WorkoutPage() {
         }
     }, [user, supabase])
 
+    const loadRecentActivities = useCallback(async () => {
+        if (!user || !supabase) return
+
+        try {
+            setIsLoadingActivities(true)
+            const activities = await WorkoutStorage.getRecentActivities(3)
+            setRecentActivities(activities)
+        } catch (error) {
+            console.error('Error loading recent activities:', error)
+        } finally {
+            setIsLoadingActivities(false)
+        }
+    }, [user, supabase])
+
     useEffect(() => {
         const onHealss = isOnSubdomain('healss')
         setIsHealssSubdomain(onHealss)
@@ -38,15 +56,54 @@ export default function WorkoutPage() {
             // Initialize storage with user context
             WorkoutStorage.initialize(user, supabase)
             loadOngoingWorkout()
+            loadRecentActivities()
 
             // Set up periodic check for ongoing workout updates
             const interval = setInterval(() => {
                 loadOngoingWorkout()
+                loadRecentActivities()
             }, 30000) // Check every 30 seconds
 
             return () => clearInterval(interval)
         }
-    }, [user, supabase, loadOngoingWorkout])
+    }, [user, supabase, loadOngoingWorkout, loadRecentActivities])
+
+    // Helper function to format activity data for ActivityItem component
+    const formatActivityDate = (dateString: string) => {
+        const date = new Date(dateString)
+        const now = new Date()
+        const diffTime = Math.abs(now.getTime() - date.getTime())
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+        if (diffDays === 1) return "Today"
+        if (diffDays === 2) return "Yesterday"
+        if (diffDays <= 7) return `${diffDays - 1} days ago`
+
+        return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric'
+        })
+    }
+
+    const formatActivityDuration = (seconds: number) => {
+        const hours = Math.floor(seconds / 3600)
+        const minutes = Math.floor((seconds % 3600) / 60)
+
+        if (hours > 0) {
+            return `${hours}h ${minutes}m`
+        }
+        return `${minutes} min`
+    }
+
+    const calculateActivityProgress = (activity: WorkoutActivity) => {
+        if (!activity.exercises || activity.exercises.length === 0) return 0
+
+        const totalSets = activity.exercises.reduce((acc, ex) => acc + ex.sets.length, 0)
+        const completedSets = activity.exercises.reduce((acc, ex) =>
+            acc + ex.sets.filter(set => set.completed).length, 0)
+
+        return totalSets > 0 ? completedSets / totalSets : 1
+    }
 
     // Mock data for demonstration
     const mockData = {
@@ -357,6 +414,7 @@ export default function WorkoutPage() {
                                 <div className="flex items-center justify-between mb-6">
                                     <h2 className="text-xl font-semibold text-[#F3F4F6]">Recent Activity</h2>
                                     <Button
+                                        onClick={() => router.push('/workout/history')}
                                         variant="ghost"
                                         className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full text-sm"
                                     >
@@ -365,15 +423,26 @@ export default function WorkoutPage() {
                                 </div>
 
                                 <div className="bg-[#121318] border border-[#212227] rounded-[20px] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)]">
-                                    {mockData.recentActivity.map((activity, index) => (
-                                        <ActivityItem
-                                            key={index}
-                                            date={activity.date}
-                                            name={activity.name}
-                                            duration={activity.duration}
-                                            progress={activity.progress}
-                                        />
-                                    ))}
+                                    {isLoadingActivities ? (
+                                        <div className="flex items-center justify-center py-8">
+                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#2A8CEA]"></div>
+                                        </div>
+                                    ) : recentActivities.length === 0 ? (
+                                        <div className="text-center py-8 text-[#A1A1AA]">
+                                            <p className="mb-2">No workout activities yet</p>
+                                            <p className="text-sm">Complete your first workout to see it here!</p>
+                                        </div>
+                                    ) : (
+                                        recentActivities.map((activity) => (
+                                            <ActivityItem
+                                                key={activity.id}
+                                                date={formatActivityDate(activity.completedAt)}
+                                                name={activity.name || `${activity.workoutType.charAt(0).toUpperCase() + activity.workoutType.slice(1)} Workout`}
+                                                duration={formatActivityDuration(activity.durationSeconds)}
+                                                progress={calculateActivityProgress(activity)}
+                                            />
+                                        ))
+                                    )}
                                 </div>
                             </section>
 
@@ -391,30 +460,6 @@ export default function WorkoutPage() {
                                             change={stat.change}
                                         />
                                     ))}
-
-                                    {/* Health Log Card */}
-                                    <div className="bg-[#121318] border border-[#212227] rounded-[20px] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)] hover:border-[#2A2B31] hover:-translate-y-[1px] hover:shadow-[0_0_0_1px_rgba(42,140,234,0.35),_0_8px_40px_rgba(42,140,234,0.20)] transition-all duration-200">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center space-x-3">
-                                                <div className="w-8 h-8 bg-[rgba(255,255,255,0.03)] border border-[#2A2B31] rounded-[10px] flex items-center justify-center">
-                                                    <Heart className="w-4 h-4 text-[#FF2D55]" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="font-medium text-[#F3F4F6] text-sm">Health Data</h3>
-                                                    <p className="text-xs text-[#A1A1AA]">View health metrics</p>
-                                                </div>
-                                            </div>
-                                            <Button
-                                                onClick={() => {
-                                                    console.log('Health data view requested')
-                                                }}
-                                                variant="ghost"
-                                                className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full text-xs h-7 px-3"
-                                            >
-                                                View Data
-                                            </Button>
-                                        </div>
-                                    </div>
                                 </div>
                             </section>
                         </div>

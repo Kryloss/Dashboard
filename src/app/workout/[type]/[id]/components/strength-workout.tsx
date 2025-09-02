@@ -465,12 +465,28 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     const finishWorkout = async () => {
         // Stop the timer first
         setIsRunning(false)
-        setTime(0)
 
         try {
+            // Save the completed workout as an activity before clearing
+            await WorkoutStorage.saveWorkoutActivity({
+                workoutType: 'strength',
+                name: workoutName || undefined,
+                exercises: exercises,
+                durationSeconds: time,
+                completedAt: new Date().toISOString(),
+                userId: user?.id
+            })
+            
+            console.log('Workout activity saved to history')
+
+            // Clear the ongoing workout from storage
             await WorkoutStorage.clearOngoingWorkout()
+            
+            console.log('Workout finished and cleared from storage')
         } catch (error) {
             console.error('Error finishing workout:', error)
+        } finally {
+            setTime(0)
         }
         router.push('/workout')
     }

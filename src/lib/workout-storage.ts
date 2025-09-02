@@ -48,6 +48,19 @@ export interface WorkoutTemplate {
     userId?: string
 }
 
+export interface WorkoutActivity {
+    id: string
+    workoutType: 'strength' | 'running' | 'yoga' | 'cycling'
+    name?: string
+    exercises: WorkoutExercise[]
+    durationSeconds: number
+    notes?: string
+    completedAt: string
+    createdAt: string
+    updatedAt: string
+    userId?: string
+}
+
 interface DatabaseOngoingWorkout {
     id: string
     user_id: string
@@ -73,10 +86,23 @@ interface DatabaseWorkoutTemplate {
     updated_at: string
 }
 
+interface DatabaseWorkoutActivity {
+    id: string
+    user_id: string
+    workout_type: string
+    name: string | null
+    exercises: WorkoutExercise[]
+    duration_seconds: number
+    notes: string | null
+    completed_at: string
+    created_at: string
+    updated_at: string
+}
+
 interface SyncOperation {
     action: 'upsert' | 'insert' | 'delete'
-    table: 'ongoing_workouts' | 'workout_templates'
-    data: OngoingWorkout | WorkoutTemplate | string | null
+    table: 'ongoing_workouts' | 'workout_templates' | 'workout_activities'
+    data: OngoingWorkout | WorkoutTemplate | WorkoutActivity | string | null
     timestamp: number
     retryCount?: number
     maxRetries?: number
@@ -538,6 +564,216 @@ export class WorkoutStorage {
     }
 
     // ============================================================================
+    // WORKOUT ACTIVITIES MANAGEMENT
+    // ============================================================================
+
+    static async saveWorkoutActivity(activity: Omit<WorkoutActivity, 'id' | 'createdAt' | 'updatedAt'>): Promise<WorkoutActivity> {
+        if (!this.currentUser) {
+            throw new Error('User must be authenticated to save workout activities')
+        }
+
+        const newActivity: WorkoutActivity = {
+            ...activity,
+            id: `activity-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            userId: this.currentUser.id
+        }
+
+        // Try to save to Supabase
+        if (this.supabase) {
+            try {
+                const dbActivity = this.convertAppActivityToDb(newActivity)
+
+                const { data, error } = await this.supabase
+                    .from('workout_activities')
+                    .insert({
+                        ...dbActivity,
+                        user_id: this.currentUser.id
+                    })
+                    .select()
+                    .single()
+
+                if (error) throw error
+
+                // Update with Supabase-generated data
+                newActivity.id = data.id
+                newActivity.createdAt = data.created_at
+                newActivity.updatedAt = data.updated_at
+
+                console.log('Workout activity saved to Supabase:', newActivity.name)
+            } catch (error) {
+                console.error('Error saving workout activity to Supabase:', error)
+                // Add to sync queue
+                this.addToSyncQueue({
+                    action: 'insert',
+                    table: 'workout_activities',
+                    data: newActivity,
+                    timestamp: Date.now()
+                })
+            }
+        }
+
+        return newActivity
+    }
+
+    static async getWorkoutActivities(
+        limit: number = 50,
+        offset: number = 0,
+        type?: 'strength' | 'running' | 'yoga' | 'cycling'
+    ): Promise<WorkoutActivity[]> {
+        if (!this.currentUser) {
+            throw new Error('User must be authenticated to get workout activities')
+        }
+
+        // Try Supabase first
+        if (this.supabase) {
+            try {
+                let query = this.supabase
+                    .from('workout_activities')
+                    .select('*')
+                    .eq('user_id', this.currentUser.id)
+                    .not('user_id', 'is', null)
+                    .order('completed_at', { ascending: false })
+                    .range(offset, offset + limit - 1)
+
+                if (type) {
+                    query = query.eq('workout_type', type)
+                }
+
+                const { data, error } = await query
+
+                if (error) throw error
+
+                return (data || []).map(this.convertDbActivityToApp)
+            } catch (error) {
+                console.error('Error fetching workout activities from Supabase:', error)
+            }
+        }
+
+        // Fallback to empty array if no Supabase connection
+        return []
+    }
+
+    static async getRecentActivities(limit: number = 3): Promise<WorkoutActivity[]> {
+        return this.getWorkoutActivities(limit, 0)
+    }
+
+    static async updateWorkoutActivity(activityId: string, updates: Partial<Omit<WorkoutActivity, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>): Promise<void> {
+        if (!this.currentUser) {
+            throw new Error('User must be authenticated to update workout activities')
+        }
+
+        // Try to update in Supabase
+        if (this.supabase) {
+            try {
+                const updateData: Record<string, unknown> = {}
+
+                if (updates.workoutType) updateData.workout_type = updates.workoutType
+                if (updates.name !== undefined) updateData.name = updates.name || null
+                if (updates.exercises) updateData.exercises = updates.exercises
+                if (updates.durationSeconds !== undefined) updateData.duration_seconds = updates.durationSeconds
+                if (updates.notes !== undefined) updateData.notes = updates.notes || null
+                if (updates.completedAt) updateData.completed_at = updates.completedAt
+
+                const { error } = await this.supabase
+                    .from('workout_activities')
+                    .update(updateData)
+                    .eq('id', activityId)
+                    .eq('user_id', this.currentUser.id)
+                    .not('user_id', 'is', null)
+
+                if (error) throw error
+
+                console.log('Workout activity updated in Supabase:', activityId)
+            } catch (error) {
+                console.error('Error updating workout activity in Supabase:', error)
+                // Add to sync queue
+                this.addToSyncQueue({
+                    action: 'upsert',
+                    table: 'workout_activities',
+                    data: { id: activityId, ...updates } as WorkoutActivity,
+                    timestamp: Date.now()
+                })
+            }
+        }
+    }
+
+    static async deleteWorkoutActivity(activityId: string): Promise<void> {
+        if (!this.currentUser) {
+            throw new Error('User must be authenticated to delete workout activities')
+        }
+
+        // Try to delete from Supabase
+        if (this.supabase) {
+            try {
+                const { error } = await this.supabase
+                    .from('workout_activities')
+                    .delete()
+                    .eq('id', activityId)
+                    .eq('user_id', this.currentUser.id)
+                    .not('user_id', 'is', null)
+
+                if (error) throw error
+
+                console.log('Workout activity deleted from Supabase:', activityId)
+            } catch (error) {
+                console.error('Error deleting workout activity from Supabase:', error)
+                // Add to sync queue
+                this.addToSyncQueue({
+                    action: 'delete',
+                    table: 'workout_activities',
+                    data: activityId,
+                    timestamp: Date.now()
+                })
+            }
+        }
+    }
+
+    static async getWorkoutActivityStats(): Promise<{
+        totalWorkouts: number
+        totalDurationSeconds: number
+        workoutTypes: Record<string, number>
+        thisWeekWorkouts: number
+        thisMonthWorkouts: number
+    }> {
+        if (!this.currentUser || !this.supabase) {
+            return {
+                totalWorkouts: 0,
+                totalDurationSeconds: 0,
+                workoutTypes: {},
+                thisWeekWorkouts: 0,
+                thisMonthWorkouts: 0
+            }
+        }
+
+        try {
+            const { data, error } = await this.supabase
+                .rpc('get_workout_activity_stats')
+
+            if (error) throw error
+
+            const stats = data?.[0] || {}
+            return {
+                totalWorkouts: stats.total_workouts || 0,
+                totalDurationSeconds: stats.total_duration_seconds || 0,
+                workoutTypes: stats.workout_types || {},
+                thisWeekWorkouts: stats.this_week_workouts || 0,
+                thisMonthWorkouts: stats.this_month_workouts || 0
+            }
+        } catch (error) {
+            console.error('Error getting workout activity stats:', error)
+            return {
+                totalWorkouts: 0,
+                totalDurationSeconds: 0,
+                workoutTypes: {},
+                thisWeekWorkouts: 0,
+                thisMonthWorkouts: 0
+            }
+        }
+    }
+
+    // ============================================================================
     // CONVENIENCE METHODS
     // ============================================================================
 
@@ -712,6 +948,32 @@ export class WorkoutStorage {
         }
     }
 
+    private static convertDbActivityToApp(db: DatabaseWorkoutActivity): WorkoutActivity {
+        return {
+            id: db.id,
+            workoutType: db.workout_type as WorkoutActivity['workoutType'],
+            name: db.name || undefined,
+            exercises: db.exercises,
+            durationSeconds: db.duration_seconds,
+            notes: db.notes || undefined,
+            completedAt: db.completed_at,
+            createdAt: db.created_at,
+            updatedAt: db.updated_at,
+            userId: db.user_id
+        }
+    }
+
+    private static convertAppActivityToDb(app: WorkoutActivity): Omit<DatabaseWorkoutActivity, 'id' | 'user_id' | 'created_at' | 'updated_at'> {
+        return {
+            workout_type: app.workoutType,
+            name: app.name || null,
+            exercises: app.exercises,
+            duration_seconds: app.durationSeconds,
+            notes: app.notes || null,
+            completed_at: app.completedAt
+        }
+    }
+
     // ============================================================================
     // SYNC QUEUE AND ERROR HANDLING
     // ============================================================================
@@ -786,6 +1048,9 @@ export class WorkoutStorage {
                 break
             case 'workout_templates':
                 await this.processSyncTemplate(operation)
+                break
+            case 'workout_activities':
+                await this.processSyncWorkoutActivity(operation)
                 break
             default:
                 throw new Error(`Unknown sync table: ${operation.table}`)
@@ -873,6 +1138,60 @@ export class WorkoutStorage {
 
             default:
                 throw new Error(`Unknown sync action for workout_templates: ${operation.action}`)
+        }
+    }
+
+    private static async processSyncWorkoutActivity(operation: SyncOperation): Promise<void> {
+        switch (operation.action) {
+            case 'insert':
+                if (typeof operation.data === 'object' && operation.data !== null && 'workoutType' in operation.data) {
+                    const dbActivity = this.convertAppActivityToDb(operation.data as WorkoutActivity)
+                    const { error: insertError } = await this.supabase!
+                        .from('workout_activities')
+                        .insert({
+                            ...dbActivity,
+                            user_id: this.currentUser!.id
+                        })
+                    if (insertError) throw insertError
+                }
+                break
+
+            case 'upsert':
+                if (typeof operation.data === 'object' && operation.data !== null && 'workoutType' in operation.data) {
+                    const activity = operation.data as WorkoutActivity
+                    const updateData: Record<string, unknown> = {}
+
+                    if (activity.workoutType) updateData.workout_type = activity.workoutType
+                    if (activity.name !== undefined) updateData.name = activity.name || null
+                    if (activity.exercises) updateData.exercises = activity.exercises
+                    if (activity.durationSeconds !== undefined) updateData.duration_seconds = activity.durationSeconds
+                    if (activity.notes !== undefined) updateData.notes = activity.notes || null
+                    if (activity.completedAt) updateData.completed_at = activity.completedAt
+
+                    const { error: updateError } = await this.supabase!
+                        .from('workout_activities')
+                        .update(updateData)
+                        .eq('id', activity.id)
+                        .eq('user_id', this.currentUser!.id)
+                        .not('user_id', 'is', null)
+                    if (updateError) throw updateError
+                }
+                break
+
+            case 'delete':
+                if (typeof operation.data === 'string') {
+                    const { error: deleteError } = await this.supabase!
+                        .from('workout_activities')
+                        .delete()
+                        .eq('id', operation.data)
+                        .eq('user_id', this.currentUser!.id)
+                        .not('user_id', 'is', null)
+                    if (deleteError) throw deleteError
+                }
+                break
+
+            default:
+                throw new Error(`Unknown sync action for workout_activities: ${operation.action}`)
         }
     }
 
