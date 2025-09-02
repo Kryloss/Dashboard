@@ -44,16 +44,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                 if (existingWorkout && existingWorkout.workoutId === workoutId) {
                     // Load existing workout
                     setExercises(existingWorkout.exercises)
-
-                    // Calculate current elapsed time if workout is running
-                    if (existingWorkout.isRunning) {
-                        const timeSinceStart = Math.floor((Date.now() - new Date(existingWorkout.startTime).getTime()) / 1000)
-                        const currentTime = existingWorkout.elapsedTime + timeSinceStart
-                        setTime(currentTime)
-                    } else {
-                        setTime(existingWorkout.elapsedTime)
-                    }
-
+                    setTime(existingWorkout.elapsedTime)
                     setIsRunning(existingWorkout.isRunning)
                 } else {
                     // Create new workout
@@ -82,6 +73,23 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                     // Update stored workout time every 10 seconds to reduce localStorage writes
                     if (newTime % 10 === 0) {
                         WorkoutStorage.updateWorkoutTime(newTime, true)
+                        // Also save exercises every minute to ensure they're not lost
+                        if (newTime % 60 === 0) {
+                            WorkoutStorage.getOngoingWorkout().then(workout => {
+                                if (workout) {
+                                    WorkoutStorage.saveOngoingWorkout({
+                                        ...workout,
+                                        exercises,
+                                        elapsedTime: newTime,
+                                        isRunning: true
+                                    }).catch(error => {
+                                        console.error('Error saving exercises during timer update:', error)
+                                    })
+                                }
+                            }).catch(error => {
+                                console.error('Error getting workout during timer update:', error)
+                            })
+                        }
                     }
                     return newTime
                 })
@@ -119,20 +127,65 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
     }
 
-    const startTimer = () => {
+    const startTimer = async () => {
         setIsRunning(true)
         WorkoutStorage.updateWorkoutTime(time, true)
+        
+        // Update the workout in storage with current exercises
+        try {
+            const workout = await WorkoutStorage.getOngoingWorkout()
+            if (workout) {
+                await WorkoutStorage.saveOngoingWorkout({
+                    ...workout,
+                    exercises,
+                    elapsedTime: time,
+                    isRunning: true
+                })
+            }
+        } catch (error) {
+            console.error('Error updating workout on start:', error)
+        }
     }
 
-    const pauseTimer = () => {
+    const pauseTimer = async () => {
         setIsRunning(false)
         WorkoutStorage.updateWorkoutTime(time, false)
+        
+        // Update the workout in storage with current exercises
+        try {
+            const workout = await WorkoutStorage.getOngoingWorkout()
+            if (workout) {
+                await WorkoutStorage.saveOngoingWorkout({
+                    ...workout,
+                    exercises,
+                    elapsedTime: time,
+                    isRunning: false
+                })
+            }
+        } catch (error) {
+            console.error('Error updating workout on pause:', error)
+        }
     }
 
-    const resetTimer = () => {
+    const resetTimer = async () => {
         setIsRunning(false)
         setTime(0)
         WorkoutStorage.updateWorkoutTime(0, false)
+        
+        // Update the workout in storage with current exercises
+        try {
+            const workout = await WorkoutStorage.getOngoingWorkout()
+            if (workout) {
+                await WorkoutStorage.saveOngoingWorkout({
+                    ...workout,
+                    exercises,
+                    elapsedTime: 0,
+                    isRunning: false
+                })
+            }
+        } catch (error) {
+            console.error('Error updating workout on reset:', error)
+        }
     }
 
     const addExercise = async () => {
