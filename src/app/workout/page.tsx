@@ -10,6 +10,7 @@ import { QuickActionCard } from "./components/quick-action-card"
 import { StatCard } from "./components/stat-card"
 import { ActivityItem } from "./components/activity-item"
 import { WorkoutTypeDialog } from "./components/workout-type-dialog"
+import { QuickLogDialog } from "./components/quick-log-dialog"
 import { WorkoutStorage, OngoingWorkout, WorkoutActivity } from "@/lib/workout-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { Settings, Plus, Flame, Dumbbell, User, Timer, Bike, Target, TrendingUp, Clock, Heart, FileText, Play } from "lucide-react"
@@ -19,6 +20,7 @@ export default function WorkoutPage() {
     const { user, supabase } = useAuth()
     const [isHealssSubdomain, setIsHealssSubdomain] = useState(false)
     const [showWorkoutDialog, setShowWorkoutDialog] = useState(false)
+    const [showQuickLogDialog, setShowQuickLogDialog] = useState(false)
     const [ongoingWorkout, setOngoingWorkout] = useState<OngoingWorkout | null>(null)
     const [recentActivities, setRecentActivities] = useState<WorkoutActivity[]>([])
     const [isLoadingActivities, setIsLoadingActivities] = useState(true)
@@ -227,6 +229,8 @@ export default function WorkoutPage() {
             } finally {
                 // Loading state handled
             }
+        } else if (action === 'log') {
+            setShowQuickLogDialog(true)
         } else {
             console.log(`Quick action: ${action}`)
             setShowWorkoutDialog(true)
@@ -504,6 +508,13 @@ export default function WorkoutPage() {
                 <WorkoutTypeDialog
                     open={showWorkoutDialog}
                     onOpenChange={setShowWorkoutDialog}
+                />
+
+                {/* Quick Log Dialog */}
+                <QuickLogDialog
+                    open={showQuickLogDialog}
+                    onOpenChange={setShowQuickLogDialog}
+                    onActivityLogged={refreshRecentActivities}
                 />
             </div>
         )
