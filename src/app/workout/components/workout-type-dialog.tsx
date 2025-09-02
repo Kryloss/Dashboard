@@ -13,9 +13,10 @@ import { useAuth } from "@/lib/hooks/useAuth"
 interface WorkoutTypeDialogProps {
     open: boolean
     onOpenChange: (open: boolean) => void
+    mode?: 'new-workout' | 'quick-log'
 }
 
-const workoutTypes = [
+const getWorkoutTypes = (mode: 'new-workout' | 'quick-log') => [
     {
         id: 'strength',
         name: 'Strength',
@@ -29,7 +30,7 @@ const workoutTypes = [
         name: 'Running',
         description: 'Cardio and endurance training',
         icon: <Target className="w-8 h-8" />,
-        available: false,
+        available: mode === 'quick-log', // Available for Quick Log
         color: 'text-[#FF2D55]'
     },
     {
@@ -37,7 +38,7 @@ const workoutTypes = [
         name: 'Yoga',
         description: 'Flexibility and mindfulness',
         icon: <Heart className="w-8 h-8" />,
-        available: false,
+        available: mode === 'quick-log', // Available for Quick Log
         color: 'text-[#2BD2FF]'
     },
     {
@@ -45,12 +46,12 @@ const workoutTypes = [
         name: 'Cycling',
         description: 'Indoor and outdoor cycling',
         icon: <Bike className="w-8 h-8" />,
-        available: false,
+        available: mode === 'quick-log', // Available for Quick Log
         color: 'text-[#FF375F]'
     }
 ]
 
-export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps) {
+export function WorkoutTypeDialog({ open, onOpenChange, mode = 'new-workout' }: WorkoutTypeDialogProps) {
     const router = useRouter()
     const { user, supabase } = useAuth()
     const [selectedType, setSelectedType] = useState<string>('')
@@ -78,22 +79,60 @@ export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps
 
         setSelectedType(workoutType)
 
-        if (workoutType === 'strength') {
+        if (mode === 'quick-log') {
+            // For Quick Log, always show templates regardless of workout type
             try {
                 setIsLoading(true)
-                // Load templates for strength workouts
-                const strengthTemplates = await WorkoutStorage.getTemplates('strength')
-                setTemplates(strengthTemplates)
+                const workoutTemplates = await WorkoutStorage.getTemplates(workoutType as 'strength' | 'running' | 'yoga' | 'cycling')
+                setTemplates(workoutTemplates)
                 setShowTemplates(true)
             } catch (error) {
                 console.error('Error loading templates:', error)
-                // Fallback to direct workout creation
-                await createWorkoutDirectly(workoutType)
+                // For Quick Log, proceed to Quick Log page without template
+                await navigateToQuickLog(workoutType)
             } finally {
                 setIsLoading(false)
             }
         } else {
-            await createWorkoutDirectly(workoutType)
+            // For New Workout, keep existing logic
+            if (workoutType === 'strength') {
+                try {
+                    setIsLoading(true)
+                    // Load templates for strength workouts
+                    const strengthTemplates = await WorkoutStorage.getTemplates('strength')
+                    setTemplates(strengthTemplates)
+                    setShowTemplates(true)
+                } catch (error) {
+                    console.error('Error loading templates:', error)
+                    // Fallback to direct workout creation
+                    await createWorkoutDirectly(workoutType)
+                } finally {
+                    setIsLoading(false)
+                }
+            } else {
+                await createWorkoutDirectly(workoutType)
+            }
+        }
+    }
+
+    const navigateToQuickLog = async (workoutType: string, templateId?: string) => {
+        try {
+            // Create quick log ID and navigate to quick log page
+            const timestamp = Date.now()
+            const userIdSuffix = user?.id ? user.id.slice(-8) : Math.random().toString(36).slice(-8)
+            const quickLogId = `quicklog-${timestamp}-${userIdSuffix}`
+            
+            // Build URL with query parameters
+            const searchParams = new URLSearchParams()
+            searchParams.set('type', workoutType)
+            if (templateId) {
+                searchParams.set('template', templateId)
+            }
+            
+            router.push(`/workout/quick-log/${quickLogId}?${searchParams.toString()}`)
+            onOpenChange(false)
+        } catch (error) {
+            console.error('Error starting quick log:', error)
         }
     }
 
@@ -128,29 +167,39 @@ export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps
         try {
             setIsLoading(true)
 
-            // Check if there's an existing ongoing workout
-            const existingWorkout = await WorkoutStorage.getOngoingWorkout()
-            if (existingWorkout) {
-                await WorkoutStorage.clearOngoingWorkout()
+            if (mode === 'quick-log') {
+                // For Quick Log, navigate to Quick Log page with template
+                await navigateToQuickLog(selectedType, template.id)
+            } else {
+                // For New Workout, create workout from template
+                // Check if there's an existing ongoing workout
+                const existingWorkout = await WorkoutStorage.getOngoingWorkout()
+                if (existingWorkout) {
+                    await WorkoutStorage.clearOngoingWorkout()
+                }
+
+                // Create workout from template
+                const timestamp = Date.now()
+                const userIdSuffix = user?.id ? user.id.slice(-8) : Math.random().toString(36).slice(-8)
+                const workoutId = `${template.type}-${timestamp}-${userIdSuffix}`
+                await WorkoutStorage.createWorkoutFromTemplate(template, workoutId)
+
+                router.push(`/workout/${template.type}/${workoutId}`)
+                onOpenChange(false)
             }
-
-            // Create workout from template
-            const timestamp = Date.now()
-            const userIdSuffix = user?.id ? user.id.slice(-8) : Math.random().toString(36).slice(-8)
-            const workoutId = `${template.type}-${timestamp}-${userIdSuffix}`
-            await WorkoutStorage.createWorkoutFromTemplate(template, workoutId)
-
-            router.push(`/workout/${template.type}/${workoutId}`)
-            onOpenChange(false)
         } catch (error) {
-            console.error('Error creating workout from template:', error)
+            console.error('Error handling template selection:', error)
         } finally {
             setIsLoading(false)
         }
     }
 
     const handleStartEmpty = () => {
-        createWorkoutDirectly(selectedType)
+        if (mode === 'quick-log') {
+            navigateToQuickLog(selectedType)
+        } else {
+            createWorkoutDirectly(selectedType)
+        }
     }
 
     const handleBack = () => {
@@ -221,14 +270,19 @@ export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps
             <Dialog open={open && !showConflictDialog && !showTemplates} onOpenChange={onOpenChange}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader className="mb-4">
-                        <DialogTitle>Choose Workout Type</DialogTitle>
+                        <DialogTitle>
+                            {mode === 'quick-log' ? 'Choose Workout Type' : 'Choose Workout Type'}
+                        </DialogTitle>
                         <DialogDescription>
-                            Select the type of workout you want to start
+                            {mode === 'quick-log' 
+                                ? 'Select the type of workout you want to log'
+                                : 'Select the type of workout you want to start'
+                            }
                         </DialogDescription>
                     </DialogHeader>
 
                     <div className="grid grid-cols-1 gap-3">
-                        {workoutTypes.map((workout) => (
+                        {getWorkoutTypes(mode).map((workout) => (
                             <button
                                 key={workout.id}
                                 onClick={() => handleWorkoutSelect(workout.id, workout.available)}
@@ -292,7 +346,10 @@ export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps
                     <DialogHeader className="mb-4">
                         <DialogTitle>Choose Template</DialogTitle>
                         <DialogDescription>
-                            Select a pre-made workout template or start with an empty workout
+                            {mode === 'quick-log'
+                                ? 'Select a template to pre-fill your quick log or start from scratch'
+                                : 'Select a pre-made workout template or start with an empty workout'
+                            }
                         </DialogDescription>
                     </DialogHeader>
 
@@ -312,8 +369,15 @@ export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps
                                         <Dumbbell className="w-8 h-8 text-[#9BE15D]" />
                                     </div>
                                     <div className="flex-1">
-                                        <h3 className="font-semibold text-[#F3F4F6] text-sm">Empty Workout</h3>
-                                        <p className="text-xs text-[#A1A1AA] mt-1">Start fresh and add exercises as you go</p>
+                                        <h3 className="font-semibold text-[#F3F4F6] text-sm">
+                                            {mode === 'quick-log' ? 'Start from Scratch' : 'Empty Workout'}
+                                        </h3>
+                                        <p className="text-xs text-[#A1A1AA] mt-1">
+                                            {mode === 'quick-log' 
+                                                ? 'Create a quick log without using a template'
+                                                : 'Start fresh and add exercises as you go'
+                                            }
+                                        </p>
                                     </div>
                                 </button>
 

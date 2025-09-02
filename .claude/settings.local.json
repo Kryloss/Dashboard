@@ -14,7 +14,8 @@
       "Bash(cmd /c:*)",
       "Bash(del \"C:\\Users\\mrRep\\Desktop\\Dashboard\\src\\lib\\workout-storage-supabase.ts\")",
       "Bash(npx tsc:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(del \"C:\\Users\\mrRep\\Desktop\\Dashboard\\src\\app\\workout\\components\\quick-log-selection-dialog.tsx\")"
     ],
     "deny": [],
     "ask": [],
