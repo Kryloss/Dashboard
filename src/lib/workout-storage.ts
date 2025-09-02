@@ -238,14 +238,34 @@ export class WorkoutStorage {
             try {
                 const dbWorkout = this.convertAppOngoingWorkoutToDb(workout)
 
-                const { error } = await this.supabase
+                // Check if ongoing workout exists for this user and update/insert accordingly
+                const { data: existingWorkout } = await this.supabase
                     .from('ongoing_workouts')
-                    .upsert({
-                        ...dbWorkout,
-                        user_id: this.currentUser.id
-                    }, {
-                        onConflict: 'user_id'
-                    })
+                    .select('id')
+                    .eq('user_id', this.currentUser.id)
+                    .single()
+
+                let error: any = null
+
+                if (existingWorkout) {
+                    // Update existing workout
+                    const updateResult = await this.supabase
+                        .from('ongoing_workouts')
+                        .update({
+                            ...dbWorkout,
+                        })
+                        .eq('user_id', this.currentUser.id)
+                    error = updateResult.error
+                } else {
+                    // Insert new workout
+                    const insertResult = await this.supabase
+                        .from('ongoing_workouts')
+                        .insert({
+                            ...dbWorkout,
+                            user_id: this.currentUser.id
+                        })
+                    error = insertResult.error
+                }
 
                 if (error) throw error
 
@@ -695,15 +715,33 @@ export class WorkoutStorage {
             case 'upsert':
                 if (typeof operation.data === 'object' && operation.data !== null && 'workoutId' in operation.data) {
                     const dbWorkout = this.convertAppOngoingWorkoutToDb(operation.data as OngoingWorkout)
-                    const { error: upsertError } = await this.supabase!
+                    
+                    // Check if ongoing workout exists for this user and update/insert accordingly
+                    const { data: existingWorkout } = await this.supabase!
                         .from('ongoing_workouts')
-                        .upsert({
-                            ...dbWorkout,
-                            user_id: this.currentUser!.id
-                        }, {
-                            onConflict: 'user_id'
-                        })
-                    if (upsertError) throw upsertError
+                        .select('id')
+                        .eq('user_id', this.currentUser!.id)
+                        .single()
+
+                    if (existingWorkout) {
+                        // Update existing workout
+                        const { error: updateError } = await this.supabase!
+                            .from('ongoing_workouts')
+                            .update({
+                                ...dbWorkout,
+                            })
+                            .eq('user_id', this.currentUser!.id)
+                        if (updateError) throw updateError
+                    } else {
+                        // Insert new workout
+                        const { error: insertError } = await this.supabase!
+                            .from('ongoing_workouts')
+                            .insert({
+                                ...dbWorkout,
+                                user_id: this.currentUser!.id
+                            })
+                        if (insertError) throw insertError
+                    }
                 }
                 break
 
