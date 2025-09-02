@@ -87,22 +87,25 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                 setTime(prevTime => {
                     const newTime = prevTime + 1
 
-                    // Save exercises periodically for running workouts
+                    // Save exercises periodically for running workouts (every 60 seconds)
                     if (newTime % 60 === 0) {
-                        WorkoutStorage.getOngoingWorkout().then(workout => {
-                            if (workout) {
-                                WorkoutStorage.saveOngoingWorkout({
-                                    ...workout,
-                                    exercises,
-                                    elapsedTime: newTime,
-                                    isRunning: true
-                                }).catch(error => {
-                                    console.error('Error saving exercises during timer update:', error)
-                                })
+                        // Use a separate async function to avoid dependency issues
+                        const savePeriodicUpdate = async () => {
+                            try {
+                                const workout = await WorkoutStorage.getOngoingWorkout()
+                                if (workout) {
+                                    await WorkoutStorage.saveOngoingWorkout({
+                                        ...workout,
+                                        exercises,
+                                        elapsedTime: newTime,
+                                        isRunning: true
+                                    })
+                                }
+                            } catch (error) {
+                                console.error('Error saving exercises during timer update:', error)
                             }
-                        }).catch(error => {
-                            console.error('Error getting workout during timer update:', error)
-                        })
+                        }
+                        savePeriodicUpdate()
                     }
 
                     return newTime
@@ -123,7 +126,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                 intervalRef.current = null
             }
         }
-    }, [isRunning, exercises])
+    }, [isRunning]) // Removed exercises dependency to prevent timer from stopping
 
     // Cleanup on unmount - preserve timer state when component unmounts
     useEffect(() => {
@@ -164,7 +167,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
             // Save state asynchronously without blocking unmount
             saveStateOnUnmount()
         }
-    }, [time, isRunning, exercises])
+    }, []) // Empty dependency array - only run on mount/unmount
 
     const formatTime = (seconds: number) => {
         const hours = Math.floor(seconds / 3600)
