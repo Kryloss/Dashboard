@@ -154,6 +154,8 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         // Get real-time elapsed time before pausing
         const currentElapsedTime = WorkoutStorage.getCurrentElapsedTime()
         setIsRunning(false)
+        // Set the time state immediately to prevent jumping
+        setTime(currentElapsedTime)
         WorkoutStorage.updateWorkoutTime(currentElapsedTime, false)
 
         // Update the workout in storage with current exercises

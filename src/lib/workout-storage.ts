@@ -333,9 +333,9 @@ export class WorkoutStorage {
         if (workout) {
             workout.elapsedTime = elapsedTime
             workout.isRunning = isRunning
-            // Update the start time to reflect current pause/resume state
+            // When resuming, adjust start time so elapsed time calculation works correctly
             if (isRunning) {
-                // When resuming, adjust start time so elapsed time calculation works correctly
+                // Set startTime to current time minus elapsed time for accurate real-time calculation
                 workout.startTime = new Date(Date.now() - (elapsedTime * 1000)).toISOString()
             }
             this.saveOngoingWorkoutToLocalStorage(workout)
