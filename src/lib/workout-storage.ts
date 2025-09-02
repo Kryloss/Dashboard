@@ -85,9 +85,21 @@ interface SyncOperation {
 export class WorkoutStorage {
     private static supabase: SupabaseClient | null = null
     private static currentUser: User | null = null
-    private static readonly ONGOING_WORKOUT_KEY = 'healss-ongoing-workout'
-    private static readonly TEMPLATES_KEY = 'healss-workout-templates'
-    private static readonly SYNC_QUEUE_KEY = 'healss-sync-queue'
+    // Dynamic keys that include user context for isolation
+    private static get ONGOING_WORKOUT_KEY(): string {
+        const userSuffix = this.currentUser?.id ? `-${this.currentUser.id.slice(-8)}` : '-anonymous'
+        return `healss-ongoing-workout${userSuffix}`
+    }
+
+    private static get TEMPLATES_KEY(): string {
+        const userSuffix = this.currentUser?.id ? `-${this.currentUser.id.slice(-8)}` : '-anonymous'
+        return `healss-workout-templates${userSuffix}`
+    }
+
+    private static get SYNC_QUEUE_KEY(): string {
+        const userSuffix = this.currentUser?.id ? `-${this.currentUser.id.slice(-8)}` : '-anonymous'
+        return `healss-sync-queue${userSuffix}`
+    }
 
     // Real-time synchronization
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
