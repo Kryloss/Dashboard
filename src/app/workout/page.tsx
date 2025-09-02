@@ -34,20 +34,6 @@ export default function WorkoutPage() {
         }
     }, [user, supabase])
 
-    const loadRecentActivities = useCallback(async () => {
-        if (!user || !supabase) return
-
-        try {
-            setIsLoadingActivities(true)
-            const activities = await WorkoutStorage.getRecentActivities(3)
-            setRecentActivities(activities)
-        } catch (error) {
-            console.error('Error loading recent activities:', error)
-        } finally {
-            setIsLoadingActivities(false)
-        }
-    }, [user, supabase])
-
     useEffect(() => {
         const onHealss = isOnSubdomain('healss')
         setIsHealssSubdomain(onHealss)
@@ -55,18 +41,66 @@ export default function WorkoutPage() {
         if (onHealss && user && supabase) {
             // Initialize storage with user context
             WorkoutStorage.initialize(user, supabase)
-            loadOngoingWorkout()
-            loadRecentActivities()
+            
+            // Load initial data
+            const loadInitialData = async () => {
+                // Load ongoing workout
+                try {
+                    const workout = await WorkoutStorage.getOngoingWorkout()
+                    setOngoingWorkout(workout)
+                } catch (error) {
+                    console.error('Error loading ongoing workout:', error)
+                }
 
-            // Set up periodic check for ongoing workout updates
-            const interval = setInterval(() => {
-                loadOngoingWorkout()
-                loadRecentActivities()
+                // Load recent activities
+                try {
+                    setIsLoadingActivities(true)
+                    const activities = await WorkoutStorage.getRecentActivities(3)
+                    setRecentActivities(activities)
+                } catch (error) {
+                    console.error('Error loading recent activities:', error)
+                } finally {
+                    setIsLoadingActivities(false)
+                }
+            }
+
+            loadInitialData()
+
+            // Set up periodic check for ongoing workout updates only
+            const interval = setInterval(async () => {
+                try {
+                    const workout = await WorkoutStorage.getOngoingWorkout()
+                    setOngoingWorkout(workout)
+                } catch (error) {
+                    console.error('Error loading ongoing workout:', error)
+                }
+                
+                // Only refresh activities occasionally to avoid excessive calls
+                if (Math.random() < 0.1) { // 10% chance every 30 seconds = ~every 5 minutes
+                    try {
+                        const activities = await WorkoutStorage.getRecentActivities(3)
+                        setRecentActivities(activities)
+                    } catch (error) {
+                        console.error('Error loading recent activities:', error)
+                    }
+                }
             }, 30000) // Check every 30 seconds
 
             return () => clearInterval(interval)
         }
-    }, [user, supabase, loadOngoingWorkout, loadRecentActivities])
+    }, [user, supabase])
+
+    // Manual refresh function for when activities might have changed
+    const refreshRecentActivities = useCallback(async () => {
+        if (!user || !supabase) return
+
+        try {
+            const activities = await WorkoutStorage.getRecentActivities(3)
+            setRecentActivities(activities)
+        } catch (error) {
+            console.error('Error refreshing recent activities:', error)
+        }
+    }, [user, supabase])
 
     // Helper function to format activity data for ActivityItem component
     const formatActivityDate = (dateString: string) => {

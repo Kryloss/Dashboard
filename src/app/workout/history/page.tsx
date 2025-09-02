@@ -26,39 +26,52 @@ export default function WorkoutHistoryPage() {
     const [offset, setOffset] = useState(0)
     const limit = 20
 
-    const loadActivities = useCallback(async (reset = false) => {
-        if (!user || !supabase) return
-
-        try {
-            setIsLoading(true)
-            WorkoutStorage.initialize(user, supabase)
-
-            const currentOffset = reset ? 0 : offset
-            const type = filterType === "all" ? undefined : filterType as 'strength' | 'running' | 'yoga' | 'cycling'
-            const newActivities = await WorkoutStorage.getWorkoutActivities(limit, currentOffset, type)
-
-            if (reset) {
-                setActivities(newActivities)
-                setOffset(limit)
-            } else {
-                setActivities(prev => [...prev, ...newActivities])
-                setOffset(prev => prev + limit)
-            }
-
-            setHasMore(newActivities.length === limit)
-        } catch (error) {
-            console.error('Error loading workout activities:', error)
-        } finally {
-            setIsLoading(false)
-        }
-    }, [user, supabase, filterType, offset, limit])
+    // Removed loadActivities callback to prevent infinite loop
 
     useEffect(() => {
         if (user && supabase) {
             setOffset(0)
-            loadActivities(true)
+            setActivities([]) // Clear activities immediately
+            setIsLoading(true)
+            
+            // Load activities for the current filter
+            const loadData = async () => {
+                try {
+                    WorkoutStorage.initialize(user, supabase)
+                    const type = filterType === "all" ? undefined : filterType as 'strength' | 'running' | 'yoga' | 'cycling'
+                    const newActivities = await WorkoutStorage.getWorkoutActivities(limit, 0, type)
+                    
+                    setActivities(newActivities)
+                    setOffset(limit)
+                    setHasMore(newActivities.length === limit)
+                } catch (error) {
+                    console.error('Error loading workout activities:', error)
+                } finally {
+                    setIsLoading(false)
+                }
+            }
+            
+            loadData()
         }
-    }, [user, supabase, filterType, loadActivities])
+    }, [user, supabase, filterType, limit])
+
+    const loadMoreActivities = async () => {
+        if (!user || !supabase || isLoading) return
+
+        try {
+            setIsLoading(true)
+            const type = filterType === "all" ? undefined : filterType as 'strength' | 'running' | 'yoga' | 'cycling'
+            const newActivities = await WorkoutStorage.getWorkoutActivities(limit, offset, type)
+            
+            setActivities(prev => [...prev, ...newActivities])
+            setOffset(prev => prev + limit)
+            setHasMore(newActivities.length === limit)
+        } catch (error) {
+            console.error('Error loading more activities:', error)
+        } finally {
+            setIsLoading(false)
+        }
+    }
 
     const handleDeleteActivity = async () => {
         if (!deletingActivity) return
@@ -260,7 +273,7 @@ export default function WorkoutHistoryPage() {
                                 {hasMore && !searchQuery && (
                                     <div className="flex justify-center pt-4">
                                         <Button
-                                            onClick={() => loadActivities(false)}
+                                            onClick={loadMoreActivities}
                                             disabled={isLoading}
                                             variant="ghost"
                                             className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full"
