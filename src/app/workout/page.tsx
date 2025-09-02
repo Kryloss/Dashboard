@@ -11,6 +11,7 @@ import { StatCard } from "./components/stat-card"
 import { ActivityItem } from "./components/activity-item"
 import { WorkoutTypeDialog } from "./components/workout-type-dialog"
 import { QuickLogDialog } from "./components/quick-log-dialog"
+import { QuickLogSelectionDialog } from "./components/quick-log-selection-dialog"
 import { WorkoutStorage, OngoingWorkout, WorkoutActivity } from "@/lib/workout-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { Settings, Plus, Flame, Dumbbell, User, Timer, Bike, Target, TrendingUp, Clock, Heart, FileText, Play } from "lucide-react"
@@ -21,6 +22,7 @@ export default function WorkoutPage() {
     const [isHealssSubdomain, setIsHealssSubdomain] = useState(false)
     const [showWorkoutDialog, setShowWorkoutDialog] = useState(false)
     const [showQuickLogDialog, setShowQuickLogDialog] = useState(false)
+    const [showQuickLogSelectionDialog, setShowQuickLogSelectionDialog] = useState(false)
     const [ongoingWorkout, setOngoingWorkout] = useState<OngoingWorkout | null>(null)
     const [recentActivities, setRecentActivities] = useState<WorkoutActivity[]>([])
     const [isLoadingActivities, setIsLoadingActivities] = useState(true)
@@ -190,6 +192,26 @@ export default function WorkoutPage() {
         console.log(`Editing workout ${id}`)
     }
 
+    const handleProceedToQuickLog = (workoutType: string, templateId?: string) => {
+        try {
+            // Create quick log ID and navigate to quick log page
+            const timestamp = Date.now()
+            const userIdSuffix = user?.id ? user.id.slice(-8) : Math.random().toString(36).slice(-8)
+            const quickLogId = `quicklog-${timestamp}-${userIdSuffix}`
+            
+            // Build URL with query parameters
+            const searchParams = new URLSearchParams()
+            searchParams.set('type', workoutType)
+            if (templateId) {
+                searchParams.set('template', templateId)
+            }
+            
+            window.location.href = `/workout/quick-log/${quickLogId}?${searchParams.toString()}`
+        } catch (error) {
+            console.error('Error starting quick log:', error)
+        }
+    }
+
     const handleQuickAction = async (action: string) => {
         if (!user || !supabase) {
             console.error('User must be authenticated to start workouts')
@@ -223,16 +245,7 @@ export default function WorkoutPage() {
         } else if (action === 'log') {
             setShowQuickLogDialog(true)
         } else if (action === 'quick-log') {
-            try {
-                // Create quick log ID and navigate to quick log page
-                const timestamp = Date.now()
-                const userIdSuffix = user?.id ? user.id.slice(-8) : Math.random().toString(36).slice(-8)
-                const quickLogId = `quicklog-${timestamp}-${userIdSuffix}`
-                
-                window.location.href = `/workout/quick-log/${quickLogId}`
-            } catch (error) {
-                console.error('Error starting quick log:', error)
-            }
+            setShowQuickLogSelectionDialog(true)
         } else {
             console.log(`Quick action: ${action}`)
             setShowWorkoutDialog(true)
@@ -522,6 +535,13 @@ export default function WorkoutPage() {
                     open={showQuickLogDialog}
                     onOpenChange={setShowQuickLogDialog}
                     onActivityLogged={refreshRecentActivities}
+                />
+
+                {/* Quick Log Selection Dialog */}
+                <QuickLogSelectionDialog
+                    open={showQuickLogSelectionDialog}
+                    onOpenChange={setShowQuickLogSelectionDialog}
+                    onProceedToQuickLog={handleProceedToQuickLog}
                 />
             </div>
         )

@@ -15,10 +15,13 @@ type Exercise = WorkoutExercise
 
 interface QuickLogPageProps {
     params: Promise<{ id: string }>
+    searchParams: Promise<{ type?: string; template?: string }>
 }
 
-export default function QuickLogPage({ params }: QuickLogPageProps) {
+export default function QuickLogPage({ params, searchParams }: QuickLogPageProps) {
     const [workoutId, setWorkoutId] = useState<string>('')
+    const [workoutType, setWorkoutType] = useState<string>('strength')
+    const [templateId, setTemplateId] = useState<string>('')
     const router = useRouter()
     const { user, supabase } = useAuth()
     const [exercises, setExercises] = useState<Exercise[]>([])
@@ -48,16 +51,19 @@ export default function QuickLogPage({ params }: QuickLogPageProps) {
     // Cancel/Log confirmation dialog
     const [showQuitDialog, setShowQuitDialog] = useState(false)
 
-    // Resolve params Promise
+    // Resolve params and searchParams Promises
     useEffect(() => {
         const resolveParams = async () => {
             const resolvedParams = await params
+            const resolvedSearchParams = await searchParams
             setWorkoutId(resolvedParams.id)
+            setWorkoutType(resolvedSearchParams.type || 'strength')
+            setTemplateId(resolvedSearchParams.template || '')
         }
         resolveParams()
-    }, [params])
+    }, [params, searchParams])
 
-    // Initialize workout
+    // Initialize workout and load template if specified
     useEffect(() => {
         const initializeQuickLog = async () => {
             if (!user || !supabase || !workoutId) {
@@ -68,12 +74,34 @@ export default function QuickLogPage({ params }: QuickLogPageProps) {
             // Initialize storage with user context
             WorkoutStorage.initialize(user, supabase)
 
-            // Set default workout name
-            setWorkoutName("Quick Log Workout")
+            // Load template if specified
+            if (templateId) {
+                try {
+                    const template = await WorkoutStorage.getTemplate(templateId)
+                    if (template) {
+                        setWorkoutName(template.name)
+                        setExercises(template.exercises || [])
+                    } else {
+                        setWorkoutName("Quick Log Workout")
+                    }
+                } catch (error) {
+                    console.error('Error loading template:', error)
+                    setWorkoutName("Quick Log Workout")
+                }
+            } else {
+                // Set default workout name based on type
+                const typeNames = {
+                    'strength': 'Strength Training',
+                    'running': 'Running',
+                    'yoga': 'Yoga',
+                    'cycling': 'Cycling'
+                }
+                setWorkoutName(typeNames[workoutType as keyof typeof typeNames] || "Quick Log Workout")
+            }
         }
 
         initializeQuickLog()
-    }, [workoutId, user, supabase])
+    }, [workoutId, workoutType, templateId, user, supabase])
 
     const addExercise = () => {
         if (!newExerciseName.trim()) return
@@ -171,7 +199,7 @@ export default function QuickLogPage({ params }: QuickLogPageProps) {
 
             // Save the workout activity
             await WorkoutStorage.saveWorkoutActivity({
-                workoutType: 'strength',
+                workoutType: workoutType as 'strength' | 'running' | 'yoga' | 'cycling',
                 name: workoutName || "Quick Log Workout",
                 exercises: exercises,
                 durationSeconds,
