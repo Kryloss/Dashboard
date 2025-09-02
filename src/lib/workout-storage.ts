@@ -99,7 +99,7 @@ export class WorkoutStorage {
     static initialize(user: User | null, supabaseClient?: SupabaseClient) {
         console.log('WorkoutStorage.initialize - User:', user?.id, user?.email)
         console.log('WorkoutStorage.initialize - Has supabaseClient:', !!supabaseClient)
-        
+
         this.currentUser = user
         if (supabaseClient) {
             this.supabase = supabaseClient
@@ -109,7 +109,7 @@ export class WorkoutStorage {
                 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
             )
         }
-        
+
         // Verify the supabase client has the correct auth context
         if (this.supabase) {
             this.supabase.auth.getUser().then(({ data: authUser, error }) => {
@@ -185,19 +185,19 @@ export class WorkoutStorage {
     static async getOngoingWorkout(): Promise<OngoingWorkout | null> {
         // Debug: Log current user information
         console.log('WorkoutStorage.getOngoingWorkout - Current user:', this.currentUser?.id, this.currentUser?.email)
-        
+
         // Try Supabase first if user is authenticated
         if (this.currentUser && this.supabase) {
             try {
                 // Debug: Check current auth user in Supabase
                 const { data: authUser } = await this.supabase.auth.getUser()
                 console.log('WorkoutStorage.getOngoingWorkout - Supabase auth user:', authUser.user?.id, authUser.user?.email)
-                
+
                 if (!authUser.user) {
                     console.warn('WorkoutStorage.getOngoingWorkout - No authenticated user in Supabase context')
                     return this.getOngoingWorkoutFromLocalStorage()
                 }
-                
+
                 // Explicit user_id filter for debugging
                 const { data, error } = await this.supabase
                     .from('ongoing_workouts')
@@ -245,7 +245,7 @@ export class WorkoutStorage {
                     .eq('user_id', this.currentUser.id)
                     .single()
 
-                let error: any = null
+                let error: Error | null = null
 
                 if (existingWorkout) {
                     // Update existing workout
@@ -336,19 +336,19 @@ export class WorkoutStorage {
     static async getTemplates(type?: 'strength' | 'running' | 'yoga' | 'cycling'): Promise<WorkoutTemplate[]> {
         // Debug: Log current user information
         console.log('WorkoutStorage.getTemplates - Current user:', this.currentUser?.id, this.currentUser?.email, 'Type:', type)
-        
+
         // Try Supabase first if user is authenticated
         if (this.currentUser && this.supabase) {
             try {
                 // Debug: Check current auth user in Supabase
                 const { data: authUser } = await this.supabase.auth.getUser()
                 console.log('WorkoutStorage.getTemplates - Supabase auth user:', authUser.user?.id, authUser.user?.email)
-                
+
                 if (!authUser.user) {
                     console.warn('WorkoutStorage.getTemplates - No authenticated user in Supabase context')
                     return this.getTemplatesFromLocalStorage(type)
                 }
-                
+
                 let query = this.supabase
                     .from('workout_templates')
                     .select('*')
@@ -362,8 +362,8 @@ export class WorkoutStorage {
 
                 const { data, error } = await query
 
-                console.log('WorkoutStorage.getTemplates - Query result:', { 
-                    dataCount: data?.length || 0, 
+                console.log('WorkoutStorage.getTemplates - Query result:', {
+                    dataCount: data?.length || 0,
                     error,
                     sampleData: data?.slice(0, 2).map(t => ({ id: t.id, name: t.name, user_id: t.user_id, is_built_in: t.is_built_in }))
                 })
@@ -715,7 +715,7 @@ export class WorkoutStorage {
             case 'upsert':
                 if (typeof operation.data === 'object' && operation.data !== null && 'workoutId' in operation.data) {
                     const dbWorkout = this.convertAppOngoingWorkoutToDb(operation.data as OngoingWorkout)
-                    
+
                     // Check if ongoing workout exists for this user and update/insert accordingly
                     const { data: existingWorkout } = await this.supabase!
                         .from('ongoing_workouts')
@@ -841,7 +841,7 @@ export class WorkoutStorage {
         }
 
         console.log('🔍 Debug: Checking database connection and RLS...')
-        
+
         try {
             // Check current auth user
             const { data: authUser, error: authError } = await this.supabase.auth.getUser()
@@ -870,10 +870,10 @@ export class WorkoutStorage {
 
             console.log('🔍 Templates query result:', {
                 count: templates?.length || 0,
-                sample: templates?.slice(0, 3).map(t => ({ 
-                    name: t.name, 
-                    user_id: t.user_id, 
-                    is_built_in: t.is_built_in 
+                sample: templates?.slice(0, 3).map(t => ({
+                    name: t.name,
+                    user_id: t.user_id,
+                    is_built_in: t.is_built_in
                 })),
                 error: templatesError
             })

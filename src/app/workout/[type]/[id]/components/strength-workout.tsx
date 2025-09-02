@@ -105,7 +105,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                 clearInterval(intervalRef.current)
             }
         }
-    }, [isRunning])
+    }, [isRunning, exercises])
 
     // Cleanup on unmount
     useEffect(() => {
@@ -130,7 +130,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     const startTimer = async () => {
         setIsRunning(true)
         WorkoutStorage.updateWorkoutTime(time, true)
-        
+
         // Update the workout in storage with current exercises
         try {
             const workout = await WorkoutStorage.getOngoingWorkout()
@@ -150,7 +150,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     const pauseTimer = async () => {
         setIsRunning(false)
         WorkoutStorage.updateWorkoutTime(time, false)
-        
+
         // Update the workout in storage with current exercises
         try {
             const workout = await WorkoutStorage.getOngoingWorkout()
@@ -171,7 +171,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         setIsRunning(false)
         setTime(0)
         WorkoutStorage.updateWorkoutTime(0, false)
-        
+
         // Update the workout in storage with current exercises
         try {
             const workout = await WorkoutStorage.getOngoingWorkout()
