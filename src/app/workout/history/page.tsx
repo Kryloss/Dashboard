@@ -73,7 +73,21 @@ export default function WorkoutHistoryPage() {
     }
 
     const handleUpdateActivity = async (updatedActivity: WorkoutActivity) => {
+        // Optimistic update - update UI immediately
+        const optimisticUpdate = {
+            ...updatedActivity,
+            updatedAt: new Date().toISOString()
+        }
+        
+        setActivities(prev => prev.map(a =>
+            a.id === updatedActivity.id ? optimisticUpdate : a
+        ))
+        
+        // Close modal immediately for better UX
+        setEditingActivity(null)
+
         try {
+            // Background update to database
             await WorkoutStorage.updateWorkoutActivity(updatedActivity.id, {
                 name: updatedActivity.name,
                 exercises: updatedActivity.exercises,
@@ -81,23 +95,17 @@ export default function WorkoutHistoryPage() {
                 notes: updatedActivity.notes
             })
 
-            // Update local state with the updated activity
-            setActivities(prev => prev.map(a =>
-                a.id === updatedActivity.id ? { 
-                    ...a, 
-                    name: updatedActivity.name,
-                    exercises: updatedActivity.exercises,
-                    durationSeconds: updatedActivity.durationSeconds,
-                    notes: updatedActivity.notes,
-                    updatedAt: new Date().toISOString()
-                } : a
-            ))
-            
-            // Close the modal
-            setEditingActivity(null)
+            console.log('Activity updated successfully')
         } catch (error) {
             console.error('Error updating activity:', error)
-            throw error // Re-throw to let the modal handle the error
+            
+            // Revert optimistic update on error
+            setActivities(prev => prev.map(a =>
+                a.id === updatedActivity.id ? updatedActivity : a
+            ))
+            
+            // Show error to user (you could add toast notification here)
+            alert('Failed to save changes. Please try again.')
         }
     }
 

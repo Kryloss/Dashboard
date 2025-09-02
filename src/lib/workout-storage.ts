@@ -680,8 +680,6 @@ export class WorkoutStorage {
                     .from('workout_activities')
                     .update(updateData)
                     .eq('id', activityId)
-                    .eq('user_id', this.currentUser.id)
-                    .not('user_id', 'is', null)
 
                 if (error) throw error
 
@@ -711,8 +709,6 @@ export class WorkoutStorage {
                     .from('workout_activities')
                     .delete()
                     .eq('id', activityId)
-                    .eq('user_id', this.currentUser.id)
-                    .not('user_id', 'is', null)
 
                 if (error) throw error
 
@@ -1172,8 +1168,6 @@ export class WorkoutStorage {
                         .from('workout_activities')
                         .update(updateData)
                         .eq('id', activity.id)
-                        .eq('user_id', this.currentUser!.id)
-                        .not('user_id', 'is', null)
                     if (updateError) throw updateError
                 }
                 break
@@ -1184,8 +1178,6 @@ export class WorkoutStorage {
                         .from('workout_activities')
                         .delete()
                         .eq('id', operation.data)
-                        .eq('user_id', this.currentUser!.id)
-                        .not('user_id', 'is', null)
                     if (deleteError) throw deleteError
                 }
                 break

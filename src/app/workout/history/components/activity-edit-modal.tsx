@@ -25,27 +25,23 @@ export function ActivityEditModal({ activity, onClose, onSave }: ActivityEditMod
 
     const handleSave = async () => {
         setIsSaving(true)
-        try {
-            // Ensure the activity has a valid structure before saving
-            const activityToSave = {
-                ...editedActivity,
-                // Ensure exercises have proper structure
-                exercises: editedActivity.exercises.map(ex => ({
-                    ...ex,
-                    sets: ex.sets.map(set => ({
-                        ...set,
-                        completed: set.completed || false
-                    }))
+        
+        // Ensure the activity has a valid structure before saving
+        const activityToSave = {
+            ...editedActivity,
+            // Ensure exercises have proper structure
+            exercises: editedActivity.exercises.map(ex => ({
+                ...ex,
+                sets: ex.sets.map(set => ({
+                    ...set,
+                    completed: set.completed || false
                 }))
-            }
-            
-            await onSave(activityToSave)
-        } catch (error) {
-            console.error('Error saving activity:', error)
-            setIsSaving(false) // Make sure to reset saving state on error
+            }))
         }
-        // Note: Don't set isSaving to false here, let the parent component close the modal
-        // which will unmount this component
+        
+        // Call the save function (optimistic update will happen in parent)
+        onSave(activityToSave)
+        // Note: Modal will close immediately due to optimistic update
     }
 
     const updateExercise = (exerciseId: string, updates: Partial<WorkoutExercise>) => {
