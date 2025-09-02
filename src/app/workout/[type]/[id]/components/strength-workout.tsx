@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { X, Play, Pause, Square, Plus, GripVertical } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { X, Play, Pause, Square, Plus, GripVertical, BookOpen } from "lucide-react"
 import { WorkoutStorage, WorkoutExercise } from "@/lib/workout-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
 
@@ -24,6 +25,12 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     const [exercises, setExercises] = useState<Exercise[]>([])
     const [showAddExercise, setShowAddExercise] = useState(false)
     const [newExerciseName, setNewExerciseName] = useState("")
+    
+    // Template save state
+    const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false)
+    const [templateName, setTemplateName] = useState("")
+    const [isSavingTemplate, setIsSavingTemplate] = useState(false)
+    const [templateSaveError, setTemplateSaveError] = useState<string | null>(null)
 
     const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -354,6 +361,71 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         }
     }
 
+    const saveAsTemplate = async () => {
+        if (!templateName.trim()) return
+        if (!user) {
+            setTemplateSaveError('You must be signed in to save templates')
+            return
+        }
+
+        if (exercises.length === 0) {
+            setTemplateSaveError('Cannot save template with no exercises')
+            return
+        }
+
+        setIsSavingTemplate(true)
+        setTemplateSaveError(null)
+
+        try {
+            // Create template object with current exercises
+            const template = {
+                name: templateName.trim(),
+                type: 'strength' as const,
+                exercises: exercises.map(exercise => ({
+                    ...exercise,
+                    // Ensure all required fields are present
+                    id: exercise.id || `exercise-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                    name: exercise.name || 'Unnamed Exercise',
+                    description: exercise.description || '',
+                    category: exercise.category || 'general',
+                    targetMuscles: exercise.targetMuscles || [],
+                    equipment: exercise.equipment || 'bodyweight',
+                    difficulty: exercise.difficulty || 'beginner',
+                    restTime: exercise.restTime || 60,
+                    instructions: exercise.instructions || [],
+                    tips: exercise.tips || [],
+                    alternatives: exercise.alternatives || [],
+                    createdAt: exercise.createdAt || new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    sets: exercise.sets.map(set => ({
+                        ...set,
+                        id: set.id || `set-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                        reps: set.reps || '',
+                        weight: set.weight || '',
+                        notes: set.notes || '',
+                        completed: set.completed || false,
+                        restTime: set.restTime || exercise.restTime || 60
+                    }))
+                })),
+                isBuiltIn: false
+            }
+
+            await WorkoutStorage.saveTemplate(template)
+            
+            // Close dialog and reset form on success
+            setShowSaveTemplateDialog(false)
+            setTemplateName("")
+            setTemplateSaveError(null)
+            
+            console.log('Template saved successfully:', template.name)
+        } catch (error) {
+            console.error('Error saving template:', error)
+            setTemplateSaveError(error instanceof Error ? error.message : 'Failed to save template. Please try again.')
+        } finally {
+            setIsSavingTemplate(false)
+        }
+    }
+
     const finishWorkout = async () => {
         // Stop the timer first
         setIsRunning(false)
@@ -626,7 +698,18 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
 
 
                     {/* Finish Workout */}
-                    <div className="mt-8 pt-8 border-t border-[#212227]">
+                    <div className="mt-8 pt-8 border-t border-[#212227] space-y-4">
+                        {/* Save as Template Button */}
+                        <Button
+                            onClick={() => setShowSaveTemplateDialog(true)}
+                            disabled={exercises.length === 0}
+                            className="w-full bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-full border border-[rgba(42,140,234,0.35)] shadow-[0_8px_32px_rgba(42,140,234,0.28)] hover:shadow-[0_10px_40px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all py-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                        >
+                            <BookOpen className="w-4 h-4 mr-2" />
+                            Save as Template
+                        </Button>
+                        
+                        {/* Stop Workout Button */}
                         <Button
                             onClick={finishWorkout}
                             className="w-full bg-gradient-to-r from-red-600 to-red-500 text-white rounded-full shadow-[0_8px_32px_rgba(220,38,38,0.28)] hover:from-red-500 hover:to-red-400 hover:shadow-[0_10px_40px_rgba(220,38,38,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all py-3"
@@ -637,6 +720,75 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                     </div>
                 </div>
             </div>
+            
+            {/* Save Template Dialog */}
+            <Dialog 
+                open={showSaveTemplateDialog} 
+                onOpenChange={(open) => {
+                    setShowSaveTemplateDialog(open)
+                    if (!open) {
+                        setTemplateName("")
+                        setTemplateSaveError(null)
+                    }
+                }}
+            >
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-[#F3F4F6]">Save as Template</DialogTitle>
+                        <DialogDescription className="text-[#A1A1AA]">
+                            Give your workout template a name so you can use it again later.
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="py-4 space-y-4">
+                        <div>
+                            <Label htmlFor="template-name" className="text-[#A1A1AA]">Template Name</Label>
+                            <Input
+                                id="template-name"
+                                name="template-name"
+                                value={templateName}
+                                onChange={(e) => {
+                                    setTemplateName(e.target.value)
+                                    setTemplateSaveError(null) // Clear error when user starts typing
+                                }}
+                                placeholder="e.g., Upper Body Strength, Push Day..."
+                                className="mt-1 bg-[#0E0F13] border-[#212227] text-[#F3F4F6] placeholder-[#7A7F86] rounded-[14px]"
+                                onKeyPress={(e) => e.key === 'Enter' && !isSavingTemplate && templateName.trim() && saveAsTemplate()}
+                                disabled={isSavingTemplate}
+                            />
+                        </div>
+                        
+                        {/* Error Message */}
+                        {templateSaveError && (
+                            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-[14px]">
+                                <p className="text-sm text-red-400">{templateSaveError}</p>
+                            </div>
+                        )}
+                    </div>
+                    
+                    <DialogFooter className="gap-2">
+                        <Button
+                            onClick={() => {
+                                setShowSaveTemplateDialog(false)
+                                setTemplateName("")
+                                setTemplateSaveError(null)
+                            }}
+                            variant="ghost"
+                            className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full"
+                            disabled={isSavingTemplate}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={saveAsTemplate}
+                            disabled={!templateName.trim() || isSavingTemplate}
+                            className="bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-full border border-[rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                        >
+                            {isSavingTemplate ? 'Saving...' : 'Save Template'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
