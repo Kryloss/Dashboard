@@ -551,7 +551,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                                     </Button>
                                 </div>
                             ) : (
-                                <div className="flex items-center space-x-2 group">
+                                <div className="flex items-center space-x-2">
                                     <h1 className="text-2xl font-bold text-[#F3F4F6]">
                                         {workoutName || "Strength Training"}
                                     </h1>
@@ -559,7 +559,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                                         onClick={startEditingName}
                                         variant="ghost"
                                         size="icon"
-                                        className="opacity-0 group-hover:opacity-100 transition-opacity text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full w-8 h-8"
+                                        className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full w-8 h-8"
                                     >
                                         <Edit3 className="w-4 h-4" />
                                     </Button>
