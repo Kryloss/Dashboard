@@ -25,16 +25,7 @@ export default function WorkoutPage() {
     const [recentActivities, setRecentActivities] = useState<WorkoutActivity[]>([])
     const [isLoadingActivities, setIsLoadingActivities] = useState(true)
 
-    const loadOngoingWorkout = useCallback(async () => {
-        if (!user || !supabase) return
 
-        try {
-            const workout = await WorkoutStorage.getOngoingWorkout()
-            setOngoingWorkout(workout)
-        } catch (error) {
-            console.error('Error loading ongoing workout:', error)
-        }
-    }, [user, supabase])
 
     useEffect(() => {
         const onHealss = isOnSubdomain('healss')

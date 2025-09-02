@@ -14,11 +14,11 @@ import { useAuth } from "@/lib/hooks/useAuth"
 type Exercise = WorkoutExercise
 
 interface QuickLogPageProps {
-    params: { id: string }
+    params: Promise<{ id: string }>
 }
 
 export default function QuickLogPage({ params }: QuickLogPageProps) {
-    const workoutId = params.id
+    const [workoutId, setWorkoutId] = useState<string>('')
     const router = useRouter()
     const { user, supabase } = useAuth()
     const [exercises, setExercises] = useState<Exercise[]>([])
@@ -48,11 +48,20 @@ export default function QuickLogPage({ params }: QuickLogPageProps) {
     // Cancel/Log confirmation dialog
     const [showQuitDialog, setShowQuitDialog] = useState(false)
 
+    // Resolve params Promise
+    useEffect(() => {
+        const resolveParams = async () => {
+            const resolvedParams = await params
+            setWorkoutId(resolvedParams.id)
+        }
+        resolveParams()
+    }, [params])
+
     // Initialize workout
     useEffect(() => {
         const initializeQuickLog = async () => {
-            if (!user || !supabase) {
-                console.error('No user or supabase client available')
+            if (!user || !supabase || !workoutId) {
+                console.error('No user, supabase client, or workoutId available')
                 return
             }
 
