@@ -125,14 +125,46 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         }
     }, [isRunning, exercises])
 
-    // Cleanup on unmount
+    // Cleanup on unmount - preserve timer state when component unmounts
     useEffect(() => {
         return () => {
+            // Clear the interval to stop local timer updates
             if (intervalRef.current) {
                 clearInterval(intervalRef.current)
             }
+            
+            // Save current state when component unmounts (e.g., navigation away)
+            // This ensures timer continues running in background
+            const saveStateOnUnmount = async () => {
+                try {
+                    const workout = await WorkoutStorage.getOngoingWorkout()
+                    if (workout) {
+                        // Use current displayed time
+                        const currentDisplayTime = time
+                        
+                        // If timer is running, adjust startTime for background continuation
+                        let adjustedStartTime = workout.startTime
+                        if (isRunning) {
+                            adjustedStartTime = new Date(Date.now() - (currentDisplayTime * 1000)).toISOString()
+                        }
+                        
+                        await WorkoutStorage.saveOngoingWorkout({
+                            ...workout,
+                            exercises,
+                            elapsedTime: currentDisplayTime,
+                            startTime: adjustedStartTime,
+                            isRunning // Preserve running state
+                        })
+                    }
+                } catch (error) {
+                    console.error('Error saving workout state on unmount:', error)
+                }
+            }
+            
+            // Save state asynchronously without blocking unmount
+            saveStateOnUnmount()
         }
-    }, [])
+    }, [time, isRunning, exercises])
 
     const formatTime = (seconds: number) => {
         const hours = Math.floor(seconds / 3600)
@@ -353,7 +385,11 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     }
 
     const finishWorkout = async () => {
+        // Stop the timer first
+        setIsRunning(false)
+        
         try {
+            // Clear the ongoing workout completely
             await WorkoutStorage.clearOngoingWorkout()
         } catch (error) {
             console.error('Error finishing workout:', error)
@@ -362,15 +398,25 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     }
 
     const quitWorkout = async () => {
-        // Save current state before leaving (don't clear) - use real-time elapsed time
+        // Save current state before leaving (don't clear) - preserve timer state
         try {
             const workout = await WorkoutStorage.getOngoingWorkout()
             if (workout) {
-                const currentElapsedTime = WorkoutStorage.getCurrentElapsedTime()
+                // Use current displayed time, not calculated time
+                const currentDisplayTime = time
+                
+                // If timer is running, adjust startTime for background continuation
+                let adjustedStartTime = workout.startTime
+                if (isRunning) {
+                    // Calculate start time so that when resumed, it continues from current time
+                    adjustedStartTime = new Date(Date.now() - (currentDisplayTime * 1000)).toISOString()
+                }
+                
                 await WorkoutStorage.saveOngoingWorkout({
                     ...workout,
                     exercises,
-                    elapsedTime: currentElapsedTime,
+                    elapsedTime: currentDisplayTime,
+                    startTime: adjustedStartTime,
                     isRunning // Keep the timer running state - timer continues in background!
                 })
             }
