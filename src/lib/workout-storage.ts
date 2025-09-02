@@ -138,6 +138,7 @@ export class WorkoutStorage {
         if (this.currentUser && this.supabase) {
             this.processSyncQueue()
             this.setupRealtimeSync()
+            this.startBackgroundSync() // Start background timer sync
 
             // Debug database connection and RLS (remove this in production)
             this.debugDatabaseConnection()
@@ -367,6 +368,32 @@ export class WorkoutStorage {
         const realTimeElapsed = Math.floor((now - startTime) / 1000)
 
         // Return the calculated elapsed time (should match or be slightly ahead of stored elapsedTime)
+        return Math.max(realTimeElapsed, workout.elapsedTime)
+    }
+
+    // Get background elapsed time for workouts that were running when page was closed
+    static getBackgroundElapsedTime(): number {
+        const workout = this.getOngoingWorkoutFromLocalStorage()
+        if (!workout) return 0
+
+        // Security check: ensure workout belongs to current user
+        if (this.currentUser && workout.userId && workout.userId !== this.currentUser.id) {
+            console.warn('Workout data belongs to different user, returning 0')
+            return 0
+        }
+
+        if (!workout.isRunning) {
+            // If paused, return the stored elapsed time
+            return workout.elapsedTime
+        }
+
+        // If running, calculate real-time elapsed time based on startTime
+        // This handles the case where the workout was running when the page was closed
+        const now = Date.now()
+        const startTime = new Date(workout.startTime).getTime()
+        const realTimeElapsed = Math.floor((now - startTime) / 1000)
+
+        // Return the calculated elapsed time
         return Math.max(realTimeElapsed, workout.elapsedTime)
     }
 
@@ -968,6 +995,37 @@ export class WorkoutStorage {
         }, 10000) // Save to Supabase every 10 seconds for timer updates
     }
 
+    // Background timer sync - saves running workout state periodically
+    private static backgroundSyncInterval: NodeJS.Timeout | null = null
+    private static startBackgroundSync(): void {
+        if (this.backgroundSyncInterval) {
+            clearInterval(this.backgroundSyncInterval)
+        }
+
+        this.backgroundSyncInterval = setInterval(() => {
+            const workout = this.getOngoingWorkoutFromLocalStorage()
+            if (workout && workout.isRunning) {
+                // Update elapsed time for running workouts
+                const currentElapsedTime = this.getCurrentElapsedTime()
+                if (currentElapsedTime > workout.elapsedTime) {
+                    const updatedWorkout = {
+                        ...workout,
+                        elapsedTime: currentElapsedTime
+                    }
+                    this.saveOngoingWorkoutToLocalStorage(updatedWorkout)
+                    this.debouncedSaveOngoingWorkout(updatedWorkout)
+                }
+            }
+        }, 30000) // Sync every 30 seconds
+    }
+
+    private static stopBackgroundSync(): void {
+        if (this.backgroundSyncInterval) {
+            clearInterval(this.backgroundSyncInterval)
+            this.backgroundSyncInterval = null
+        }
+    }
+
     // ============================================================================
     // REAL-TIME SYNCHRONIZATION
     // ============================================================================
@@ -1094,5 +1152,7 @@ export class WorkoutStorage {
             clearTimeout(this.saveTimeout)
             this.saveTimeout = null
         }
+
+        this.stopBackgroundSync()
     }
 }

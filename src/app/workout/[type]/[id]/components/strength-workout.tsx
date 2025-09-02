@@ -44,22 +44,24 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                 if (existingWorkout && existingWorkout.workoutId === workoutId) {
                     // Load existing workout
                     setExercises(existingWorkout.exercises)
-                    // Use stored elapsed time, not real-time calculation
-                    setTime(existingWorkout.elapsedTime)
-                    setIsRunning(existingWorkout.isRunning)
 
-                    // If the workout is running, ensure startTime is set correctly for real-time calculation
+                    // If the workout was running when page was closed, calculate background elapsed time
                     if (existingWorkout.isRunning) {
-                        // Update the startTime to current time minus elapsed time for accurate real-time calculation
-                        const adjustedStartTime = new Date(Date.now() - (existingWorkout.elapsedTime * 1000)).toISOString()
-                        WorkoutStorage.updateWorkoutTime(existingWorkout.elapsedTime, true)
-                        // Update the workout with the adjusted start time
+                        // Calculate how much time has passed since the workout was last saved
+                        const backgroundElapsedTime = WorkoutStorage.getBackgroundElapsedTime()
+                        setTime(backgroundElapsedTime)
+                        setIsRunning(true)
+
+                        // Update the workout with the current background elapsed time
                         await WorkoutStorage.saveOngoingWorkout({
                             ...existingWorkout,
-                            startTime: adjustedStartTime,
-                            elapsedTime: existingWorkout.elapsedTime,
+                            elapsedTime: backgroundElapsedTime,
                             isRunning: true
                         })
+                    } else {
+                        // If paused, use stored elapsed time
+                        setTime(existingWorkout.elapsedTime)
+                        setIsRunning(false)
                     }
                 } else {
                     // Create new workout
@@ -353,6 +355,10 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     }
 
     const finishWorkout = async () => {
+        // Stop the timer first
+        setIsRunning(false)
+        setTime(0)
+
         try {
             await WorkoutStorage.clearOngoingWorkout()
         } catch (error) {
@@ -362,16 +368,17 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     }
 
     const quitWorkout = async () => {
-        // Save current state before leaving (don't clear) - use real-time elapsed time
+        // Save current state before leaving (don't clear) - timer continues in background
         try {
             const workout = await WorkoutStorage.getOngoingWorkout()
             if (workout) {
-                const currentElapsedTime = WorkoutStorage.getCurrentElapsedTime()
+                // Use current displayed time to save accurate state
+                const currentDisplayTime = time
                 await WorkoutStorage.saveOngoingWorkout({
                     ...workout,
                     exercises,
-                    elapsedTime: currentElapsedTime,
-                    isRunning // Keep the timer running state - timer continues in background!
+                    elapsedTime: currentDisplayTime,
+                    isRunning: isRunning // Keep the timer running state - timer continues in background!
                 })
             }
         } catch (error) {
