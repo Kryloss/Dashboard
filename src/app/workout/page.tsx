@@ -231,6 +231,17 @@ export default function WorkoutPage() {
             }
         } else if (action === 'log') {
             setShowQuickLogDialog(true)
+        } else if (action === 'quick-log') {
+            try {
+                // Create quick log ID and navigate to quick log page
+                const timestamp = Date.now()
+                const userIdSuffix = user?.id ? user.id.slice(-8) : Math.random().toString(36).slice(-8)
+                const quickLogId = `quicklog-${timestamp}-${userIdSuffix}`
+                
+                window.location.href = `/workout/quick-log/${quickLogId}`
+            } catch (error) {
+                console.error('Error starting quick log:', error)
+            }
         } else {
             console.log(`Quick action: ${action}`)
             setShowWorkoutDialog(true)
@@ -417,7 +428,7 @@ export default function WorkoutPage() {
                         <section className="mb-12">
                             <h2 className="text-xl font-semibold text-[#F3F4F6] mb-6">Quick Actions</h2>
 
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
                                 <QuickActionCard
                                     icon={<Target className="w-6 h-6" />}
                                     label="Running"
@@ -442,6 +453,11 @@ export default function WorkoutPage() {
                                     icon={<Timer className="w-6 h-6" />}
                                     label="Timer"
                                     onClick={() => handleQuickAction('timer')}
+                                />
+                                <QuickActionCard
+                                    icon={<FileText className="w-6 h-6" />}
+                                    label="Quick Log"
+                                    onClick={() => handleQuickAction('quick-log')}
                                 />
                             </div>
                         </section>
