@@ -44,9 +44,23 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                 if (existingWorkout && existingWorkout.workoutId === workoutId) {
                     // Load existing workout
                     setExercises(existingWorkout.exercises)
-                    // Use real-time elapsed time calculation
-                    setTime(WorkoutStorage.getCurrentElapsedTime())
+                    // Use stored elapsed time, not real-time calculation
+                    setTime(existingWorkout.elapsedTime)
                     setIsRunning(existingWorkout.isRunning)
+
+                    // If the workout is running, ensure startTime is set correctly for real-time calculation
+                    if (existingWorkout.isRunning) {
+                        // Update the startTime to current time minus elapsed time for accurate real-time calculation
+                        const adjustedStartTime = new Date(Date.now() - (existingWorkout.elapsedTime * 1000)).toISOString()
+                        WorkoutStorage.updateWorkoutTime(existingWorkout.elapsedTime, true)
+                        // Update the workout with the adjusted start time
+                        await WorkoutStorage.saveOngoingWorkout({
+                            ...existingWorkout,
+                            startTime: adjustedStartTime,
+                            elapsedTime: existingWorkout.elapsedTime,
+                            isRunning: true
+                        })
+                    }
                 } else {
                     // Create new workout
                     const newWorkout = WorkoutStorage.createWorkout('strength', workoutId)
