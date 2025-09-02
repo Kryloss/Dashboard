@@ -124,7 +124,9 @@ export default function WorkoutPage() {
                 }
 
                 // Create new workout and navigate to it
-                const workoutId = `strength-${Date.now()}`
+                const timestamp = Date.now()
+                const userIdSuffix = user?.id ? user.id.slice(-8) : Math.random().toString(36).slice(-8)
+                const workoutId = `strength-${timestamp}-${userIdSuffix}`
                 const newWorkout = WorkoutStorage.createWorkout('strength', workoutId)
                 await WorkoutStorage.saveOngoingWorkout(newWorkout)
 

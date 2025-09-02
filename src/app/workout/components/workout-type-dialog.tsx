@@ -105,7 +105,9 @@ export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps
             }
 
             // Create new workout and navigate to it
-            const workoutId = `${workoutType}-${Date.now()}`
+            const timestamp = Date.now()
+            const userIdSuffix = user?.id ? user.id.slice(-8) : Math.random().toString(36).slice(-8)
+            const workoutId = `${workoutType}-${timestamp}-${userIdSuffix}`
             const newWorkout = WorkoutStorage.createWorkout(workoutType as 'strength' | 'running' | 'yoga' | 'cycling', workoutId)
             await WorkoutStorage.saveOngoingWorkout(newWorkout)
 
@@ -129,7 +131,9 @@ export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps
             }
 
             // Create workout from template
-            const workoutId = `${template.type}-${Date.now()}`
+            const timestamp = Date.now()
+            const userIdSuffix = user?.id ? user.id.slice(-8) : Math.random().toString(36).slice(-8)
+            const workoutId = `${template.type}-${timestamp}-${userIdSuffix}`
             await WorkoutStorage.createWorkoutFromTemplate(template, workoutId)
 
             router.push(`/workout/${template.type}/${workoutId}`)
@@ -152,7 +156,9 @@ export function WorkoutTypeDialog({ open, onOpenChange }: WorkoutTypeDialogProps
     }
 
     const startNewWorkout = (workoutType: string) => {
-        const workoutId = `${workoutType}-${Date.now()}`
+        const timestamp = Date.now()
+        const userIdSuffix = user?.id ? user.id.slice(-8) : Math.random().toString(36).slice(-8)
+        const workoutId = `${workoutType}-${timestamp}-${userIdSuffix}`
         router.push(`/workout/${workoutType}/${workoutId}`)
         onOpenChange(false)
         setShowConflictDialog(false)
