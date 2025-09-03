@@ -490,29 +490,50 @@ export default function WorkoutPage() {
                             </div>
                         </section>
 
-                        {/* Today's Workout Section */}
+                        {/* Today's Activity Section */}
                         <section className="mb-12">
                             <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-xl font-semibold text-[#F3F4F6]">Today&apos;s Workout</h2>
-                                <Button
-                                    onClick={() => {
-                                        if (!user) {
-                                            notifications.warning('Sign in required', {
-                                                description: 'Please sign in to start workouts',
-                                                duration: 4000,
-                                                action: {
-                                                    label: 'Sign In',
-                                                    onClick: () => router.push('/auth/signin')
-                                                }
-                                            })
-                                            return
-                                        }
-                                        setShowWorkoutDialog(true)
-                                    }}
-                                    className="bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-full border border-[rgba(42,140,234,0.35)] shadow-[0_8px_32px_rgba(42,140,234,0.28)] hover:shadow-[0_10px_40px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all">
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    New Workout
-                                </Button>
+                                <h2 className="text-xl font-semibold text-[#F3F4F6]">Today&apos;s Activity</h2>
+                                <div className="flex items-center space-x-3">
+                                    <Button
+                                        onClick={() => {
+                                            if (!user) {
+                                                notifications.warning('Sign in required', {
+                                                    description: 'Please sign in to log workouts',
+                                                    duration: 4000,
+                                                    action: {
+                                                        label: 'Sign In',
+                                                        onClick: () => router.push('/auth/signin')
+                                                    }
+                                                })
+                                                return
+                                            }
+                                            handleQuickAction('log')
+                                        }}
+                                        className="bg-gradient-to-r from-[#6B7280] via-[#4B5563] to-[#374151] text-white rounded-full border border-[rgba(107,114,128,0.35)] shadow-[0_8px_32px_rgba(107,114,128,0.28)] hover:shadow-[0_10px_40px_rgba(107,114,128,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all">
+                                        <FileText className="w-4 h-4 mr-2" />
+                                        Log Workout
+                                    </Button>
+                                    <Button
+                                        onClick={() => {
+                                            if (!user) {
+                                                notifications.warning('Sign in required', {
+                                                    description: 'Please sign in to start workouts',
+                                                    duration: 4000,
+                                                    action: {
+                                                        label: 'Sign In',
+                                                        onClick: () => router.push('/auth/signin')
+                                                    }
+                                                })
+                                                return
+                                            }
+                                            setShowWorkoutDialog(true)
+                                        }}
+                                        className="bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-full border border-[rgba(42,140,234,0.35)] shadow-[0_8px_32px_rgba(42,140,234,0.28)] hover:shadow-[0_10px_40px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all">
+                                        <Plus className="w-4 h-4 mr-2" />
+                                        New Workout
+                                    </Button>
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
