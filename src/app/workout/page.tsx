@@ -662,7 +662,7 @@ export default function WorkoutPage() {
                                     </Button>
                                 </div>
 
-                                <div className="bg-[#121318] border border-[#212227] rounded-[20px] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)] flex-1">
+                                <div className="space-y-4 flex-1 flex flex-col justify-between">
                                     {isLoadingActivities ? (
                                         <div className="flex items-center justify-center py-8">
                                             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#2A8CEA]"></div>
@@ -674,48 +674,50 @@ export default function WorkoutPage() {
                                         </div>
                                     ) : (
                                         <>
-                                            {recentActivities.map((activity) => (
-                                                <ActivityItem
-                                                    key={activity.id}
-                                                    date={formatActivityDate(activity.completedAt)}
-                                                    name={activity.name || `${activity.workoutType.charAt(0).toUpperCase() + activity.workoutType.slice(1)} Workout`}
-                                                    duration={formatActivityDuration(activity.durationSeconds)}
-                                                    progress={calculateActivityProgress(activity)}
-                                                    workoutType={activity.workoutType}
-                                                    exerciseCount={activity.exercises?.length || 0}
-                                                    completedAt={activity.completedAt}
-                                                />
-                                            ))}
+                                            {recentActivities.map((activity) => {
+                                                const getWorkoutIcon = (type: string) => {
+                                                    switch (type) {
+                                                        case 'strength': return <Dumbbell className="w-4 h-4" />
+                                                        case 'running': return <Target className="w-4 h-4" />
+                                                        case 'yoga': return <Heart className="w-4 h-4" />
+                                                        case 'cycling': return <Bike className="w-4 h-4" />
+                                                        default: return <Dumbbell className="w-4 h-4" />
+                                                    }
+                                                }
+                                                
+                                                const formatTime = (isoString: string) => {
+                                                    const date = new Date(isoString)
+                                                    return date.toLocaleTimeString('en-US', { 
+                                                        hour: 'numeric', 
+                                                        minute: '2-digit',
+                                                        hour12: true 
+                                                    })
+                                                }
+                                                
+                                                return (
+                                                    <StatCard
+                                                        key={activity.id}
+                                                        icon={getWorkoutIcon(activity.workoutType)}
+                                                        label={activity.name || `${activity.workoutType.charAt(0).toUpperCase() + activity.workoutType.slice(1)} Workout`}
+                                                        value={`${formatActivityDate(activity.completedAt)} • ${formatTime(activity.completedAt)}`}
+                                                        change={{
+                                                            value: `${formatActivityDuration(activity.durationSeconds)} • ${activity.exercises?.length || 0} exercises`,
+                                                            direction: 'neutral' as const
+                                                        }}
+                                                        period=""
+                                                        className="flex-1"
+                                                    />
+                                                )
+                                            })}
                                             {/* Empty placeholders to fill up to 4 activities */}
                                             {Array.from({ length: 4 - recentActivities.length }, (_, index) => (
-                                                <div
+                                                <StatCard
                                                     key={`placeholder-${index}`}
-                                                    className="flex items-center space-x-4 py-4 px-4 bg-[#0A0B0F] border border-[#1A1B20] rounded-[16px] mb-3 last:mb-0 opacity-50"
-                                                >
-                                                    {/* Placeholder Icon */}
-                                                    <div className="w-10 h-10 rounded-[10px] flex items-center justify-center flex-shrink-0 bg-[rgba(255,255,255,0.02)] border border-[#1A1B20]">
-                                                        <Dumbbell className="w-5 h-5 text-[#3A3B40]" />
-                                                    </div>
-                                                    
-                                                    {/* Placeholder Content */}
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center justify-between mb-1">
-                                                            <div className="flex items-center space-x-2">
-                                                                <div className="w-12 h-3 bg-[#1A1B20] rounded animate-pulse"></div>
-                                                                <div className="w-16 h-3 bg-[#1A1B20] rounded animate-pulse"></div>
-                                                            </div>
-                                                            <div className="flex items-center space-x-3">
-                                                                <div className="w-12 h-3 bg-[#1A1B20] rounded animate-pulse"></div>
-                                                                <div className="w-16 h-3 bg-[#1A1B20] rounded animate-pulse"></div>
-                                                            </div>
-                                                        </div>
-                                                        
-                                                        <div className="w-24 h-4 bg-[#1A1B20] rounded mb-2 animate-pulse"></div>
-                                                        
-                                                        {/* Placeholder Progress Bar */}
-                                                        <div className="w-full h-1 bg-[rgba(255,255,255,0.04)] rounded-full"></div>
-                                                    </div>
-                                                </div>
+                                                    icon={<Dumbbell className="w-4 h-4 opacity-30" />}
+                                                    label="No recent activity"
+                                                    value="—"
+                                                    className="opacity-50 flex-1"
+                                                />
                                             ))}
                                         </>
                                     )}
