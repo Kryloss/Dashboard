@@ -508,7 +508,7 @@ export default function WorkoutPage() {
                                                 })
                                                 return
                                             }
-                                            handleQuickAction('log')
+                                            handleQuickAction('quick-log')
                                         }}
                                         className="bg-gradient-to-r from-[#6B7280] via-[#4B5563] to-[#374151] text-white rounded-full border border-[rgba(107,114,128,0.35)] shadow-[0_8px_32px_rgba(107,114,128,0.28)] hover:shadow-[0_10px_40px_rgba(107,114,128,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all">
                                         <FileText className="w-4 h-4 mr-2" />
