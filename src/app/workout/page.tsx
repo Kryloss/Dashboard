@@ -35,9 +35,26 @@ export default function WorkoutPage() {
         const onHealss = isOnSubdomain('healss')
         setIsHealssSubdomain(onHealss)
 
-        if (onHealss && user && supabase) {
-            // Initialize storage with user context
-            WorkoutStorage.initialize(user, supabase)
+        if (onHealss) {
+            if (user && supabase) {
+                // Initialize storage with user context
+                WorkoutStorage.initialize(user, supabase)
+
+                // Check if this is a new user and show welcome message
+                const showWelcomeIfNewUser = () => {
+                    const hasSeenWelcome = localStorage.getItem('workout-welcome-shown')
+                    if (!hasSeenWelcome) {
+                        notifications.success('Welcome to Workouts!', {
+                            description: 'Start your first workout below',
+                            duration: 6000,
+                            action: {
+                                label: 'Get Started',
+                                onClick: () => setShowWorkoutDialog(true)
+                            }
+                        })
+                        localStorage.setItem('workout-welcome-shown', 'true')
+                    }
+                }
 
             // Load initial data
             const loadInitialData = async () => {
@@ -60,6 +77,18 @@ export default function WorkoutPage() {
                                     onClick: () => router.push(`/workout/${workout.type}/${workout.workoutId}`)
                                 }
                             })
+                        } else {
+                            // Show background feature tip for first time users
+                            const hasSeenBackgroundTip = localStorage.getItem('background-tip-shown')
+                            if (!hasSeenBackgroundTip && workout.isRunning) {
+                                setTimeout(() => {
+                                    notifications.info('Feature tip', {
+                                        description: 'Workouts continue timing in background',
+                                        duration: 4000
+                                    })
+                                    localStorage.setItem('background-tip-shown', 'true')
+                                }, 1500)
+                            }
                         }
                     } else if (workout) {
                         setLiveWorkoutTime(workout.elapsedTime)
@@ -87,6 +116,9 @@ export default function WorkoutPage() {
             }
 
             loadInitialData()
+
+            // Show welcome message after initial load completes
+            setTimeout(showWelcomeIfNewUser, 1000)
 
             // Set up periodic check for ongoing workout updates only
             const interval = setInterval(async () => {
@@ -117,6 +149,17 @@ export default function WorkoutPage() {
             }, 30000) // Check every 30 seconds
 
             return () => clearInterval(interval)
+            } else {
+                // User not authenticated - show sign-in notification
+                notifications.warning('Sign in required', {
+                    description: 'Please sign in to access workouts',
+                    duration: 4000,
+                    action: {
+                        label: 'Sign In',
+                        onClick: () => router.push('/auth/signin')
+                    }
+                })
+            }
         }
     }, [user, supabase, notifications, router])
 
@@ -141,7 +184,16 @@ export default function WorkoutPage() {
 
     // Manual refresh function for when activities might have changed
     const refreshRecentActivities = useCallback(async () => {
-        if (!user || !supabase) return
+        if (!user || !supabase) {
+            notifications.info('Sign in to sync', {
+                description: 'Activities sync when signed in',
+                action: {
+                    label: 'Sign In',
+                    onClick: () => router.push('/auth/signin')
+                }
+            })
+            return
+        }
 
         try {
             const activities = await WorkoutStorage.getRecentActivities(3)
@@ -263,7 +315,14 @@ export default function WorkoutPage() {
 
     const handleQuickAction = async (action: string) => {
         if (!user || !supabase) {
-            console.error('User must be authenticated to start workouts')
+            notifications.warning('Sign in required', {
+                description: 'Create an account to start workouts',
+                duration: 4000,
+                action: {
+                    label: 'Sign In',
+                    onClick: () => router.push('/auth/signin')
+                }
+            })
             return
         }
 
@@ -289,6 +348,18 @@ export default function WorkoutPage() {
                     description: 'Ready to train!',
                     duration: 3000
                 })
+
+                // Show timer tip for new users
+                const hasSeenTimerTip = localStorage.getItem('timer-tip-shown')
+                if (!hasSeenTimerTip) {
+                    setTimeout(() => {
+                        notifications.info('Timer tip', {
+                            description: 'Use play/pause to track workout time',
+                            duration: 4000
+                        })
+                        localStorage.setItem('timer-tip-shown', 'true')
+                    }, 3000)
+                }
 
                 window.location.href = `/workout/strength/${workoutId}`
             } catch (error) {

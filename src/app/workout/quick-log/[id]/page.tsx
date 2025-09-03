@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { X, Plus, GripVertical, Edit3, Check, X as XIcon, Calendar, Clock } from "lucide-react"
 import { WorkoutStorage, WorkoutExercise } from "@/lib/workout-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
+import { useNotifications } from "@/lib/contexts/NotificationContext"
 
 // Use WorkoutExercise from storage
 type Exercise = WorkoutExercise
@@ -24,6 +25,7 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
     const [templateId, setTemplateId] = useState<string>('')
     const router = useRouter()
     const { user, supabase } = useAuth()
+    const notifications = useNotifications()
     const [exercises, setExercises] = useState<Exercise[]>([])
     const [showAddExercise, setShowAddExercise] = useState(false)
     const [newExerciseName, setNewExerciseName] = useState("")
@@ -114,11 +116,18 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
 
         const updatedExercises = [...exercises, newExercise]
         setExercises(updatedExercises)
+        
+        notifications.success('Exercise added', {
+            description: newExerciseName.trim(),
+            duration: 2000
+        })
+        
         setNewExerciseName("")
         setShowAddExercise(false)
     }
 
     const addSet = (exerciseId: string) => {
+        const exercise = exercises.find(e => e.id === exerciseId)
         const updatedExercises = exercises.map(exercise => {
             if (exercise.id === exerciseId) {
                 return {
@@ -131,6 +140,13 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
         })
 
         setExercises(updatedExercises)
+        
+        if (exercise) {
+            notifications.info('Set added', {
+                description: `${exercise.name}`,
+                duration: 1500
+            })
+        }
     }
 
     const updateSet = (exerciseId: string, setId: string, field: keyof Exercise['sets'][0], value: string | number | boolean) => {
@@ -154,8 +170,16 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
     }
 
     const removeExercise = (exerciseId: string) => {
+        const exerciseToRemove = exercises.find(e => e.id === exerciseId)
         const updatedExercises = exercises.filter(exercise => exercise.id !== exerciseId)
         setExercises(updatedExercises)
+        
+        if (exerciseToRemove) {
+            notifications.warning('Exercise removed', {
+                description: exerciseToRemove.name,
+                duration: 2000
+            })
+        }
     }
 
     const removeSet = (exerciseId: string, setId: string) => {
@@ -190,6 +214,18 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
     }
 
     const handleLogWorkout = async () => {
+        if (!user) {
+            notifications.warning('Sign in required', {
+                description: 'Please sign in to log workouts',
+                duration: 4000,
+                action: {
+                    label: 'Sign In',
+                    onClick: () => router.push('/auth/signin')
+                }
+            })
+            return
+        }
+
         try {
             // Calculate duration in seconds
             const totalMinutes = hours * 60 + minutes
@@ -208,10 +244,18 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
                 userId: user?.id
             })
 
+            notifications.success('Workout logged', {
+                description: 'Saved to history',
+                duration: 3000
+            })
+            
             console.log('Quick log workout saved to history')
+            router.push('/workout')
         } catch (error) {
             console.error('Error saving quick log workout:', error)
-        } finally {
+            notifications.error('Log failed', {
+                description: 'Could not save workout'
+            })
             router.push('/workout')
         }
     }

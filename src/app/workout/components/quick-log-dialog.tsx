@@ -113,6 +113,20 @@ export function QuickLogDialog({ open, onOpenChange, onActivityLogged }: QuickLo
                 duration: 3000
             })
 
+            // Show quick log tip for first usage
+            const quickLogCount = localStorage.getItem('quick-log-count')
+            const count = parseInt(quickLogCount || '0') + 1
+            localStorage.setItem('quick-log-count', count.toString())
+
+            if (count === 1) {
+                setTimeout(() => {
+                    notifications.info('Quick tip', {
+                        description: 'Perfect for logging past workouts',
+                        duration: 3000
+                    })
+                }, 2000)
+            }
+
             // Call the callback to refresh activities
             if (onActivityLogged) {
                 onActivityLogged()

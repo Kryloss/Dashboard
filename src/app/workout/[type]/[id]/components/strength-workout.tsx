@@ -293,6 +293,17 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                     description: newExerciseName.trim(),
                     duration: 2000
                 })
+
+                // Show tip for first exercise
+                const exerciseCount = exercises.length + 1
+                if (exerciseCount === 1) {
+                    setTimeout(() => {
+                        notifications.info('Pro tip', {
+                            description: 'Click + to add sets with weights',
+                            duration: 3000
+                        })
+                    }, 1500)
+                }
             }
         } catch (error) {
             console.error('Error saving workout:', error)
@@ -470,6 +481,20 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                 description: `"${template.name}" saved`,
                 duration: 4000
             })
+
+            // Check if this is their first template
+            const templatesCreated = localStorage.getItem('templates-created-count')
+            const count = parseInt(templatesCreated || '0') + 1
+            localStorage.setItem('templates-created-count', count.toString())
+
+            if (count === 1) {
+                setTimeout(() => {
+                    notifications.info('Smart move!', {
+                        description: 'Templates help repeat favorite workouts',
+                        duration: 4000
+                    })
+                }, 2000)
+            }
             
             console.log('Template saved successfully:', template.name)
         } catch (error) {
@@ -538,6 +563,33 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                     onClick: () => router.push('/workout/history')
                 }
             })
+
+            // Check if this is their first completed workout
+            const completedWorkoutsCount = localStorage.getItem('completed-workouts-count')
+            const count = parseInt(completedWorkoutsCount || '0') + 1
+            localStorage.setItem('completed-workouts-count', count.toString())
+
+            if (count === 1) {
+                // First workout completion tip
+                setTimeout(() => {
+                    notifications.info('Great job!', {
+                        description: 'Check history to track progress',
+                        duration: 4000,
+                        action: {
+                            label: 'View History',
+                            onClick: () => router.push('/workout/history')
+                        }
+                    })
+                }, 2000)
+            } else if (count === 3) {
+                // Third workout milestone
+                setTimeout(() => {
+                    notifications.success('3 workouts completed!', {
+                        description: 'Try saving a template next',
+                        duration: 4000
+                    })
+                }, 2000)
+            }
             
             console.log('Workout finished and cleared from storage')
         } catch (error) {

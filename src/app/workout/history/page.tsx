@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, Search, Filter, Dumbbell, Target, Heart, Bike, Plus } from "lucide-react"
 import { WorkoutStorage, WorkoutActivity } from "@/lib/workout-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
+import { useNotifications } from "@/lib/contexts/NotificationContext"
 import { ActivityCard } from "./components/activity-card"
 import { ActivityEditModal } from "./components/activity-edit-modal"
 import { DeleteConfirmDialog } from "./components/delete-confirm-dialog"
@@ -16,6 +17,7 @@ import { DeleteConfirmDialog } from "./components/delete-confirm-dialog"
 export default function WorkoutHistoryPage() {
     const router = useRouter()
     const { user, supabase } = useAuth()
+    const notifications = useNotifications()
     const [activities, setActivities] = useState<WorkoutActivity[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState("")
@@ -29,6 +31,18 @@ export default function WorkoutHistoryPage() {
     // Removed loadActivities callback to prevent infinite loop
 
     useEffect(() => {
+        if (!user || !supabase) {
+            notifications.warning('Sign in required', {
+                description: 'Please sign in to view workout history',
+                duration: 4000,
+                action: {
+                    label: 'Sign In',
+                    onClick: () => router.push('/auth/signin')
+                }
+            })
+            return
+        }
+        
         if (user && supabase) {
             setOffset(0)
             setActivities([]) // Clear activities immediately
@@ -46,14 +60,29 @@ export default function WorkoutHistoryPage() {
                     setHasMore(newActivities.length === limit)
                 } catch (error) {
                     console.error('Error loading workout activities:', error)
+                    notifications.error('Load failed', {
+                        description: 'Could not load workout history'
+                    })
                 } finally {
                     setIsLoading(false)
                 }
             }
             
             loadData()
+
+            // Show history tip for first-time visitors
+            setTimeout(() => {
+                const hasSeenHistoryTip = localStorage.getItem('history-tip-shown')
+                if (!hasSeenHistoryTip) {
+                    notifications.info('History tip', {
+                        description: 'Click any workout to edit details',
+                        duration: 4000
+                    })
+                    localStorage.setItem('history-tip-shown', 'true')
+                }
+            }, 2000)
         }
-    }, [user, supabase, filterType, limit])
+    }, [user, supabase, filterType, limit, notifications])
 
     const loadMoreActivities = async () => {
         if (!user || !supabase || isLoading) return
@@ -68,6 +97,9 @@ export default function WorkoutHistoryPage() {
             setHasMore(newActivities.length === limit)
         } catch (error) {
             console.error('Error loading more activities:', error)
+            notifications.error('Load failed', {
+                description: 'Could not load more activities'
+            })
         } finally {
             setIsLoading(false)
         }
@@ -79,9 +111,18 @@ export default function WorkoutHistoryPage() {
         try {
             await WorkoutStorage.deleteWorkoutActivity(deletingActivity.id)
             setActivities(prev => prev.filter(a => a.id !== deletingActivity.id))
+            
+            notifications.success('Activity deleted', {
+                description: 'Workout removed from history',
+                duration: 3000
+            })
+            
             setDeletingActivity(null)
         } catch (error) {
             console.error('Error deleting activity:', error)
+            notifications.error('Delete failed', {
+                description: 'Could not remove activity'
+            })
         }
     }
 
@@ -108,17 +149,23 @@ export default function WorkoutHistoryPage() {
                 notes: updatedActivity.notes
             })
 
+            notifications.success('Activity updated', {
+                description: 'Changes saved successfully',
+                duration: 3000
+            })
+            
             console.log('Activity updated successfully')
         } catch (error) {
             console.error('Error updating activity:', error)
+            
+            notifications.error('Update failed', {
+                description: 'Could not save changes'
+            })
             
             // Revert optimistic update on error
             setActivities(prev => prev.map(a =>
                 a.id === updatedActivity.id ? updatedActivity : a
             ))
-            
-            // Show error to user (you could add toast notification here)
-            alert('Failed to save changes. Please try again.')
         }
     }
 
