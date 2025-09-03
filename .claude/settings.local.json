@@ -16,7 +16,8 @@
       "Bash(npx tsc:*)",
       "Bash(npm run dev:*)",
       "Bash(del \"C:\\Users\\mrRep\\Desktop\\Dashboard\\src\\app\\workout\\components\\quick-log-selection-dialog.tsx\")",
-      "Bash(npx:*)"
+      "Bash(npx:*)",
+      "Bash(del \"C:\\Users\\mrRep\\Desktop\\Dashboard\\src\\app\\workout\\components\\quick-log-dialog.tsx\")"
     ],
     "deny": [],
     "ask": [],

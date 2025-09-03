@@ -10,7 +10,6 @@ import { QuickActionCard } from "./components/quick-action-card"
 import { StatCard } from "./components/stat-card"
 import { ActivityItem } from "./components/activity-item"
 import { WorkoutTypeDialog } from "./components/workout-type-dialog"
-import { QuickLogDialog } from "./components/quick-log-dialog"
 import { WorkoutStorage, OngoingWorkout, WorkoutActivity } from "@/lib/workout-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
@@ -22,7 +21,6 @@ export default function WorkoutPage() {
     const notifications = useNotifications()
     const [isHealssSubdomain, setIsHealssSubdomain] = useState(false)
     const [showWorkoutDialog, setShowWorkoutDialog] = useState(false)
-    const [showQuickLogDialog, setShowQuickLogDialog] = useState(false)
     const [showQuickLogWorkoutDialog, setShowQuickLogWorkoutDialog] = useState(false)
     const [ongoingWorkout, setOngoingWorkout] = useState<OngoingWorkout | null>(null)
     const [recentActivities, setRecentActivities] = useState<WorkoutActivity[]>([])
@@ -105,7 +103,7 @@ export default function WorkoutPage() {
                 // Load recent activities
                 try {
                     setIsLoadingActivities(true)
-                    const activities = await WorkoutStorage.getRecentActivities(3)
+                    const activities = await WorkoutStorage.getRecentActivities(5)
                     setRecentActivities(activities)
                 } catch (error) {
                     console.error('Error loading recent activities:', error)
@@ -142,7 +140,7 @@ export default function WorkoutPage() {
                 // Only refresh activities occasionally to avoid excessive calls
                 if (Math.random() < 0.1) { // 10% chance every 30 seconds = ~every 5 minutes
                     try {
-                        const activities = await WorkoutStorage.getRecentActivities(3)
+                        const activities = await WorkoutStorage.getRecentActivities(5)
                         setRecentActivities(activities)
                     } catch (error) {
                         console.error('Error loading recent activities:', error)
@@ -399,8 +397,6 @@ export default function WorkoutPage() {
             } finally {
                 // Loading state handled
             }
-        } else if (action === 'log') {
-            setShowQuickLogDialog(true)
         } else if (action === 'quick-log') {
             setShowQuickLogWorkoutDialog(true)
         } else {
@@ -616,29 +612,29 @@ export default function WorkoutPage() {
                         <section className="mb-12">
                             <h2 className="text-xl font-semibold text-[#F3F4F6] mb-6">Quick Actions</h2>
 
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6">
                                 <QuickActionCard
-                                    icon={<Target className="w-6 h-6" />}
+                                    icon={<Target className="w-7 h-7" />}
                                     label="Running"
                                     onClick={() => handleQuickAction('running')}
                                 />
                                 <QuickActionCard
-                                    icon={<Dumbbell className="w-6 h-6" />}
+                                    icon={<Dumbbell className="w-7 h-7" />}
                                     label="Strength"
                                     onClick={() => handleQuickAction('strength')}
                                 />
                                 <QuickActionCard
-                                    icon={<Heart className="w-6 h-6" />}
+                                    icon={<Heart className="w-7 h-7" />}
                                     label="Yoga"
                                     onClick={() => handleQuickAction('yoga')}
                                 />
                                 <QuickActionCard
-                                    icon={<Bike className="w-6 h-6" />}
+                                    icon={<Bike className="w-7 h-7" />}
                                     label="Cycling"
                                     onClick={() => handleQuickAction('cycling')}
                                 />
                                 <QuickActionCard
-                                    icon={<Timer className="w-6 h-6" />}
+                                    icon={<Timer className="w-7 h-7" />}
                                     label="Timer"
                                     onClick={() => handleQuickAction('timer')}
                                 />
@@ -677,6 +673,9 @@ export default function WorkoutPage() {
                                                 name={activity.name || `${activity.workoutType.charAt(0).toUpperCase() + activity.workoutType.slice(1)} Workout`}
                                                 duration={formatActivityDuration(activity.durationSeconds)}
                                                 progress={calculateActivityProgress(activity)}
+                                                workoutType={activity.workoutType}
+                                                exerciseCount={activity.exercises?.length || 0}
+                                                completedAt={activity.completedAt}
                                             />
                                         ))
                                     )}
@@ -709,12 +708,6 @@ export default function WorkoutPage() {
                     onOpenChange={setShowWorkoutDialog}
                 />
 
-                {/* Quick Log Dialog */}
-                <QuickLogDialog
-                    open={showQuickLogDialog}
-                    onOpenChange={setShowQuickLogDialog}
-                    onActivityLogged={refreshRecentActivities}
-                />
 
                 {/* Quick Log Workout Type Dialog */}
                 <WorkoutTypeDialog
