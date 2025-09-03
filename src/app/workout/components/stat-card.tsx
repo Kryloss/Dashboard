@@ -59,7 +59,7 @@ export function StatCard({
                 <span className="text-sm font-medium text-[#A1A1AA]">{label}</span>
             </div>
 
-            <div className="mb-1">
+            <div className="mb-2">
                 <div className="text-2xl font-bold text-[#F3F4F6] mb-1">
                     {value}
                 </div>
