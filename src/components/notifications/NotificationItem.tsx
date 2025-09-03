@@ -77,48 +77,46 @@ export function NotificationItem({ notification }: NotificationItemProps) {
         />
       )}
 
-      <div className="flex items-start space-x-3 w-full">
+      <div className="flex items-center space-x-2 w-full">
         {/* Icon */}
-        <div className="flex-shrink-0 mt-0.5">
+        <div className="flex-shrink-0">
           <ToastIcon variant={variant} />
         </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <ToastTitle className="font-medium text-[#F3F4F6] leading-tight">
+          <ToastTitle className="font-medium text-[#F3F4F6] text-sm leading-tight truncate">
             {title}
           </ToastTitle>
           {description && (
-            <ToastDescription className="mt-1 text-sm text-[#A1A1AA] leading-relaxed">
+            <ToastDescription className="text-xs text-[#A1A1AA] leading-tight truncate">
               {description}
             </ToastDescription>
           )}
-
-          {/* Action button */}
-          {action && (
-            <div className="mt-3">
-              <ToastAction
-                onClick={handleActionClick}
-                className={cn(
-                  "text-xs font-medium px-3 py-1.5 rounded-full transition-all",
-                  variant === 'success' && "text-[#22C55E] hover:bg-[rgba(34,197,94,0.10)]",
-                  variant === 'info' && "text-[#2A8CEA] hover:bg-[rgba(42,140,234,0.10)]",
-                  variant === 'warning' && "text-[#F59E0B] hover:bg-[rgba(245,158,11,0.10)]",
-                  variant === 'destructive' && "text-[#EF4444] hover:bg-[rgba(239,68,68,0.10)]",
-                  variant === 'default' && "text-[#A1A1AA] hover:bg-[rgba(161,161,170,0.10)]"
-                )}
-              >
-                {action.label}
-              </ToastAction>
-            </div>
-          )}
         </div>
+
+        {/* Action button - compact */}
+        {action && (
+          <ToastAction
+            onClick={handleActionClick}
+            className={cn(
+              "text-xs font-medium px-2 py-1 rounded-md transition-all flex-shrink-0",
+              variant === 'success' && "text-[#22C55E] hover:bg-[rgba(34,197,94,0.10)]",
+              variant === 'info' && "text-[#2A8CEA] hover:bg-[rgba(42,140,234,0.10)]",
+              variant === 'warning' && "text-[#F59E0B] hover:bg-[rgba(245,158,11,0.10)]",
+              variant === 'destructive' && "text-[#EF4444] hover:bg-[rgba(239,68,68,0.10)]",
+              variant === 'default' && "text-[#A1A1AA] hover:bg-[rgba(161,161,170,0.10)]"
+            )}
+          >
+            {action.label}
+          </ToastAction>
+        )}
 
         {/* Close button */}
         {dismissible && (
           <ToastClose
             onClick={handleClose}
-            className="flex-shrink-0 rounded-full p-1.5 text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.05)] transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
+            className="flex-shrink-0 rounded-full p-1 text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.05)] transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
           />
         )}
       </div>

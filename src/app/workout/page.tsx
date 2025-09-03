@@ -53,8 +53,8 @@ export default function WorkoutPage() {
                         
                         // Notify user that workout is running in background
                         if (backgroundElapsedTime > workout.elapsedTime + 30) { // If significantly more time has passed
-                            notifications.info('Workout continues in background', {
-                                description: 'Your workout timer has been running while you were away',
+                            notifications.info('Timer running', {
+                                description: 'Workout continued in background',
                                 action: {
                                     label: 'Resume',
                                     onClick: () => router.push(`/workout/${workout.type}/${workout.workoutId}`)
@@ -66,8 +66,8 @@ export default function WorkoutPage() {
                     }
                 } catch (error) {
                     console.error('Error loading ongoing workout:', error)
-                    notifications.error('Failed to load workout', {
-                        description: 'Could not retrieve your ongoing workout'
+                    notifications.error('Load failed', {
+                        description: 'Could not retrieve workout'
                     })
                 }
 
@@ -78,8 +78,8 @@ export default function WorkoutPage() {
                     setRecentActivities(activities)
                 } catch (error) {
                     console.error('Error loading recent activities:', error)
-                    notifications.error('Failed to load activities', {
-                        description: 'Could not retrieve your recent workout history'
+                    notifications.error('Load failed', {
+                        description: 'Could not get activity history'
                     })
                 } finally {
                     setIsLoadingActivities(false)
@@ -146,14 +146,14 @@ export default function WorkoutPage() {
         try {
             const activities = await WorkoutStorage.getRecentActivities(3)
             setRecentActivities(activities)
-            notifications.success('Activities updated', {
-                description: 'Your recent workout history has been refreshed',
+            notifications.success('Updated', {
+                description: 'Activity history refreshed',
                 duration: 3000
             })
         } catch (error) {
             console.error('Error refreshing recent activities:', error)
-            notifications.error('Failed to refresh activities', {
-                description: 'Could not update your workout history'
+            notifications.error('Refresh failed', {
+                description: 'Could not update history'
             })
         }
     }, [user, supabase, notifications])
@@ -285,16 +285,16 @@ export default function WorkoutPage() {
                 const newWorkout = WorkoutStorage.createWorkout('strength', workoutId)
                 await WorkoutStorage.saveOngoingWorkout(newWorkout)
 
-                notifications.success('Strength workout started!', {
-                    description: 'Ready to start your training session',
+                notifications.success('Workout started', {
+                    description: 'Ready to train!',
                     duration: 3000
                 })
 
                 window.location.href = `/workout/strength/${workoutId}`
             } catch (error) {
                 console.error('Error starting workout:', error)
-                notifications.error('Failed to start workout', {
-                    description: 'Could not create a new workout session. Please try again.',
+                notifications.error('Start failed', {
+                    description: 'Could not create workout',
                     duration: 5000
                 })
             } finally {

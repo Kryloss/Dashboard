@@ -7,19 +7,19 @@ export default function NotificationTestPage() {
     const notifications = useNotifications()
 
     const testSuccess = () => {
-        notifications.success('Workout completed!', {
-            description: 'Your workout has been saved to your history',
+        notifications.success('Workout completed', {
+            description: 'Saved to history',
             duration: 5000,
             action: {
-                label: 'View History',
+                label: 'History',
                 onClick: () => console.log('Navigate to history')
             }
         })
     }
 
     const testInfo = () => {
-        notifications.info('Workout continues in background', {
-            description: 'Your timer is still running. You can resume from the workout dashboard.',
+        notifications.info('Timer running', {
+            description: 'Continues in background',
             duration: 6000,
             action: {
                 label: 'Resume',
@@ -29,24 +29,25 @@ export default function NotificationTestPage() {
     }
 
     const testWarning = () => {
-        notifications.warning('Network connection unstable', {
-            description: 'Your workout is being saved locally and will sync when connection improves',
-            duration: 8000
+        notifications.warning('Timer paused', {
+            description: 'Workout on hold',
+            duration: 3000
         })
     }
 
     const testError = () => {
-        notifications.error('Failed to save workout', {
-            description: 'Could not save your workout to history. Please try again.',
+        notifications.error('Save failed', {
+            description: 'Could not save to history',
             duration: 6000
         })
     }
 
     const testMultiple = () => {
-        notifications.success('First notification', { duration: 2000 })
-        setTimeout(() => notifications.info('Second notification', { duration: 3000 }), 500)
-        setTimeout(() => notifications.warning('Third notification', { duration: 4000 }), 1000)
-        setTimeout(() => notifications.error('Fourth notification', { duration: 5000 }), 1500)
+        notifications.success('Exercise added', { description: 'Bench Press', duration: 2000 })
+        setTimeout(() => notifications.info('Timer started', { description: 'Workout is active', duration: 2000 }), 500)
+        setTimeout(() => notifications.warning('Timer paused', { description: 'Workout on hold', duration: 2000 }), 1000)
+        setTimeout(() => notifications.error('Save failed', { description: 'Could not save', duration: 2000 }), 1500)
+        setTimeout(() => notifications.success('Template saved', { description: '"Push Day" saved', duration: 2000 }), 2000)
     }
 
     const clearAll = () => {

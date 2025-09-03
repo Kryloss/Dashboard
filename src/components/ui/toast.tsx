@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 
 const toastVariants = cva(
-  "group pointer-events-auto relative flex w-full items-center justify-between space-x-3 overflow-hidden rounded-[14px] border p-4 pr-6 shadow-lg transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-bottom-full data-[state=open]:slide-in-from-bottom-full",
+  "group pointer-events-auto relative flex w-full items-center justify-between space-x-2 overflow-hidden rounded-[14px] border p-3 shadow-lg transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-bottom-full data-[state=open]:slide-in-from-bottom-full",
   {
     variants: {
       variant: {
@@ -47,7 +47,7 @@ const ToastViewport = React.forwardRef<
     ref={ref}
     tabIndex={-1}
     className={cn(
-      "fixed bottom-6 left-6 z-[100] flex max-h-screen w-full flex-col-reverse space-y-2 space-y-reverse outline-none sm:max-w-[420px] sm:space-y-4",
+      "fixed bottom-6 right-6 z-[100] flex max-h-screen w-full flex-col-reverse space-y-2 space-y-reverse outline-none sm:max-w-[280px] sm:space-y-4",
       className
     )}
     {...props}
@@ -128,7 +128,7 @@ const ToastDescription = React.forwardRef<
 ToastDescription.displayName = "ToastDescription"
 
 const ToastIcon = ({ variant }: { variant?: VariantProps<typeof toastVariants>["variant"] }) => {
-  const iconClass = "h-5 w-5 shrink-0"
+  const iconClass = "h-6 w-6 shrink-0"
   
   switch (variant) {
     case "success":

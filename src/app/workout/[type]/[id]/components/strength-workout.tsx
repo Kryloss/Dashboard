@@ -181,9 +181,25 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                     isRunning: true,
                     startTime: startTime
                 })
+                
+                // Notify user timer started
+                if (currentDisplayTime === 0) {
+                    notifications.success('Timer started', {
+                        description: 'Workout is now active',
+                        duration: 2000
+                    })
+                } else {
+                    notifications.info('Timer resumed', {
+                        description: 'Workout continues',
+                        duration: 2000
+                    })
+                }
             }
         } catch (error) {
             console.error('Error updating workout on start:', error)
+            notifications.error('Timer failed', {
+                description: 'Could not start timer'
+            })
         }
     }
 
@@ -204,9 +220,17 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                     elapsedTime: currentDisplayTime,
                     isRunning: false
                 })
+                
+                notifications.warning('Timer paused', {
+                    description: 'Workout on hold',
+                    duration: 2000
+                })
             }
         } catch (error) {
             console.error('Error updating workout on pause:', error)
+            notifications.error('Pause failed', {
+                description: 'Could not pause timer'
+            })
         }
     }
 
@@ -229,9 +253,17 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                     startTime: new Date().toISOString() // Reset start time
                 }
                 await WorkoutStorage.saveOngoingWorkout(resetWorkout)
+                
+                notifications.info('Timer reset', {
+                    description: 'Back to 00:00',
+                    duration: 2000
+                })
             }
         } catch (error) {
             console.error('Error updating workout on reset:', error)
+            notifications.error('Reset failed', {
+                description: 'Could not reset timer'
+            })
         }
     }
 
@@ -256,9 +288,17 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                     ...workout,
                     exercises: updatedExercises
                 })
+                
+                notifications.success('Exercise added', {
+                    description: newExerciseName.trim(),
+                    duration: 2000
+                })
             }
         } catch (error) {
             console.error('Error saving workout:', error)
+            notifications.error('Add failed', {
+                description: 'Could not add exercise'
+            })
         }
     }
 
@@ -426,8 +466,8 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
             setTemplateName("")
             setTemplateSaveError(null)
             
-            notifications.success('Template saved!', {
-                description: `"${template.name}" has been saved to your templates`,
+            notifications.success('Template saved', {
+                description: `"${template.name}" saved`,
                 duration: 4000
             })
             
@@ -490,11 +530,11 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
             await WorkoutStorage.clearOngoingWorkout()
             
             // Success notification
-            notifications.success('Workout completed!', {
-                description: `Your workout has been saved to your history`,
+            notifications.success('Workout completed', {
+                description: 'Saved to history',
                 duration: 5000,
                 action: {
-                    label: 'View History',
+                    label: 'History',
                     onClick: () => router.push('/workout/history')
                 }
             })
@@ -502,8 +542,8 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
             console.log('Workout finished and cleared from storage')
         } catch (error) {
             console.error('Error finishing workout:', error)
-            notifications.error('Failed to save workout', {
-                description: 'Could not save your workout to history. Please try again.',
+            notifications.error('Save failed', {
+                description: 'Could not save to history',
                 duration: 6000
             })
         } finally {
@@ -528,8 +568,8 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                 
                 // Notify user that workout continues in background if it's running
                 if (isRunning) {
-                    notifications.info('Workout continues in background', {
-                        description: 'Your timer is still running. You can resume from the workout dashboard.',
+                    notifications.info('Timer running', {
+                        description: 'Continues in background',
                         duration: 6000,
                         action: {
                             label: 'Resume',
@@ -540,8 +580,8 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
             }
         } catch (error) {
             console.error('Error saving workout state:', error)
-            notifications.error('Failed to save workout', {
-                description: 'Could not save your current progress'
+            notifications.error('Save failed', {
+                description: 'Could not save progress'
             })
         }
         router.push('/workout')

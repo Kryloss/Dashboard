@@ -11,6 +11,7 @@ import { Dumbbell, Target, Heart, Bike, FileText, Calendar, Clock } from "lucide
 import { cn } from "@/lib/utils"
 import { WorkoutStorage } from "@/lib/workout-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
+import { useNotifications } from "@/lib/contexts/NotificationContext"
 
 interface QuickLogDialogProps {
     open: boolean
@@ -51,6 +52,7 @@ const workoutTypes = [
 
 export function QuickLogDialog({ open, onOpenChange, onActivityLogged }: QuickLogDialogProps) {
     const { user } = useAuth()
+    const notifications = useNotifications()
     const [selectedType, setSelectedType] = useState<string>('')
     const [workoutName, setWorkoutName] = useState('')
     const [hours, setHours] = useState('')
@@ -105,6 +107,12 @@ export function QuickLogDialog({ open, onOpenChange, onActivityLogged }: QuickLo
 
             await WorkoutStorage.saveWorkoutActivity(activity)
             
+            // Success notification
+            notifications.success('Activity logged', {
+                description: `${selectedWorkoutType?.name} saved`,
+                duration: 3000
+            })
+            
             // Call the callback to refresh activities
             if (onActivityLogged) {
                 onActivityLogged()
@@ -113,6 +121,9 @@ export function QuickLogDialog({ open, onOpenChange, onActivityLogged }: QuickLo
             handleClose()
         } catch (error) {
             console.error('Error logging workout:', error)
+            notifications.error('Log failed', {
+                description: 'Could not save activity'
+            })
         } finally {
             setIsLogging(false)
         }
