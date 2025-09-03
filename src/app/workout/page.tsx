@@ -648,9 +648,9 @@ export default function WorkoutPage() {
                             </div>
                         </section>
 
-                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
                             {/* Recent Activity Section */}
-                            <section>
+                            <section className="flex flex-col h-full">
                                 <div className="flex items-center justify-between mb-6">
                                     <h2 className="text-xl font-semibold text-[#F3F4F6]">Recent Activity</h2>
                                     <Button
@@ -662,7 +662,7 @@ export default function WorkoutPage() {
                                     </Button>
                                 </div>
 
-                                <div className="bg-[#121318] border border-[#212227] rounded-[20px] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)]">
+                                <div className="bg-[#121318] border border-[#212227] rounded-[20px] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)] flex-1">
                                     {isLoadingActivities ? (
                                         <div className="flex items-center justify-center py-8">
                                             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#2A8CEA]"></div>
@@ -723,10 +723,10 @@ export default function WorkoutPage() {
                             </section>
 
                             {/* Weekly Stats and Health Log Section */}
-                            <section>
+                            <section className="flex flex-col h-full">
                                 <h2 className="text-xl font-semibold text-[#F3F4F6] mb-6">This Week&apos;s Progress</h2>
 
-                                <div className="space-y-4">
+                                <div className="space-y-4 flex-1 flex flex-col justify-between">
                                     {mockData.weeklyStats.map((stat, index) => (
                                         <StatCard
                                             key={index}
@@ -734,6 +734,7 @@ export default function WorkoutPage() {
                                             label={stat.label}
                                             value={stat.value}
                                             change={stat.change}
+                                            className="flex-1"
                                         />
                                     ))}
                                 </div>
