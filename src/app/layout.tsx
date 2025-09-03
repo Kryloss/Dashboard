@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/contexts/AuthContext";
+import { NotificationProvider } from "@/lib/contexts/NotificationContext";
 import { SubdomainLayout } from "@/components/subdomain-layout";
+import { NotificationContainer } from "@/components/notifications/NotificationContainer";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -40,7 +42,10 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className={`${inter.variable} font-sans antialiased bg-[#0B0C0D] text-[#FBF7FA]`}>
         <AuthProvider>
-          <SubdomainLayout>{children}</SubdomainLayout>
+          <NotificationProvider>
+            <SubdomainLayout>{children}</SubdomainLayout>
+            <NotificationContainer />
+          </NotificationProvider>
         </AuthProvider>
       </body>
     </html>

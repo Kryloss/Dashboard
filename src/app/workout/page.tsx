@@ -13,11 +13,13 @@ import { WorkoutTypeDialog } from "./components/workout-type-dialog"
 import { QuickLogDialog } from "./components/quick-log-dialog"
 import { WorkoutStorage, OngoingWorkout, WorkoutActivity } from "@/lib/workout-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
+import { useNotifications } from "@/lib/contexts/NotificationContext"
 import { Settings, Plus, Flame, Dumbbell, User, Timer, Bike, Target, TrendingUp, Clock, Heart, FileText, Play } from "lucide-react"
 
 export default function WorkoutPage() {
     const router = useRouter()
     const { user, supabase } = useAuth()
+    const notifications = useNotifications()
     const [isHealssSubdomain, setIsHealssSubdomain] = useState(false)
     const [showWorkoutDialog, setShowWorkoutDialog] = useState(false)
     const [showQuickLogDialog, setShowQuickLogDialog] = useState(false)
@@ -48,11 +50,25 @@ export default function WorkoutPage() {
                     if (workout?.isRunning) {
                         const backgroundElapsedTime = WorkoutStorage.getBackgroundElapsedTime()
                         setLiveWorkoutTime(backgroundElapsedTime)
+                        
+                        // Notify user that workout is running in background
+                        if (backgroundElapsedTime > workout.elapsedTime + 30) { // If significantly more time has passed
+                            notifications.info('Workout continues in background', {
+                                description: 'Your workout timer has been running while you were away',
+                                action: {
+                                    label: 'Resume',
+                                    onClick: () => router.push(`/workout/${workout.type}/${workout.workoutId}`)
+                                }
+                            })
+                        }
                     } else if (workout) {
                         setLiveWorkoutTime(workout.elapsedTime)
                     }
                 } catch (error) {
                     console.error('Error loading ongoing workout:', error)
+                    notifications.error('Failed to load workout', {
+                        description: 'Could not retrieve your ongoing workout'
+                    })
                 }
 
                 // Load recent activities
@@ -62,6 +78,9 @@ export default function WorkoutPage() {
                     setRecentActivities(activities)
                 } catch (error) {
                     console.error('Error loading recent activities:', error)
+                    notifications.error('Failed to load activities', {
+                        description: 'Could not retrieve your recent workout history'
+                    })
                 } finally {
                     setIsLoadingActivities(false)
                 }
@@ -127,10 +146,17 @@ export default function WorkoutPage() {
         try {
             const activities = await WorkoutStorage.getRecentActivities(3)
             setRecentActivities(activities)
+            notifications.success('Activities updated', {
+                description: 'Your recent workout history has been refreshed',
+                duration: 3000
+            })
         } catch (error) {
             console.error('Error refreshing recent activities:', error)
+            notifications.error('Failed to refresh activities', {
+                description: 'Could not update your workout history'
+            })
         }
-    }, [user, supabase])
+    }, [user, supabase, notifications])
 
     // Helper function to format time (minutes:seconds)
     const formatWorkoutTime = (seconds: number) => {
@@ -259,9 +285,18 @@ export default function WorkoutPage() {
                 const newWorkout = WorkoutStorage.createWorkout('strength', workoutId)
                 await WorkoutStorage.saveOngoingWorkout(newWorkout)
 
+                notifications.success('Strength workout started!', {
+                    description: 'Ready to start your training session',
+                    duration: 3000
+                })
+
                 window.location.href = `/workout/strength/${workoutId}`
             } catch (error) {
                 console.error('Error starting workout:', error)
+                notifications.error('Failed to start workout', {
+                    description: 'Could not create a new workout session. Please try again.',
+                    duration: 5000
+                })
             } finally {
                 // Loading state handled
             }

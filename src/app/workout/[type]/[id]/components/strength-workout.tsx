@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { X, Play, Pause, Square, Plus, GripVertical, BookOpen, Edit3, Check, X as XIcon } from "lucide-react"
 import { WorkoutStorage, WorkoutExercise } from "@/lib/workout-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
+import { useNotifications } from "@/lib/contexts/NotificationContext"
 
 // Use WorkoutExercise from storage
 type Exercise = WorkoutExercise
@@ -20,6 +21,7 @@ interface StrengthWorkoutProps {
 export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     const router = useRouter()
     const { user, supabase } = useAuth()
+    const notifications = useNotifications()
     const [isRunning, setIsRunning] = useState(false)
     const [time, setTime] = useState(0)
     const [exercises, setExercises] = useState<Exercise[]>([])
@@ -424,6 +426,11 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
             setTemplateName("")
             setTemplateSaveError(null)
             
+            notifications.success('Template saved!', {
+                description: `"${template.name}" has been saved to your templates`,
+                duration: 4000
+            })
+            
             console.log('Template saved successfully:', template.name)
         } catch (error) {
             console.error('Error saving template:', error)
@@ -482,9 +489,23 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
             // Clear the ongoing workout from storage
             await WorkoutStorage.clearOngoingWorkout()
             
+            // Success notification
+            notifications.success('Workout completed!', {
+                description: `Your workout has been saved to your history`,
+                duration: 5000,
+                action: {
+                    label: 'View History',
+                    onClick: () => router.push('/workout/history')
+                }
+            })
+            
             console.log('Workout finished and cleared from storage')
         } catch (error) {
             console.error('Error finishing workout:', error)
+            notifications.error('Failed to save workout', {
+                description: 'Could not save your workout to history. Please try again.',
+                duration: 6000
+            })
         } finally {
             setTime(0)
         }
@@ -504,9 +525,24 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                     elapsedTime: currentDisplayTime,
                     isRunning: isRunning // Keep the timer running state - timer continues in background!
                 })
+                
+                // Notify user that workout continues in background if it's running
+                if (isRunning) {
+                    notifications.info('Workout continues in background', {
+                        description: 'Your timer is still running. You can resume from the workout dashboard.',
+                        duration: 6000,
+                        action: {
+                            label: 'Resume',
+                            onClick: () => router.push(`/workout/${workout.type}/${workout.workoutId}`)
+                        }
+                    })
+                }
             }
         } catch (error) {
             console.error('Error saving workout state:', error)
+            notifications.error('Failed to save workout', {
+                description: 'Could not save your current progress'
+            })
         }
         router.push('/workout')
     }
