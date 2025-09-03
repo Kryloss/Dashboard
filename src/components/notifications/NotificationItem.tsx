@@ -111,11 +111,11 @@ export function NotificationItem({ notification }: NotificationItemProps) {
           </ToastAction>
         )}
 
-        {/* Close button */}
+        {/* Close button - always visible */}
         {dismissible && (
           <ToastClose
             onClick={handleClose}
-            className="flex-shrink-0 rounded-full p-1 text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.05)] transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
+            className="flex-shrink-0 rounded-full p-1 text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.05)] transition-all opacity-60 hover:opacity-100"
           />
         )}
       </div>

@@ -47,7 +47,7 @@ const ToastViewport = React.forwardRef<
     ref={ref}
     tabIndex={-1}
     className={cn(
-      "fixed bottom-6 right-6 z-[100] flex max-h-screen w-full flex-col-reverse space-y-2 space-y-reverse outline-none sm:max-w-[280px] sm:space-y-4",
+      "fixed bottom-8 right-6 z-[100] flex max-h-screen w-full flex-col-reverse space-y-2 space-y-reverse outline-none sm:max-w-[280px] sm:space-y-4",
       className
     )}
     {...props}
