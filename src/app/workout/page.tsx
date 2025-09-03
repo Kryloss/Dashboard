@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { isOnSubdomain } from "@/lib/subdomains"
 import { Button } from "@/components/ui/button"
@@ -8,7 +8,7 @@ import { GoalRings } from "./components/goal-rings"
 import { PlannedWorkoutCard } from "./components/planned-workout-card"
 import { QuickActionCard } from "./components/quick-action-card"
 import { StatCard } from "./components/stat-card"
-import { ActivityItem } from "./components/activity-item"
+
 import { WorkoutTypeDialog } from "./components/workout-type-dialog"
 import { ActivityEditModal } from "./history/components/activity-edit-modal"
 import { WorkoutStorage, OngoingWorkout, WorkoutActivity } from "@/lib/workout-storage"
@@ -28,7 +28,7 @@ export default function WorkoutPage() {
     const [isLoadingActivities, setIsLoadingActivities] = useState(true)
     const [liveWorkoutTime, setLiveWorkoutTime] = useState(0)
     const [editingActivity, setEditingActivity] = useState<WorkoutActivity | null>(null)
-    const [deletingActivity, setDeletingActivity] = useState<WorkoutActivity | null>(null)
+
 
 
 
@@ -40,124 +40,124 @@ export default function WorkoutPage() {
         const initializeWithDelay = setTimeout(() => {
             if (onHealss) {
                 if (user && supabase) {
-                // Initialize storage with user context
-                WorkoutStorage.initialize(user, supabase)
+                    // Initialize storage with user context
+                    WorkoutStorage.initialize(user, supabase)
 
-                // Check if this is a new user and show welcome message
-                const showWelcomeIfNewUser = () => {
-                    const hasSeenWelcome = localStorage.getItem('workout-welcome-shown')
-                    if (!hasSeenWelcome) {
-                        notifications.success('Welcome to Workouts!', {
-                            description: 'Start your first workout below',
-                            duration: 6000,
-                            action: {
-                                label: 'Get Started',
-                                onClick: () => setShowWorkoutDialog(true)
-                            }
-                        })
-                        localStorage.setItem('workout-welcome-shown', 'true')
-                    }
-                }
-
-            // Load initial data
-            const loadInitialData = async () => {
-                // Load ongoing workout
-                try {
-                    const workout = await WorkoutStorage.getOngoingWorkout()
-                    setOngoingWorkout(workout)
-
-                    // Initialize live workout time
-                    if (workout?.isRunning) {
-                        const backgroundElapsedTime = WorkoutStorage.getBackgroundElapsedTime()
-                        setLiveWorkoutTime(backgroundElapsedTime)
-
-                        // Notify user that workout is running in background
-                        if (backgroundElapsedTime > workout.elapsedTime + 30) { // If significantly more time has passed
-                            notifications.info('Timer running', {
-                                description: 'Workout continued in background',
+                    // Check if this is a new user and show welcome message
+                    const showWelcomeIfNewUser = () => {
+                        const hasSeenWelcome = localStorage.getItem('workout-welcome-shown')
+                        if (!hasSeenWelcome) {
+                            notifications.success('Welcome to Workouts!', {
+                                description: 'Start your first workout below',
+                                duration: 6000,
                                 action: {
-                                    label: 'Resume',
-                                    onClick: () => router.push(`/workout/${workout.type}/${workout.workoutId}`)
+                                    label: 'Get Started',
+                                    onClick: () => setShowWorkoutDialog(true)
                                 }
                             })
-                        } else {
-                            // Show background feature tip for first time users
-                            const hasSeenBackgroundTip = localStorage.getItem('background-tip-shown')
-                            if (!hasSeenBackgroundTip && workout.isRunning) {
-                                setTimeout(() => {
-                                    notifications.info('Feature tip', {
-                                        description: 'Workouts continue timing in background',
-                                        duration: 4000
+                            localStorage.setItem('workout-welcome-shown', 'true')
+                        }
+                    }
+
+                    // Load initial data
+                    const loadInitialData = async () => {
+                        // Load ongoing workout
+                        try {
+                            const workout = await WorkoutStorage.getOngoingWorkout()
+                            setOngoingWorkout(workout)
+
+                            // Initialize live workout time
+                            if (workout?.isRunning) {
+                                const backgroundElapsedTime = WorkoutStorage.getBackgroundElapsedTime()
+                                setLiveWorkoutTime(backgroundElapsedTime)
+
+                                // Notify user that workout is running in background
+                                if (backgroundElapsedTime > workout.elapsedTime + 30) { // If significantly more time has passed
+                                    notifications.info('Timer running', {
+                                        description: 'Workout continued in background',
+                                        action: {
+                                            label: 'Resume',
+                                            onClick: () => router.push(`/workout/${workout.type}/${workout.workoutId}`)
+                                        }
                                     })
-                                    localStorage.setItem('background-tip-shown', 'true')
-                                }, 1500)
+                                } else {
+                                    // Show background feature tip for first time users
+                                    const hasSeenBackgroundTip = localStorage.getItem('background-tip-shown')
+                                    if (!hasSeenBackgroundTip && workout.isRunning) {
+                                        setTimeout(() => {
+                                            notifications.info('Feature tip', {
+                                                description: 'Workouts continue timing in background',
+                                                duration: 4000
+                                            })
+                                            localStorage.setItem('background-tip-shown', 'true')
+                                        }, 1500)
+                                    }
+                                }
+                            } else if (workout) {
+                                setLiveWorkoutTime(workout.elapsedTime)
+                            }
+                        } catch (error) {
+                            console.error('Error loading ongoing workout:', error)
+                            notifications.error('Load failed', {
+                                description: 'Could not retrieve workout'
+                            })
+                        }
+
+                        // Load recent activities
+                        try {
+                            setIsLoadingActivities(true)
+                            const activities = await WorkoutStorage.getRecentActivities(3)
+                            setRecentActivities(activities)
+                        } catch (error) {
+                            console.error('Error loading recent activities:', error)
+                            notifications.error('Load failed', {
+                                description: 'Could not get activity history'
+                            })
+                        } finally {
+                            setIsLoadingActivities(false)
+                        }
+                    }
+
+                    loadInitialData()
+
+                    // Show welcome message after initial load completes
+                    setTimeout(showWelcomeIfNewUser, 1000)
+
+                    // Set up periodic check for ongoing workout updates only
+                    const interval = setInterval(async () => {
+                        try {
+                            const workout = await WorkoutStorage.getOngoingWorkout()
+                            setOngoingWorkout(workout)
+
+                            // If workout is running, calculate live time
+                            if (workout?.isRunning) {
+                                const backgroundElapsedTime = WorkoutStorage.getBackgroundElapsedTime()
+                                setLiveWorkoutTime(backgroundElapsedTime)
+                            } else if (workout) {
+                                setLiveWorkoutTime(workout.elapsedTime)
+                            }
+                        } catch (error) {
+                            console.error('Error loading ongoing workout:', error)
+                        }
+
+                        // Only refresh activities occasionally to avoid excessive calls
+                        if (Math.random() < 0.1) { // 10% chance every 30 seconds = ~every 5 minutes
+                            try {
+                                const activities = await WorkoutStorage.getRecentActivities(3)
+                                setRecentActivities(activities)
+                            } catch (error) {
+                                console.error('Error loading recent activities:', error)
                             }
                         }
-                    } else if (workout) {
-                        setLiveWorkoutTime(workout.elapsedTime)
-                    }
-                } catch (error) {
-                    console.error('Error loading ongoing workout:', error)
-                    notifications.error('Load failed', {
-                        description: 'Could not retrieve workout'
-                    })
-                }
+                    }, 30000) // Check every 30 seconds
 
-                // Load recent activities
-                try {
-                    setIsLoadingActivities(true)
-                    const activities = await WorkoutStorage.getRecentActivities(3)
-                    setRecentActivities(activities)
-                } catch (error) {
-                    console.error('Error loading recent activities:', error)
-                    notifications.error('Load failed', {
-                        description: 'Could not get activity history'
-                    })
-                } finally {
-                    setIsLoadingActivities(false)
-                }
-            }
-
-            loadInitialData()
-
-            // Show welcome message after initial load completes
-            setTimeout(showWelcomeIfNewUser, 1000)
-
-            // Set up periodic check for ongoing workout updates only
-            const interval = setInterval(async () => {
-                try {
-                    const workout = await WorkoutStorage.getOngoingWorkout()
-                    setOngoingWorkout(workout)
-
-                    // If workout is running, calculate live time
-                    if (workout?.isRunning) {
-                        const backgroundElapsedTime = WorkoutStorage.getBackgroundElapsedTime()
-                        setLiveWorkoutTime(backgroundElapsedTime)
-                    } else if (workout) {
-                        setLiveWorkoutTime(workout.elapsedTime)
-                    }
-                } catch (error) {
-                    console.error('Error loading ongoing workout:', error)
-                }
-
-                // Only refresh activities occasionally to avoid excessive calls
-                if (Math.random() < 0.1) { // 10% chance every 30 seconds = ~every 5 minutes
-                    try {
-                        const activities = await WorkoutStorage.getRecentActivities(3)
-                        setRecentActivities(activities)
-                    } catch (error) {
-                        console.error('Error loading recent activities:', error)
-                    }
-                }
-            }, 30000) // Check every 30 seconds
-
-            return () => clearInterval(interval)
+                    return () => clearInterval(interval)
                 } else if (user === null) {
                     // Only show sign-in notification if user is explicitly null (not loading)
                     // and we haven't shown it recently
                     const lastSigninNotification = localStorage.getItem('last-signin-notification')
                     const now = Date.now()
-                    
+
                     if (!lastSigninNotification || now - parseInt(lastSigninNotification) > 300000) { // 5 minutes
                         notifications.warning('Sign in required', {
                             description: 'Please sign in to access workouts',
@@ -197,40 +197,7 @@ export default function WorkoutPage() {
         }
     }, [ongoingWorkout?.isRunning])
 
-    // Manual refresh function for when activities might have changed
-    const refreshRecentActivities = useCallback(async () => {
-        if (!user || !supabase) {
-            // Only show if user explicitly clicked refresh (not on auto-load)
-            const lastSyncNotification = localStorage.getItem('last-sync-notification')
-            const now = Date.now()
-            
-            if (!lastSyncNotification || now - parseInt(lastSyncNotification) > 60000) { // 1 minute
-                notifications.info('Sign in to sync', {
-                    description: 'Activities sync when signed in',
-                    action: {
-                        label: 'Sign In',
-                        onClick: () => router.push('/auth/signin')
-                    }
-                })
-                localStorage.setItem('last-sync-notification', now.toString())
-            }
-            return
-        }
 
-        try {
-            const activities = await WorkoutStorage.getRecentActivities(3)
-            setRecentActivities(activities)
-            notifications.success('Updated', {
-                description: 'Activity history refreshed',
-                duration: 3000
-            })
-        } catch (error) {
-            console.error('Error refreshing recent activities:', error)
-            notifications.error('Refresh failed', {
-                description: 'Could not update history'
-            })
-        }
-    }, [user, supabase, notifications])
 
     // Helper function to format time (minutes:seconds)
     const formatWorkoutTime = (seconds: number) => {
@@ -266,15 +233,7 @@ export default function WorkoutPage() {
         return `${minutes} min`
     }
 
-    const calculateActivityProgress = (activity: WorkoutActivity) => {
-        if (!activity.exercises || activity.exercises.length === 0) return 0
 
-        const totalSets = activity.exercises.reduce((acc, ex) => acc + ex.sets.length, 0)
-        const completedSets = activity.exercises.reduce((acc, ex) =>
-            acc + ex.sets.filter(set => set.completed).length, 0)
-
-        return totalSets > 0 ? completedSets / totalSets : 1
-    }
 
     // Mock data for demonstration
     const mockData = {
@@ -347,7 +306,7 @@ export default function WorkoutPage() {
             // Only show on user action, with rate limiting
             const lastActionNotification = localStorage.getItem('last-action-notification')
             const now = Date.now()
-            
+
             if (!lastActionNotification || now - parseInt(lastActionNotification) > 30000) { // 30 seconds
                 notifications.warning('Sign in required', {
                     description: 'Create an account to start workouts',
@@ -421,7 +380,7 @@ export default function WorkoutPage() {
         try {
             await WorkoutStorage.deleteWorkoutActivity(activity.id)
             setRecentActivities(prev => prev.filter(a => a.id !== activity.id))
-            
+
             notifications.success('Activity deleted', {
                 description: 'Workout removed from history',
                 duration: 3000
@@ -442,11 +401,11 @@ export default function WorkoutPage() {
             ...updatedActivity,
             updatedAt: new Date().toISOString()
         }
-        
+
         setRecentActivities(prev => prev.map(a =>
             a.id === updatedActivity.id ? optimisticUpdate : a
         ))
-        
+
         // Close modal immediately for better UX
         setEditingActivity(null)
 
@@ -465,11 +424,11 @@ export default function WorkoutPage() {
             })
         } catch (error) {
             console.error('Error updating activity:', error)
-            
+
             notifications.error('Update failed', {
                 description: 'Could not save changes'
             })
-            
+
             // Revert optimistic update on error
             setRecentActivities(prev => prev.map(a =>
                 a.id === updatedActivity.id ? updatedActivity : a
@@ -773,16 +732,16 @@ export default function WorkoutPage() {
                                                         default: return <Dumbbell className="w-4 h-4" />
                                                     }
                                                 }
-                                                
+
                                                 const formatTime = (isoString: string) => {
                                                     const date = new Date(isoString)
-                                                    return date.toLocaleTimeString('en-US', { 
-                                                        hour: 'numeric', 
+                                                    return date.toLocaleTimeString('en-US', {
+                                                        hour: 'numeric',
                                                         minute: '2-digit',
-                                                        hour12: true 
+                                                        hour12: true
                                                     })
                                                 }
-                                                
+
                                                 return (
                                                     <div key={activity.id} className="bg-[#121318] border border-[#212227] rounded-[20px] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)] hover:border-[#2A2B31] hover:-translate-y-[1px] hover:shadow-[0_0_0_1px_rgba(42,140,234,0.35),_0_8px_40px_rgba(42,140,234,0.20)] transition-all duration-200 ease-out group">
                                                         <div className="flex items-start justify-between">
@@ -807,7 +766,7 @@ export default function WorkoutPage() {
                                                                     <span>{`${formatActivityDuration(activity.durationSeconds)} • ${activity.exercises?.length || 0} exercises`}</span>
                                                                 </div>
                                                             </div>
-                                                            
+
                                                             {/* Action Buttons */}
                                                             <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
                                                                 <Button
