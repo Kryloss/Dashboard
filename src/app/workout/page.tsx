@@ -642,11 +642,6 @@ export default function WorkoutPage() {
                                     label="Timer"
                                     onClick={() => handleQuickAction('timer')}
                                 />
-                                <QuickActionCard
-                                    icon={<FileText className="w-6 h-6" />}
-                                    label="Quick Log"
-                                    onClick={() => handleQuickAction('quick-log')}
-                                />
                             </div>
                         </section>
 
