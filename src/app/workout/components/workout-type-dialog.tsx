@@ -16,7 +16,7 @@ interface WorkoutTypeDialogProps {
     mode?: 'new-workout' | 'quick-log'
 }
 
-const getWorkoutTypes = (mode: 'new-workout' | 'quick-log') => [
+const getWorkoutTypes = () => [
     {
         id: 'strength',
         name: 'Strength',
@@ -121,14 +121,14 @@ export function WorkoutTypeDialog({ open, onOpenChange, mode = 'new-workout' }: 
             const timestamp = Date.now()
             const userIdSuffix = user?.id ? user.id.slice(-8) : Math.random().toString(36).slice(-8)
             const quickLogId = `quicklog-${timestamp}-${userIdSuffix}`
-            
+
             // Build URL with query parameters
             const searchParams = new URLSearchParams()
             searchParams.set('type', workoutType)
             if (templateId) {
                 searchParams.set('template', templateId)
             }
-            
+
             router.push(`/workout/quick-log/${quickLogId}?${searchParams.toString()}`)
             onOpenChange(false)
         } catch (error) {
@@ -244,12 +244,12 @@ export function WorkoutTypeDialog({ open, onOpenChange, mode = 'new-workout' }: 
         setIsDeleting(true)
         try {
             await WorkoutStorage.deleteTemplate(templateToDelete.id)
-            
+
             // Remove from local state
-            setTemplates(prevTemplates => 
+            setTemplates(prevTemplates =>
                 prevTemplates.filter(t => t.id !== templateToDelete.id)
             )
-            
+
             setShowDeleteConfirm(false)
             setTemplateToDelete(null)
         } catch (error) {
@@ -274,7 +274,7 @@ export function WorkoutTypeDialog({ open, onOpenChange, mode = 'new-workout' }: 
                             {mode === 'quick-log' ? 'Choose Workout Type' : 'Choose Workout Type'}
                         </DialogTitle>
                         <DialogDescription>
-                            {mode === 'quick-log' 
+                            {mode === 'quick-log'
                                 ? 'Select the type of workout you want to log'
                                 : 'Select the type of workout you want to start'
                             }
@@ -282,7 +282,7 @@ export function WorkoutTypeDialog({ open, onOpenChange, mode = 'new-workout' }: 
                     </DialogHeader>
 
                     <div className="grid grid-cols-1 gap-3">
-                        {getWorkoutTypes(mode).map((workout) => (
+                        {getWorkoutTypes().map((workout) => (
                             <button
                                 key={workout.id}
                                 onClick={() => handleWorkoutSelect(workout.id, workout.available)}
@@ -373,7 +373,7 @@ export function WorkoutTypeDialog({ open, onOpenChange, mode = 'new-workout' }: 
                                             {mode === 'quick-log' ? 'Start from Scratch' : 'Empty Workout'}
                                         </h3>
                                         <p className="text-xs text-[#A1A1AA] mt-1">
-                                            {mode === 'quick-log' 
+                                            {mode === 'quick-log'
                                                 ? 'Create a quick log without using a template'
                                                 : 'Start fresh and add exercises as you go'
                                             }

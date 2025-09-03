@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useState, useEffect } from 'react'
-import { X } from 'lucide-react'
 import { Notification, useNotifications } from '@/lib/contexts/NotificationContext'
 import { Toast, ToastIcon, ToastTitle, ToastDescription, ToastAction, ToastClose } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
@@ -25,9 +24,9 @@ export function NotificationItem({ notification }: NotificationItemProps) {
       const elapsed = Date.now() - startTime
       const remaining = Math.max(0, duration - elapsed)
       const progressPercent = (remaining / duration) * 100
-      
+
       setProgress(progressPercent)
-      
+
       if (remaining <= 0) {
         clearInterval(interval)
       }
@@ -68,7 +67,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
           className={cn(
             "absolute bottom-0 left-0 h-0.5 transition-all duration-75 ease-linear",
             variant === 'success' && "bg-[#22C55E]",
-            variant === 'info' && "bg-[#2A8CEA]", 
+            variant === 'info' && "bg-[#2A8CEA]",
             variant === 'warning' && "bg-[#F59E0B]",
             variant === 'destructive' && "bg-[#EF4444]",
             variant === 'default' && "bg-[#A1A1AA]"

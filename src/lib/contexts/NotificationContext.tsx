@@ -39,17 +39,17 @@ interface NotificationProviderProps {
   defaultDuration?: number
 }
 
-export function NotificationProvider({ 
-  children, 
-  maxNotifications = 5, 
-  defaultDuration = 5000 
+export function NotificationProvider({
+  children,
+  maxNotifications = 5,
+  defaultDuration = 5000
 }: NotificationProviderProps) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const timeoutRefs = useRef<Map<string, NodeJS.Timeout>>(new Map())
 
   const removeNotification = useCallback((id: string) => {
     setNotifications(prev => prev.filter(notification => notification.id !== id))
-    
+
     // Clear the timeout for this notification
     const timeoutId = timeoutRefs.current.get(id)
     if (timeoutId) {
@@ -60,7 +60,7 @@ export function NotificationProvider({
 
   const clearNotifications = useCallback(() => {
     setNotifications([])
-    
+
     // Clear all timeouts
     timeoutRefs.current.forEach(timeoutId => clearTimeout(timeoutId))
     timeoutRefs.current.clear()
@@ -80,7 +80,7 @@ export function NotificationProvider({
 
     setNotifications(prev => {
       const updated = [newNotification, ...prev]
-      
+
       // Remove oldest notifications if we exceed the maximum
       if (updated.length > maxNotifications) {
         const removed = updated.slice(maxNotifications)
@@ -93,7 +93,7 @@ export function NotificationProvider({
         })
         return updated.slice(0, maxNotifications)
       }
-      
+
       return updated
     })
 
@@ -102,7 +102,7 @@ export function NotificationProvider({
       const timeoutId = setTimeout(() => {
         removeNotification(id)
       }, duration)
-      
+
       timeoutRefs.current.set(id, timeoutId)
     }
 
@@ -128,9 +128,10 @@ export function NotificationProvider({
 
   // Cleanup timeouts on unmount
   useEffect(() => {
+    const currentTimeoutRefs = timeoutRefs.current
     return () => {
-      timeoutRefs.current.forEach(timeoutId => clearTimeout(timeoutId))
-      timeoutRefs.current.clear()
+      currentTimeoutRefs.forEach(timeoutId => clearTimeout(timeoutId))
+      currentTimeoutRefs.clear()
     }
   }, [])
 
@@ -154,11 +155,11 @@ export function NotificationProvider({
 
 export function useNotifications() {
   const context = useContext(NotificationContext)
-  
+
   if (!context) {
     throw new Error('useNotifications must be used within a NotificationProvider')
   }
-  
+
   return context
 }
 

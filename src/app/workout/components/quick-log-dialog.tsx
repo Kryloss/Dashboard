@@ -106,13 +106,13 @@ export function QuickLogDialog({ open, onOpenChange, onActivityLogged }: QuickLo
             }
 
             await WorkoutStorage.saveWorkoutActivity(activity)
-            
+
             // Success notification
             notifications.success('Activity logged', {
-                description: `${selectedWorkoutType?.name} saved`,
+                description: `${workoutTypes.find(w => w.id === selectedType)?.name} saved`,
                 duration: 3000
             })
-            
+
             // Call the callback to refresh activities
             if (onActivityLogged) {
                 onActivityLogged()

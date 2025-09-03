@@ -38,19 +38,19 @@ export default function WorkoutPage() {
         if (onHealss && user && supabase) {
             // Initialize storage with user context
             WorkoutStorage.initialize(user, supabase)
-            
+
             // Load initial data
             const loadInitialData = async () => {
                 // Load ongoing workout
                 try {
                     const workout = await WorkoutStorage.getOngoingWorkout()
                     setOngoingWorkout(workout)
-                    
+
                     // Initialize live workout time
                     if (workout?.isRunning) {
                         const backgroundElapsedTime = WorkoutStorage.getBackgroundElapsedTime()
                         setLiveWorkoutTime(backgroundElapsedTime)
-                        
+
                         // Notify user that workout is running in background
                         if (backgroundElapsedTime > workout.elapsedTime + 30) { // If significantly more time has passed
                             notifications.info('Timer running', {
@@ -93,7 +93,7 @@ export default function WorkoutPage() {
                 try {
                     const workout = await WorkoutStorage.getOngoingWorkout()
                     setOngoingWorkout(workout)
-                    
+
                     // If workout is running, calculate live time
                     if (workout?.isRunning) {
                         const backgroundElapsedTime = WorkoutStorage.getBackgroundElapsedTime()
@@ -104,7 +104,7 @@ export default function WorkoutPage() {
                 } catch (error) {
                     console.error('Error loading ongoing workout:', error)
                 }
-                
+
                 // Only refresh activities occasionally to avoid excessive calls
                 if (Math.random() < 0.1) { // 10% chance every 30 seconds = ~every 5 minutes
                     try {
@@ -118,12 +118,12 @@ export default function WorkoutPage() {
 
             return () => clearInterval(interval)
         }
-    }, [user, supabase])
+    }, [user, supabase, notifications, router])
 
     // Real-time timer effect for ongoing workouts
     useEffect(() => {
         let timerInterval: NodeJS.Timeout | null = null
-        
+
         if (ongoingWorkout?.isRunning) {
             // Update timer every second when workout is running
             timerInterval = setInterval(() => {
@@ -131,7 +131,7 @@ export default function WorkoutPage() {
                 setLiveWorkoutTime(backgroundElapsedTime)
             }, 1000)
         }
-        
+
         return () => {
             if (timerInterval) {
                 clearInterval(timerInterval)
