@@ -829,15 +829,33 @@ export default function WorkoutPage() {
                                                     </div>
                                                 )
                                             })}
-                                            {/* Empty placeholders to fill up to 4 activities */}
+                                            {/* Empty placeholders to fill up to 3 activities */}
                                             {Array.from({ length: 3 - recentActivities.length }, (_, index) => (
-                                                <StatCard
-                                                    key={`placeholder-${index}`}
-                                                    icon={<Dumbbell className="w-4 h-4 opacity-30" />}
-                                                    label="No recent activity"
-                                                    value="—"
-                                                    className="opacity-50"
-                                                />
+                                                <div key={`placeholder-${index}`} className="bg-[#121318] border border-[#212227] rounded-[20px] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)] opacity-50">
+                                                    <div className="flex items-start justify-between">
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center space-x-3 mb-2">
+                                                                <div className="w-8 h-8 bg-[rgba(255,255,255,0.03)] border border-[#2A2B31] rounded-[10px] flex items-center justify-center text-[#F3F4F6] text-sm">
+                                                                    <Dumbbell className="w-4 h-4 opacity-30" />
+                                                                </div>
+                                                                <span className="text-sm font-medium text-[#A1A1AA]">
+                                                                    No recent activity
+                                                                </span>
+                                                            </div>
+
+                                                            <div className="mb-2">
+                                                                <div className="text-2xl font-bold text-[#F3F4F6] mb-1">
+                                                                    —
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="flex items-center space-x-1 text-xs font-medium text-[#A1A1AA]">
+                                                                <span>→</span>
+                                                                <span>Complete a workout to see it here</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             ))}
                                         </>
                                     )}
