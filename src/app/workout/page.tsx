@@ -294,6 +294,13 @@ export default function WorkoutPage() {
                 name: "Strength Training",
                 duration: "45 min",
                 time: "5:00 PM"
+            },
+            {
+                id: 3,
+                icon: <Heart className="w-5 h-5" />,
+                name: "Start Yoga",
+                duration: "25 min",
+                time: "7:30 AM"
             }
         ],
         recentActivity: [
