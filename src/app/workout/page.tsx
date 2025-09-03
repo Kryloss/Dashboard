@@ -749,8 +749,10 @@ export default function WorkoutPage() {
                                                         <div className="w-32 h-6 bg-[#2A2B31] rounded animate-pulse mb-1"></div>
                                                     </div>
 
-                                                    {/* Loading placeholder for change text */}
-                                                    <div className="w-20 h-3 bg-[#2A2B31] rounded animate-pulse"></div>
+                                                    {/* Loading placeholder for change text with extra spacing */}
+                                                    <div className="mb-2">
+                                                        <div className="w-20 h-3 bg-[#2A2B31] rounded animate-pulse"></div>
+                                                    </div>
                                                 </div>
                                             ))}
                                         </>
