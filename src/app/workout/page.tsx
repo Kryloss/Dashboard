@@ -726,7 +726,7 @@ export default function WorkoutPage() {
                             <section className="flex flex-col h-full">
                                 <h2 className="text-xl font-semibold text-[#F3F4F6] mb-6">This Week&apos;s Progress</h2>
 
-                                <div className="flex-1 flex flex-col justify-between">
+                                <div className="space-y-4 flex-1 flex flex-col justify-between">
                                     {mockData.weeklyStats.map((stat, index) => (
                                         <StatCard
                                             key={index}
