@@ -664,9 +664,31 @@ export default function WorkoutPage() {
 
                                 <div className="space-y-4 flex-1 flex flex-col justify-between">
                                     {isLoadingActivities ? (
-                                        <div className="flex items-center justify-center py-8">
-                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#2A8CEA]"></div>
-                                        </div>
+                                        <>
+                                            {Array.from({ length: 4 }, (_, index) => (
+                                                <div
+                                                    key={`loading-${index}`}
+                                                    className="bg-[#121318] border border-[#212227] rounded-[20px] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)] flex-1"
+                                                >
+                                                    <div className="flex items-center space-x-3 mb-2">
+                                                        {/* Loading spinner instead of icon */}
+                                                        <div className="w-8 h-8 bg-[rgba(255,255,255,0.03)] border border-[#2A2B31] rounded-[10px] flex items-center justify-center">
+                                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#2A8CEA]"></div>
+                                                        </div>
+                                                        {/* Loading placeholder for label */}
+                                                        <div className="w-24 h-3 bg-[#2A2B31] rounded animate-pulse"></div>
+                                                    </div>
+
+                                                    <div className="mb-1">
+                                                        {/* Loading placeholder for value */}
+                                                        <div className="w-32 h-6 bg-[#2A2B31] rounded animate-pulse mb-1"></div>
+                                                    </div>
+
+                                                    {/* Loading placeholder for change text */}
+                                                    <div className="w-20 h-3 bg-[#2A2B31] rounded animate-pulse"></div>
+                                                </div>
+                                            ))}
+                                        </>
                                     ) : recentActivities.length === 0 ? (
                                         <div className="text-center py-8 text-[#A1A1AA]">
                                             <p className="mb-2">No workout activities yet</p>
