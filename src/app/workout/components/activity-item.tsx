@@ -54,7 +54,7 @@ export function ActivityItem({
     }
     return (
         <div className={cn(
-            "flex items-center space-x-4 py-3 px-4 bg-[#0E0F13] border border-[#212227] rounded-[16px] mb-2 last:mb-0",
+            "flex items-center space-x-4 py-4 px-4 bg-[#0E0F13] border border-[#212227] rounded-[16px] mb-3 last:mb-0",
             "shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)]",
             "hover:border-[#2A2B31] hover:bg-[#17181D] transition-all duration-200",
             className

@@ -673,18 +673,51 @@ export default function WorkoutPage() {
                                             <p className="text-sm">Complete your first workout to see it here!</p>
                                         </div>
                                     ) : (
-                                        recentActivities.map((activity) => (
-                                            <ActivityItem
-                                                key={activity.id}
-                                                date={formatActivityDate(activity.completedAt)}
-                                                name={activity.name || `${activity.workoutType.charAt(0).toUpperCase() + activity.workoutType.slice(1)} Workout`}
-                                                duration={formatActivityDuration(activity.durationSeconds)}
-                                                progress={calculateActivityProgress(activity)}
-                                                workoutType={activity.workoutType}
-                                                exerciseCount={activity.exercises?.length || 0}
-                                                completedAt={activity.completedAt}
-                                            />
-                                        ))
+                                        <>
+                                            {recentActivities.map((activity) => (
+                                                <ActivityItem
+                                                    key={activity.id}
+                                                    date={formatActivityDate(activity.completedAt)}
+                                                    name={activity.name || `${activity.workoutType.charAt(0).toUpperCase() + activity.workoutType.slice(1)} Workout`}
+                                                    duration={formatActivityDuration(activity.durationSeconds)}
+                                                    progress={calculateActivityProgress(activity)}
+                                                    workoutType={activity.workoutType}
+                                                    exerciseCount={activity.exercises?.length || 0}
+                                                    completedAt={activity.completedAt}
+                                                />
+                                            ))}
+                                            {/* Empty placeholders to fill up to 4 activities */}
+                                            {Array.from({ length: 4 - recentActivities.length }, (_, index) => (
+                                                <div
+                                                    key={`placeholder-${index}`}
+                                                    className="flex items-center space-x-4 py-4 px-4 bg-[#0A0B0F] border border-[#1A1B20] rounded-[16px] mb-3 last:mb-0 opacity-50"
+                                                >
+                                                    {/* Placeholder Icon */}
+                                                    <div className="w-10 h-10 rounded-[10px] flex items-center justify-center flex-shrink-0 bg-[rgba(255,255,255,0.02)] border border-[#1A1B20]">
+                                                        <Dumbbell className="w-5 h-5 text-[#3A3B40]" />
+                                                    </div>
+                                                    
+                                                    {/* Placeholder Content */}
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <div className="flex items-center space-x-2">
+                                                                <div className="w-12 h-3 bg-[#1A1B20] rounded animate-pulse"></div>
+                                                                <div className="w-16 h-3 bg-[#1A1B20] rounded animate-pulse"></div>
+                                                            </div>
+                                                            <div className="flex items-center space-x-3">
+                                                                <div className="w-12 h-3 bg-[#1A1B20] rounded animate-pulse"></div>
+                                                                <div className="w-16 h-3 bg-[#1A1B20] rounded animate-pulse"></div>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <div className="w-24 h-4 bg-[#1A1B20] rounded mb-2 animate-pulse"></div>
+                                                        
+                                                        {/* Placeholder Progress Bar */}
+                                                        <div className="w-full h-1 bg-[rgba(255,255,255,0.04)] rounded-full"></div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </>
                                     )}
                                 </div>
                             </section>
