@@ -10,10 +10,11 @@ import { QuickActionCard } from "./components/quick-action-card"
 import { StatCard } from "./components/stat-card"
 import { ActivityItem } from "./components/activity-item"
 import { WorkoutTypeDialog } from "./components/workout-type-dialog"
+import { ActivityEditModal } from "./history/components/activity-edit-modal"
 import { WorkoutStorage, OngoingWorkout, WorkoutActivity } from "@/lib/workout-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
-import { Settings, Plus, Flame, Dumbbell, User, Timer, Bike, Target, TrendingUp, Clock, Heart, FileText, Play } from "lucide-react"
+import { Settings, Plus, Flame, Dumbbell, User, Timer, Bike, Target, TrendingUp, Clock, Heart, FileText, Play, Edit3, Trash2 } from "lucide-react"
 
 export default function WorkoutPage() {
     const router = useRouter()
@@ -26,6 +27,8 @@ export default function WorkoutPage() {
     const [recentActivities, setRecentActivities] = useState<WorkoutActivity[]>([])
     const [isLoadingActivities, setIsLoadingActivities] = useState(true)
     const [liveWorkoutTime, setLiveWorkoutTime] = useState(0)
+    const [editingActivity, setEditingActivity] = useState<WorkoutActivity | null>(null)
+    const [deletingActivity, setDeletingActivity] = useState<WorkoutActivity | null>(null)
 
 
 
@@ -103,7 +106,7 @@ export default function WorkoutPage() {
                 // Load recent activities
                 try {
                     setIsLoadingActivities(true)
-                    const activities = await WorkoutStorage.getRecentActivities(4)
+                    const activities = await WorkoutStorage.getRecentActivities(3)
                     setRecentActivities(activities)
                 } catch (error) {
                     console.error('Error loading recent activities:', error)
@@ -140,7 +143,7 @@ export default function WorkoutPage() {
                 // Only refresh activities occasionally to avoid excessive calls
                 if (Math.random() < 0.1) { // 10% chance every 30 seconds = ~every 5 minutes
                     try {
-                        const activities = await WorkoutStorage.getRecentActivities(4)
+                        const activities = await WorkoutStorage.getRecentActivities(3)
                         setRecentActivities(activities)
                     } catch (error) {
                         console.error('Error loading recent activities:', error)
@@ -412,6 +415,68 @@ export default function WorkoutPage() {
         }
     }
 
+    const handleDeleteActivity = async (activity: WorkoutActivity) => {
+        if (!user) return
+
+        try {
+            await WorkoutStorage.deleteWorkoutActivity(activity.id)
+            setRecentActivities(prev => prev.filter(a => a.id !== activity.id))
+            
+            notifications.success('Activity deleted', {
+                description: 'Workout removed from history',
+                duration: 3000
+            })
+        } catch (error) {
+            console.error('Error deleting activity:', error)
+            notifications.error('Delete failed', {
+                description: 'Could not remove activity'
+            })
+        }
+    }
+
+    const handleUpdateActivity = async (updatedActivity: WorkoutActivity) => {
+        if (!user) return
+
+        // Optimistic update - update UI immediately
+        const optimisticUpdate = {
+            ...updatedActivity,
+            updatedAt: new Date().toISOString()
+        }
+        
+        setRecentActivities(prev => prev.map(a =>
+            a.id === updatedActivity.id ? optimisticUpdate : a
+        ))
+        
+        // Close modal immediately for better UX
+        setEditingActivity(null)
+
+        try {
+            // Background update to database
+            await WorkoutStorage.updateWorkoutActivity(updatedActivity.id, {
+                name: updatedActivity.name,
+                exercises: updatedActivity.exercises,
+                durationSeconds: updatedActivity.durationSeconds,
+                notes: updatedActivity.notes
+            })
+
+            notifications.success('Activity updated', {
+                description: 'Changes saved successfully',
+                duration: 3000
+            })
+        } catch (error) {
+            console.error('Error updating activity:', error)
+            
+            notifications.error('Update failed', {
+                description: 'Could not save changes'
+            })
+            
+            // Revert optimistic update on error
+            setRecentActivities(prev => prev.map(a =>
+                a.id === updatedActivity.id ? updatedActivity : a
+            ))
+        }
+    }
+
     // If we're on healss.kryloss.com, show healss content
     if (isHealssSubdomain) {
         return (
@@ -650,7 +715,7 @@ export default function WorkoutPage() {
 
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
                             {/* Recent Activity Section */}
-                            <section className="flex flex-col h-full">
+                            <section>
                                 <div className="flex items-center justify-between mb-6">
                                     <h2 className="text-xl font-semibold text-[#F3F4F6]">Recent Activity</h2>
                                     <Button
@@ -662,13 +727,13 @@ export default function WorkoutPage() {
                                     </Button>
                                 </div>
 
-                                <div className="space-y-4 flex-1 flex flex-col justify-between">
+                                <div className="space-y-4">
                                     {isLoadingActivities ? (
                                         <>
-                                            {Array.from({ length: 4 }, (_, index) => (
+                                            {Array.from({ length: 3 }, (_, index) => (
                                                 <div
                                                     key={`loading-${index}`}
-                                                    className="bg-[#121318] border border-[#212227] rounded-[20px] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)] flex-1"
+                                                    className="bg-[#121318] border border-[#212227] rounded-[20px] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)]"
                                                 >
                                                     <div className="flex items-center space-x-3 mb-2">
                                                         {/* Loading spinner instead of icon */}
@@ -717,28 +782,61 @@ export default function WorkoutPage() {
                                                 }
                                                 
                                                 return (
-                                                    <StatCard
-                                                        key={activity.id}
-                                                        icon={getWorkoutIcon(activity.workoutType)}
-                                                        label={activity.name || `${activity.workoutType.charAt(0).toUpperCase() + activity.workoutType.slice(1)} Workout`}
-                                                        value={`${formatActivityDate(activity.completedAt)} • ${formatTime(activity.completedAt)}`}
-                                                        change={{
-                                                            value: `${formatActivityDuration(activity.durationSeconds)} • ${activity.exercises?.length || 0} exercises`,
-                                                            direction: 'neutral' as const
-                                                        }}
-                                                        period=""
-                                                        className="flex-1"
-                                                    />
+                                                    <div key={activity.id} className="bg-[#121318] border border-[#212227] rounded-[20px] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)] hover:border-[#2A2B31] hover:-translate-y-[1px] hover:shadow-[0_0_0_1px_rgba(42,140,234,0.35),_0_8px_40px_rgba(42,140,234,0.20)] transition-all duration-200 ease-out group">
+                                                        <div className="flex items-start justify-between">
+                                                            <div className="flex-1">
+                                                                <div className="flex items-center space-x-3 mb-2">
+                                                                    <div className="w-8 h-8 bg-[rgba(255,255,255,0.03)] border border-[#2A2B31] rounded-[10px] flex items-center justify-center text-[#F3F4F6] text-sm">
+                                                                        {getWorkoutIcon(activity.workoutType)}
+                                                                    </div>
+                                                                    <span className="text-sm font-medium text-[#A1A1AA]">
+                                                                        {activity.name || `${activity.workoutType.charAt(0).toUpperCase() + activity.workoutType.slice(1)} Workout`}
+                                                                    </span>
+                                                                </div>
+
+                                                                <div className="mb-1">
+                                                                    <div className="text-2xl font-bold text-[#F3F4F6] mb-1">
+                                                                        {`${formatActivityDate(activity.completedAt)} • ${formatTime(activity.completedAt)}`}
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="flex items-center space-x-1 text-xs font-medium text-[#A1A1AA]">
+                                                                    <span>→</span>
+                                                                    <span>{`${formatActivityDuration(activity.durationSeconds)} • ${activity.exercises?.length || 0} exercises`}</span>
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            {/* Action Buttons */}
+                                                            <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                                                                <Button
+                                                                    onClick={() => setEditingActivity(activity)}
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full w-7 h-7"
+                                                                >
+                                                                    <Edit3 className="w-3 h-3" />
+                                                                </Button>
+                                                                <Button
+                                                                    onClick={() => handleDeleteActivity(activity)}
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="text-[#A1A1AA] hover:text-red-400 hover:bg-red-500/10 rounded-full w-7 h-7"
+                                                                >
+                                                                    <Trash2 className="w-3 h-3" />
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 )
                                             })}
                                             {/* Empty placeholders to fill up to 4 activities */}
-                                            {Array.from({ length: 4 - recentActivities.length }, (_, index) => (
+                                            {Array.from({ length: 3 - recentActivities.length }, (_, index) => (
                                                 <StatCard
                                                     key={`placeholder-${index}`}
                                                     icon={<Dumbbell className="w-4 h-4 opacity-30" />}
                                                     label="No recent activity"
                                                     value="—"
-                                                    className="opacity-50 flex-1"
+                                                    className="opacity-50"
                                                 />
                                             ))}
                                         </>
@@ -747,10 +845,10 @@ export default function WorkoutPage() {
                             </section>
 
                             {/* Weekly Stats and Health Log Section */}
-                            <section className="flex flex-col h-full">
+                            <section>
                                 <h2 className="text-xl font-semibold text-[#F3F4F6] mb-6">This Week&apos;s Progress</h2>
 
-                                <div className="space-y-4 flex-1 flex flex-col justify-between">
+                                <div className="space-y-4">
                                     {mockData.weeklyStats.map((stat, index) => (
                                         <StatCard
                                             key={index}
@@ -758,7 +856,6 @@ export default function WorkoutPage() {
                                             label={stat.label}
                                             value={stat.value}
                                             change={stat.change}
-                                            className="flex-1"
                                         />
                                     ))}
                                 </div>
@@ -780,6 +877,15 @@ export default function WorkoutPage() {
                     onOpenChange={setShowQuickLogWorkoutDialog}
                     mode="quick-log"
                 />
+
+                {/* Edit Activity Modal */}
+                {editingActivity && (
+                    <ActivityEditModal
+                        activity={editingActivity}
+                        onClose={() => setEditingActivity(null)}
+                        onSave={handleUpdateActivity}
+                    />
+                )}
             </div>
         )
     }
