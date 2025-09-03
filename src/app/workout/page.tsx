@@ -495,7 +495,20 @@ export default function WorkoutPage() {
                             <div className="flex items-center justify-between mb-6">
                                 <h2 className="text-xl font-semibold text-[#F3F4F6]">Today&apos;s Workout</h2>
                                 <Button
-                                    onClick={() => setShowWorkoutDialog(true)}
+                                    onClick={() => {
+                                        if (!user) {
+                                            notifications.warning('Sign in required', {
+                                                description: 'Please sign in to start workouts',
+                                                duration: 4000,
+                                                action: {
+                                                    label: 'Sign In',
+                                                    onClick: () => router.push('/auth/signin')
+                                                }
+                                            })
+                                            return
+                                        }
+                                        setShowWorkoutDialog(true)
+                                    }}
                                     className="bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-full border border-[rgba(42,140,234,0.35)] shadow-[0_8px_32px_rgba(42,140,234,0.28)] hover:shadow-[0_10px_40px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all">
                                     <Plus className="w-4 h-4 mr-2" />
                                     New Workout
@@ -542,6 +555,17 @@ export default function WorkoutPage() {
                                             <Button
                                                 className="w-full bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-full border border-[rgba(42,140,234,0.35)] shadow-[0_8px_32px_rgba(42,140,234,0.28)] hover:shadow-[0_10px_40px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all text-sm font-medium h-9"
                                                 onClick={() => {
+                                                    if (!user) {
+                                                        notifications.warning('Sign in required', {
+                                                            description: 'Please sign in to continue workouts',
+                                                            duration: 4000,
+                                                            action: {
+                                                                label: 'Sign In',
+                                                                onClick: () => router.push('/auth/signin')
+                                                            }
+                                                        })
+                                                        return
+                                                    }
                                                     window.location.href = `/workout/${ongoingWorkout.type}/${ongoingWorkout.workoutId}`
                                                 }}
                                             >
@@ -564,24 +588,6 @@ export default function WorkoutPage() {
                                     />
                                 ))}
 
-                                {/* Quick Log Card */}
-                                <div className="bg-[#121318] border border-[#212227] rounded-[20px] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)] hover:border-[#2A2B31] hover:-translate-y-[1px] hover:shadow-[0_0_0_1px_rgba(42,140,234,0.35),_0_8px_40px_rgba(42,140,234,0.20)] transition-all duration-200">
-                                    <div className="flex items-center space-x-3 mb-4">
-                                        <div className="w-10 h-10 bg-[rgba(255,255,255,0.03)] border border-[#2A2B31] rounded-[14px] flex items-center justify-center">
-                                            <FileText className="w-5 h-5 text-[#F3F4F6]" />
-                                        </div>
-                                        <div>
-                                            <h3 className="font-semibold text-[#F3F4F6] text-sm">Quick Log</h3>
-                                            <p className="text-xs text-[#A1A1AA] mt-1">Log past workout</p>
-                                        </div>
-                                    </div>
-                                    <Button
-                                        className="w-full bg-[#0E0F13] text-[#F3F4F6] border border-[#212227] rounded-full hover:bg-[#17181D] hover:border-[#2A2B31] hover:scale-[1.01] active:scale-[0.997] transition-all text-sm font-medium h-8"
-                                        onClick={() => handleQuickAction('log')}
-                                    >
-                                        Log Workout
-                                    </Button>
-                                </div>
                             </div>
                         </section>
 

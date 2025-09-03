@@ -9,6 +9,7 @@ import { Dumbbell, Target, Heart, Bike, AlertTriangle, Trash2 } from "lucide-rea
 import { cn } from "@/lib/utils"
 import { WorkoutStorage, WorkoutTemplate } from "@/lib/workout-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
+import { useNotifications } from "@/lib/contexts/NotificationContext"
 
 interface WorkoutTypeDialogProps {
     open: boolean
@@ -54,6 +55,7 @@ const getWorkoutTypes = () => [
 export function WorkoutTypeDialog({ open, onOpenChange, mode = 'new-workout' }: WorkoutTypeDialogProps) {
     const router = useRouter()
     const { user, supabase } = useAuth()
+    const notifications = useNotifications()
     const [selectedType, setSelectedType] = useState<string>('')
     const [showTemplates, setShowTemplates] = useState(false)
     const [templates, setTemplates] = useState<WorkoutTemplate[]>([])
@@ -75,7 +77,22 @@ export function WorkoutTypeDialog({ open, onOpenChange, mode = 'new-workout' }: 
     }, [open, user, supabase])
 
     const handleWorkoutSelect = async (workoutType: string, available: boolean) => {
-        if (!available || !user || !supabase) return
+        if (!available) return
+        
+        if (!user) {
+            notifications.warning('Sign in required', {
+                description: mode === 'quick-log' ? 'Please sign in to log workouts' : 'Please sign in to start workouts',
+                duration: 4000,
+                action: {
+                    label: 'Sign In',
+                    onClick: () => router.push('/auth/signin')
+                }
+            })
+            onOpenChange(false)
+            return
+        }
+        
+        if (!supabase) return
 
         setSelectedType(workoutType)
 
@@ -116,6 +133,19 @@ export function WorkoutTypeDialog({ open, onOpenChange, mode = 'new-workout' }: 
     }
 
     const navigateToQuickLog = async (workoutType: string, templateId?: string) => {
+        if (!user) {
+            notifications.warning('Sign in required', {
+                description: 'Please sign in to log workouts',
+                duration: 4000,
+                action: {
+                    label: 'Sign In',
+                    onClick: () => router.push('/auth/signin')
+                }
+            })
+            onOpenChange(false)
+            return
+        }
+
         try {
             // Create quick log ID and navigate to quick log page
             const timestamp = Date.now()
@@ -137,6 +167,19 @@ export function WorkoutTypeDialog({ open, onOpenChange, mode = 'new-workout' }: 
     }
 
     const createWorkoutDirectly = async (workoutType: string) => {
+        if (!user) {
+            notifications.warning('Sign in required', {
+                description: 'Please sign in to start workouts',
+                duration: 4000,
+                action: {
+                    label: 'Sign In',
+                    onClick: () => router.push('/auth/signin')
+                }
+            })
+            onOpenChange(false)
+            return
+        }
+
         try {
             setIsLoading(true)
 
@@ -164,6 +207,19 @@ export function WorkoutTypeDialog({ open, onOpenChange, mode = 'new-workout' }: 
     }
 
     const handleTemplateSelect = async (template: WorkoutTemplate) => {
+        if (!user) {
+            notifications.warning('Sign in required', {
+                description: mode === 'quick-log' ? 'Please sign in to log workouts' : 'Please sign in to start workouts',
+                duration: 4000,
+                action: {
+                    label: 'Sign In',
+                    onClick: () => router.push('/auth/signin')
+                }
+            })
+            onOpenChange(false)
+            return
+        }
+
         try {
             setIsLoading(true)
 
@@ -195,6 +251,19 @@ export function WorkoutTypeDialog({ open, onOpenChange, mode = 'new-workout' }: 
     }
 
     const handleStartEmpty = () => {
+        if (!user) {
+            notifications.warning('Sign in required', {
+                description: mode === 'quick-log' ? 'Please sign in to log workouts' : 'Please sign in to start workouts',
+                duration: 4000,
+                action: {
+                    label: 'Sign In',
+                    onClick: () => router.push('/auth/signin')
+                }
+            })
+            onOpenChange(false)
+            return
+        }
+
         if (mode === 'quick-log') {
             navigateToQuickLog(selectedType)
         } else {
@@ -209,6 +278,19 @@ export function WorkoutTypeDialog({ open, onOpenChange, mode = 'new-workout' }: 
     }
 
     const startNewWorkout = (workoutType: string) => {
+        if (!user) {
+            notifications.warning('Sign in required', {
+                description: 'Please sign in to start workouts',
+                duration: 4000,
+                action: {
+                    label: 'Sign In',
+                    onClick: () => router.push('/auth/signin')
+                }
+            })
+            onOpenChange(false)
+            return
+        }
+
         const timestamp = Date.now()
         const userIdSuffix = user?.id ? user.id.slice(-8) : Math.random().toString(36).slice(-8)
         const workoutId = `${workoutType}-${timestamp}-${userIdSuffix}`

@@ -84,7 +84,22 @@ export function QuickLogDialog({ open, onOpenChange, onActivityLogged }: QuickLo
     }
 
     const handleLogWorkout = async () => {
-        if (!selectedType || (!hours && !minutes) || !user) return
+        if (!selectedType || (!hours && !minutes)) return
+        
+        if (!user) {
+            notifications.warning('Sign in required', {
+                description: 'Please sign in to log workouts',
+                duration: 4000,
+                action: {
+                    label: 'Sign In',
+                    onClick: () => {
+                        handleClose()
+                        window.location.href = '/auth/signin'
+                    }
+                }
+            })
+            return
+        }
 
         setIsLogging(true)
         try {

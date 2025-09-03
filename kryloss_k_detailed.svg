@@ -1,0 +1,60 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Vertical bar gradient -->
+    <linearGradient id="bar_grad" x1="180" y1="120" x2="180" y2="392" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B1526"/>
+      <stop offset="0.5" stop-color="#11294D"/>
+      <stop offset="1" stop-color="#1D3F7A"/>
+    </linearGradient>
+
+    <!-- Angled stroke gradient -->
+    <linearGradient id="k_grad" x1="224" y1="392" x2="392" y2="120" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1E4B9E"/>
+      <stop offset="0.4" stop-color="#2AA7FF"/>
+      <stop offset="1" stop-color="#6FC7FF"/>
+    </linearGradient>
+
+    <!-- Edge highlight gradient -->
+    <linearGradient id="edge_light" x1="220" y1="256" x2="392" y2="256" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.7"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Glow filter -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur"/>
+      <feOffset dx="0" dy="2" result="off"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Bevel filter for 3D effect -->
+    <filter id="bevel" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur"/>
+      <feSpecularLighting in="blur" surfaceScale="2" specularConstant="0.8" specularExponent="20"
+          lighting-color="#FFFFFF" result="spec">
+        <fePointLight x="-100" y="-100" z="200"/>
+      </feSpecularLighting>
+      <feComposite in="spec" in2="SourceAlpha" operator="in" result="bevel"/>
+      <feMerge>
+        <feMergeNode in="bevel"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Vertical bar -->
+  <path d="M164 120 H220 V392 H164 Z" fill="url(#bar_grad)" filter="url(#bevel)"/>
+
+  <!-- Angled strokes -->
+  <path d="M224 256 L360 120 H392 L272 256 L392 392 H360 L224 256 Z" fill="url(#k_grad)" filter="url(#glow)"/>
+
+  <!-- Inner overlay stroke for extra detail -->
+  <path d="M230 252 L352 128 H368 L250 252 L368 376 H352 L230 252 Z" fill="url(#edge_light)"/>
+
+  <!-- Thin outline for definition -->
+  <path d="M164 120 H220 V392 H164 Z M224 256 L360 120 H392 L272 256 L392 392 H360 L224 256 Z"
+        stroke="#0A0F14" stroke-width="2" opacity="0.7"/>
+</svg>

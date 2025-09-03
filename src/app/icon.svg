@@ -1,0 +1,60 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Vertical bar gradient -->
+    <linearGradient id="bar_grad" x1="11.25" y1="7.5" x2="11.25" y2="24.5" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B1526"/>
+      <stop offset="0.5" stop-color="#11294D"/>
+      <stop offset="1" stop-color="#1D3F7A"/>
+    </linearGradient>
+
+    <!-- Angled stroke gradient -->
+    <linearGradient id="k_grad" x1="14" y1="24.5" x2="24.5" y2="7.5" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1E4B9E"/>
+      <stop offset="0.4" stop-color="#2AA7FF"/>
+      <stop offset="1" stop-color="#6FC7FF"/>
+    </linearGradient>
+
+    <!-- Edge highlight gradient -->
+    <linearGradient id="edge_light" x1="13.75" y1="16" x2="24.5" y2="16" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.7"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Glow filter -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="0.25" result="blur"/>
+      <feOffset dx="0" dy="0.125" result="off"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Bevel filter for 3D effect -->
+    <filter id="bevel" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="0.125" result="blur"/>
+      <feSpecularLighting in="blur" surfaceScale="0.125" specularConstant="0.8" specularExponent="20"
+          lighting-color="#FFFFFF" result="spec">
+        <fePointLight x="-6.25" y="-6.25" z="12.5"/>
+      </feSpecularLighting>
+      <feComposite in="spec" in2="SourceAlpha" operator="in" result="bevel"/>
+      <feMerge>
+        <feMergeNode in="bevel"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Vertical bar -->
+  <path d="M10.25 7.5 H13.75 V24.5 H10.25 Z" fill="url(#bar_grad)" filter="url(#bevel)"/>
+
+  <!-- Angled strokes -->
+  <path d="M14 16 L22.5 7.5 H24.5 L17 16 L24.5 24.5 H22.5 L14 16 Z" fill="url(#k_grad)" filter="url(#glow)"/>
+
+  <!-- Inner overlay stroke for extra detail -->
+  <path d="M14.375 15.75 L22 8.5 H23 L16.25 15.75 L23 23 H22 L14.375 15.75 Z" fill="url(#edge_light)"/>
+
+  <!-- Thin outline for definition -->
+  <path d="M10.25 7.5 H13.75 V24.5 H10.25 Z M14 16 L22.5 7.5 H24.5 L17 16 L24.5 24.5 H22.5 L14 16 Z"
+        stroke="#0A0F14" stroke-width="0.125" opacity="0.7"/>
+</svg>

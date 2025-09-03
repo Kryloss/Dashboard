@@ -9,75 +9,75 @@ export interface Update {
 
 export const updates: Update[] = [
     {
-        "title": "Gif update",
-        "summary": "Upload your gifs as a Avatars for better website experience!",
-        "date": "2025-05-27",
-        "link": "https://kryloss.com/",
-        "category": "Maintenance",
-        "id": "9"
-    },
-    {
-        "title": "Healss 0 - Advanced Health Analytics",
-        "summary": "Introducing comprehensive health dashboards with AI-powered insights, custom metric tracking, and seamless wearable integration. Now with support for sleep pattern analysis and nutrition recommendations.",
-        "date": "2024-01-15",
-        "link": "https://healss.kryloss.com/updates/v2-0-launch",
-        "category": "Product Launch",
-        "id": "1"
-    },
-    {
-        "id": "2",
-        "title": "Notify - Real-time Notification Engine",
-        "summary": "Smart notification management with intelligent priority filtering, customizable delivery channels, and advanced routing rules. Reduce notification fatigue while staying informed.",
-        "date": "2024-01-10",
-        "link": "https://notify.kryloss.com/features/real-time-engine",
+        "id": "9",
+        "title": "Notifications set up",
+        "summary": "Stay in the loop with notifications. Alerts are now active, keeping you informed about important updates.",
+        "date": "2025-09-02",
+        "link": "",
         "category": "Feature Update"
     },
     {
-        "id": "3",
-        "title": "Enhanced Security & Privacy Controls",
-        "summary": "Implementing end-to-end encryption for all personal data, granular privacy settings, and GDPR compliance improvements across all Kryloss platform tools.",
-        "date": "2024-01-05",
-        "link": "/updates/security-improvements",
-        "category": "Security"
-    },
-    {
-        "id": "4",
-        "title": "API Gateway & Developer Platform",
-        "summary": "Launch of comprehensive developer APIs with authentication, rate limiting, and comprehensive documentation. Build custom integrations with Kryloss platform services.",
-        "date": "2023-12-28",
-        "link": "/docs/api/getting-started",
-        "category": "Developer"
-    },
-    {
-        "id": "5",
-        "title": "Mobile App Beta Release",
-        "summary": "Cross-platform mobile applications for iOS and Android now available in beta. Access all your tools and dashboards on the go with native performance and offline capabilities.",
-        "date": "2023-12-20",
-        "link": "/mobile/beta-signup",
-        "category": "Mobile"
-    },
-    {
-        "id": "6",
-        "title": "Team Collaboration Features",
-        "summary": "Share dashboards, set up team notifications, and collaborate on health goals with family and friends. Enhanced permission controls and shared workspace management.",
-        "date": "2023-12-15",
-        "link": "/features/team-collaboration",
-        "category": "Collaboration"
+        "id": "8",
+        "title": "Activity history created",
+        "summary": "Track your journey with the new Activity History feature. Review past sessions and monitor progress anytime.",
+        "date": "2025-09-01",
+        "link": "https://healss.kryloss.com/workout/history",
+        "category": "Feature Update"
     },
     {
         "id": "7",
-        "title": "Data Export & Backup Tools",
-        "summary": "Comprehensive data portability with scheduled backups, multiple export formats (JSON, CSV, PDF), and integration with cloud storage providers for peace of mind.",
-        "date": "2023-12-10",
-        "link": "/tools/data-export",
-        "category": "Data"
+        "title": "Timer bug fix",
+        "summary": "Resolved an issue with workout timers to ensure accurate and consistent time tracking.",
+        "date": "2025-08-29",
+        "link": "",
+        "category": "Bug Fix"
     },
     {
-        "id": "8",
-        "title": "Performance Optimization & Speed Improvements",
-        "summary": "Significant performance enhancements across all platform tools. 60% faster dashboard loading, improved real-time synchronization, and reduced memory usage.",
-        "date": "2023-12-05",
-        "link": "/updates/performance-improvements",
-        "category": "Performance"
+        "id": "6",
+        "title": "Healss page first functions",
+        "summary": "Strength training begins here! The first set of Workout page functions are live, letting you start workouts with us.",
+        "date": "2025-08-30",
+        "link": "https://healss.kryloss.com/workout",
+        "category": "Product Launch"
+    },
+    {
+        "id": "5",
+        "title": "Healss pages design set up",
+        "summary": "The initial design for Workout Healss pages has been created, setting the foundation for future features.",
+        "date": "2025-08-26",
+        "link": "https://healss.kryloss.com/workout",
+        "category": "Product Launch"
+    },
+    {
+        "id": "4",
+        "title": "Health log implemented",
+        "summary": "A new health log system is in place for development feedback. You can now share your issues directly with us for faster fixes.",
+        "date": "2025-08-25",
+        "link": "",
+        "category": "Developer"
+    },
+    {
+        "id": "3",
+        "title": "Issues resolved – Google sign-in",
+        "summary": "We’ve fixed the login issue — Google sign-in now works correctly across all devices.",
+        "date": "2025-08-23",
+        "link": "",
+        "category": "Bug Fix"
+    },
+    {
+        "id": "2",
+        "title": "Avatar set up 1.0",
+        "summary": "Personalize your profile — you can now upload your own image to use as an avatar.",
+        "date": "2025-08-23",
+        "link": "https://kryloss.com/profile",
+        "category": "Feature Update"
+    },
+    {
+        "id": "1",
+        "title": "Main page 1.0 version created",
+        "summary": "The very first version of our main page is live! Account system and redirecting are fully set up, giving users a smooth entry point into the platform.",
+        "date": "2025-08-22",
+        "link": "https://kryloss.com/",
+        "category": "Product Launch"
     }
 ]
