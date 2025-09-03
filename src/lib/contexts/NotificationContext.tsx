@@ -46,6 +46,9 @@ export function NotificationProvider({
 }: NotificationProviderProps) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const timeoutRefs = useRef<Map<string, NodeJS.Timeout>>(new Map())
+  const notificationTimestamps = useRef<number[]>([])
+  const rateLimitWindow = 1000 // 1 second
+  const maxNotificationsPerSecond = 3
 
   const removeNotification = useCallback((id: string) => {
     setNotifications(prev => prev.filter(notification => notification.id !== id))
@@ -67,8 +70,34 @@ export function NotificationProvider({
   }, [])
 
   const addNotification = useCallback((notification: Omit<Notification, 'id' | 'createdAt'>) => {
+    const now = Date.now()
+    
+    // Rate limiting: remove timestamps older than the rate limit window
+    notificationTimestamps.current = notificationTimestamps.current.filter(
+      timestamp => now - timestamp < rateLimitWindow
+    )
+    
+    // Check if we're exceeding the rate limit
+    if (notificationTimestamps.current.length >= maxNotificationsPerSecond) {
+      console.warn('Notification rate limit exceeded. Dropping notification:', notification.title)
+      return ''
+    }
+    
+    // Check for duplicate notifications (same title) in recent timestamps
+    const duplicateCheck = notifications.find(n => 
+      n.title === notification.title && 
+      now - n.createdAt < 5000 // Don't show same notification within 5 seconds
+    )
+    
+    if (duplicateCheck) {
+      console.log('Duplicate notification suppressed:', notification.title)
+      return duplicateCheck.id
+    }
+    
+    notificationTimestamps.current.push(now)
+    
     const id = Math.random().toString(36).substring(2) + Date.now().toString(36)
-    const createdAt = Date.now()
+    const createdAt = now
     const duration = notification.duration ?? defaultDuration
 
     const newNotification: Notification = {
@@ -107,7 +136,7 @@ export function NotificationProvider({
     }
 
     return id
-  }, [maxNotifications, defaultDuration, removeNotification])
+  }, [maxNotifications, defaultDuration, removeNotification, notifications, rateLimitWindow, maxNotificationsPerSecond])
 
   // Helper methods for different notification types
   const success = useCallback((title: string, options?: Partial<Omit<Notification, 'id' | 'title' | 'variant' | 'createdAt'>>) => {

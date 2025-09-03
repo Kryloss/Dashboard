@@ -35,8 +35,10 @@ export default function WorkoutPage() {
         const onHealss = isOnSubdomain('healss')
         setIsHealssSubdomain(onHealss)
 
-        if (onHealss) {
-            if (user && supabase) {
+        // Add delay to allow auth state to settle
+        const initializeWithDelay = setTimeout(() => {
+            if (onHealss) {
+                if (user && supabase) {
                 // Initialize storage with user context
                 WorkoutStorage.initialize(user, supabase)
 
@@ -149,17 +151,29 @@ export default function WorkoutPage() {
             }, 30000) // Check every 30 seconds
 
             return () => clearInterval(interval)
-            } else {
-                // User not authenticated - show sign-in notification
-                notifications.warning('Sign in required', {
-                    description: 'Please sign in to access workouts',
-                    duration: 4000,
-                    action: {
-                        label: 'Sign In',
-                        onClick: () => router.push('/auth/signin')
+                } else if (user === null) {
+                    // Only show sign-in notification if user is explicitly null (not loading)
+                    // and we haven't shown it recently
+                    const lastSigninNotification = localStorage.getItem('last-signin-notification')
+                    const now = Date.now()
+                    
+                    if (!lastSigninNotification || now - parseInt(lastSigninNotification) > 300000) { // 5 minutes
+                        notifications.warning('Sign in required', {
+                            description: 'Please sign in to access workouts',
+                            duration: 4000,
+                            action: {
+                                label: 'Sign In',
+                                onClick: () => router.push('/auth/signin')
+                            }
+                        })
+                        localStorage.setItem('last-signin-notification', now.toString())
                     }
-                })
+                }
             }
+        }, 2000) // 2 second delay to allow auth to settle
+
+        return () => {
+            clearTimeout(initializeWithDelay)
         }
     }, [user, supabase, notifications, router])
 
@@ -185,13 +199,20 @@ export default function WorkoutPage() {
     // Manual refresh function for when activities might have changed
     const refreshRecentActivities = useCallback(async () => {
         if (!user || !supabase) {
-            notifications.info('Sign in to sync', {
-                description: 'Activities sync when signed in',
-                action: {
-                    label: 'Sign In',
-                    onClick: () => router.push('/auth/signin')
-                }
-            })
+            // Only show if user explicitly clicked refresh (not on auto-load)
+            const lastSyncNotification = localStorage.getItem('last-sync-notification')
+            const now = Date.now()
+            
+            if (!lastSyncNotification || now - parseInt(lastSyncNotification) > 60000) { // 1 minute
+                notifications.info('Sign in to sync', {
+                    description: 'Activities sync when signed in',
+                    action: {
+                        label: 'Sign In',
+                        onClick: () => router.push('/auth/signin')
+                    }
+                })
+                localStorage.setItem('last-sync-notification', now.toString())
+            }
             return
         }
 
@@ -315,14 +336,21 @@ export default function WorkoutPage() {
 
     const handleQuickAction = async (action: string) => {
         if (!user || !supabase) {
-            notifications.warning('Sign in required', {
-                description: 'Create an account to start workouts',
-                duration: 4000,
-                action: {
-                    label: 'Sign In',
-                    onClick: () => router.push('/auth/signin')
-                }
-            })
+            // Only show on user action, with rate limiting
+            const lastActionNotification = localStorage.getItem('last-action-notification')
+            const now = Date.now()
+            
+            if (!lastActionNotification || now - parseInt(lastActionNotification) > 30000) { // 30 seconds
+                notifications.warning('Sign in required', {
+                    description: 'Create an account to start workouts',
+                    duration: 4000,
+                    action: {
+                        label: 'Sign In',
+                        onClick: () => router.push('/auth/signin')
+                    }
+                })
+                localStorage.setItem('last-action-notification', now.toString())
+            }
             return
         }
 

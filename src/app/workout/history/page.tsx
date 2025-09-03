@@ -31,17 +31,26 @@ export default function WorkoutHistoryPage() {
     // Removed loadActivities callback to prevent infinite loop
 
     useEffect(() => {
-        if (!user || !supabase) {
-            notifications.warning('Sign in required', {
-                description: 'Please sign in to view workout history',
-                duration: 4000,
-                action: {
-                    label: 'Sign In',
-                    onClick: () => router.push('/auth/signin')
+        // Add delay to allow auth state to settle
+        const initializeWithDelay = setTimeout(() => {
+            if (!user || !supabase) {
+                // Only show if user is explicitly null and we haven't shown recently
+                const lastHistoryNotification = localStorage.getItem('last-history-notification')
+                const now = Date.now()
+                
+                if (user === null && (!lastHistoryNotification || now - parseInt(lastHistoryNotification) > 300000)) { // 5 minutes
+                    notifications.warning('Sign in required', {
+                        description: 'Please sign in to view workout history',
+                        duration: 4000,
+                        action: {
+                            label: 'Sign In',
+                            onClick: () => router.push('/auth/signin')
+                        }
+                    })
+                    localStorage.setItem('last-history-notification', now.toString())
                 }
-            })
-            return
-        }
+                return
+            }
         
         if (user && supabase) {
             setOffset(0)
@@ -81,8 +90,13 @@ export default function WorkoutHistoryPage() {
                     localStorage.setItem('history-tip-shown', 'true')
                 }
             }, 2000)
+            }
+        }, 2000) // 2 second delay to allow auth to settle
+
+        return () => {
+            clearTimeout(initializeWithDelay)
         }
-    }, [user, supabase, filterType, limit, notifications])
+    }, [user, supabase, filterType, limit, notifications, router])
 
     const loadMoreActivities = async () => {
         if (!user || !supabase || isLoading) return

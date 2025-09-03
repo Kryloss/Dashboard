@@ -215,14 +215,21 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
 
     const handleLogWorkout = async () => {
         if (!user) {
-            notifications.warning('Sign in required', {
-                description: 'Please sign in to log workouts',
-                duration: 4000,
-                action: {
-                    label: 'Sign In',
-                    onClick: () => router.push('/auth/signin')
-                }
-            })
+            // Only show on user action, with rate limiting
+            const lastQuickLogNotification = localStorage.getItem('last-quicklog-notification')
+            const now = Date.now()
+            
+            if (!lastQuickLogNotification || now - parseInt(lastQuickLogNotification) > 60000) { // 1 minute
+                notifications.warning('Sign in required', {
+                    description: 'Please sign in to log workouts',
+                    duration: 4000,
+                    action: {
+                        label: 'Sign In',
+                        onClick: () => router.push('/auth/signin')
+                    }
+                })
+                localStorage.setItem('last-quicklog-notification', now.toString())
+            }
             return
         }
 
