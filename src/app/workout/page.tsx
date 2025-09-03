@@ -103,7 +103,7 @@ export default function WorkoutPage() {
                 // Load recent activities
                 try {
                     setIsLoadingActivities(true)
-                    const activities = await WorkoutStorage.getRecentActivities(5)
+                    const activities = await WorkoutStorage.getRecentActivities(4)
                     setRecentActivities(activities)
                 } catch (error) {
                     console.error('Error loading recent activities:', error)
@@ -140,7 +140,7 @@ export default function WorkoutPage() {
                 // Only refresh activities occasionally to avoid excessive calls
                 if (Math.random() < 0.1) { // 10% chance every 30 seconds = ~every 5 minutes
                     try {
-                        const activities = await WorkoutStorage.getRecentActivities(5)
+                        const activities = await WorkoutStorage.getRecentActivities(4)
                         setRecentActivities(activities)
                     } catch (error) {
                         console.error('Error loading recent activities:', error)
