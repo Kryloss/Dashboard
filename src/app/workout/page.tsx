@@ -744,7 +744,7 @@ export default function WorkoutPage() {
                                                         <div className="w-24 h-3 bg-[#2A2B31] rounded animate-pulse"></div>
                                                     </div>
 
-                                                    <div className="mb-1">
+                                                    <div className="mb-2">
                                                         {/* Loading placeholder for value */}
                                                         <div className="w-32 h-6 bg-[#2A2B31] rounded animate-pulse mb-1"></div>
                                                     </div>
