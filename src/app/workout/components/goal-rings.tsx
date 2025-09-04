@@ -109,7 +109,34 @@ export function GoalRings({
     const middleCircumference = getCircumference(middleRadius)
     const innerCircumference = getCircumference(innerRadius)
 
-    // Helper function to render segmented ring with gaps
+    // Helper function to create SVG path for arc segment
+    const createArcPath = (
+        centerX: number,
+        centerY: number,
+        radius: number,
+        startAngle: number,
+        endAngle: number
+    ) => {
+        const start = polarToCartesian(centerX, centerY, radius, startAngle)
+        const end = polarToCartesian(centerX, centerY, radius, endAngle)
+        const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1"
+        
+        return [
+            "M", start.x, start.y, 
+            "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y
+        ].join(" ")
+    }
+
+    // Helper function to convert polar coordinates to cartesian
+    const polarToCartesian = (centerX: number, centerY: number, radius: number, angleInDegrees: number) => {
+        const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0
+        return {
+            x: centerX + (radius * Math.cos(angleInRadians)),
+            y: centerY + (radius * Math.sin(angleInRadians))
+        }
+    }
+
+    // Helper function to render segmented ring with actual physical gaps
     const renderSegmentedRing = (
         radius: number,
         strokeWidth: number,
@@ -117,12 +144,14 @@ export function GoalRings({
         gradients: { [key: string]: string },
         totalProgress: number
     ) => {
-        const circumference = getCircumference(radius)
         const center = config.canvas / 2
         const sortedSegments = Object.entries(segments).sort(([,a], [,b]) => b - a) // Sort by progress descending
         
-        const gapSize = 8 // Gap size in stroke-dasharray units
-        let currentOffset = 0
+        const gapAngle = 3 // Gap between segments in degrees
+        const totalGaps = sortedSegments.length * gapAngle
+        const availableAngle = 360 * totalProgress - totalGaps
+        
+        let currentAngle = 0
         
         return (
             <>
@@ -137,30 +166,29 @@ export function GoalRings({
                     strokeLinecap="round"
                 />
                 
-                {/* Individual segment arcs with gaps */}
+                {/* Individual segment arcs with physical gaps */}
                 {sortedSegments.map(([key, progress], index) => {
-                    const segmentLength = circumference * progress
-                    const dashArray = `${segmentLength} ${circumference - segmentLength + gapSize}`
-                    const rotationOffset = currentOffset * (360 / circumference)
+                    if (progress <= 0) return null
                     
-                    currentOffset += segmentLength + gapSize
+                    const segmentAngle = (progress / totalProgress) * availableAngle
+                    const startAngle = currentAngle
+                    const endAngle = currentAngle + segmentAngle
+                    
+                    const pathData = createArcPath(center, center, radius, startAngle, endAngle)
+                    
+                    currentAngle = endAngle + gapAngle // Add gap after segment
                     
                     return (
-                        <circle
+                        <path
                             key={key}
-                            cx={center}
-                            cy={center}
-                            r={radius}
+                            d={pathData}
                             fill="none"
                             stroke={`url(#${gradients[key]})`}
                             strokeWidth={strokeWidth}
                             strokeLinecap="round"
-                            strokeDasharray={dashArray}
-                            strokeDashoffset={0}
-                            transform={`rotate(${-90 + rotationOffset} ${center} ${center})`}
                             className="progress-ring"
                             style={{
-                                filter: `drop-shadow(0 0 6px ${index === 0 ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)'})`
+                                filter: `drop-shadow(0 0 8px ${index === 0 ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.2)'})`
                             }}
                         />
                     )
