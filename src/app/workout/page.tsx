@@ -556,8 +556,7 @@ export default function WorkoutPage() {
                     <div className="container mx-auto max-w-7xl px-6 py-8">
                         {/* Daily Goals Section */}
                         <section className="mb-12">
-                            <div className="flex items-center justify-between mb-6">
-                                <h1 className="text-2xl font-bold text-[#F3F4F6]">Daily Goals Progress</h1>
+                            <div className="flex items-center justify-end mb-6">
                                 <Button
                                     variant="ghost"
                                     className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full"
@@ -575,79 +574,69 @@ export default function WorkoutPage() {
                                         nutritionProgress={mockData.goals.nutrition}
                                         exerciseProgress={mockData.goals.exercise}
                                         streak={mockData.streak}
+                                        recoveryDetails={{
+                                            sleep: mockData.goalDetails.recovery.sleep.current / mockData.goalDetails.recovery.sleep.target,
+                                            breaks: mockData.goalDetails.recovery.breaks.current / mockData.goalDetails.recovery.breaks.target
+                                        }}
+                                        nutritionDetails={{
+                                            calories: mockData.goalDetails.nutrition.calories.consumed / mockData.goalDetails.nutrition.calories.target,
+                                            macros: 0.75, // Average of carbs/protein/fats progress
+                                            burned: mockData.goalDetails.nutrition.calories.burned / 500 // Normalized burn goal
+                                        }}
+                                        exerciseDetails={{
+                                            activities: mockData.goalDetails.exercise.completed / mockData.goalDetails.exercise.planned,
+                                            extras: Math.min(mockData.goalDetails.exercise.extras / 2, 1), // Bonus activities
+                                            plan: 0.85 // Plan adherence
+                                        }}
                                     />
                                 </div>
 
                                 <div className="space-y-4">
                                     <h2 className="text-xl font-semibold text-[#F3F4F6] mb-4">Today&apos;s Summary</h2>
 
-                                    <div className="space-y-4">
+                                    <div className="grid grid-cols-1 gap-3">
                                         {/* Recovery Summary */}
-                                        <div className="p-4 bg-[#121318] border border-[#212227] rounded-[20px]">
-                                            <div className="flex items-center space-x-3 mb-3">
-                                                <div className="w-8 h-8 bg-gradient-to-br from-[#7A5CFF] to-[#9D4EDD] rounded-[10px] flex items-center justify-center">
-                                                    <Moon className="w-4 h-4 text-white" />
+                                        <div className="p-3 bg-[#121318] border border-[#212227] rounded-[16px] hover:border-[#2A2B31] transition-colors cursor-pointer">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center space-x-3">
+                                                    <div className="w-6 h-6 bg-gradient-to-br from-[#2BD2FF] to-[#2A8CEA] rounded-[8px] flex items-center justify-center">
+                                                        <Moon className="w-3 h-3 text-white" />
+                                                    </div>
+                                                    <span className="text-[#F3F4F6] font-medium text-sm">Recovery</span>
                                                 </div>
-                                                <span className="text-[#F3F4F6] font-semibold">Recovery</span>
-                                                <span className="text-[#7A5CFF] text-sm font-medium">{Math.round(mockData.goals.recovery * 100)}%</span>
-                                            </div>
-                                            <div className="space-y-2 text-sm">
-                                                <div className="flex justify-between text-[#A1A1AA]">
-                                                    <span>Sleep:</span>
-                                                    <span className="text-[#F3F4F6]">{mockData.goalDetails.recovery.sleep.current}h / {mockData.goalDetails.recovery.sleep.target}h</span>
-                                                </div>
-                                                <div className="flex justify-between text-[#A1A1AA]">
-                                                    <span>Breaks:</span>
-                                                    <span className="text-[#F3F4F6]">{mockData.goalDetails.recovery.breaks.current}min / {mockData.goalDetails.recovery.breaks.target}min</span>
-                                                </div>
+                                                <span className="text-[#2BD2FF] text-sm font-semibold">{Math.round(mockData.goals.recovery * 100)}%</span>
                                             </div>
                                         </div>
 
                                         {/* Nutrition Summary */}
-                                        <div className="p-4 bg-[#121318] border border-[#212227] rounded-[20px]">
-                                            <div className="flex items-center space-x-3 mb-3">
-                                                <div className="w-8 h-8 bg-gradient-to-br from-[#FF2D55] to-[#FF375F] rounded-[10px] flex items-center justify-center">
-                                                    <Flame className="w-4 h-4 text-white" />
+                                        <div className="p-3 bg-[#121318] border border-[#212227] rounded-[16px] hover:border-[#2A2B31] transition-colors cursor-pointer">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center space-x-3">
+                                                    <div className="w-6 h-6 bg-gradient-to-br from-[#9BE15D] to-[#00E676] rounded-[8px] flex items-center justify-center">
+                                                        <Flame className="w-3 h-3 text-white" />
+                                                    </div>
+                                                    <span className="text-[#F3F4F6] font-medium text-sm">Nutrition</span>
                                                 </div>
-                                                <span className="text-[#F3F4F6] font-semibold">Nutrition</span>
-                                                <span className="text-[#FF2D55] text-sm font-medium">{Math.round(mockData.goals.nutrition * 100)}%</span>
-                                            </div>
-                                            <div className="space-y-2 text-sm">
-                                                <div className="flex justify-between text-[#A1A1AA]">
-                                                    <span>Calories:</span>
-                                                    <span className="text-[#F3F4F6]">{mockData.goalDetails.nutrition.calories.consumed} / {mockData.goalDetails.nutrition.calories.target}</span>
-                                                </div>
-                                                <div className="flex justify-between text-[#A1A1AA]">
-                                                    <span>Burned:</span>
-                                                    <span className="text-[#F3F4F6]">{mockData.goalDetails.nutrition.calories.burned} cal</span>
-                                                </div>
+                                                <span className="text-[#9BE15D] text-sm font-semibold">{Math.round(mockData.goals.nutrition * 100)}%</span>
                                             </div>
                                         </div>
 
                                         {/* Exercise Summary */}
-                                        <div className="p-4 bg-[#121318] border border-[#212227] rounded-[20px]">
-                                            <div className="flex items-center space-x-3 mb-3">
-                                                <div className="w-8 h-8 bg-gradient-to-br from-[#9BE15D] to-[#00E676] rounded-[10px] flex items-center justify-center">
-                                                    <Dumbbell className="w-4 h-4 text-white" />
+                                        <div className="p-3 bg-[#121318] border border-[#212227] rounded-[16px] hover:border-[#2A2B31] transition-colors cursor-pointer">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center space-x-3">
+                                                    <div className="w-6 h-6 bg-gradient-to-br from-[#FF2D55] to-[#FF375F] rounded-[8px] flex items-center justify-center">
+                                                        <Dumbbell className="w-3 h-3 text-white" />
+                                                    </div>
+                                                    <span className="text-[#F3F4F6] font-medium text-sm">Exercise</span>
                                                 </div>
-                                                <span className="text-[#F3F4F6] font-semibold">Exercise</span>
-                                                <span className="text-[#9BE15D] text-sm font-medium">{Math.round(mockData.goals.exercise * 100)}%</span>
-                                            </div>
-                                            <div className="space-y-2 text-sm">
-                                                <div className="flex justify-between text-[#A1A1AA]">
-                                                    <span>Activities:</span>
-                                                    <span className="text-[#F3F4F6]">{mockData.goalDetails.exercise.completed} / {mockData.goalDetails.exercise.planned}</span>
-                                                </div>
-                                                <div className="flex justify-between text-[#A1A1AA]">
-                                                    <span>Duration:</span>
-                                                    <span className="text-[#F3F4F6]">{mockData.goalDetails.exercise.duration}min</span>
-                                                </div>
-                                                <div className="flex justify-between text-[#A1A1AA]">
-                                                    <span>Extras:</span>
-                                                    <span className="text-[#22C55E]">+{mockData.goalDetails.exercise.extras}</span>
-                                                </div>
+                                                <span className="text-[#FF2D55] text-sm font-semibold">{Math.round(mockData.goals.exercise * 100)}%</span>
                                             </div>
                                         </div>
+                                    </div>
+                                    
+                                    <div className="mt-4 text-xs text-[#7A7F86] text-center">
+                                        Click cards for detailed breakdown
                                     </div>
 
                                 </div>

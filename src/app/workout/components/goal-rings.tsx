@@ -16,6 +16,21 @@ interface GoalRingsProps {
         subtitle?: string
     }
     streak?: number // Consecutive days streak
+    // Subcategory progress for visual shading
+    recoveryDetails?: {
+        sleep: number      // 0-1
+        breaks: number     // 0-1
+    }
+    nutritionDetails?: {
+        calories: number   // 0-1
+        macros: number     // 0-1 (combined carbs/protein/fats)
+        burned: number     // 0-1
+    }
+    exerciseDetails?: {
+        activities: number // 0-1
+        extras: number     // 0-1
+        plan: number       // 0-1 (plan adherence)
+    }
 }
 
 const sizeConfig = {
@@ -52,16 +67,16 @@ const sizeConfig = {
 const ringColors = {
     track: "rgba(255,255,255,0.06)",
     recovery: {
-        start: "#7A5CFF",
-        end: "#9D4EDD"
+        start: "#2BD2FF",
+        end: "#2A8CEA"
     },
     nutrition: {
-        start: "#FF2D55",
-        end: "#FF375F"
-    },
-    exercise: {
         start: "#9BE15D",
         end: "#00E676"
+    },
+    exercise: {
+        start: "#FF2D55",
+        end: "#FF375F"
     }
 }
 
@@ -73,7 +88,10 @@ export function GoalRings({
     animated = true,
     className,
     centerContent,
-    streak
+    streak,
+    recoveryDetails,
+    nutritionDetails,
+    exerciseDetails
 }: GoalRingsProps) {
     const svgRef = useRef<SVGSVGElement>(null)
     const config = sizeConfig[size]
@@ -113,16 +131,51 @@ export function GoalRings({
                 aria-label={`Recovery ${Math.round(recoveryProgress * 100)}%, Nutrition ${Math.round(nutritionProgress * 100)}%, Exercise ${Math.round(exerciseProgress * 100)}% complete`}
             >
                 <defs>
+                    {/* Recovery gradient with sleep/break shading */}
                     <linearGradient id="recoveryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                         <stop offset="0%" stopColor={ringColors.recovery.start} />
+                        {recoveryDetails && (
+                            <stop 
+                                offset={`${recoveryDetails.sleep * 50}%`} 
+                                stopColor={`rgba(43,210,255,${0.7 + recoveryDetails.sleep * 0.3})`} 
+                            />
+                        )}
                         <stop offset="100%" stopColor={ringColors.recovery.end} />
                     </linearGradient>
+                    
+                    {/* Nutrition gradient with calories/macro shading */}
                     <linearGradient id="nutritionGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                         <stop offset="0%" stopColor={ringColors.nutrition.start} />
+                        {nutritionDetails && (
+                            <>
+                                <stop 
+                                    offset={`${nutritionDetails.calories * 30}%`} 
+                                    stopColor={`rgba(155,225,93,${0.6 + nutritionDetails.calories * 0.4})`} 
+                                />
+                                <stop 
+                                    offset={`${70 + nutritionDetails.macros * 20}%`} 
+                                    stopColor={`rgba(0,230,118,${0.7 + nutritionDetails.macros * 0.3})`} 
+                                />
+                            </>
+                        )}
                         <stop offset="100%" stopColor={ringColors.nutrition.end} />
                     </linearGradient>
+                    
+                    {/* Exercise gradient with activity/extra shading */}
                     <linearGradient id="exerciseGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                         <stop offset="0%" stopColor={ringColors.exercise.start} />
+                        {exerciseDetails && (
+                            <>
+                                <stop 
+                                    offset={`${exerciseDetails.activities * 40}%`} 
+                                    stopColor={`rgba(255,45,85,${0.7 + exerciseDetails.activities * 0.3})`} 
+                                />
+                                <stop 
+                                    offset={`${60 + exerciseDetails.extras * 30}%`} 
+                                    stopColor={`rgba(255,55,95,${0.8 + exerciseDetails.plan * 0.2})`} 
+                                />
+                            </>
+                        )}
                         <stop offset="100%" stopColor={ringColors.exercise.end} />
                     </linearGradient>
                 </defs>
@@ -150,7 +203,7 @@ export function GoalRings({
                     transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
                     className="progress-ring"
                     style={recoveryProgress >= 1 ? {
-                        filter: 'drop-shadow(0 0 12px rgba(122,92,255,0.6)) drop-shadow(0 0 24px rgba(157,78,221,0.4))'
+                        filter: 'drop-shadow(0 0 12px rgba(43,210,255,0.6)) drop-shadow(0 0 24px rgba(42,140,234,0.4))'
                     } : undefined}
                 />
 
@@ -177,7 +230,7 @@ export function GoalRings({
                     transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
                     className="progress-ring"
                     style={nutritionProgress >= 1 ? {
-                        filter: 'drop-shadow(0 0 12px rgba(255,45,85,0.6)) drop-shadow(0 0 24px rgba(255,55,95,0.4))'
+                        filter: 'drop-shadow(0 0 12px rgba(155,225,93,0.6)) drop-shadow(0 0 24px rgba(0,230,118,0.4))'
                     } : undefined}
                 />
 
@@ -204,7 +257,7 @@ export function GoalRings({
                     transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
                     className="progress-ring"
                     style={exerciseProgress >= 1 ? {
-                        filter: 'drop-shadow(0 0 12px rgba(155,225,93,0.6)) drop-shadow(0 0 24px rgba(0,230,118,0.4))'
+                        filter: 'drop-shadow(0 0 12px rgba(255,45,85,0.6)) drop-shadow(0 0 24px rgba(255,55,95,0.4))'
                     } : undefined}
                 />
             </svg>
