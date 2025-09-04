@@ -109,7 +109,7 @@ export function GoalRings({
     const middleCircumference = getCircumference(middleRadius)
     const innerCircumference = getCircumference(innerRadius)
 
-    // Helper function to render segmented ring
+    // Helper function to render segmented ring with gaps
     const renderSegmentedRing = (
         radius: number,
         strokeWidth: number,
@@ -120,6 +120,9 @@ export function GoalRings({
         const circumference = getCircumference(radius)
         const center = config.canvas / 2
         const sortedSegments = Object.entries(segments).sort(([,a], [,b]) => b - a) // Sort by progress descending
+        
+        const gapSize = 8 // Gap size in stroke-dasharray units
+        let currentOffset = 0
         
         return (
             <>
@@ -134,9 +137,14 @@ export function GoalRings({
                     strokeLinecap="round"
                 />
                 
-                {/* Segment circles */}
+                {/* Individual segment arcs with gaps */}
                 {sortedSegments.map(([key, progress], index) => {
-                    const dashOffset = getDashOffset(progress, circumference)
+                    const segmentLength = circumference * progress
+                    const dashArray = `${segmentLength} ${circumference - segmentLength + gapSize}`
+                    const rotationOffset = currentOffset * (360 / circumference)
+                    
+                    currentOffset += segmentLength + gapSize
+                    
                     return (
                         <circle
                             key={key}
@@ -145,14 +153,14 @@ export function GoalRings({
                             r={radius}
                             fill="none"
                             stroke={`url(#${gradients[key]})`}
-                            strokeWidth={strokeWidth - index * 0.5} // Slightly reduce width for layering
+                            strokeWidth={strokeWidth}
                             strokeLinecap="round"
-                            strokeDasharray={circumference}
-                            strokeDashoffset={dashOffset}
-                            transform={`rotate(-90 ${center} ${center})`}
+                            strokeDasharray={dashArray}
+                            strokeDashoffset={0}
+                            transform={`rotate(${-90 + rotationOffset} ${center} ${center})`}
                             className="progress-ring"
                             style={{
-                                opacity: 0.9 - index * 0.1 // Slight opacity variation
+                                filter: `drop-shadow(0 0 6px ${index === 0 ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)'})`
                             }}
                         />
                     )
@@ -184,50 +192,50 @@ export function GoalRings({
                 aria-label={`Recovery ${Math.round(recoveryProgress * 100)}%, Nutrition ${Math.round(nutritionProgress * 100)}%, Exercise ${Math.round(exerciseProgress * 100)}% complete`}
             >
                 <defs>
-                    {/* Recovery gradients */}
+                    {/* Recovery gradients - Clear Blues */}
                     <linearGradient id="recoveryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                         <stop offset="0%" stopColor={ringColors.recovery.start} />
                         <stop offset="100%" stopColor={ringColors.recovery.end} />
                     </linearGradient>
                     <linearGradient id="recoverySleepGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#2BD2FF" />
-                        <stop offset="100%" stopColor="#1E90FF" />
+                        <stop offset="0%" stopColor="#00D2FF" />
+                        <stop offset="100%" stopColor="#0099CC" />
                     </linearGradient>
                     <linearGradient id="recoveryBreaksGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#4169E1" />
-                        <stop offset="100%" stopColor="#2A8CEA" />
+                        <stop offset="0%" stopColor="#1E40AF" />
+                        <stop offset="100%" stopColor="#1D4ED8" />
                     </linearGradient>
 
-                    {/* Nutrition gradients */}
+                    {/* Nutrition gradients - Clear Greens */}
                     <linearGradient id="nutritionCarbsGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#9BE15D" />
-                        <stop offset="100%" stopColor="#00E676" />
+                        <stop offset="0%" stopColor="#84CC16" />
+                        <stop offset="100%" stopColor="#22C55E" />
                     </linearGradient>
                     <linearGradient id="nutritionProteinGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#00E676" />
-                        <stop offset="100%" stopColor="#00BCD4" />
+                        <stop offset="0%" stopColor="#10B981" />
+                        <stop offset="100%" stopColor="#0D9488" />
                     </linearGradient>
                     <linearGradient id="nutritionFatsGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#9BE15D" />
-                        <stop offset="100%" stopColor="#FFC107" />
+                        <stop offset="0%" stopColor="#65A30D" />
+                        <stop offset="100%" stopColor="#A3A300" />
                     </linearGradient>
                     <linearGradient id="nutritionBurnedGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#00E676" />
-                        <stop offset="100%" stopColor="#FF5722" />
+                        <stop offset="0%" stopColor="#16A34A" />
+                        <stop offset="100%" stopColor="#DC2626" />
                     </linearGradient>
 
-                    {/* Exercise gradients */}
+                    {/* Exercise gradients - Clear Reds */}
                     <linearGradient id="exerciseActivitiesGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#FF2D55" />
-                        <stop offset="100%" stopColor="#FF375F" />
+                        <stop offset="0%" stopColor="#DC2626" />
+                        <stop offset="100%" stopColor="#B91C1C" />
                     </linearGradient>
                     <linearGradient id="exerciseExtrasGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#FF375F" />
-                        <stop offset="100%" stopColor="#FF6B9D" />
+                        <stop offset="0%" stopColor="#F59E0B" />
+                        <stop offset="100%" stopColor="#D97706" />
                     </linearGradient>
                     <linearGradient id="exerciseCheatingGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#FF6B9D" />
-                        <stop offset="100%" stopColor="#8B0000" />
+                        <stop offset="0%" stopColor="#7C2D12" />
+                        <stop offset="100%" stopColor="#451A03" />
                     </linearGradient>
                 </defs>
 
