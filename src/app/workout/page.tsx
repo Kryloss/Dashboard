@@ -14,7 +14,7 @@ import { ActivityEditModal } from "./history/components/activity-edit-modal"
 import { WorkoutStorage, OngoingWorkout, WorkoutActivity } from "@/lib/workout-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
-import { Settings, Plus, Flame, Dumbbell, User, Timer, Bike, TrendingUp, Clock, Heart, FileText, Play, Edit3, Trash2, Moon, Activity } from "lucide-react"
+import { Settings, Plus, Flame, Dumbbell, User, Timer, Bike, TrendingUp, Clock, Heart, FileText, Play, Edit3, Trash2, Moon, Footprints } from "lucide-react"
 
 export default function WorkoutPage() {
     const router = useRouter()
@@ -245,7 +245,7 @@ export default function WorkoutPage() {
         plannedWorkouts: [
             {
                 id: 1,
-                icon: <Activity className="w-5 h-5" />,
+                icon: <Footprints className="w-5 h-5" />,
                 name: "Morning Run",
                 duration: "30 min",
                 time: "6:00 AM"
@@ -717,7 +717,7 @@ export default function WorkoutPage() {
 
                             <div className="grid grid-cols-6 gap-4">
                                 <QuickActionCard
-                                    icon={<Activity className="w-7 h-7" />}
+                                    icon={<Footprints className="w-7 h-7" />}
                                     label="Running"
                                     onClick={() => handleQuickAction('running')}
                                 />
@@ -803,7 +803,7 @@ export default function WorkoutPage() {
                                                 const getWorkoutIcon = (type: string) => {
                                                     switch (type) {
                                                         case 'strength': return <Dumbbell className="w-4 h-4" />
-                                                        case 'running': return <Activity className="w-4 h-4" />
+                                                        case 'running': return <Footprints className="w-4 h-4" />
                                                         case 'yoga': return <Heart className="w-4 h-4" />
                                                         case 'cycling': return <Bike className="w-4 h-4" />
                                                         default: return <Dumbbell className="w-4 h-4" />

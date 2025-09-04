@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Dumbbell, Activity, Heart, Bike, FileText, Plus, ChevronRight } from "lucide-react"
+import { Dumbbell, Footprints, Heart, Bike, FileText, Plus, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { WorkoutStorage, WorkoutTemplate } from "@/lib/workout-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
@@ -28,7 +28,7 @@ const workoutTypes = [
         id: 'running',
         name: 'Running',
         description: 'Cardio and endurance training',
-        icon: <Activity className="w-6 h-6" />,
+        icon: <Footprints className="w-6 h-6" />,
         color: 'text-[#FF2D55]'
     },
     {
