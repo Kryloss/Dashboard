@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 
-import { Dumbbell, Target, Heart, Bike, FileText, Calendar, Clock } from "lucide-react"
+import { Dumbbell, Run, Heart, Bike, FileText, Calendar, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { WorkoutStorage } from "@/lib/workout-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
@@ -31,7 +31,7 @@ const workoutTypes = [
         id: 'running',
         name: 'Running',
         description: 'Cardio and endurance training',
-        icon: <Target className="w-6 h-6" />,
+        icon: <Run className="w-6 h-6" />,
         color: 'text-[#FF2D55]'
     },
     {

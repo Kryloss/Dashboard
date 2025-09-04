@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Dumbbell, Target, Heart, Bike, AlertTriangle, Trash2 } from "lucide-react"
+import { Dumbbell, Run, Heart, Bike, AlertTriangle, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { WorkoutStorage, WorkoutTemplate } from "@/lib/workout-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
@@ -30,7 +30,7 @@ const getWorkoutTypes = () => [
         id: 'running',
         name: 'Running',
         description: 'Cardio and endurance training',
-        icon: <Target className="w-8 h-8" />,
+        icon: <Run className="w-8 h-8" />,
         available: false, // In development for both modes
         color: 'text-[#FF2D55]'
     },

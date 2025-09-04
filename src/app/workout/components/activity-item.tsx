@@ -1,7 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { Dumbbell, PersonStanding, Heart, Bike, Clock } from "lucide-react"
+import { Dumbbell, Run, Heart, Bike, Clock } from "lucide-react"
 
 interface ActivityItemProps {
     date: string
@@ -27,7 +27,7 @@ export function ActivityItem({
     const getWorkoutIcon = (type: string) => {
         switch (type) {
             case 'strength': return <Dumbbell className="w-5 h-5" />
-            case 'running': return <PersonStanding className="w-5 h-5" />
+            case 'running': return <Run className="w-5 h-5" />
             case 'yoga': return <Heart className="w-5 h-5" />
             case 'cycling': return <Bike className="w-5 h-5" />
             default: return <Dumbbell className="w-5 h-5" />
