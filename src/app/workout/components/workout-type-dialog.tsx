@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Dumbbell, Activity, Heart, Bike, AlertTriangle, Trash2 } from "lucide-react"
+import { Dumbbell, Activity, Heart, Bike, AlertTriangle, Trash2, Target } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { WorkoutStorage, WorkoutTemplate } from "@/lib/workout-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
@@ -78,7 +78,7 @@ export function WorkoutTypeDialog({ open, onOpenChange, mode = 'new-workout' }: 
 
     const handleWorkoutSelect = async (workoutType: string, available: boolean) => {
         if (!available) return
-        
+
         if (!user) {
             notifications.warning('Sign in required', {
                 description: mode === 'quick-log' ? 'Please sign in to log workouts' : 'Please sign in to start workouts',
@@ -91,7 +91,7 @@ export function WorkoutTypeDialog({ open, onOpenChange, mode = 'new-workout' }: 
             onOpenChange(false)
             return
         }
-        
+
         if (!supabase) return
 
         setSelectedType(workoutType)

@@ -14,7 +14,7 @@ import { ActivityEditModal } from "./history/components/activity-edit-modal"
 import { WorkoutStorage, OngoingWorkout, WorkoutActivity } from "@/lib/workout-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
-import { Settings, Plus, Flame, Dumbbell, User, Timer, Bike, Target, TrendingUp, Clock, Heart, FileText, Play, Edit3, Trash2, Moon, Activity } from "lucide-react"
+import { Settings, Plus, Flame, Dumbbell, User, Timer, Bike, TrendingUp, Clock, Heart, FileText, Play, Edit3, Trash2, Moon, Activity } from "lucide-react"
 
 export default function WorkoutPage() {
     const router = useRouter()
@@ -308,7 +308,7 @@ export default function WorkoutPage() {
         // Get workout name from mockData
         const workout = mockData.plannedWorkouts.find(w => w.id === id)
         const workoutName = workout?.name || 'Workout'
-        
+
         if (id === 2) { // Strength Training workout
             handleQuickAction('strength')
         } else {
