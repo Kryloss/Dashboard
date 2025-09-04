@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, Search, Filter, Dumbbell, Target, Heart, Bike, Plus } from "lucide-react"
+import { ArrowLeft, Search, Filter, Dumbbell, PersonStanding, Heart, Bike, Plus } from "lucide-react"
 import { WorkoutStorage, WorkoutActivity } from "@/lib/workout-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
@@ -196,7 +196,7 @@ export default function WorkoutHistoryPage() {
     const getWorkoutIcon = (type: string) => {
         switch (type) {
             case 'strength': return <Dumbbell className="w-5 h-5" />
-            case 'running': return <Target className="w-5 h-5" />
+            case 'running': return <PersonStanding className="w-5 h-5" />
             case 'yoga': return <Heart className="w-5 h-5" />
             case 'cycling': return <Bike className="w-5 h-5" />
             default: return <Dumbbell className="w-5 h-5" />

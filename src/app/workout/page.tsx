@@ -14,7 +14,7 @@ import { ActivityEditModal } from "./history/components/activity-edit-modal"
 import { WorkoutStorage, OngoingWorkout, WorkoutActivity } from "@/lib/workout-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
-import { Settings, Plus, Flame, Dumbbell, User, Timer, Bike, Target, TrendingUp, Clock, Heart, FileText, Play, Edit3, Trash2, Moon } from "lucide-react"
+import { Settings, Plus, Flame, Dumbbell, User, Timer, Bike, Target, TrendingUp, Clock, Heart, FileText, Play, Edit3, Trash2, Moon, PersonStanding } from "lucide-react"
 
 export default function WorkoutPage() {
     const router = useRouter()
@@ -245,7 +245,7 @@ export default function WorkoutPage() {
         plannedWorkouts: [
             {
                 id: 1,
-                icon: <Target className="w-5 h-5" />,
+                icon: <PersonStanding className="w-5 h-5" />,
                 name: "Morning Run",
                 duration: "30 min",
                 time: "6:00 AM"
@@ -293,10 +293,51 @@ export default function WorkoutPage() {
     }
 
     const handleStartWorkout = (id: number) => {
+        if (!user) {
+            notifications.warning('Sign in required', {
+                description: 'Please sign in to start workouts',
+                duration: 4000,
+                action: {
+                    label: 'Sign In',
+                    onClick: () => router.push('/auth/signin')
+                }
+            })
+            return
+        }
+
+        // Get workout name from mockData
+        const workout = mockData.plannedWorkouts.find(w => w.id === id)
+        const workoutName = workout?.name || 'Workout'
+        
+        if (id === 2) { // Strength Training workout
+            handleQuickAction('strength')
+        } else {
+            // All other planned workouts show coming soon
+            notifications.info('Planned workouts', {
+                description: `${workoutName} feature coming soon!`,
+                duration: 3000
+            })
+        }
         console.log(`Starting workout ${id}`)
     }
 
     const handleEditWorkout = (id: number) => {
+        if (!user) {
+            notifications.warning('Sign in required', {
+                description: 'Please sign in to edit workouts',
+                duration: 4000,
+                action: {
+                    label: 'Sign In',
+                    onClick: () => router.push('/auth/signin')
+                }
+            })
+            return
+        }
+
+        notifications.info('Edit workouts', {
+            description: 'Workout editing feature coming soon!',
+            duration: 3000
+        })
         console.log(`Editing workout ${id}`)
     }
 
@@ -373,6 +414,30 @@ export default function WorkoutPage() {
             // TODO: Implement sleep tracking functionality
             notifications.info('Sleep tracking', {
                 description: 'Sleep tracking feature coming soon!',
+                duration: 3000
+            })
+        } else if (action === 'running') {
+            console.log(`Quick action: ${action}`)
+            notifications.info('Running workouts', {
+                description: 'Running workout feature coming soon!',
+                duration: 3000
+            })
+        } else if (action === 'yoga') {
+            console.log(`Quick action: ${action}`)
+            notifications.info('Yoga workouts', {
+                description: 'Yoga workout feature coming soon!',
+                duration: 3000
+            })
+        } else if (action === 'cycling') {
+            console.log(`Quick action: ${action}`)
+            notifications.info('Cycling workouts', {
+                description: 'Cycling workout feature coming soon!',
+                duration: 3000
+            })
+        } else if (action === 'timer') {
+            console.log(`Quick action: ${action}`)
+            notifications.info('Timer workouts', {
+                description: 'Timer workout feature coming soon!',
                 duration: 3000
             })
         } else {
@@ -652,7 +717,7 @@ export default function WorkoutPage() {
 
                             <div className="grid grid-cols-6 gap-4">
                                 <QuickActionCard
-                                    icon={<Target className="w-7 h-7" />}
+                                    icon={<PersonStanding className="w-7 h-7" />}
                                     label="Running"
                                     onClick={() => handleQuickAction('running')}
                                 />
@@ -738,7 +803,7 @@ export default function WorkoutPage() {
                                                 const getWorkoutIcon = (type: string) => {
                                                     switch (type) {
                                                         case 'strength': return <Dumbbell className="w-4 h-4" />
-                                                        case 'running': return <Target className="w-4 h-4" />
+                                                        case 'running': return <PersonStanding className="w-4 h-4" />
                                                         case 'yoga': return <Heart className="w-4 h-4" />
                                                         case 'cycling': return <Bike className="w-4 h-4" />
                                                         default: return <Dumbbell className="w-4 h-4" />

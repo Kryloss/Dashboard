@@ -19,7 +19,9 @@
       "Bash(npx:*)",
       "Bash(del \"C:\\Users\\mrRep\\Desktop\\Dashboard\\src\\app\\workout\\components\\quick-log-dialog.tsx\")",
       "Read(/C:\\Users\\mrRep\\Desktop\\Dashboard\\src\\app\\workout/**)",
-      "Read(/C:\\Users\\mrRep\\Desktop\\Dashboard\\src\\app\\workout\\components/**)"
+      "Read(/C:\\Users\\mrRep\\Desktop\\Dashboard\\src\\app\\workout\\components/**)",
+      "Read(/C:\\Users\\mrRep\\Desktop\\Dashboard\\src\\app\\workout\\components/**)",
+      "Read(/C:\\Users\\mrRep\\Desktop\\Dashboard\\src\\app\\workout\\history/**)"
     ],
     "deny": [],
     "ask": [],
