@@ -575,6 +575,21 @@ export default function WorkoutPage() {
                                             nutritionProgress={mockData.goals.nutrition}
                                             exerciseProgress={mockData.goals.exercise}
                                             streak={mockData.streak}
+                                            recoverySegments={{
+                                                sleep: mockData.goalDetails.recovery.sleep.current / mockData.goalDetails.recovery.sleep.target,
+                                                breaks: mockData.goalDetails.recovery.breaks.current / mockData.goalDetails.recovery.breaks.target
+                                            }}
+                                            nutritionSegments={{
+                                                carbs: mockData.goalDetails.nutrition.macros.carbs.current / mockData.goalDetails.nutrition.macros.carbs.target,
+                                                protein: mockData.goalDetails.nutrition.macros.protein.current / mockData.goalDetails.nutrition.macros.protein.target,
+                                                fats: mockData.goalDetails.nutrition.macros.fats.current / mockData.goalDetails.nutrition.macros.fats.target,
+                                                burned: Math.min(mockData.goalDetails.nutrition.calories.burned / 400, 1) // Normalize to reasonable burn goal
+                                            }}
+                                            exerciseSegments={{
+                                                activities: mockData.goalDetails.exercise.completed / mockData.goalDetails.exercise.planned,
+                                                extras: Math.min(mockData.goalDetails.exercise.extras / 2, 1), // Bonus activities normalized
+                                                cheating: 0.2 // Mock cheating data (20% of plan deviated)
+                                            }}
                                         />
                                     </div>
                                     
