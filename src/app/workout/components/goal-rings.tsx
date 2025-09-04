@@ -5,9 +5,9 @@ import { cn } from "@/lib/utils"
 
 interface GoalRingsProps {
     size?: 'xs' | 'sm' | 'md' | 'lg'
-    moveProgress: number    // 0-1 (calories)
-    exerciseProgress: number // 0-1 (minutes)  
-    standProgress: number   // 0-1 (hours)
+    recoveryProgress: number    // 0-1 (sleep time + breaks)
+    nutritionProgress: number   // 0-1 (calories + macros)
+    exerciseProgress: number    // 0-1 (activities + plan extras)
     animated?: boolean
     className?: string
     centerContent?: {
@@ -15,6 +15,7 @@ interface GoalRingsProps {
         value: string | number
         subtitle?: string
     }
+    streak?: number // Consecutive days streak
 }
 
 const sizeConfig = {
@@ -50,28 +51,29 @@ const sizeConfig = {
 
 const ringColors = {
     track: "rgba(255,255,255,0.06)",
-    move: {
+    recovery: {
+        start: "#7A5CFF",
+        end: "#9D4EDD"
+    },
+    nutrition: {
         start: "#FF2D55",
         end: "#FF375F"
     },
     exercise: {
         start: "#9BE15D",
         end: "#00E676"
-    },
-    stand: {
-        start: "#2BD2FF",
-        end: "#2A8CEA"
     }
 }
 
 export function GoalRings({
     size = 'md',
-    moveProgress,
+    recoveryProgress,
+    nutritionProgress,
     exerciseProgress,
-    standProgress,
     animated = true,
     className,
-    centerContent
+    centerContent,
+    streak
 }: GoalRingsProps) {
     const svgRef = useRef<SVGSVGElement>(null)
     const config = sizeConfig[size]
@@ -95,7 +97,7 @@ export function GoalRings({
                 (ring as HTMLElement).style.transition = 'stroke-dashoffset 1200ms cubic-bezier(0.22, 1, 0.36, 1)'
             })
         }
-    }, [animated, moveProgress, exerciseProgress, standProgress])
+    }, [animated, recoveryProgress, nutritionProgress, exerciseProgress])
 
     return (
         <div className={cn("relative", className)}>
@@ -108,24 +110,24 @@ export function GoalRings({
                     filter: 'drop-shadow(0 1px 0 rgba(255,255,255,0.05))'
                 }}
                 role="img"
-                aria-label={`Move ${Math.round(moveProgress * 100)}%, Exercise ${Math.round(exerciseProgress * 100)}%, Stand ${Math.round(standProgress * 100)}% complete`}
+                aria-label={`Recovery ${Math.round(recoveryProgress * 100)}%, Nutrition ${Math.round(nutritionProgress * 100)}%, Exercise ${Math.round(exerciseProgress * 100)}% complete`}
             >
                 <defs>
-                    <linearGradient id="moveGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor={ringColors.move.start} />
-                        <stop offset="100%" stopColor={ringColors.move.end} />
+                    <linearGradient id="recoveryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor={ringColors.recovery.start} />
+                        <stop offset="100%" stopColor={ringColors.recovery.end} />
+                    </linearGradient>
+                    <linearGradient id="nutritionGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor={ringColors.nutrition.start} />
+                        <stop offset="100%" stopColor={ringColors.nutrition.end} />
                     </linearGradient>
                     <linearGradient id="exerciseGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                         <stop offset="0%" stopColor={ringColors.exercise.start} />
                         <stop offset="100%" stopColor={ringColors.exercise.end} />
                     </linearGradient>
-                    <linearGradient id="standGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor={ringColors.stand.start} />
-                        <stop offset="100%" stopColor={ringColors.stand.end} />
-                    </linearGradient>
                 </defs>
 
-                {/* Move Ring (Outer) */}
+                {/* Recovery Ring (Outer) */}
                 <circle
                     cx={config.canvas / 2}
                     cy={config.canvas / 2}
@@ -140,91 +142,105 @@ export function GoalRings({
                     cy={config.canvas / 2}
                     r={outerRadius}
                     fill="none"
-                    stroke="url(#moveGradient)"
+                    stroke="url(#recoveryGradient)"
                     strokeWidth={config.thicknessOuter}
                     strokeLinecap="round"
                     strokeDasharray={outerCircumference}
-                    strokeDashoffset={getDashOffset(moveProgress, outerCircumference)}
+                    strokeDashoffset={getDashOffset(recoveryProgress, outerCircumference)}
                     transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
                     className="progress-ring"
-                    style={moveProgress >= 1 ? {
+                    style={recoveryProgress >= 1 ? {
+                        filter: 'drop-shadow(0 0 12px rgba(122,92,255,0.6)) drop-shadow(0 0 24px rgba(157,78,221,0.4))'
+                    } : undefined}
+                />
+
+                {/* Nutrition Ring (Middle) */}
+                <circle
+                    cx={config.canvas / 2}
+                    cy={config.canvas / 2}
+                    r={middleRadius}
+                    fill="none"
+                    stroke={ringColors.track}
+                    strokeWidth={config.thicknessMiddle}
+                    strokeLinecap="round"
+                />
+                <circle
+                    cx={config.canvas / 2}
+                    cy={config.canvas / 2}
+                    r={middleRadius}
+                    fill="none"
+                    stroke="url(#nutritionGradient)"
+                    strokeWidth={config.thicknessMiddle}
+                    strokeLinecap="round"
+                    strokeDasharray={middleCircumference}
+                    strokeDashoffset={getDashOffset(nutritionProgress, middleCircumference)}
+                    transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
+                    className="progress-ring"
+                    style={nutritionProgress >= 1 ? {
                         filter: 'drop-shadow(0 0 12px rgba(255,45,85,0.6)) drop-shadow(0 0 24px rgba(255,55,95,0.4))'
                     } : undefined}
                 />
 
-                {/* Exercise Ring (Middle) */}
+                {/* Exercise Ring (Inner) */}
                 <circle
                     cx={config.canvas / 2}
                     cy={config.canvas / 2}
-                    r={middleRadius}
+                    r={innerRadius}
                     fill="none"
                     stroke={ringColors.track}
-                    strokeWidth={config.thicknessMiddle}
+                    strokeWidth={config.thicknessInner}
                     strokeLinecap="round"
                 />
                 <circle
                     cx={config.canvas / 2}
                     cy={config.canvas / 2}
-                    r={middleRadius}
+                    r={innerRadius}
                     fill="none"
                     stroke="url(#exerciseGradient)"
-                    strokeWidth={config.thicknessMiddle}
+                    strokeWidth={config.thicknessInner}
                     strokeLinecap="round"
-                    strokeDasharray={middleCircumference}
-                    strokeDashoffset={getDashOffset(exerciseProgress, middleCircumference)}
+                    strokeDasharray={innerCircumference}
+                    strokeDashoffset={getDashOffset(exerciseProgress, innerCircumference)}
                     transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
                     className="progress-ring"
                     style={exerciseProgress >= 1 ? {
                         filter: 'drop-shadow(0 0 12px rgba(155,225,93,0.6)) drop-shadow(0 0 24px rgba(0,230,118,0.4))'
                     } : undefined}
                 />
-
-                {/* Stand Ring (Inner) */}
-                <circle
-                    cx={config.canvas / 2}
-                    cy={config.canvas / 2}
-                    r={innerRadius}
-                    fill="none"
-                    stroke={ringColors.track}
-                    strokeWidth={config.thicknessInner}
-                    strokeLinecap="round"
-                />
-                <circle
-                    cx={config.canvas / 2}
-                    cy={config.canvas / 2}
-                    r={innerRadius}
-                    fill="none"
-                    stroke="url(#standGradient)"
-                    strokeWidth={config.thicknessInner}
-                    strokeLinecap="round"
-                    strokeDasharray={innerCircumference}
-                    strokeDashoffset={getDashOffset(standProgress, innerCircumference)}
-                    transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
-                    className="progress-ring"
-                    style={standProgress >= 1 ? {
-                        filter: 'drop-shadow(0 0 12px rgba(43,210,255,0.6)) drop-shadow(0 0 24px rgba(42,140,234,0.4))'
-                    } : undefined}
-                />
             </svg>
 
             {/* Center Content */}
-            {centerContent && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center">
-                        <div className="text-xs font-medium text-[#A1A1AA] mb-1">
-                            {centerContent.title}
-                        </div>
-                        <div className="text-2xl font-bold text-[#F3F4F6]">
-                            {centerContent.value}
-                        </div>
-                        {centerContent.subtitle && (
-                            <div className="text-xs text-[#7A7F86] mt-1">
-                                {centerContent.subtitle}
+            <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center">
+                    {streak !== undefined ? (
+                        <>
+                            <div className="text-xs font-medium text-[#A1A1AA] mb-1">
+                                Streak
                             </div>
-                        )}
-                    </div>
+                            <div className="text-3xl font-bold text-[#F3F4F6] mb-1">
+                                {streak}
+                            </div>
+                            <div className="text-xs text-[#7A7F86]">
+                                {streak === 1 ? 'day' : 'days'}
+                            </div>
+                        </>
+                    ) : centerContent ? (
+                        <>
+                            <div className="text-xs font-medium text-[#A1A1AA] mb-1">
+                                {centerContent.title}
+                            </div>
+                            <div className="text-2xl font-bold text-[#F3F4F6]">
+                                {centerContent.value}
+                            </div>
+                            {centerContent.subtitle && (
+                                <div className="text-xs text-[#7A7F86] mt-1">
+                                    {centerContent.subtitle}
+                                </div>
+                            )}
+                        </>
+                    ) : null}
                 </div>
-            )}
+            </div>
         </div>
     )
 }
