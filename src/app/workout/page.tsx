@@ -567,28 +567,53 @@ export default function WorkoutPage() {
                             </div>
 
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-                                <div className="flex justify-center lg:justify-start">
-                                    <GoalRings
-                                        size="lg"
-                                        recoveryProgress={mockData.goals.recovery}
-                                        nutritionProgress={mockData.goals.nutrition}
-                                        exerciseProgress={mockData.goals.exercise}
-                                        streak={mockData.streak}
-                                        recoveryDetails={{
-                                            sleep: mockData.goalDetails.recovery.sleep.current / mockData.goalDetails.recovery.sleep.target,
-                                            breaks: mockData.goalDetails.recovery.breaks.current / mockData.goalDetails.recovery.breaks.target
-                                        }}
-                                        nutritionDetails={{
-                                            calories: mockData.goalDetails.nutrition.calories.consumed / mockData.goalDetails.nutrition.calories.target,
-                                            macros: 0.75, // Average of carbs/protein/fats progress
-                                            burned: mockData.goalDetails.nutrition.calories.burned / 500 // Normalized burn goal
-                                        }}
-                                        exerciseDetails={{
-                                            activities: mockData.goalDetails.exercise.completed / mockData.goalDetails.exercise.planned,
-                                            extras: Math.min(mockData.goalDetails.exercise.extras / 2, 1), // Bonus activities
-                                            plan: 0.85 // Plan adherence
-                                        }}
-                                    />
+                                <div className="flex flex-col items-center lg:items-start">
+                                    <div className="flex justify-center lg:justify-start">
+                                        <GoalRings
+                                            size="lg"
+                                            recoveryProgress={mockData.goals.recovery}
+                                            nutritionProgress={mockData.goals.nutrition}
+                                            exerciseProgress={mockData.goals.exercise}
+                                            streak={mockData.streak}
+                                            recoveryDetails={{
+                                                sleep: mockData.goalDetails.recovery.sleep.current / mockData.goalDetails.recovery.sleep.target,
+                                                breaks: mockData.goalDetails.recovery.breaks.current / mockData.goalDetails.recovery.breaks.target
+                                            }}
+                                            nutritionDetails={{
+                                                calories: mockData.goalDetails.nutrition.calories.consumed / mockData.goalDetails.nutrition.calories.target,
+                                                carbs: mockData.goalDetails.nutrition.macros.carbs.current / mockData.goalDetails.nutrition.macros.carbs.target,
+                                                protein: mockData.goalDetails.nutrition.macros.protein.current / mockData.goalDetails.nutrition.macros.protein.target,
+                                                fats: mockData.goalDetails.nutrition.macros.fats.current / mockData.goalDetails.nutrition.macros.fats.target,
+                                                burned: mockData.goalDetails.nutrition.calories.burned / 500 // Normalized burn goal
+                                            }}
+                                            exerciseDetails={{
+                                                activities: mockData.goalDetails.exercise.completed / mockData.goalDetails.exercise.planned,
+                                                extras: Math.min(mockData.goalDetails.exercise.extras / 2, 1), // Bonus activities
+                                                plan: 0.85 // Plan adherence
+                                            }}
+                                        />
+                                    </div>
+                                    
+                                    {/* Ring Legend */}
+                                    <div className="mt-6 space-y-3 max-w-sm">
+                                        {/* Recovery Legend */}
+                                        <div className="flex items-center space-x-3">
+                                            <div className="w-4 h-4 rounded-full bg-gradient-to-r from-[#2BD2FF] to-[#4FC3F7]"></div>
+                                            <span className="text-xs text-[#A1A1AA]">Recovery: Sleep + Breaks</span>
+                                        </div>
+                                        
+                                        {/* Nutrition Legend */}
+                                        <div className="flex items-center space-x-3">
+                                            <div className="w-4 h-4 rounded-full bg-gradient-to-r from-[#00E676] to-[#8BC34A]"></div>
+                                            <span className="text-xs text-[#A1A1AA]">Nutrition: Calories + Macros + Burned</span>
+                                        </div>
+                                        
+                                        {/* Exercise Legend */}
+                                        <div className="flex items-center space-x-3">
+                                            <div className="w-4 h-4 rounded-full bg-gradient-to-r from-[#FF2D55] to-[#FF6B6B]"></div>
+                                            <span className="text-xs text-[#A1A1AA]">Exercise: Activities + Extras + Plan</span>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div className="space-y-4">
