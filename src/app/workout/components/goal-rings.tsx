@@ -16,23 +16,6 @@ interface GoalRingsProps {
         subtitle?: string
     }
     streak?: number // Consecutive days streak
-    // Subcategory progress for visual segmentation
-    recoveryDetails?: {
-        sleep: number      // 0-1
-        breaks: number     // 0-1
-    }
-    nutritionDetails?: {
-        calories: number   // 0-1
-        carbs: number      // 0-1
-        protein: number    // 0-1
-        fats: number       // 0-1
-        burned: number     // 0-1
-    }
-    exerciseDetails?: {
-        activities: number // 0-1
-        extras: number     // 0-1
-        plan: number       // 0-1 (plan adherence)
-    }
 }
 
 const sizeConfig = {
@@ -69,23 +52,16 @@ const sizeConfig = {
 const ringColors = {
     track: "rgba(255,255,255,0.06)",
     recovery: {
-        base: "#2BD2FF",
-        sleep: "#2A8CEA",
-        breaks: "#4FC3F7"
+        start: "#2BD2FF",
+        end: "#2A8CEA"
     },
     nutrition: {
-        base: "#9BE15D", 
-        calories: "#00E676",
-        carbs: "#8BC34A",
-        protein: "#4CAF50",
-        fats: "#66BB6A",
-        burned: "#FF9800"
+        start: "#9BE15D",
+        end: "#00E676"
     },
     exercise: {
-        base: "#FF2D55",
-        activities: "#FF375F",
-        extras: "#FF6B6B",
-        plan: "#E53E3E"
+        start: "#FF2D55",
+        end: "#FF375F"
     }
 }
 
@@ -97,10 +73,7 @@ export function GoalRings({
     animated = true,
     className,
     centerContent,
-    streak,
-    recoveryDetails,
-    nutritionDetails,
-    exerciseDetails
+    streak
 }: GoalRingsProps) {
     const svgRef = useRef<SVGSVGElement>(null)
     const config = sizeConfig[size]
@@ -140,50 +113,17 @@ export function GoalRings({
                 aria-label={`Recovery ${Math.round(recoveryProgress * 100)}%, Nutrition ${Math.round(nutritionProgress * 100)}%, Exercise ${Math.round(exerciseProgress * 100)}% complete`}
             >
                 <defs>
-                    {/* Recovery gradients for segments */}
-                    <linearGradient id="recoverySleepGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor={ringColors.recovery.sleep} />
-                        <stop offset="100%" stopColor={ringColors.recovery.base} />
+                    <linearGradient id="recoveryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor={ringColors.recovery.start} />
+                        <stop offset="100%" stopColor={ringColors.recovery.end} />
                     </linearGradient>
-                    <linearGradient id="recoveryBreaksGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor={ringColors.recovery.breaks} />
-                        <stop offset="100%" stopColor={ringColors.recovery.base} />
+                    <linearGradient id="nutritionGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor={ringColors.nutrition.start} />
+                        <stop offset="100%" stopColor={ringColors.nutrition.end} />
                     </linearGradient>
-                    
-                    {/* Nutrition gradients for segments */}
-                    <linearGradient id="nutritionCaloriesGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor={ringColors.nutrition.calories} />
-                        <stop offset="100%" stopColor={ringColors.nutrition.base} />
-                    </linearGradient>
-                    <linearGradient id="nutritionCarbsGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor={ringColors.nutrition.carbs} />
-                        <stop offset="100%" stopColor={ringColors.nutrition.base} />
-                    </linearGradient>
-                    <linearGradient id="nutritionProteinGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor={ringColors.nutrition.protein} />
-                        <stop offset="100%" stopColor={ringColors.nutrition.base} />
-                    </linearGradient>
-                    <linearGradient id="nutritionFatsGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor={ringColors.nutrition.fats} />
-                        <stop offset="100%" stopColor={ringColors.nutrition.base} />
-                    </linearGradient>
-                    <linearGradient id="nutritionBurnedGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor={ringColors.nutrition.burned} />
-                        <stop offset="100%" stopColor={ringColors.nutrition.base} />
-                    </linearGradient>
-                    
-                    {/* Exercise gradients for segments */}
-                    <linearGradient id="exerciseActivitiesGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor={ringColors.exercise.activities} />
-                        <stop offset="100%" stopColor={ringColors.exercise.base} />
-                    </linearGradient>
-                    <linearGradient id="exerciseExtrasGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor={ringColors.exercise.extras} />
-                        <stop offset="100%" stopColor={ringColors.exercise.base} />
-                    </linearGradient>
-                    <linearGradient id="exercisePlanGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor={ringColors.exercise.plan} />
-                        <stop offset="100%" stopColor={ringColors.exercise.base} />
+                    <linearGradient id="exerciseGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor={ringColors.exercise.start} />
+                        <stop offset="100%" stopColor={ringColors.exercise.end} />
                     </linearGradient>
                 </defs>
 
@@ -197,57 +137,22 @@ export function GoalRings({
                     strokeWidth={config.thicknessOuter}
                     strokeLinecap="round"
                 />
-                {/* Recovery Ring Segments */}
-                {recoveryDetails ? (
-                    <>
-                        {/* Sleep segment (first 50% of ring) */}
-                        <circle
-                            cx={config.canvas / 2}
-                            cy={config.canvas / 2}
-                            r={outerRadius}
-                            fill="none"
-                            stroke="url(#recoverySleepGradient)"
-                            strokeWidth={config.thicknessOuter}
-                            strokeLinecap="round"
-                            strokeDasharray={`${outerCircumference * 0.5} ${outerCircumference * 0.5}`}
-                            strokeDashoffset={getDashOffset(recoveryDetails.sleep * 0.5, outerCircumference)}
-                            transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
-                            className="progress-ring"
-                            opacity={recoveryDetails.sleep * 0.5 + 0.5}
-                        />
-                        
-                        {/* Breaks segment (second 50% of ring) */}
-                        <circle
-                            cx={config.canvas / 2}
-                            cy={config.canvas / 2}
-                            r={outerRadius}
-                            fill="none"
-                            stroke="url(#recoveryBreaksGradient)"
-                            strokeWidth={config.thicknessOuter}
-                            strokeLinecap="round"
-                            strokeDasharray={`${outerCircumference * 0.5} ${outerCircumference * 0.5}`}
-                            strokeDashoffset={getDashOffset(recoveryDetails.breaks * 0.5, outerCircumference) - outerCircumference * 0.5}
-                            transform={`rotate(90 ${config.canvas / 2} ${config.canvas / 2})`}
-                            className="progress-ring"
-                            opacity={recoveryDetails.breaks * 0.5 + 0.5}
-                        />
-                    </>
-                ) : (
-                    /* Default single ring if no details provided */
-                    <circle
-                        cx={config.canvas / 2}
-                        cy={config.canvas / 2}
-                        r={outerRadius}
-                        fill="none"
-                        stroke="url(#recoverySleepGradient)"
-                        strokeWidth={config.thicknessOuter}
-                        strokeLinecap="round"
-                        strokeDasharray={outerCircumference}
-                        strokeDashoffset={getDashOffset(recoveryProgress, outerCircumference)}
-                        transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
-                        className="progress-ring"
-                    />
-                )}
+                <circle
+                    cx={config.canvas / 2}
+                    cy={config.canvas / 2}
+                    r={outerRadius}
+                    fill="none"
+                    stroke="url(#recoveryGradient)"
+                    strokeWidth={config.thicknessOuter}
+                    strokeLinecap="round"
+                    strokeDasharray={outerCircumference}
+                    strokeDashoffset={getDashOffset(recoveryProgress, outerCircumference)}
+                    transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
+                    className="progress-ring"
+                    style={recoveryProgress >= 1 ? {
+                        filter: 'drop-shadow(0 0 12px rgba(43,210,255,0.6)) drop-shadow(0 0 24px rgba(42,140,234,0.4))'
+                    } : undefined}
+                />
 
                 {/* Nutrition Ring (Middle) */}
                 <circle
@@ -259,105 +164,22 @@ export function GoalRings({
                     strokeWidth={config.thicknessMiddle}
                     strokeLinecap="round"
                 />
-                {/* Nutrition Ring Segments */}
-                {nutritionDetails ? (
-                    <>
-                        {/* Calories segment (40% of ring) */}
-                        <circle
-                            cx={config.canvas / 2}
-                            cy={config.canvas / 2}
-                            r={middleRadius}
-                            fill="none"
-                            stroke="url(#nutritionCaloriesGradient)"
-                            strokeWidth={config.thicknessMiddle}
-                            strokeLinecap="round"
-                            strokeDasharray={`${middleCircumference * 0.4} ${middleCircumference * 0.6}`}
-                            strokeDashoffset={getDashOffset(nutritionDetails.calories * 0.4, middleCircumference)}
-                            transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
-                            className="progress-ring"
-                            opacity={nutritionDetails.calories * 0.6 + 0.4}
-                        />
-                        
-                        {/* Carbs segment (15% of ring) */}
-                        <circle
-                            cx={config.canvas / 2}
-                            cy={config.canvas / 2}
-                            r={middleRadius}
-                            fill="none"
-                            stroke="url(#nutritionCarbsGradient)"
-                            strokeWidth={config.thicknessMiddle}
-                            strokeLinecap="round"
-                            strokeDasharray={`${middleCircumference * 0.15} ${middleCircumference * 0.85}`}
-                            strokeDashoffset={getDashOffset(nutritionDetails.carbs * 0.15, middleCircumference) - middleCircumference * 0.4}
-                            transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
-                            className="progress-ring"
-                            opacity={nutritionDetails.carbs * 0.6 + 0.4}
-                        />
-                        
-                        {/* Protein segment (15% of ring) */}
-                        <circle
-                            cx={config.canvas / 2}
-                            cy={config.canvas / 2}
-                            r={middleRadius}
-                            fill="none"
-                            stroke="url(#nutritionProteinGradient)"
-                            strokeWidth={config.thicknessMiddle}
-                            strokeLinecap="round"
-                            strokeDasharray={`${middleCircumference * 0.15} ${middleCircumference * 0.85}`}
-                            strokeDashoffset={getDashOffset(nutritionDetails.protein * 0.15, middleCircumference) - middleCircumference * 0.55}
-                            transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
-                            className="progress-ring"
-                            opacity={nutritionDetails.protein * 0.6 + 0.4}
-                        />
-                        
-                        {/* Fats segment (15% of ring) */}
-                        <circle
-                            cx={config.canvas / 2}
-                            cy={config.canvas / 2}
-                            r={middleRadius}
-                            fill="none"
-                            stroke="url(#nutritionFatsGradient)"
-                            strokeWidth={config.thicknessMiddle}
-                            strokeLinecap="round"
-                            strokeDasharray={`${middleCircumference * 0.15} ${middleCircumference * 0.85}`}
-                            strokeDashoffset={getDashOffset(nutritionDetails.fats * 0.15, middleCircumference) - middleCircumference * 0.7}
-                            transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
-                            className="progress-ring"
-                            opacity={nutritionDetails.fats * 0.6 + 0.4}
-                        />
-                        
-                        {/* Burned calories segment (15% of ring) */}
-                        <circle
-                            cx={config.canvas / 2}
-                            cy={config.canvas / 2}
-                            r={middleRadius}
-                            fill="none"
-                            stroke="url(#nutritionBurnedGradient)"
-                            strokeWidth={config.thicknessMiddle}
-                            strokeLinecap="round"
-                            strokeDasharray={`${middleCircumference * 0.15} ${middleCircumference * 0.85}`}
-                            strokeDashoffset={getDashOffset(nutritionDetails.burned * 0.15, middleCircumference) - middleCircumference * 0.85}
-                            transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
-                            className="progress-ring"
-                            opacity={nutritionDetails.burned * 0.6 + 0.4}
-                        />
-                    </>
-                ) : (
-                    /* Default single ring if no details provided */
-                    <circle
-                        cx={config.canvas / 2}
-                        cy={config.canvas / 2}
-                        r={middleRadius}
-                        fill="none"
-                        stroke="url(#nutritionCaloriesGradient)"
-                        strokeWidth={config.thicknessMiddle}
-                        strokeLinecap="round"
-                        strokeDasharray={middleCircumference}
-                        strokeDashoffset={getDashOffset(nutritionProgress, middleCircumference)}
-                        transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
-                        className="progress-ring"
-                    />
-                )}
+                <circle
+                    cx={config.canvas / 2}
+                    cy={config.canvas / 2}
+                    r={middleRadius}
+                    fill="none"
+                    stroke="url(#nutritionGradient)"
+                    strokeWidth={config.thicknessMiddle}
+                    strokeLinecap="round"
+                    strokeDasharray={middleCircumference}
+                    strokeDashoffset={getDashOffset(nutritionProgress, middleCircumference)}
+                    transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
+                    className="progress-ring"
+                    style={nutritionProgress >= 1 ? {
+                        filter: 'drop-shadow(0 0 12px rgba(155,225,93,0.6)) drop-shadow(0 0 24px rgba(0,230,118,0.4))'
+                    } : undefined}
+                />
 
                 {/* Exercise Ring (Inner) */}
                 <circle
@@ -369,73 +191,22 @@ export function GoalRings({
                     strokeWidth={config.thicknessInner}
                     strokeLinecap="round"
                 />
-                {/* Exercise Ring Segments */}
-                {exerciseDetails ? (
-                    <>
-                        {/* Activities segment (60% of ring) */}
-                        <circle
-                            cx={config.canvas / 2}
-                            cy={config.canvas / 2}
-                            r={innerRadius}
-                            fill="none"
-                            stroke="url(#exerciseActivitiesGradient)"
-                            strokeWidth={config.thicknessInner}
-                            strokeLinecap="round"
-                            strokeDasharray={`${innerCircumference * 0.6} ${innerCircumference * 0.4}`}
-                            strokeDashoffset={getDashOffset(exerciseDetails.activities * 0.6, innerCircumference)}
-                            transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
-                            className="progress-ring"
-                            opacity={exerciseDetails.activities * 0.6 + 0.4}
-                        />
-                        
-                        {/* Extras segment (20% of ring) */}
-                        <circle
-                            cx={config.canvas / 2}
-                            cy={config.canvas / 2}
-                            r={innerRadius}
-                            fill="none"
-                            stroke="url(#exerciseExtrasGradient)"
-                            strokeWidth={config.thicknessInner}
-                            strokeLinecap="round"
-                            strokeDasharray={`${innerCircumference * 0.2} ${innerCircumference * 0.8}`}
-                            strokeDashoffset={getDashOffset(exerciseDetails.extras * 0.2, innerCircumference) - innerCircumference * 0.6}
-                            transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
-                            className="progress-ring"
-                            opacity={exerciseDetails.extras * 0.6 + 0.4}
-                        />
-                        
-                        {/* Plan adherence segment (20% of ring) */}
-                        <circle
-                            cx={config.canvas / 2}
-                            cy={config.canvas / 2}
-                            r={innerRadius}
-                            fill="none"
-                            stroke="url(#exercisePlanGradient)"
-                            strokeWidth={config.thicknessInner}
-                            strokeLinecap="round"
-                            strokeDasharray={`${innerCircumference * 0.2} ${innerCircumference * 0.8}`}
-                            strokeDashoffset={getDashOffset(exerciseDetails.plan * 0.2, innerCircumference) - innerCircumference * 0.8}
-                            transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
-                            className="progress-ring"
-                            opacity={exerciseDetails.plan * 0.6 + 0.4}
-                        />
-                    </>
-                ) : (
-                    /* Default single ring if no details provided */
-                    <circle
-                        cx={config.canvas / 2}
-                        cy={config.canvas / 2}
-                        r={innerRadius}
-                        fill="none"
-                        stroke="url(#exerciseActivitiesGradient)"
-                        strokeWidth={config.thicknessInner}
-                        strokeLinecap="round"
-                        strokeDasharray={innerCircumference}
-                        strokeDashoffset={getDashOffset(exerciseProgress, innerCircumference)}
-                        transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
-                        className="progress-ring"
-                    />
-                )}
+                <circle
+                    cx={config.canvas / 2}
+                    cy={config.canvas / 2}
+                    r={innerRadius}
+                    fill="none"
+                    stroke="url(#exerciseGradient)"
+                    strokeWidth={config.thicknessInner}
+                    strokeLinecap="round"
+                    strokeDasharray={innerCircumference}
+                    strokeDashoffset={getDashOffset(exerciseProgress, innerCircumference)}
+                    transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
+                    className="progress-ring"
+                    style={exerciseProgress >= 1 ? {
+                        filter: 'drop-shadow(0 0 12px rgba(255,45,85,0.6)) drop-shadow(0 0 24px rgba(255,55,95,0.4))'
+                    } : undefined}
+                />
             </svg>
 
             {/* Center Content */}
