@@ -117,13 +117,28 @@ export function GoalRings({
         startAngle: number,
         endAngle: number
     ) => {
+        const angleDiff = endAngle - startAngle
+        
+        // Handle edge cases
+        if (angleDiff <= 0) return ""
+        if (angleDiff >= 360) {
+            // Full circle
+            const start = polarToCartesian(centerX, centerY, radius, 0)
+            const mid = polarToCartesian(centerX, centerY, radius, 180)
+            return [
+                "M", start.x, start.y,
+                "A", radius, radius, 0, 0, 1, mid.x, mid.y,
+                "A", radius, radius, 0, 0, 1, start.x, start.y
+            ].join(" ")
+        }
+        
         const start = polarToCartesian(centerX, centerY, radius, startAngle)
         const end = polarToCartesian(centerX, centerY, radius, endAngle)
-        const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1"
+        const largeArcFlag = angleDiff > 180 ? "1" : "0"
         
         return [
-            "M", start.x, start.y, 
-            "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y
+            "M", start.x.toFixed(2), start.y.toFixed(2), 
+            "A", radius, radius, 0, largeArcFlag, 1, end.x.toFixed(2), end.y.toFixed(2)
         ].join(" ")
     }
 
@@ -145,11 +160,27 @@ export function GoalRings({
         totalProgress: number
     ) => {
         const center = config.canvas / 2
-        const sortedSegments = Object.entries(segments).sort(([,a], [,b]) => b - a) // Sort by progress descending
+        const validSegments = Object.entries(segments).filter(([, progress]) => progress > 0)
+        const sortedSegments = validSegments.sort(([,a], [,b]) => b - a) // Sort by progress descending
         
-        const gapAngle = 3 // Gap between segments in degrees
-        const totalGaps = sortedSegments.length * gapAngle
-        const availableAngle = 360 * totalProgress - totalGaps
+        if (sortedSegments.length === 0 || totalProgress <= 0) {
+            return (
+                <circle
+                    cx={center}
+                    cy={center}
+                    r={radius}
+                    fill="none"
+                    stroke={ringColors.track}
+                    strokeWidth={strokeWidth}
+                    strokeLinecap="round"
+                />
+            )
+        }
+        
+        const gapAngle = 2 // Gap between segments in degrees
+        const totalGapAngle = sortedSegments.length * gapAngle
+        const totalSegmentAngle = Math.min(360 * totalProgress, 360)
+        const availableAngle = Math.max(totalSegmentAngle - totalGapAngle, 0)
         
         let currentAngle = 0
         
@@ -168,9 +199,10 @@ export function GoalRings({
                 
                 {/* Individual segment arcs with physical gaps */}
                 {sortedSegments.map(([key, progress], index) => {
-                    if (progress <= 0) return null
+                    const segmentAngle = availableAngle > 0 ? (progress / totalProgress) * availableAngle : 0
                     
-                    const segmentAngle = (progress / totalProgress) * availableAngle
+                    if (segmentAngle <= 0) return null
+                    
                     const startAngle = currentAngle
                     const endAngle = currentAngle + segmentAngle
                     
@@ -188,7 +220,7 @@ export function GoalRings({
                             strokeLinecap="round"
                             className="progress-ring"
                             style={{
-                                filter: `drop-shadow(0 0 8px ${index === 0 ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.2)'})`
+                                filter: `drop-shadow(0 0 6px ${index === 0 ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.15)'})`
                             }}
                         />
                     )
@@ -201,7 +233,8 @@ export function GoalRings({
         if (animated && svgRef.current) {
             const rings = svgRef.current.querySelectorAll('.progress-ring')
             rings.forEach(ring => {
-                (ring as HTMLElement).style.transition = 'stroke-dashoffset 1200ms cubic-bezier(0.22, 1, 0.36, 1)'
+                // For path elements, we animate opacity and filter instead of stroke-dashoffset
+                (ring as HTMLElement).style.transition = 'opacity 1200ms cubic-bezier(0.22, 1, 0.36, 1), filter 1200ms cubic-bezier(0.22, 1, 0.36, 1)'
             })
         }
     }, [animated, recoveryProgress, nutritionProgress, exerciseProgress])
