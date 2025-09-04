@@ -14,7 +14,7 @@ import { ActivityEditModal } from "./history/components/activity-edit-modal"
 import { WorkoutStorage, OngoingWorkout, WorkoutActivity } from "@/lib/workout-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
-import { Settings, Plus, Flame, Dumbbell, User, Timer, Bike, Target, TrendingUp, Clock, Heart, FileText, Play, Edit3, Trash2 } from "lucide-react"
+import { Settings, Plus, Flame, Dumbbell, User, Timer, Bike, Target, TrendingUp, Clock, Heart, FileText, Play, Edit3, Trash2, Moon } from "lucide-react"
 
 export default function WorkoutPage() {
     const router = useRouter()
@@ -368,6 +368,13 @@ export default function WorkoutPage() {
             }
         } else if (action === 'quick-log') {
             setShowQuickLogWorkoutDialog(true)
+        } else if (action === 'sleep') {
+            console.log(`Quick action: ${action}`)
+            // TODO: Implement sleep tracking functionality
+            notifications.info('Sleep tracking', {
+                description: 'Sleep tracking feature coming soon!',
+                duration: 3000
+            })
         } else {
             console.log(`Quick action: ${action}`)
             setShowWorkoutDialog(true)
@@ -643,7 +650,7 @@ export default function WorkoutPage() {
                         <section className="mb-12">
                             <h2 className="text-xl font-semibold text-[#F3F4F6] mb-6">Quick Actions</h2>
 
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6">
+                            <div className="grid grid-cols-6 gap-4">
                                 <QuickActionCard
                                     icon={<Target className="w-7 h-7" />}
                                     label="Running"
@@ -668,6 +675,11 @@ export default function WorkoutPage() {
                                     icon={<Timer className="w-7 h-7" />}
                                     label="Timer"
                                     onClick={() => handleQuickAction('timer')}
+                                />
+                                <QuickActionCard
+                                    icon={<Moon className="w-7 h-7" />}
+                                    label="Sleep"
+                                    onClick={() => handleQuickAction('sleep')}
                                 />
                             </div>
                         </section>
