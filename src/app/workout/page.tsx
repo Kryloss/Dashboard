@@ -566,19 +566,21 @@ export default function WorkoutPage() {
                                 </Button>
                             </div>
 
-                            <div className="flex flex-col items-center">
-                                <div className="flex justify-center">
-                                    <GoalRings
-                                        size="lg"
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+                                <div className="flex flex-col items-center lg:items-start">
+                                    <div className="flex justify-center lg:justify-start">
+                                        <GoalRings
+                                            size="lg"
                                             recoveryProgress={mockData.goals.recovery}
                                             nutritionProgress={mockData.goals.nutrition}
                                             exerciseProgress={mockData.goals.exercise}
                                             streak={mockData.streak}
-                                    />
+                                        />
+                                    </div>
                                 </div>
 
-                                <div className="mt-4 space-y-3 w-full max-w-md">
-                                    <h2 className="text-lg font-semibold text-[#F3F4F6] mb-2 text-center">Today&apos;s Summary</h2>
+                                <div className="space-y-3">
+                                    <h2 className="text-lg font-semibold text-[#F3F4F6] mb-2">Today&apos;s Summary</h2>
 
                                     <div className="grid grid-cols-1 gap-2">
                                         {/* Recovery Summary */}
