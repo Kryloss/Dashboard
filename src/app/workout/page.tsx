@@ -15,7 +15,7 @@ import { ActivityEditModal } from "./history/components/activity-edit-modal"
 import { WorkoutStorage, OngoingWorkout, WorkoutActivity } from "@/lib/workout-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
-import { Settings, Plus, Flame, Dumbbell, User, Timer, Bike, Clock, Heart, FileText, Play, Edit3, Trash2, Moon, Footprints } from "lucide-react"
+import { Plus, Flame, Dumbbell, User, Timer, Bike, Clock, Heart, FileText, Play, Edit3, Trash2, Moon, Footprints } from "lucide-react"
 
 export default function WorkoutPage() {
     const router = useRouter()
@@ -558,19 +558,13 @@ export default function WorkoutPage() {
                     <div className="container mx-auto max-w-7xl px-6 py-4">
                         {/* Daily Goals Section */}
                         <section className="mb-6">
-                            <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center justify-end mb-3">
                                 <Button
                                     onClick={() => setShowSetGoalDialog(true)}
                                     variant="ghost"
                                     className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full"
                                 >
                                     <User className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full"
-                                >
-                                    <Settings className="w-4 h-4" />
                                 </Button>
                             </div>
 
