@@ -4,3 +4,84 @@ import { twMerge } from "tailwind-merge"
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
+
+/**
+ * Resizes an image file to 256x256 pixels while maintaining aspect ratio
+ * @param file - The image file to resize
+ * @returns Promise<Blob> - The resized image as a Blob
+ */
+export async function resizeImageTo256x256(file: File): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    const img = new Image()
+
+    img.onload = () => {
+      // Calculate dimensions to maintain aspect ratio
+      const maxSize = 256
+      let { width, height } = img
+
+      if (width > height) {
+        if (width > maxSize) {
+          height = (height * maxSize) / width
+          width = maxSize
+        }
+      } else {
+        if (height > maxSize) {
+          width = (width * maxSize) / height
+          height = maxSize
+        }
+      }
+
+      // Set canvas size
+      canvas.width = maxSize
+      canvas.height = maxSize
+
+      // Center the image on the canvas
+      const x = (maxSize - width) / 2
+      const y = (maxSize - height) / 2
+
+      // Draw the resized image centered on the canvas
+      ctx?.drawImage(img, x, y, width, height)
+
+      // Convert to blob
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(blob)
+          } else {
+            reject(new Error('Failed to create blob from canvas'))
+          }
+        },
+        file.type,
+        0.9 // Quality for JPEG, ignored for PNG
+      )
+    }
+
+    img.onerror = () => {
+      reject(new Error('Failed to load image'))
+    }
+
+    img.src = URL.createObjectURL(file)
+  })
+}
+
+/**
+ * Gets the file extension from a MIME type
+ * @param mimeType - The MIME type string
+ * @returns string - The file extension (without the dot)
+ */
+export function getFileExtension(mimeType: string): string {
+  const mimeToExt: Record<string, string> = {
+    'image/jpeg': 'jpg',
+    'image/jpg': 'jpg',
+    'image/png': 'png',
+    'image/gif': 'gif',
+    'image/webp': 'webp',
+    'image/svg+xml': 'svg',
+    'image/bmp': 'bmp',
+    'image/tiff': 'tiff',
+  }
+
+  return mimeToExt[mimeType.toLowerCase()] || 'jpg'
+}
