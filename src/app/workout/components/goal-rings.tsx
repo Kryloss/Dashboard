@@ -66,18 +66,18 @@ const sizeConfig = {
 }
 
 const ringColors = {
-    track: "rgba(255,255,255,0.06)",
+    track: "rgba(255,255,255,0.08)",
     recovery: {
-        start: "#2BD2FF",
-        end: "#2A8CEA"
+        start: "#007AFF",
+        end: "#0051D5"
     },
     nutrition: {
-        start: "#9BE15D",
-        end: "#00E676"
+        start: "#32D74B",
+        end: "#28CD41"
     },
     exercise: {
-        start: "#FF2D55",
-        end: "#FF375F"
+        start: "#FF3B30",
+        end: "#D70015"
     }
 }
 
@@ -177,7 +177,7 @@ export function GoalRings({
             )
         }
         
-        const gapAngle = 2 // Gap between segments in degrees
+        const gapAngle = 4 // Gap between segments in degrees (larger gaps like reference)
         const totalGapAngle = sortedSegments.length * gapAngle
         const totalSegmentAngle = Math.min(360 * totalProgress, 360)
         const availableAngle = Math.max(totalSegmentAngle - totalGapAngle, 0)
@@ -220,7 +220,7 @@ export function GoalRings({
                             strokeLinecap="round"
                             className="progress-ring"
                             style={{
-                                filter: `drop-shadow(0 0 6px ${index === 0 ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.15)'})`
+                                filter: `drop-shadow(0 2px 8px rgba(0,0,0,0.2)) drop-shadow(0 0 12px ${index === 0 ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)'})`
                             }}
                         />
                     )
@@ -253,50 +253,50 @@ export function GoalRings({
                 aria-label={`Recovery ${Math.round(recoveryProgress * 100)}%, Nutrition ${Math.round(nutritionProgress * 100)}%, Exercise ${Math.round(exerciseProgress * 100)}% complete`}
             >
                 <defs>
-                    {/* Recovery gradients - Clear Blues */}
+                    {/* Recovery gradients - Bright Blue like reference */}
                     <linearGradient id="recoveryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor={ringColors.recovery.start} />
-                        <stop offset="100%" stopColor={ringColors.recovery.end} />
+                        <stop offset="0%" stopColor="#007AFF" />
+                        <stop offset="100%" stopColor="#0051D5" />
                     </linearGradient>
                     <linearGradient id="recoverySleepGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#00D2FF" />
-                        <stop offset="100%" stopColor="#0099CC" />
+                        <stop offset="0%" stopColor="#007AFF" />
+                        <stop offset="100%" stopColor="#0051D5" />
                     </linearGradient>
                     <linearGradient id="recoveryBreaksGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#1E40AF" />
-                        <stop offset="100%" stopColor="#1D4ED8" />
+                        <stop offset="0%" stopColor="#0040C7" />
+                        <stop offset="100%" stopColor="#002D9F" />
                     </linearGradient>
 
-                    {/* Nutrition gradients - Clear Greens */}
+                    {/* Nutrition gradients - Bright Green like reference */}
                     <linearGradient id="nutritionCarbsGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#84CC16" />
-                        <stop offset="100%" stopColor="#22C55E" />
+                        <stop offset="0%" stopColor="#32D74B" />
+                        <stop offset="100%" stopColor="#28CD41" />
                     </linearGradient>
                     <linearGradient id="nutritionProteinGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#10B981" />
-                        <stop offset="100%" stopColor="#0D9488" />
+                        <stop offset="0%" stopColor="#20B236" />
+                        <stop offset="100%" stopColor="#1A9B2E" />
                     </linearGradient>
                     <linearGradient id="nutritionFatsGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#65A30D" />
-                        <stop offset="100%" stopColor="#A3A300" />
+                        <stop offset="0%" stopColor="#17A02B" />
+                        <stop offset="100%" stopColor="#14932A" />
                     </linearGradient>
                     <linearGradient id="nutritionBurnedGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#16A34A" />
-                        <stop offset="100%" stopColor="#DC2626" />
+                        <stop offset="0%" stopColor="#28CD41" />
+                        <stop offset="100%" stopColor="#1FB834" />
                     </linearGradient>
 
-                    {/* Exercise gradients - Clear Reds */}
+                    {/* Exercise gradients - Orange/Red like reference */}
                     <linearGradient id="exerciseActivitiesGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#DC2626" />
-                        <stop offset="100%" stopColor="#B91C1C" />
+                        <stop offset="0%" stopColor="#FF3B30" />
+                        <stop offset="100%" stopColor="#D70015" />
                     </linearGradient>
                     <linearGradient id="exerciseExtrasGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#F59E0B" />
-                        <stop offset="100%" stopColor="#D97706" />
+                        <stop offset="0%" stopColor="#FF9500" />
+                        <stop offset="100%" stopColor="#FF8800" />
                     </linearGradient>
                     <linearGradient id="exerciseCheatingGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#7C2D12" />
-                        <stop offset="100%" stopColor="#451A03" />
+                        <stop offset="0%" stopColor="#FFCC00" />
+                        <stop offset="100%" stopColor="#FFB800" />
                     </linearGradient>
                 </defs>
 
