@@ -553,10 +553,10 @@ export default function WorkoutPage() {
 
                 {/* Content */}
                 <div className="relative z-10">
-                    <div className="container mx-auto max-w-7xl px-6 py-8">
+                    <div className="container mx-auto max-w-7xl px-6 py-4">
                         {/* Daily Goals Section */}
-                        <section className="mb-8">
-                            <div className="flex items-center justify-end mb-4">
+                        <section className="mb-6">
+                            <div className="flex items-center justify-end mb-3">
                                 <Button
                                     variant="ghost"
                                     className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full"
@@ -566,42 +566,19 @@ export default function WorkoutPage() {
                                 </Button>
                             </div>
 
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
-                                <div className="flex flex-col items-center lg:items-start">
-                                    <div className="flex justify-center lg:justify-start">
-                                        <GoalRings
-                                            size="md"
+                            <div className="flex flex-col items-center">
+                                <div className="flex justify-center">
+                                    <GoalRings
+                                        size="lg"
                                             recoveryProgress={mockData.goals.recovery}
                                             nutritionProgress={mockData.goals.nutrition}
                                             exerciseProgress={mockData.goals.exercise}
                                             streak={mockData.streak}
-                                        />
-                                    </div>
-                                    
-                                    {/* Ring Legend */}
-                                    <div className="mt-3 space-y-2 max-w-sm">
-                                        {/* Recovery Legend */}
-                                        <div className="flex items-center space-x-3">
-                                            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-[#2BD2FF] to-[#4FC3F7]"></div>
-                                            <span className="text-xs text-[#A1A1AA]">Recovery</span>
-                                        </div>
-                                        
-                                        {/* Nutrition Legend */}
-                                        <div className="flex items-center space-x-3">
-                                            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-[#00E676] to-[#8BC34A]"></div>
-                                            <span className="text-xs text-[#A1A1AA]">Nutrition</span>
-                                        </div>
-                                        
-                                        {/* Exercise Legend */}
-                                        <div className="flex items-center space-x-3">
-                                            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-[#FF2D55] to-[#FF6B6B]"></div>
-                                            <span className="text-xs text-[#A1A1AA]">Exercise</span>
-                                        </div>
-                                    </div>
+                                    />
                                 </div>
 
-                                <div className="space-y-3">
-                                    <h2 className="text-lg font-semibold text-[#F3F4F6] mb-2">Today&apos;s Summary</h2>
+                                <div className="mt-4 space-y-3 w-full max-w-md">
+                                    <h2 className="text-lg font-semibold text-[#F3F4F6] mb-2 text-center">Today&apos;s Summary</h2>
 
                                     <div className="grid grid-cols-1 gap-2">
                                         {/* Recovery Summary */}
