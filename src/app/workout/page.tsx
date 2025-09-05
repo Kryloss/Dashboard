@@ -10,11 +10,12 @@ import { QuickActionCard } from "./components/quick-action-card"
 import { StatCard } from "./components/stat-card"
 
 import { WorkoutTypeDialog } from "./components/workout-type-dialog"
+import { SetGoalDialog } from "./components/set-goal-dialog"
 import { ActivityEditModal } from "./history/components/activity-edit-modal"
 import { WorkoutStorage, OngoingWorkout, WorkoutActivity } from "@/lib/workout-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
-import { Settings, Plus, Flame, Dumbbell, User, Timer, Bike, TrendingUp, Clock, Heart, FileText, Play, Edit3, Trash2, Moon, Footprints } from "lucide-react"
+import { Settings, Plus, Flame, Dumbbell, User, Timer, Bike, Clock, Heart, FileText, Play, Edit3, Trash2, Moon, Footprints } from "lucide-react"
 
 export default function WorkoutPage() {
     const router = useRouter()
@@ -28,6 +29,7 @@ export default function WorkoutPage() {
     const [isLoadingActivities, setIsLoadingActivities] = useState(true)
     const [liveWorkoutTime, setLiveWorkoutTime] = useState(0)
     const [editingActivity, setEditingActivity] = useState<WorkoutActivity | null>(null)
+    const [showSetGoalDialog, setShowSetGoalDialog] = useState(false)
 
 
 
@@ -558,6 +560,7 @@ export default function WorkoutPage() {
                         <section className="mb-6">
                             <div className="flex items-center justify-between mb-3">
                                 <Button
+                                    onClick={() => setShowSetGoalDialog(true)}
                                     variant="ghost"
                                     className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full"
                                 >
@@ -985,6 +988,12 @@ export default function WorkoutPage() {
                         onSave={handleUpdateActivity}
                     />
                 )}
+
+                {/* Set Goal Dialog */}
+                <SetGoalDialog
+                    open={showSetGoalDialog}
+                    onOpenChange={setShowSetGoalDialog}
+                />
             </div>
         )
     }
