@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { User, Target, Weight, Moon, Flame, Dumbbell } from "lucide-react"
 
 interface SetGoalDialogProps {
@@ -111,7 +110,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                         </div>
 
                         {/* Scrollable Content */}
-                        <ScrollArea className="flex-1 px-6 pb-6 max-h-[70vh]">
+                        <div className="flex-1 px-6 pb-6 overflow-y-auto max-h-[70vh]">
                             <TabsContent value="account" className="mt-0">
                                 <Card className="bg-[#121318] border-[#212227]">
                                     <CardHeader className="pb-3">
@@ -126,57 +125,46 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                         </div>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
-                                        {/* Compact Weight & Age Row */}
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <Label htmlFor="weight" className="text-xs text-[#A1A1AA] mb-2 block">Weight</Label>
-                                                <div className="flex gap-2">
-                                                    <Input
-                                                        id="weight"
-                                                        type="number"
-                                                        value={profile.weight}
-                                                        onChange={(e) => setProfile({...profile, weight: e.target.value})}
-                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm flex-1"
-                                                        placeholder="70"
-                                                    />
-                                                    <Select value={profile.weightUnit} onValueChange={(value) => setProfile({...profile, weightUnit: value})}>
-                                                        <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm w-16">
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="kg">kg</SelectItem>
-                                                            <SelectItem value="lbs">lbs</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <Label htmlFor="age" className="text-xs text-[#A1A1AA] mb-2 block">Age</Label>
+                                        {/* Weight Section */}
+                                        <div>
+                                            <Label htmlFor="weight" className="text-sm text-[#A1A1AA] mb-3 block font-medium">Weight</Label>
+                                            <div className="flex gap-3">
                                                 <Input
-                                                    id="age"
+                                                    id="weight"
                                                     type="number"
-                                                    value={profile.age}
-                                                    onChange={(e) => setProfile({...profile, age: e.target.value})}
-                                                    className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm"
-                                                    placeholder="25"
+                                                    value={profile.weight}
+                                                    onChange={(e) => setProfile({...profile, weight: e.target.value})}
+                                                    className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-12 text-lg font-medium flex-1 text-center"
+                                                    placeholder="70"
+                                                    inputMode="decimal"
                                                 />
+                                                <Select value={profile.weightUnit} onValueChange={(value) => setProfile({...profile, weightUnit: value})}>
+                                                    <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-12 text-sm w-20">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="kg">kg</SelectItem>
+                                                        <SelectItem value="lbs">lbs</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
                                             </div>
                                         </div>
 
-                                        {/* Height */}
+                                        {/* Height Section */}
                                         <div>
-                                            <Label htmlFor="height" className="text-xs text-[#A1A1AA] mb-2 block">Height</Label>
-                                            <div className="flex gap-2">
+                                            <Label htmlFor="height" className="text-sm text-[#A1A1AA] mb-3 block font-medium">Height</Label>
+                                            <div className="flex gap-3">
                                                 <Input
                                                     id="height"
                                                     type="number"
                                                     value={profile.height}
                                                     onChange={(e) => setProfile({...profile, height: e.target.value})}
-                                                    className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm flex-1"
+                                                    className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-12 text-lg font-medium flex-1 text-center"
                                                     placeholder="175"
+                                                    inputMode="decimal"
                                                 />
                                                 <Select value={profile.heightUnit} onValueChange={(value) => setProfile({...profile, heightUnit: value})}>
-                                                    <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm w-16">
+                                                    <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-12 text-sm w-20">
                                                         <SelectValue />
                                                     </SelectTrigger>
                                                     <SelectContent>
@@ -185,6 +173,20 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                     </SelectContent>
                                                 </Select>
                                             </div>
+                                        </div>
+
+                                        {/* Age Section */}
+                                        <div>
+                                            <Label htmlFor="age" className="text-sm text-[#A1A1AA] mb-3 block font-medium">Age</Label>
+                                            <Input
+                                                id="age"
+                                                type="number"
+                                                value={profile.age}
+                                                onChange={(e) => setProfile({...profile, age: e.target.value})}
+                                                className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-12 text-lg font-medium text-center max-w-[120px]"
+                                                placeholder="25"
+                                                inputMode="numeric"
+                                            />
                                         </div>
 
                                         <Button 
@@ -218,25 +220,27 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                 <Dumbbell className="w-4 h-4 text-[#FF2D55]" />
                                                 <span className="text-sm font-medium text-[#F3F4F6]">Exercise</span>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-3">
+                                            <div className="grid grid-cols-2 gap-4">
                                                 <div>
-                                                    <Label htmlFor="dailyExercise" className="text-xs text-[#A1A1AA] mb-2 block">Daily Minutes</Label>
+                                                    <Label htmlFor="dailyExercise" className="text-sm text-[#A1A1AA] mb-2 block">Daily Minutes</Label>
                                                     <Input
                                                         id="dailyExercise"
                                                         type="number"
                                                         value={goals.dailyExerciseMinutes}
                                                         onChange={(e) => setGoals({...goals, dailyExerciseMinutes: e.target.value})}
-                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm"
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-11 text-lg font-medium text-center"
+                                                        inputMode="numeric"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <Label htmlFor="weeklyExercise" className="text-xs text-[#A1A1AA] mb-2 block">Weekly Sessions</Label>
+                                                    <Label htmlFor="weeklyExercise" className="text-sm text-[#A1A1AA] mb-2 block">Weekly Sessions</Label>
                                                     <Input
                                                         id="weeklyExercise"
                                                         type="number"
                                                         value={goals.weeklyExerciseSessions}
                                                         onChange={(e) => setGoals({...goals, weeklyExerciseSessions: e.target.value})}
-                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm"
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-11 text-lg font-medium text-center"
+                                                        inputMode="numeric"
                                                     />
                                                 </div>
                                             </div>
@@ -248,21 +252,22 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                 <Flame className="w-4 h-4 text-[#9BE15D]" />
                                                 <span className="text-sm font-medium text-[#F3F4F6]">Nutrition</span>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-3">
+                                            <div className="grid grid-cols-2 gap-4">
                                                 <div>
-                                                    <Label htmlFor="dailyCalories" className="text-xs text-[#A1A1AA] mb-2 block">Daily Calories</Label>
+                                                    <Label htmlFor="dailyCalories" className="text-sm text-[#A1A1AA] mb-2 block">Daily Calories</Label>
                                                     <Input
                                                         id="dailyCalories"
                                                         type="number"
                                                         value={goals.dailyCalories}
                                                         onChange={(e) => setGoals({...goals, dailyCalories: e.target.value})}
-                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm"
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-11 text-lg font-medium text-center"
+                                                        inputMode="numeric"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <Label htmlFor="activityLevel" className="text-xs text-[#A1A1AA] mb-2 block">Activity Level</Label>
+                                                    <Label htmlFor="activityLevel" className="text-sm text-[#A1A1AA] mb-2 block">Activity Level</Label>
                                                     <Select value={goals.activityLevel} onValueChange={(value) => setGoals({...goals, activityLevel: value})}>
-                                                        <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm">
+                                                        <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-11 text-sm">
                                                             <SelectValue />
                                                         </SelectTrigger>
                                                         <SelectContent>
@@ -283,26 +288,28 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                 <Moon className="w-4 h-4 text-[#2BD2FF]" />
                                                 <span className="text-sm font-medium text-[#F3F4F6]">Recovery</span>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-3">
+                                            <div className="grid grid-cols-2 gap-4">
                                                 <div>
-                                                    <Label htmlFor="sleepHours" className="text-xs text-[#A1A1AA] mb-2 block">Sleep Hours</Label>
+                                                    <Label htmlFor="sleepHours" className="text-sm text-[#A1A1AA] mb-2 block">Sleep Hours</Label>
                                                     <Input
                                                         id="sleepHours"
                                                         type="number"
                                                         value={goals.sleepHours}
                                                         onChange={(e) => setGoals({...goals, sleepHours: e.target.value})}
-                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm"
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-11 text-lg font-medium text-center"
                                                         step="0.5"
+                                                        inputMode="decimal"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <Label htmlFor="recoveryTime" className="text-xs text-[#A1A1AA] mb-2 block">Recovery Minutes</Label>
+                                                    <Label htmlFor="recoveryTime" className="text-sm text-[#A1A1AA] mb-2 block">Recovery Minutes</Label>
                                                     <Input
                                                         id="recoveryTime"
                                                         type="number"
                                                         value={goals.recoveryMinutes}
                                                         onChange={(e) => setGoals({...goals, recoveryMinutes: e.target.value})}
-                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm"
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-11 text-lg font-medium text-center"
+                                                        inputMode="numeric"
                                                     />
                                                 </div>
                                             </div>
@@ -315,9 +322,9 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                 <span className="text-sm font-medium text-[#F3F4F6]">Weight Goals</span>
                                             </div>
                                             <div>
-                                                <Label htmlFor="dietType" className="text-xs text-[#A1A1AA] mb-2 block">Goal Type</Label>
+                                                <Label htmlFor="dietType" className="text-sm text-[#A1A1AA] mb-2 block">Goal Type</Label>
                                                 <Select value={goals.dietType} onValueChange={(value) => setGoals({...goals, dietType: value})}>
-                                                    <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm">
+                                                    <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-11 text-sm">
                                                         <SelectValue />
                                                     </SelectTrigger>
                                                     <SelectContent>
@@ -327,27 +334,29 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                     </SelectContent>
                                                 </Select>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-3">
+                                            <div className="grid grid-cols-2 gap-4">
                                                 <div>
-                                                    <Label htmlFor="startingWeight" className="text-xs text-[#A1A1AA] mb-2 block">Current Weight</Label>
+                                                    <Label htmlFor="startingWeight" className="text-sm text-[#A1A1AA] mb-2 block">Current Weight</Label>
                                                     <Input
                                                         id="startingWeight"
                                                         type="number"
                                                         value={goals.startingWeight}
                                                         onChange={(e) => setGoals({...goals, startingWeight: e.target.value})}
-                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm"
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-11 text-lg font-medium text-center"
                                                         placeholder="70"
+                                                        inputMode="decimal"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <Label htmlFor="goalWeight" className="text-xs text-[#A1A1AA] mb-2 block">Target Weight</Label>
+                                                    <Label htmlFor="goalWeight" className="text-sm text-[#A1A1AA] mb-2 block">Target Weight</Label>
                                                     <Input
                                                         id="goalWeight"
                                                         type="number"
                                                         value={goals.goalWeight}
                                                         onChange={(e) => setGoals({...goals, goalWeight: e.target.value})}
-                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm"
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-11 text-lg font-medium text-center"
                                                         placeholder="75"
+                                                        inputMode="decimal"
                                                     />
                                                 </div>
                                             </div>
@@ -362,7 +371,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                     </CardContent>
                                 </Card>
                             </TabsContent>
-                        </ScrollArea>
+                        </div>
                     </div>
                 </Tabs>
             </DialogContent>
