@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { User, Target, Weight, Moon, Flame, Dumbbell } from "lucide-react"
 
 interface SetGoalDialogProps {
@@ -70,83 +71,76 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-xl max-h-[85vh] overflow-hidden">
-                <DialogHeader className="pb-3">
-                    <DialogTitle className="text-lg font-semibold text-[#F3F4F6]">
+            <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden p-0">
+                <DialogHeader className="px-6 pt-6 pb-4">
+                    <DialogTitle className="text-xl font-semibold text-[#F3F4F6]">
                         Settings
                     </DialogTitle>
                 </DialogHeader>
 
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    {/* Custom Tab List positioned on the left */}
-                    <div className="flex flex-col gap-4">
-                        {/* Tab Navigation - Bookmark Style */}
-                        <div className="flex space-x-1 border-b border-[#212227]">
+                    <div className="flex flex-col">
+                        {/* Compact Tab Navigation */}
+                        <div className="flex mx-6 mb-4 bg-[#0E0F13] border border-[#212227] rounded-lg p-1">
                             <button
                                 onClick={() => setActiveTab("account")}
                                 className={`
-                                    flex items-center space-x-2 px-3 py-2 text-sm font-medium transition-all relative
+                                    flex-1 flex items-center justify-center space-x-2 px-3 py-2 text-sm font-medium transition-all rounded-md
                                     ${activeTab === "account" 
-                                        ? "text-[#2A8CEA] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#2A8CEA] after:rounded-t" 
-                                        : "text-[#A1A1AA] hover:text-[#F3F4F6]"
+                                        ? "bg-[#2A8CEA] text-white shadow-sm" 
+                                        : "text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)]"
                                     }
                                 `}
                             >
                                 <User className="w-4 h-4" />
-                                <span>Account</span>
+                                <span>Profile</span>
                             </button>
                             <button
                                 onClick={() => setActiveTab("goals")}
                                 className={`
-                                    flex items-center space-x-2 px-3 py-2 text-sm font-medium transition-all relative
+                                    flex-1 flex items-center justify-center space-x-2 px-3 py-2 text-sm font-medium transition-all rounded-md
                                     ${activeTab === "goals" 
-                                        ? "text-[#2A8CEA] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#2A8CEA] after:rounded-t" 
-                                        : "text-[#A1A1AA] hover:text-[#F3F4F6]"
+                                        ? "bg-[#2A8CEA] text-white shadow-sm" 
+                                        : "text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)]"
                                     }
                                 `}
                             >
                                 <Target className="w-4 h-4" />
-                                <span>Set Goals</span>
+                                <span>Goals</span>
                             </button>
                         </div>
 
-                        {/* Tab Content */}
-                        {/* Tab Content */}
-                        <div className="overflow-y-auto max-h-[65vh]">
+                        {/* Scrollable Content */}
+                        <ScrollArea className="flex-1 px-6 pb-6 max-h-[70vh]">
                             <TabsContent value="account" className="mt-0">
-                                <div className="space-y-4">
-
-                                    {/* Profile Information */}
-                                    <Card className="bg-[#121318] border-[#212227]">
-                                        <CardContent className="pt-4">
-                                            <div className="flex items-center space-x-3 mb-4">
-                                                {/* Me - Profile Photo */}
-                                                <div className="w-12 h-12 bg-[rgba(255,255,255,0.03)] border border-[#2A2B31] rounded-[12px] flex items-center justify-center">
-                                                    <User className="w-6 h-6 text-[#A1A1AA]" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm text-[#F3F4F6] font-medium">Me</p>
-                                                    <p className="text-xs text-[#A1A1AA]">Profile info</p>
-                                                </div>
+                                <Card className="bg-[#121318] border-[#212227]">
+                                    <CardHeader className="pb-3">
+                                        <div className="flex items-center space-x-3">
+                                            <div className="w-10 h-10 bg-[rgba(255,255,255,0.03)] border border-[#2A2B31] rounded-lg flex items-center justify-center">
+                                                <User className="w-5 h-5 text-[#A1A1AA]" />
                                             </div>
-                                            <div className="space-y-3">
-                                            {/* Weight */}
-                                            <div className="grid grid-cols-3 gap-2">
-                                                <div className="col-span-2">
-                                                    <Label htmlFor="weight" className="text-xs text-[#A1A1AA]">Weight</Label>
+                                            <div>
+                                                <p className="text-sm text-[#F3F4F6] font-medium">Profile Information</p>
+                                                <p className="text-xs text-[#A1A1AA]">Update your personal details</p>
+                                            </div>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        {/* Compact Weight & Age Row */}
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <Label htmlFor="weight" className="text-xs text-[#A1A1AA] mb-2 block">Weight</Label>
+                                                <div className="flex gap-2">
                                                     <Input
                                                         id="weight"
                                                         type="number"
                                                         value={profile.weight}
                                                         onChange={(e) => setProfile({...profile, weight: e.target.value})}
-                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] mt-1 h-8 text-sm"
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm flex-1"
                                                         placeholder="70"
                                                     />
-                                                </div>
-                                                <div>
-                                                    <Label htmlFor="weightUnit" className="text-xs text-[#A1A1AA]">Unit</Label>
                                                     <Select value={profile.weightUnit} onValueChange={(value) => setProfile({...profile, weightUnit: value})}>
-                                                        <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] mt-1 h-8 text-sm">
+                                                        <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm w-16">
                                                             <SelectValue />
                                                         </SelectTrigger>
                                                         <SelectContent>
@@ -156,223 +150,219 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                     </Select>
                                                 </div>
                                             </div>
-
-                                            {/* Height */}
-                                            <div className="grid grid-cols-3 gap-2">
-                                                <div className="col-span-2">
-                                                    <Label htmlFor="height" className="text-xs text-[#A1A1AA]">Height</Label>
-                                                    <Input
-                                                        id="height"
-                                                        type="number"
-                                                        value={profile.height}
-                                                        onChange={(e) => setProfile({...profile, height: e.target.value})}
-                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] mt-1 h-8 text-sm"
-                                                        placeholder="175"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <Label htmlFor="heightUnit" className="text-xs text-[#A1A1AA]">Unit</Label>
-                                                    <Select value={profile.heightUnit} onValueChange={(value) => setProfile({...profile, heightUnit: value})}>
-                                                        <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] mt-1 h-8 text-sm">
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="cm">cm</SelectItem>
-                                                            <SelectItem value="ft">ft</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                            </div>
-
-                                            {/* Age */}
-                                            <div className="max-w-[100px]">
-                                                <Label htmlFor="age" className="text-xs text-[#A1A1AA]">Age</Label>
+                                            <div>
+                                                <Label htmlFor="age" className="text-xs text-[#A1A1AA] mb-2 block">Age</Label>
                                                 <Input
                                                     id="age"
                                                     type="number"
                                                     value={profile.age}
                                                     onChange={(e) => setProfile({...profile, age: e.target.value})}
-                                                    className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] mt-1 h-8 text-sm"
+                                                    className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm"
                                                     placeholder="25"
                                                 />
                                             </div>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
+                                        </div>
 
-                                    {/* Save Button */}
-                                    <Button 
-                                        onClick={handleSaveProfile}
-                                        className="w-full bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-[8px] border border-[rgba(42,140,234,0.35)] shadow-[0_4px_16px_rgba(42,140,234,0.28)] hover:shadow-[0_6px_24px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all h-8 text-sm"
-                                    >
-                                        Save Profile
-                                    </Button>
-                                </div>
+                                        {/* Height */}
+                                        <div>
+                                            <Label htmlFor="height" className="text-xs text-[#A1A1AA] mb-2 block">Height</Label>
+                                            <div className="flex gap-2">
+                                                <Input
+                                                    id="height"
+                                                    type="number"
+                                                    value={profile.height}
+                                                    onChange={(e) => setProfile({...profile, height: e.target.value})}
+                                                    className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm flex-1"
+                                                    placeholder="175"
+                                                />
+                                                <Select value={profile.heightUnit} onValueChange={(value) => setProfile({...profile, heightUnit: value})}>
+                                                    <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm w-16">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="cm">cm</SelectItem>
+                                                        <SelectItem value="ft">ft</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </div>
+
+                                        <Button 
+                                            onClick={handleSaveProfile}
+                                            className="w-full bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-lg border border-[rgba(42,140,234,0.35)] shadow-[0_4px_16px_rgba(42,140,234,0.28)] hover:shadow-[0_6px_24px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all h-9 text-sm font-medium"
+                                        >
+                                            Save Profile
+                                        </Button>
+                                    </CardContent>
+                                </Card>
                             </TabsContent>
 
                             <TabsContent value="goals" className="mt-0">
-                                <div className="space-y-3">
-                                    {/* Exercise Goals */}
-                                    <Card className="bg-[#121318] border-[#212227]">
-                                        <CardContent className="pt-4">
-                                            <div className="flex items-center space-x-2 mb-3">
-                                                <Dumbbell className="w-4 h-4 text-[#A1A1AA]" />
-                                                <span className="text-sm font-medium text-[#F3F4F6]">Exercise Goals</span>
+                                {/* Single Consolidated Goals Card */}
+                                <Card className="bg-[#121318] border-[#212227]">
+                                    <CardHeader className="pb-3">
+                                        <div className="flex items-center space-x-3">
+                                            <div className="w-10 h-10 bg-[rgba(255,255,255,0.03)] border border-[#2A2B31] rounded-lg flex items-center justify-center">
+                                                <Target className="w-5 h-5 text-[#A1A1AA]" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-[#F3F4F6] font-medium">Health & Fitness Goals</p>
+                                                <p className="text-xs text-[#A1A1AA]">Set your targets for optimal performance</p>
+                                            </div>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="space-y-6">
+                                        {/* Exercise Goals Section */}
+                                        <div className="space-y-3">
+                                            <div className="flex items-center space-x-2">
+                                                <Dumbbell className="w-4 h-4 text-[#FF2D55]" />
+                                                <span className="text-sm font-medium text-[#F3F4F6]">Exercise</span>
                                             </div>
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div>
-                                                    <Label htmlFor="dailyExercise" className="text-xs text-[#A1A1AA]">Daily Minutes</Label>
+                                                    <Label htmlFor="dailyExercise" className="text-xs text-[#A1A1AA] mb-2 block">Daily Minutes</Label>
                                                     <Input
                                                         id="dailyExercise"
                                                         type="number"
                                                         value={goals.dailyExerciseMinutes}
                                                         onChange={(e) => setGoals({...goals, dailyExerciseMinutes: e.target.value})}
-                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] mt-1 h-8 text-sm"
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <Label htmlFor="weeklyExercise" className="text-xs text-[#A1A1AA]">Weekly Sessions</Label>
+                                                    <Label htmlFor="weeklyExercise" className="text-xs text-[#A1A1AA] mb-2 block">Weekly Sessions</Label>
                                                     <Input
                                                         id="weeklyExercise"
                                                         type="number"
                                                         value={goals.weeklyExerciseSessions}
                                                         onChange={(e) => setGoals({...goals, weeklyExerciseSessions: e.target.value})}
-                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] mt-1 h-8 text-sm"
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm"
                                                     />
                                                 </div>
                                             </div>
-                                        </CardContent>
-                                    </Card>
+                                        </div>
 
-                                    {/* Calorie Goals */}
-                                    <Card className="bg-[#121318] border-[#212227]">
-                                        <CardContent className="pt-4">
-                                            <div className="flex items-center space-x-2 mb-3">
-                                                <Flame className="w-4 h-4 text-[#A1A1AA]" />
-                                                <span className="text-sm font-medium text-[#F3F4F6]">Calorie Goals</span>
+                                        {/* Nutrition Goals Section */}
+                                        <div className="space-y-3">
+                                            <div className="flex items-center space-x-2">
+                                                <Flame className="w-4 h-4 text-[#9BE15D]" />
+                                                <span className="text-sm font-medium text-[#F3F4F6]">Nutrition</span>
                                             </div>
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div>
-                                                    <Label htmlFor="dailyCalories" className="text-xs text-[#A1A1AA]">Daily Calories</Label>
+                                                    <Label htmlFor="dailyCalories" className="text-xs text-[#A1A1AA] mb-2 block">Daily Calories</Label>
                                                     <Input
                                                         id="dailyCalories"
                                                         type="number"
                                                         value={goals.dailyCalories}
                                                         onChange={(e) => setGoals({...goals, dailyCalories: e.target.value})}
-                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] mt-1 h-8 text-sm"
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <Label htmlFor="activityLevel" className="text-xs text-[#A1A1AA]">Activity Level</Label>
+                                                    <Label htmlFor="activityLevel" className="text-xs text-[#A1A1AA] mb-2 block">Activity Level</Label>
                                                     <Select value={goals.activityLevel} onValueChange={(value) => setGoals({...goals, activityLevel: value})}>
-                                                        <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] mt-1 h-8 text-sm">
+                                                        <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm">
                                                             <SelectValue />
                                                         </SelectTrigger>
                                                         <SelectContent>
                                                             <SelectItem value="sedentary">Sedentary</SelectItem>
-                                                            <SelectItem value="light">Lightly Active</SelectItem>
-                                                            <SelectItem value="moderate">Moderately Active</SelectItem>
-                                                            <SelectItem value="active">Very Active</SelectItem>
+                                                            <SelectItem value="light">Light</SelectItem>
+                                                            <SelectItem value="moderate">Moderate</SelectItem>
+                                                            <SelectItem value="active">Active</SelectItem>
                                                             <SelectItem value="extra">Extra Active</SelectItem>
                                                         </SelectContent>
                                                     </Select>
                                                 </div>
                                             </div>
-                                        </CardContent>
-                                    </Card>
+                                        </div>
 
-                                    {/* Recovery Goals */}
-                                    <Card className="bg-[#121318] border-[#212227]">
-                                        <CardContent className="pt-4">
-                                            <div className="flex items-center space-x-2 mb-3">
-                                                <Moon className="w-4 h-4 text-[#A1A1AA]" />
-                                                <span className="text-sm font-medium text-[#F3F4F6]">Recovery Goals</span>
+                                        {/* Recovery Goals Section */}
+                                        <div className="space-y-3">
+                                            <div className="flex items-center space-x-2">
+                                                <Moon className="w-4 h-4 text-[#2BD2FF]" />
+                                                <span className="text-sm font-medium text-[#F3F4F6]">Recovery</span>
                                             </div>
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div>
-                                                    <Label htmlFor="sleepHours" className="text-xs text-[#A1A1AA]">Sleep Hours</Label>
+                                                    <Label htmlFor="sleepHours" className="text-xs text-[#A1A1AA] mb-2 block">Sleep Hours</Label>
                                                     <Input
                                                         id="sleepHours"
                                                         type="number"
                                                         value={goals.sleepHours}
                                                         onChange={(e) => setGoals({...goals, sleepHours: e.target.value})}
-                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] mt-1 h-8 text-sm"
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm"
                                                         step="0.5"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <Label htmlFor="recoveryTime" className="text-xs text-[#A1A1AA]">Recovery Minutes</Label>
+                                                    <Label htmlFor="recoveryTime" className="text-xs text-[#A1A1AA] mb-2 block">Recovery Minutes</Label>
                                                     <Input
                                                         id="recoveryTime"
                                                         type="number"
                                                         value={goals.recoveryMinutes}
                                                         onChange={(e) => setGoals({...goals, recoveryMinutes: e.target.value})}
-                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] mt-1 h-8 text-sm"
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm"
                                                     />
                                                 </div>
                                             </div>
-                                        </CardContent>
-                                    </Card>
+                                        </div>
 
-                                    {/* Goal Weight */}
-                                    <Card className="bg-[#121318] border-[#212227]">
-                                        <CardContent className="pt-4">
-                                            <div className="flex items-center space-x-2 mb-3">
+                                        {/* Weight Goals Section */}
+                                        <div className="space-y-3">
+                                            <div className="flex items-center space-x-2">
                                                 <Weight className="w-4 h-4 text-[#A1A1AA]" />
-                                                <span className="text-sm font-medium text-[#F3F4F6]">Goal Weight</span>
+                                                <span className="text-sm font-medium text-[#F3F4F6]">Weight Goals</span>
                                             </div>
-                                            <div className="space-y-3">
+                                            <div>
+                                                <Label htmlFor="dietType" className="text-xs text-[#A1A1AA] mb-2 block">Goal Type</Label>
+                                                <Select value={goals.dietType} onValueChange={(value) => setGoals({...goals, dietType: value})}>
+                                                    <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="cutting">Lose Weight</SelectItem>
+                                                        <SelectItem value="bulking">Gain Weight</SelectItem>
+                                                        <SelectItem value="maintenance">Maintain</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
                                                 <div>
-                                                    <Label htmlFor="dietType" className="text-xs text-[#A1A1AA]">Diet Type</Label>
-                                                    <Select value={goals.dietType} onValueChange={(value) => setGoals({...goals, dietType: value})}>
-                                                        <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] mt-1 h-8 text-sm">
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="cutting">Cutting (Lose Weight)</SelectItem>
-                                                            <SelectItem value="bulking">Bulking (Gain Weight)</SelectItem>
-                                                            <SelectItem value="maintenance">Maintenance</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
+                                                    <Label htmlFor="startingWeight" className="text-xs text-[#A1A1AA] mb-2 block">Current Weight</Label>
+                                                    <Input
+                                                        id="startingWeight"
+                                                        type="number"
+                                                        value={goals.startingWeight}
+                                                        onChange={(e) => setGoals({...goals, startingWeight: e.target.value})}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm"
+                                                        placeholder="70"
+                                                    />
                                                 </div>
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    <div>
-                                                        <Label htmlFor="startingWeight" className="text-xs text-[#A1A1AA]">Starting Weight</Label>
-                                                        <Input
-                                                            id="startingWeight"
-                                                            type="number"
-                                                            value={goals.startingWeight}
-                                                            onChange={(e) => setGoals({...goals, startingWeight: e.target.value})}
-                                                            className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] mt-1 h-8 text-sm"
-                                                            placeholder="70"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <Label htmlFor="goalWeight" className="text-xs text-[#A1A1AA]">Goal Weight</Label>
-                                                        <Input
-                                                            id="goalWeight"
-                                                            type="number"
-                                                            value={goals.goalWeight}
-                                                            onChange={(e) => setGoals({...goals, goalWeight: e.target.value})}
-                                                            className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] mt-1 h-8 text-sm"
-                                                            placeholder="75"
-                                                        />
-                                                    </div>
+                                                <div>
+                                                    <Label htmlFor="goalWeight" className="text-xs text-[#A1A1AA] mb-2 block">Target Weight</Label>
+                                                    <Input
+                                                        id="goalWeight"
+                                                        type="number"
+                                                        value={goals.goalWeight}
+                                                        onChange={(e) => setGoals({...goals, goalWeight: e.target.value})}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm"
+                                                        placeholder="75"
+                                                    />
                                                 </div>
                                             </div>
-                                        </CardContent>
-                                    </Card>
+                                        </div>
 
-                                    {/* Save Button */}
-                                    <Button 
-                                        onClick={handleSaveGoals}
-                                        className="w-full bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-[8px] border border-[rgba(42,140,234,0.35)] shadow-[0_4px_16px_rgba(42,140,234,0.28)] hover:shadow-[0_6px_24px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all h-8 text-sm"
-                                    >
-                                        Save Goals
-                                    </Button>
-                                </div>
+                                        <Button 
+                                            onClick={handleSaveGoals}
+                                            className="w-full bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-lg border border-[rgba(42,140,234,0.35)] shadow-[0_4px_16px_rgba(42,140,234,0.28)] hover:shadow-[0_6px_24px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all h-9 text-sm font-medium"
+                                        >
+                                            Save Goals
+                                        </Button>
+                                    </CardContent>
+                                </Card>
                             </TabsContent>
-                        </div>
+                        </ScrollArea>
                     </div>
                 </Tabs>
             </DialogContent>
