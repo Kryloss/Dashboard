@@ -196,3 +196,42 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Mobile Select Component Fixes */
+@layer components {
+  /* Ensure select dropdowns work on mobile */
+  [data-radix-select-content] {
+    position: fixed !important;
+    z-index: 9999 !important;
+    max-height: 200px !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Prevent iOS zoom on select */
+  [data-radix-select-trigger] {
+    font-size: 16px !important;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+  }
+  
+  /* Ensure proper touch targets on mobile */
+  [data-radix-select-item] {
+    min-height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Fix dialog overlay issues on mobile */
+  [data-radix-dialog-overlay] {
+    position: fixed !important;
+    z-index: 9998 !important;
+  }
+  
+  [data-radix-dialog-content] {
+    position: fixed !important;
+    z-index: 9998 !important;
+  }
+}

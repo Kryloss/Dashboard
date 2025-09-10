@@ -58,6 +58,37 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
         dietType: "maintenance"
     })
 
+    // Handle numeric input with validation - prevents letters including 'e' and limits digits
+    const handleNumericInput = (value: string, maxDigits: number, allowDecimal: boolean = false) => {
+        // Remove any non-numeric characters (including 'e', '+', '-')
+        let cleanValue = value.replace(/[^0-9.]/g, '')
+        
+        // Handle decimal places
+        if (allowDecimal) {
+            const parts = cleanValue.split('.')
+            if (parts.length > 2) {
+                // Only allow one decimal point
+                cleanValue = parts[0] + '.' + parts.slice(1).join('')
+            }
+            // Limit decimal places to 1
+            if (parts[1] && parts[1].length > 1) {
+                cleanValue = parts[0] + '.' + parts[1].substring(0, 1)
+            }
+        } else {
+            // Remove decimal points if not allowed
+            cleanValue = cleanValue.replace(/\./g, '')
+        }
+        
+        // Limit total digits (before decimal point)
+        const wholePart = cleanValue.split('.')[0]
+        if (wholePart.length > maxDigits) {
+            const decimalPart = cleanValue.includes('.') ? '.' + cleanValue.split('.')[1] : ''
+            cleanValue = wholePart.substring(0, maxDigits) + decimalPart
+        }
+        
+        return cleanValue
+    }
+
     const handleSaveProfile = () => {
         // TODO: Implement profile saving logic
         console.log("Saving profile:", profile)
@@ -70,7 +101,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden p-0">
+            <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden p-0 z-[9998]" onInteractOutside={(e) => e.preventDefault()}>
                 <DialogHeader className="px-6 pt-6 pb-4">
                     <DialogTitle className="text-xl font-semibold text-[#F3F4F6]">
                         Settings
@@ -133,23 +164,20 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                 <div className="flex gap-1">
                                                     <Input
                                                         id="weight"
-                                                        type="number"
+                                                        type="text"
                                                         value={profile.weight}
-                                                        onChange={(e) => setProfile({...profile, weight: e.target.value})}
+                                                        onChange={(e) => setProfile({...profile, weight: handleNumericInput(e.target.value, 3, true)})}
                                                         className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-sm font-medium text-center w-24 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                         placeholder="70"
                                                         inputMode="decimal"
-                                                        min="0"
-                                                        max="300"
-                                                        step="0.1"
                                                     />
                                                     <Select value={profile.weightUnit} onValueChange={(value) => setProfile({...profile, weightUnit: value})}>
-                                                        <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-xs w-10 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA]">
+                                                        <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-xs w-8 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA]">
                                                             <SelectValue />
                                                         </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="kg">kg</SelectItem>
-                                                            <SelectItem value="lbs">lbs</SelectItem>
+                                                        <SelectContent className="bg-[#121318] border-[#212227] z-[9999] max-h-[200px] overflow-auto">
+                                                            <SelectItem value="kg" className="text-[#F3F4F6] hover:bg-[#2A2B31] focus:bg-[#2A2B31] cursor-pointer">kg</SelectItem>
+                                                            <SelectItem value="lbs" className="text-[#F3F4F6] hover:bg-[#2A2B31] focus:bg-[#2A2B31] cursor-pointer">lbs</SelectItem>
                                                         </SelectContent>
                                                     </Select>
                                                 </div>
@@ -161,23 +189,20 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                 <div className="flex gap-1">
                                                     <Input
                                                         id="height"
-                                                        type="number"
+                                                        type="text"
                                                         value={profile.height}
-                                                        onChange={(e) => setProfile({...profile, height: e.target.value})}
+                                                        onChange={(e) => setProfile({...profile, height: handleNumericInput(e.target.value, 3, true)})}
                                                         className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-sm font-medium text-center w-24 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                         placeholder="175"
                                                         inputMode="decimal"
-                                                        min="0"
-                                                        max="250"
-                                                        step="0.1"
                                                     />
                                                     <Select value={profile.heightUnit} onValueChange={(value) => setProfile({...profile, heightUnit: value})}>
-                                                        <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-xs w-10 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA]">
+                                                        <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-xs w-8 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA]">
                                                             <SelectValue />
                                                         </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="cm">cm</SelectItem>
-                                                            <SelectItem value="ft">ft</SelectItem>
+                                                        <SelectContent className="bg-[#121318] border-[#212227] z-[9999] max-h-[200px] overflow-auto">
+                                                            <SelectItem value="cm" className="text-[#F3F4F6] hover:bg-[#2A2B31] focus:bg-[#2A2B31] cursor-pointer">cm</SelectItem>
+                                                            <SelectItem value="ft" className="text-[#F3F4F6] hover:bg-[#2A2B31] focus:bg-[#2A2B31] cursor-pointer">ft</SelectItem>
                                                         </SelectContent>
                                                     </Select>
                                                 </div>
@@ -188,14 +213,12 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                 <Label htmlFor="age" className="text-xs text-[#A1A1AA] font-medium uppercase tracking-wide">Age</Label>
                                                 <Input
                                                     id="age"
-                                                    type="number"
+                                                    type="text"
                                                     value={profile.age}
-                                                    onChange={(e) => setProfile({...profile, age: e.target.value})}
+                                                    onChange={(e) => setProfile({...profile, age: handleNumericInput(e.target.value, 3, false)})}
                                                     className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-sm font-medium text-center w-20 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                     placeholder="25"
                                                     inputMode="numeric"
-                                                    min="1"
-                                                    max="120"
                                                 />
                                             </div>
                                         </div>
@@ -238,28 +261,24 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                     <Label htmlFor="dailyExercise" className="text-xs text-[#A1A1AA] font-medium uppercase tracking-wide">Daily Minutes</Label>
                                                     <Input
                                                         id="dailyExercise"
-                                                        type="number"
+                                                        type="text"
                                                         value={goals.dailyExerciseMinutes}
-                                                        onChange={(e) => setGoals({...goals, dailyExerciseMinutes: e.target.value})}
+                                                        onChange={(e) => setGoals({...goals, dailyExerciseMinutes: handleNumericInput(e.target.value, 3, false)})}
                                                         className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#FF2D55] focus:border-[#FF2D55] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                         placeholder="30"
                                                         inputMode="numeric"
-                                                        min="0"
-                                                        max="480"
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label htmlFor="weeklyExercise" className="text-xs text-[#A1A1AA] font-medium uppercase tracking-wide">Weekly Sessions</Label>
                                                     <Input
                                                         id="weeklyExercise"
-                                                        type="number"
+                                                        type="text"
                                                         value={goals.weeklyExerciseSessions}
-                                                        onChange={(e) => setGoals({...goals, weeklyExerciseSessions: e.target.value})}
+                                                        onChange={(e) => setGoals({...goals, weeklyExerciseSessions: handleNumericInput(e.target.value, 2, false)})}
                                                         className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#FF2D55] focus:border-[#FF2D55] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                         placeholder="3"
                                                         inputMode="numeric"
-                                                        min="0"
-                                                        max="14"
                                                     />
                                                 </div>
                                             </div>
@@ -278,14 +297,12 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                     <Label htmlFor="dailyCalories" className="text-xs text-[#A1A1AA] font-medium uppercase tracking-wide">Daily Calories</Label>
                                                     <Input
                                                         id="dailyCalories"
-                                                        type="number"
+                                                        type="text"
                                                         value={goals.dailyCalories}
-                                                        onChange={(e) => setGoals({...goals, dailyCalories: e.target.value})}
+                                                        onChange={(e) => setGoals({...goals, dailyCalories: handleNumericInput(e.target.value, 5, false)})}
                                                         className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#9BE15D] focus:border-[#9BE15D] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                         placeholder="2000"
                                                         inputMode="numeric"
-                                                        min="500"
-                                                        max="5000"
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
@@ -294,12 +311,12 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                         <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-xs focus:ring-1 focus:ring-[#9BE15D] focus:border-[#9BE15D]">
                                                             <SelectValue />
                                                         </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="sedentary">Sedentary</SelectItem>
-                                                            <SelectItem value="light">Light</SelectItem>
-                                                            <SelectItem value="moderate">Moderate</SelectItem>
-                                                            <SelectItem value="active">Active</SelectItem>
-                                                            <SelectItem value="extra">Extra Active</SelectItem>
+                                                        <SelectContent className="bg-[#121318] border-[#212227] z-[9999] max-h-[200px] overflow-auto">
+                                                            <SelectItem value="sedentary" className="text-[#F3F4F6] hover:bg-[#2A2B31] focus:bg-[#2A2B31] cursor-pointer">Sedentary</SelectItem>
+                                                            <SelectItem value="light" className="text-[#F3F4F6] hover:bg-[#2A2B31] focus:bg-[#2A2B31] cursor-pointer">Light</SelectItem>
+                                                            <SelectItem value="moderate" className="text-[#F3F4F6] hover:bg-[#2A2B31] focus:bg-[#2A2B31] cursor-pointer">Moderate</SelectItem>
+                                                            <SelectItem value="active" className="text-[#F3F4F6] hover:bg-[#2A2B31] focus:bg-[#2A2B31] cursor-pointer">Active</SelectItem>
+                                                            <SelectItem value="extra" className="text-[#F3F4F6] hover:bg-[#2A2B31] focus:bg-[#2A2B31] cursor-pointer">Extra Active</SelectItem>
                                                         </SelectContent>
                                                     </Select>
                                                 </div>
@@ -319,29 +336,24 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                     <Label htmlFor="sleepHours" className="text-xs text-[#A1A1AA] font-medium uppercase tracking-wide">Sleep Hours</Label>
                                                     <Input
                                                         id="sleepHours"
-                                                        type="number"
+                                                        type="text"
                                                         value={goals.sleepHours}
-                                                        onChange={(e) => setGoals({...goals, sleepHours: e.target.value})}
+                                                        onChange={(e) => setGoals({...goals, sleepHours: handleNumericInput(e.target.value, 2, true)})}
                                                         className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#2BD2FF] focus:border-[#2BD2FF] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                         placeholder="8"
-                                                        step="0.5"
                                                         inputMode="decimal"
-                                                        min="4"
-                                                        max="12"
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label htmlFor="recoveryTime" className="text-xs text-[#A1A1AA] font-medium uppercase tracking-wide">Recovery Minutes</Label>
                                                     <Input
                                                         id="recoveryTime"
-                                                        type="number"
+                                                        type="text"
                                                         value={goals.recoveryMinutes}
-                                                        onChange={(e) => setGoals({...goals, recoveryMinutes: e.target.value})}
+                                                        onChange={(e) => setGoals({...goals, recoveryMinutes: handleNumericInput(e.target.value, 3, false)})}
                                                         className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#2BD2FF] focus:border-[#2BD2FF] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                         placeholder="60"
                                                         inputMode="numeric"
-                                                        min="0"
-                                                        max="240"
                                                     />
                                                 </div>
                                             </div>
@@ -362,10 +374,10 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                         <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-xs focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA]">
                                                             <SelectValue />
                                                         </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="cutting">Lose Weight</SelectItem>
-                                                            <SelectItem value="bulking">Gain Weight</SelectItem>
-                                                            <SelectItem value="maintenance">Maintain</SelectItem>
+                                                        <SelectContent className="bg-[#121318] border-[#212227] z-[9999] max-h-[200px] overflow-auto">
+                                                            <SelectItem value="cutting" className="text-[#F3F4F6] hover:bg-[#2A2B31] focus:bg-[#2A2B31] cursor-pointer">Lose Weight</SelectItem>
+                                                            <SelectItem value="bulking" className="text-[#F3F4F6] hover:bg-[#2A2B31] focus:bg-[#2A2B31] cursor-pointer">Gain Weight</SelectItem>
+                                                            <SelectItem value="maintenance" className="text-[#F3F4F6] hover:bg-[#2A2B31] focus:bg-[#2A2B31] cursor-pointer">Maintain</SelectItem>
                                                         </SelectContent>
                                                     </Select>
                                                 </div>
@@ -374,30 +386,24 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                         <Label htmlFor="startingWeight" className="text-xs text-[#A1A1AA] font-medium uppercase tracking-wide">Current Weight</Label>
                                                         <Input
                                                             id="startingWeight"
-                                                            type="number"
+                                                            type="text"
                                                             value={goals.startingWeight}
-                                                            onChange={(e) => setGoals({...goals, startingWeight: e.target.value})}
+                                                            onChange={(e) => setGoals({...goals, startingWeight: handleNumericInput(e.target.value, 3, true)})}
                                                             className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                             placeholder="70"
                                                             inputMode="decimal"
-                                                            min="0"
-                                                            max="300"
-                                                            step="0.1"
                                                         />
                                                     </div>
                                                     <div className="space-y-2">
                                                         <Label htmlFor="goalWeight" className="text-xs text-[#A1A1AA] font-medium uppercase tracking-wide">Target Weight</Label>
                                                         <Input
                                                             id="goalWeight"
-                                                            type="number"
+                                                            type="text"
                                                             value={goals.goalWeight}
-                                                            onChange={(e) => setGoals({...goals, goalWeight: e.target.value})}
+                                                            onChange={(e) => setGoals({...goals, goalWeight: handleNumericInput(e.target.value, 3, true)})}
                                                             className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                             placeholder="75"
                                                             inputMode="decimal"
-                                                            min="0"
-                                                            max="300"
-                                                            step="0.1"
                                                         />
                                                     </div>
                                                 </div>
