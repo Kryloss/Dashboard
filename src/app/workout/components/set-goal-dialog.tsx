@@ -130,13 +130,13 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                             {/* Weight Section */}
                                             <div className="space-y-2">
                                                 <Label htmlFor="weight" className="text-xs text-[#A1A1AA] font-medium uppercase tracking-wide">Weight</Label>
-                                                <div className="flex gap-2">
+                                                <div className="flex gap-1">
                                                     <Input
                                                         id="weight"
                                                         type="number"
                                                         value={profile.weight}
                                                         onChange={(e) => setProfile({...profile, weight: e.target.value})}
-                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-sm font-medium text-center w-20 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA] transition-colors"
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-sm font-medium text-center w-24 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                         placeholder="70"
                                                         inputMode="decimal"
                                                         min="0"
@@ -144,7 +144,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                         step="0.1"
                                                     />
                                                     <Select value={profile.weightUnit} onValueChange={(value) => setProfile({...profile, weightUnit: value})}>
-                                                        <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-xs w-12 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA]">
+                                                        <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-xs w-10 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA]">
                                                             <SelectValue />
                                                         </SelectTrigger>
                                                         <SelectContent>
@@ -158,13 +158,13 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                             {/* Height Section */}
                                             <div className="space-y-2">
                                                 <Label htmlFor="height" className="text-xs text-[#A1A1AA] font-medium uppercase tracking-wide">Height</Label>
-                                                <div className="flex gap-2">
+                                                <div className="flex gap-1">
                                                     <Input
                                                         id="height"
                                                         type="number"
                                                         value={profile.height}
                                                         onChange={(e) => setProfile({...profile, height: e.target.value})}
-                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-sm font-medium text-center w-20 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA] transition-colors"
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-sm font-medium text-center w-24 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                         placeholder="175"
                                                         inputMode="decimal"
                                                         min="0"
@@ -172,7 +172,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                         step="0.1"
                                                     />
                                                     <Select value={profile.heightUnit} onValueChange={(value) => setProfile({...profile, heightUnit: value})}>
-                                                        <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-xs w-12 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA]">
+                                                        <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-xs w-10 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA]">
                                                             <SelectValue />
                                                         </SelectTrigger>
                                                         <SelectContent>
@@ -191,7 +191,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                     type="number"
                                                     value={profile.age}
                                                     onChange={(e) => setProfile({...profile, age: e.target.value})}
-                                                    className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-sm font-medium text-center focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA] transition-colors"
+                                                    className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-sm font-medium text-center w-20 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                     placeholder="25"
                                                     inputMode="numeric"
                                                     min="1"
@@ -241,7 +241,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                         type="number"
                                                         value={goals.dailyExerciseMinutes}
                                                         onChange={(e) => setGoals({...goals, dailyExerciseMinutes: e.target.value})}
-                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#FF2D55] focus:border-[#FF2D55] transition-colors"
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#FF2D55] focus:border-[#FF2D55] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                         placeholder="30"
                                                         inputMode="numeric"
                                                         min="0"
@@ -255,7 +255,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                         type="number"
                                                         value={goals.weeklyExerciseSessions}
                                                         onChange={(e) => setGoals({...goals, weeklyExerciseSessions: e.target.value})}
-                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#FF2D55] focus:border-[#FF2D55] transition-colors"
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#FF2D55] focus:border-[#FF2D55] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                         placeholder="3"
                                                         inputMode="numeric"
                                                         min="0"
@@ -281,7 +281,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                         type="number"
                                                         value={goals.dailyCalories}
                                                         onChange={(e) => setGoals({...goals, dailyCalories: e.target.value})}
-                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#9BE15D] focus:border-[#9BE15D] transition-colors"
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#9BE15D] focus:border-[#9BE15D] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                         placeholder="2000"
                                                         inputMode="numeric"
                                                         min="500"
@@ -322,7 +322,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                         type="number"
                                                         value={goals.sleepHours}
                                                         onChange={(e) => setGoals({...goals, sleepHours: e.target.value})}
-                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#2BD2FF] focus:border-[#2BD2FF] transition-colors"
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#2BD2FF] focus:border-[#2BD2FF] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                         placeholder="8"
                                                         step="0.5"
                                                         inputMode="decimal"
@@ -337,7 +337,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                         type="number"
                                                         value={goals.recoveryMinutes}
                                                         onChange={(e) => setGoals({...goals, recoveryMinutes: e.target.value})}
-                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#2BD2FF] focus:border-[#2BD2FF] transition-colors"
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#2BD2FF] focus:border-[#2BD2FF] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                         placeholder="60"
                                                         inputMode="numeric"
                                                         min="0"
@@ -377,7 +377,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                             type="number"
                                                             value={goals.startingWeight}
                                                             onChange={(e) => setGoals({...goals, startingWeight: e.target.value})}
-                                                            className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA] transition-colors"
+                                                            className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                             placeholder="70"
                                                             inputMode="decimal"
                                                             min="0"
@@ -392,7 +392,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                             type="number"
                                                             value={goals.goalWeight}
                                                             onChange={(e) => setGoals({...goals, goalWeight: e.target.value})}
-                                                            className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA] transition-colors"
+                                                            className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                             placeholder="75"
                                                             inputMode="decimal"
                                                             min="0"
