@@ -136,7 +136,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                         type="number"
                                                         value={profile.weight}
                                                         onChange={(e) => setProfile({...profile, weight: e.target.value})}
-                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-sm font-medium text-center flex-1 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA] transition-colors"
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-sm font-medium text-center w-20 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA] transition-colors"
                                                         placeholder="70"
                                                         inputMode="decimal"
                                                         min="0"
@@ -144,7 +144,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                         step="0.1"
                                                     />
                                                     <Select value={profile.weightUnit} onValueChange={(value) => setProfile({...profile, weightUnit: value})}>
-                                                        <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-xs w-16 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA]">
+                                                        <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-xs w-12 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA]">
                                                             <SelectValue />
                                                         </SelectTrigger>
                                                         <SelectContent>
@@ -164,7 +164,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                         type="number"
                                                         value={profile.height}
                                                         onChange={(e) => setProfile({...profile, height: e.target.value})}
-                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-sm font-medium text-center flex-1 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA] transition-colors"
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-sm font-medium text-center w-20 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA] transition-colors"
                                                         placeholder="175"
                                                         inputMode="decimal"
                                                         min="0"
@@ -172,7 +172,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                         step="0.1"
                                                     />
                                                     <Select value={profile.heightUnit} onValueChange={(value) => setProfile({...profile, heightUnit: value})}>
-                                                        <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-xs w-16 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA]">
+                                                        <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-xs w-12 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA]">
                                                             <SelectValue />
                                                         </SelectTrigger>
                                                         <SelectContent>
