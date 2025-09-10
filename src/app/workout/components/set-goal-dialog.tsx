@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -58,6 +58,22 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
         dietType: "maintenance"
     })
 
+    // Detect if user is on mobile device
+    const [isMobile, setIsMobile] = useState(false)
+    
+    useEffect(() => {
+        const checkMobile = () => {
+            const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                                 window.innerWidth <= 768 ||
+                                 ('ontouchstart' in window)
+            setIsMobile(isMobileDevice)
+        }
+        
+        checkMobile()
+        window.addEventListener('resize', checkMobile)
+        return () => window.removeEventListener('resize', checkMobile)
+    }, [])
+
     // Handle numeric input with validation - prevents letters including 'e' and limits digits
     const handleNumericInput = (value: string, maxDigits: number, allowDecimal: boolean = false) => {
         // Remove any non-numeric characters (including 'e', '+', '-')
@@ -87,6 +103,46 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
         }
         
         return cleanValue
+    }
+
+    // Mobile-friendly select component
+    const MobileSelect = ({ value, onValueChange, options, className }: {
+        value: string
+        onValueChange: (value: string) => void
+        options: { value: string; label: string }[]
+        className?: string
+    }) => {
+        if (isMobile) {
+            return (
+                <select
+                    value={value}
+                    onChange={(e) => onValueChange(e.target.value)}
+                    className={`${className} bg-[#0E0F13] border-[#212227] text-[#F3F4F6] rounded-md`}
+                    style={{ fontSize: '16px' }} // Prevent zoom on iOS
+                >
+                    {options.map((option) => (
+                        <option key={option.value} value={option.value} className="bg-[#0E0F13] text-[#F3F4F6]">
+                            {option.label}
+                        </option>
+                    ))}
+                </select>
+            )
+        }
+
+        return (
+            <Select value={value} onValueChange={onValueChange}>
+                <SelectTrigger className={className}>
+                    <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-[#121318] border-[#212227] z-[9999] max-h-[200px] overflow-auto">
+                    {options.map((option) => (
+                        <SelectItem key={option.value} value={option.value} className="text-[#F3F4F6] hover:bg-[#2A2B31] focus:bg-[#2A2B31] cursor-pointer">
+                            {option.label}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        )
     }
 
     const handleSaveProfile = () => {
@@ -171,15 +227,15 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                         placeholder="70"
                                                         inputMode="decimal"
                                                     />
-                                                    <Select value={profile.weightUnit} onValueChange={(value) => setProfile({...profile, weightUnit: value})}>
-                                                        <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-xs w-8 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA]">
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent className="bg-[#121318] border-[#212227] z-[9999] max-h-[200px] overflow-auto">
-                                                            <SelectItem value="kg" className="text-[#F3F4F6] hover:bg-[#2A2B31] focus:bg-[#2A2B31] cursor-pointer">kg</SelectItem>
-                                                            <SelectItem value="lbs" className="text-[#F3F4F6] hover:bg-[#2A2B31] focus:bg-[#2A2B31] cursor-pointer">lbs</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
+                                                    <MobileSelect 
+                                                        value={profile.weightUnit} 
+                                                        onValueChange={(value) => setProfile({...profile, weightUnit: value})}
+                                                        options={[
+                                                            { value: "kg", label: "kg" },
+                                                            { value: "lbs", label: "lbs" }
+                                                        ]}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-xs w-8 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA]"
+                                                    />
                                                 </div>
                                             </div>
 
@@ -196,15 +252,15 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                         placeholder="175"
                                                         inputMode="decimal"
                                                     />
-                                                    <Select value={profile.heightUnit} onValueChange={(value) => setProfile({...profile, heightUnit: value})}>
-                                                        <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-xs w-8 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA]">
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent className="bg-[#121318] border-[#212227] z-[9999] max-h-[200px] overflow-auto">
-                                                            <SelectItem value="cm" className="text-[#F3F4F6] hover:bg-[#2A2B31] focus:bg-[#2A2B31] cursor-pointer">cm</SelectItem>
-                                                            <SelectItem value="ft" className="text-[#F3F4F6] hover:bg-[#2A2B31] focus:bg-[#2A2B31] cursor-pointer">ft</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
+                                                    <MobileSelect 
+                                                        value={profile.heightUnit} 
+                                                        onValueChange={(value) => setProfile({...profile, heightUnit: value})}
+                                                        options={[
+                                                            { value: "cm", label: "cm" },
+                                                            { value: "ft", label: "ft" }
+                                                        ]}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-xs w-8 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA]"
+                                                    />
                                                 </div>
                                             </div>
 
@@ -307,18 +363,18 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label htmlFor="activityLevel" className="text-xs text-[#A1A1AA] font-medium uppercase tracking-wide">Activity Level</Label>
-                                                    <Select value={goals.activityLevel} onValueChange={(value) => setGoals({...goals, activityLevel: value})}>
-                                                        <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-xs focus:ring-1 focus:ring-[#9BE15D] focus:border-[#9BE15D]">
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent className="bg-[#121318] border-[#212227] z-[9999] max-h-[200px] overflow-auto">
-                                                            <SelectItem value="sedentary" className="text-[#F3F4F6] hover:bg-[#2A2B31] focus:bg-[#2A2B31] cursor-pointer">Sedentary</SelectItem>
-                                                            <SelectItem value="light" className="text-[#F3F4F6] hover:bg-[#2A2B31] focus:bg-[#2A2B31] cursor-pointer">Light</SelectItem>
-                                                            <SelectItem value="moderate" className="text-[#F3F4F6] hover:bg-[#2A2B31] focus:bg-[#2A2B31] cursor-pointer">Moderate</SelectItem>
-                                                            <SelectItem value="active" className="text-[#F3F4F6] hover:bg-[#2A2B31] focus:bg-[#2A2B31] cursor-pointer">Active</SelectItem>
-                                                            <SelectItem value="extra" className="text-[#F3F4F6] hover:bg-[#2A2B31] focus:bg-[#2A2B31] cursor-pointer">Extra Active</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
+                                                    <MobileSelect 
+                                                        value={goals.activityLevel} 
+                                                        onValueChange={(value) => setGoals({...goals, activityLevel: value})}
+                                                        options={[
+                                                            { value: "sedentary", label: "Sedentary" },
+                                                            { value: "light", label: "Light" },
+                                                            { value: "moderate", label: "Moderate" },
+                                                            { value: "active", label: "Active" },
+                                                            { value: "extra", label: "Extra Active" }
+                                                        ]}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-xs focus:ring-1 focus:ring-[#9BE15D] focus:border-[#9BE15D]"
+                                                    />
                                                 </div>
                                             </div>
                                         </div>
@@ -370,16 +426,16 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                             <div className="space-y-3">
                                                 <div className="space-y-2">
                                                     <Label htmlFor="dietType" className="text-xs text-[#A1A1AA] font-medium uppercase tracking-wide">Goal Type</Label>
-                                                    <Select value={goals.dietType} onValueChange={(value) => setGoals({...goals, dietType: value})}>
-                                                        <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-xs focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA]">
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent className="bg-[#121318] border-[#212227] z-[9999] max-h-[200px] overflow-auto">
-                                                            <SelectItem value="cutting" className="text-[#F3F4F6] hover:bg-[#2A2B31] focus:bg-[#2A2B31] cursor-pointer">Lose Weight</SelectItem>
-                                                            <SelectItem value="bulking" className="text-[#F3F4F6] hover:bg-[#2A2B31] focus:bg-[#2A2B31] cursor-pointer">Gain Weight</SelectItem>
-                                                            <SelectItem value="maintenance" className="text-[#F3F4F6] hover:bg-[#2A2B31] focus:bg-[#2A2B31] cursor-pointer">Maintain</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
+                                                    <MobileSelect 
+                                                        value={goals.dietType} 
+                                                        onValueChange={(value) => setGoals({...goals, dietType: value})}
+                                                        options={[
+                                                            { value: "cutting", label: "Lose Weight" },
+                                                            { value: "bulking", label: "Gain Weight" },
+                                                            { value: "maintenance", label: "Maintain" }
+                                                        ]}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-xs focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA]"
+                                                    />
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-3">
                                                     <div className="space-y-2">
