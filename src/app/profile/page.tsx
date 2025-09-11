@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import ProfileForm from '@/components/profile-form'
+import ProgressPhotosTab from '@/components/progress-photos-tab'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 export const dynamic = 'force-dynamic'
 
@@ -38,7 +40,7 @@ export default async function ProfilePage({
 
     return (
         <div className="min-h-screen bg-[#0B0C0D] pt-6">
-            <div className="container mx-auto max-w-4xl px-6">
+            <div className="container mx-auto max-w-6xl px-6">
                 {/* Header */}
                 <div className="mb-8">
                     <h1 className="text-4xl md:text-5xl font-extrabold text-[#FBF7FA] mb-4 tracking-tight">
@@ -49,12 +51,35 @@ export default async function ProfilePage({
                     </p>
                 </div>
 
-                {/* Pass initial data to client component */}
-                <ProfileForm
-                    initialProfile={finalProfile}
-                    user={user}
-                    initialMessage={((await searchParams)?.message as string) || undefined}
-                />
+                {/* Tabbed interface */}
+                <Tabs defaultValue="account" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 bg-[#121922] border-[#2A3442] rounded-xl">
+                        <TabsTrigger 
+                            value="account" 
+                            className="data-[state=active]:bg-[#4AA7FF] data-[state=active]:text-white text-[#9CA9B7] hover:text-[#FBF7FA] rounded-lg transition-all"
+                        >
+                            Account Settings
+                        </TabsTrigger>
+                        <TabsTrigger 
+                            value="progress" 
+                            className="data-[state=active]:bg-[#4AA7FF] data-[state=active]:text-white text-[#9CA9B7] hover:text-[#FBF7FA] rounded-lg transition-all"
+                        >
+                            Progress Photos
+                        </TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="account" className="mt-6">
+                        <ProfileForm
+                            initialProfile={finalProfile}
+                            user={user}
+                            initialMessage={((await searchParams)?.message as string) || undefined}
+                        />
+                    </TabsContent>
+                    
+                    <TabsContent value="progress" className="mt-6">
+                        <ProgressPhotosTab />
+                    </TabsContent>
+                </Tabs>
             </div>
         </div>
     )
