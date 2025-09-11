@@ -11,7 +11,9 @@ export function createClient() {
             hasUrl: !!supabaseUrl,
             hasKey: !!supabaseAnonKey,
             url: supabaseUrl ? `${supabaseUrl.substring(0, 20)}...` : 'undefined',
-            key: supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : 'undefined'
+            key: supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : 'undefined',
+            nodeEnv: process.env.NODE_ENV,
+            hostname: typeof window !== 'undefined' ? window.location.hostname : 'server-side'
         })
 
         // Return a mock client that will show clear errors
