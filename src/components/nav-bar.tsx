@@ -24,19 +24,16 @@ import { getSubdomains, subdomains } from "@/lib/subdomains"
 import { cn } from "@/lib/utils"
 import { useAuthContext } from "@/lib/contexts/AuthContext"
 import { createClient } from "@/lib/supabase/client"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { usePathname } from 'next/navigation'
 import type { Profile } from "@/lib/types/database.types"
 
 export function NavBar() {
-    const { user, loading, signOut: authSignOut, isAuthenticated } = useAuthContext()
+    const { user, loading, signOut: authSignOut, isAuthenticated, initialized } = useAuthContext()
     const [profile, setProfile] = useState<Profile | null>(null)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-    const [localLoading, setLocalLoading] = useState(true)
-    const [hasAccount, setHasAccount] = useState(false)
     const [dynamicSubdomains, setDynamicSubdomains] = useState(subdomains)
     const mobileMenuRef = useRef<HTMLDivElement>(null)
-    const pathname = usePathname()
     const supabase = createClient()
 
     // Update subdomains on client side
@@ -44,147 +41,38 @@ export function NavBar() {
         setDynamicSubdomains(getSubdomains())
     }, [])
 
+    // Single profile fetch effect - only runs when user changes
     useEffect(() => {
-        async function checkMultipleAuthMethods() {
-            let accountSignedIn = false
-            let currentUser = user
+        if (!user?.id) {
+            setProfile(null)
+            return
+        }
 
-            console.log('NavBar: Starting auth check with user:', user)
-
-            // Method 1: Check session directly from Supabase (most reliable)
+        async function fetchProfile() {
+            if (!user?.id) return // Additional safety check
+            
             try {
-                const { data: { session } } = await supabase.auth.getSession()
-                if (session?.user) {
-                    console.log('NavBar: Auth method 1 - Session user:', session.user.email)
-                    accountSignedIn = true
-                    currentUser = session.user // Use session user as source of truth
+                console.log('NavBar: Fetching profile for user:', user.email)
+                const { data: profile, error } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', user.id)
+                    .single()
+
+                if (error && error.code !== 'PGRST116') {
+                    console.error('NavBar: Profile fetch error:', error)
                 }
+
+                setProfile(profile || null)
+                console.log('NavBar: Profile loaded for:', profile?.email || 'unknown user')
             } catch (err) {
-                console.log('NavBar: Auth method 1 failed:', err)
-            }
-
-            // Method 2: Check for stored auth token (fallback)
-            if (!accountSignedIn) {
-                try {
-                    const { data: { user: tokenUser } } = await supabase.auth.getUser()
-                    if (tokenUser) {
-                        console.log('NavBar: Auth method 2 - Token user:', tokenUser.email)
-                        accountSignedIn = true
-                        currentUser = tokenUser
-                    }
-                } catch (err) {
-                    console.log('NavBar: Auth method 2 failed:', err)
-                }
-            }
-
-            // Method 3: Check if user exists from AuthContext (secondary)
-            if (!accountSignedIn && user) {
-                console.log('NavBar: Auth method 3 - User from context:', user.email)
-                accountSignedIn = true
-            }
-
-            // Method 4: Check Account Information - if email is present
-            if (!accountSignedIn && user?.email) {
-                console.log('NavBar: Auth method 4 - Account Information check - Email present:', user.email)
-                accountSignedIn = true
-            }
-
-            // If any method confirms sign-in, fetch profile for display
-            if (accountSignedIn && currentUser) {
-                try {
-                    const { data: profile, error } = await supabase
-                        .from('profiles')
-                        .select('*')
-                        .eq('id', currentUser.id)
-                        .single()
-
-                    if (error && error.code !== 'PGRST116') {
-                        console.error('Profile fetch error:', error)
-                    }
-
-                    setProfile(profile || null)
-                    console.log('NavBar: Profile loaded -', {
-                        profileExists: !!profile,
-                        hasUsername: !!(profile?.username)
-                    })
-                } catch (err) {
-                    console.error('Profile fetch failed:', err)
-                    setProfile(null)
-                }
-            } else {
+                console.error('NavBar: Profile fetch failed:', err)
                 setProfile(null)
             }
-
-            setHasAccount(accountSignedIn)
-            setLocalLoading(false)
-
-            console.log('NavBar: Final auth state -', {
-                accountSignedIn,
-                user: user?.email || 'No user',
-                userExists: !!user,
-                profileExists: !!profile,
-                hasAccountState: accountSignedIn,
-                willShowButton: accountSignedIn && user
-            })
-
-            console.log('NavBar: Auth check complete -', { accountSignedIn, userExists: !!user })
         }
 
-        checkMultipleAuthMethods()
-    }, [user, supabase, profile, pathname]) // Add pathname to refresh on route changes
-
-    // Force refresh auth state on protected routes
-    useEffect(() => {
-        const protectedRoutes = ['/dashboard', '/profile']
-        if (protectedRoutes.some(route => pathname.startsWith(route))) {
-            console.log('NavBar: On protected route, forcing auth refresh')
-            // Small delay to ensure any route-based auth changes are processed
-            const refreshTimeout = setTimeout(() => {
-                setLocalLoading(true) // Trigger re-check
-            }, 100)
-            return () => clearTimeout(refreshTimeout)
-        }
-    }, [pathname])
-
-    // Add a timeout to prevent infinite loading
-    useEffect(() => {
-        const timeoutId = setTimeout(() => {
-            if (localLoading) {
-                console.warn('Navigation loading timed out after 5 seconds - forcing show of auth buttons')
-                setLocalLoading(false)
-            }
-        }, 5000) // 5 second timeout
-
-        return () => clearTimeout(timeoutId)
-    }, [localLoading])
-
-    // Emergency fallback - force loading to false after component mount
-    useEffect(() => {
-        const emergencyTimeoutId = setTimeout(() => {
-            console.warn('NavBar: Emergency timeout - forcing loading state to resolve')
-            setLocalLoading(false)
-        }, 2000) // 2 second emergency timeout
-
-        return () => clearTimeout(emergencyTimeoutId)
-    }, [])
-
-    // Sync local loading with auth context loading, but with fallback
-    useEffect(() => {
-        console.log('NavBar: Auth state -', {
-            loading,
-            localLoading,
-            hasAccount,
-            userExists: !!user
-        })
-        if (!loading) {
-            // Give a small delay to allow auth context to fully initialize
-            const delayId = setTimeout(() => {
-                console.log('NavBar: Setting local loading to false')
-                setLocalLoading(false)
-            }, 100)
-            return () => clearTimeout(delayId)
-        }
-    }, [loading, isAuthenticated, hasAccount, user, localLoading])
+        fetchProfile()
+    }, [user, supabase])
 
     // Close mobile menu when clicking outside
     useEffect(() => {
@@ -200,9 +88,14 @@ export function NavBar() {
         }
     }, [mobileMenuOpen])
 
-    async function handleSignOut() {
-        await authSignOut()
-    }
+    const handleSignOut = useCallback(async () => {
+        try {
+            console.log('NavBar: Initiating sign out...')
+            await authSignOut()
+        } catch (error) {
+            console.error('NavBar: Sign out error:', error)
+        }
+    }, [authSignOut])
 
     const isOnHealss = window.location.hostname.includes('healss.kryloss.com');
 
@@ -333,9 +226,9 @@ export function NavBar() {
 
                 {/* Auth Buttons / User Menu - Desktop */}
                 <div className="hidden md:flex items-center space-x-2">
-                    {(loading || localLoading) ? (
+                    {loading ? (
                         <div className="w-8 h-8 rounded-full bg-[#121922] animate-pulse"></div>
-                    ) : user || hasAccount ? (
+                    ) : isAuthenticated ? (
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -478,12 +371,12 @@ export function NavBar() {
 
                         {/* Mobile Auth Section */}
                         <div className="border-t border-[#1C2430] pt-4">
-                            {(loading || localLoading) ? (
+                            {loading ? (
                                 <div className="flex items-center space-x-3 px-2">
                                     <div className="w-8 h-8 rounded-full bg-[#121922] animate-pulse"></div>
                                     <div className="text-[#9CA9B7]">Loading...</div>
                                 </div>
-                            ) : user || hasAccount ? (
+                            ) : isAuthenticated ? (
                                 <div className="space-y-2">
                                     <div className="flex items-center space-x-3 px-2 py-2">
                                         <Avatar className="h-8 w-8">

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { getCurrentSubdomain } from '@/lib/subdomains'
@@ -8,293 +8,91 @@ import { getCurrentSubdomain } from '@/lib/subdomains'
 export default function AuthCallbackPage() {
     const router = useRouter()
     const [error, setError] = useState<string | null>(null)
-    const hasProcessed = useRef(false)
+    const [processing, setProcessing] = useState(true)
 
     useEffect(() => {
-        // Prevent duplicate processing
-        if (hasProcessed.current) {
-            return
-        }
-
-        // Set aggressive timeout to prevent infinite loading
-        const timeoutId = setTimeout(() => {
-            if (!hasProcessed.current) {
-                console.log('Auth callback timed out after 2 seconds - redirecting to homepage')
-                hasProcessed.current = true
-                // Ensure we redirect to the correct subdomain
-                const redirectTarget = getRedirectTarget()
-                router.push(redirectTarget)
-            }
-        }, 2000)
-
-        const getRedirectTarget = () => {
-            const subdomain = getCurrentSubdomain()
-            if (subdomain === 'healss') {
-                return '/workout'
-            }
-            // For main domain or other subdomains - redirect to dashboard after auth
-            return '/dashboard'
-        }
-
-        const handleAuthCallback = async () => {
-            hasProcessed.current = true
-
-            // Check if environment variables are set
-            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-            const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-            if (!supabaseUrl || !supabaseAnonKey) {
-                console.error('Missing Supabase environment variables')
-                clearTimeout(timeoutId)
-                setError('Configuration error: Missing Supabase credentials. Please check your environment variables.')
-                setTimeout(() => router.push('/login?message=Configuration error: Please contact support.'), 3000)
-                return
-            }
-
-            const supabase = createClient()
-
+        async function handleAuthCallback() {
             try {
-                console.log('Processing auth callback...')
-                console.log('URL:', window.location.href)
+                console.log('AuthCallback: Processing OAuth callback...')
+                setProcessing(true)
 
-                // Get the current URL and extract the hash fragment
+                const supabase = createClient()
+
+                // Get the current URL to check for OAuth errors
                 const url = new URL(window.location.href)
-                const hashParams = new URLSearchParams(url.hash.substring(1))
                 const searchParams = new URLSearchParams(url.search)
+                const hashParams = new URLSearchParams(url.hash.substring(1))
 
                 // Check for OAuth errors first
                 const error_param = searchParams.get('error') || hashParams.get('error')
                 const error_description = searchParams.get('error_description') || hashParams.get('error_description')
 
                 if (error_param) {
-                    console.error('OAuth error:', error_param, error_description)
-                    clearTimeout(timeoutId)
-
-                    // Provide more specific error messages
-                    let userFriendlyError = 'OAuth authentication failed'
-                    if (error_param === 'access_denied') {
-                        userFriendlyError = 'Access denied - please try signing in again'
-                    } else if (error_param === 'invalid_request') {
-                        userFriendlyError = 'Invalid request - please try again'
-                    } else if (error_description) {
-                        userFriendlyError = error_description
-                    }
-
-                    setError(`OAuth error: ${userFriendlyError}`)
-                    setTimeout(() => router.push(`/login?message=${encodeURIComponent(userFriendlyError)}`), 1000)
+                    console.error('AuthCallback: OAuth error:', error_param, error_description)
+                    setError(error_description || 'OAuth authentication failed')
+                    setTimeout(() => router.push('/login?message=Authentication failed'), 2000)
                     return
                 }
 
-                // For OAuth flows, we need to handle the hash fragment
-                if (url.hash) {
-                    console.log('Processing OAuth hash fragment...')
-
-                    try {
-                        // Let Supabase handle the OAuth callback automatically
-                        const { data, error } = await supabase.auth.getSession()
-
-                        if (error) {
-                            console.error('Session retrieval error:', error)
-                            clearTimeout(timeoutId)
-                            setError(`Session error: ${error.message}`)
-                            setTimeout(() => router.push('/login?message=Authentication failed'), 1000)
-                            return
-                        }
-
-                        if (data?.session?.user) {
-                            console.log('OAuth session established for user:', data.session.user.email || 'unknown')
-                            console.log('User metadata:', JSON.stringify(data.session.user.user_metadata, null, 2))
-                            console.log('User email verified:', data.session.user.email_confirmed_at)
-                            console.log('User app metadata:', JSON.stringify(data.session.user.app_metadata, null, 2))
-                            clearTimeout(timeoutId)
-
-                            // Ensure profile exists for Google OAuth users
-                            const user = data.session.user
-                            
-                            // Check if user has verified email
-                            if (!user.email_confirmed_at && !user.app_metadata?.provider) {
-                                console.warn('User email not confirmed, but continuing for OAuth')
-                            }
-
-                            try {
-                                // Check if profile exists
-                                const { data: existingProfile, error: profileFetchError } = await supabase
-                                    .from('profiles')
-                                    .select('*')
-                                    .eq('id', user.id)
-                                    .single()
-
-                                if (profileFetchError && profileFetchError.code !== 'PGRST116') {
-                                    console.error('Profile fetch error:', profileFetchError)
-                                }
-
-                                if (!existingProfile) {
-                                    console.log('Creating profile for OAuth user...')
-                                    console.log('User data for profile creation:', {
-                                        id: user.id,
-                                        email: user.email,
-                                        full_name: user.user_metadata?.full_name,
-                                        avatar_url: user.user_metadata?.avatar_url
-                                    })
-                                    
-                                    // Create profile for Google user
-                                    const { error: profileError } = await supabase
-                                        .from('profiles')
-                                        .insert([
-                                            {
-                                                id: user.id,
-                                                email: user.email!,
-                                                username: null, // Will prompt user to set username
-                                                full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
-                                                avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null
-                                            }
-                                        ])
-
-                                    if (profileError) {
-                                        console.error('Profile creation error:', profileError)
-                                        console.error('Profile creation error details:', {
-                                            message: profileError.message,
-                                            code: profileError.code,
-                                            details: profileError.details
-                                        })
-                                        // Continue anyway - profile might be created by trigger
-                                    } else {
-                                        console.log('Profile created successfully for OAuth user')
-                                    }
-                                } else {
-                                    console.log('Profile already exists for OAuth user')
-                                }
-                            } catch (profileErr) {
-                                console.error('Profile check/creation error:', profileErr)
-                                // Continue anyway - not critical for auth flow
-                            }
-
-                            // Redirect to correct subdomain
-                            const redirectTarget = getRedirectTarget()
-                            console.log('Redirecting to:', redirectTarget)
-                            setTimeout(() => router.push(redirectTarget), 500)
-                            return
-                        } else {
-                            console.log('No session found after OAuth callback')
-                            // Wait a bit more for the session to be established
-                            await new Promise(resolve => setTimeout(resolve, 1000))
-
-                            // Try again
-                            const { data: retryData, error: retryError } = await supabase.auth.getSession()
-
-                            if (retryError || !retryData?.session?.user) {
-                                console.error('Still no session after retry')
-                                clearTimeout(timeoutId)
-                                setError('Failed to establish session after OAuth callback')
-                                setTimeout(() => router.push('/login?message=Authentication failed'), 1000)
-                                return
-                            }
-
-                            // Ensure profile exists for Google OAuth users
-                            const retryUser = retryData.session.user
-                            try {
-                                // Check if profile exists
-                                const { data: existingProfile } = await supabase
-                                    .from('profiles')
-                                    .select('*')
-                                    .eq('id', retryUser.id)
-                                    .single()
-
-                                if (!existingProfile) {
-                                    console.log('Creating profile for OAuth user (retry)...')
-                                    // Create profile for Google user
-                                    await supabase
-                                        .from('profiles')
-                                        .insert([
-                                            {
-                                                id: retryUser.id,
-                                                email: retryUser.email!,
-                                                username: null,
-                                                full_name: retryUser.user_metadata?.full_name || null,
-                                                avatar_url: retryUser.user_metadata?.avatar_url || null
-                                            }
-                                        ])
-                                }
-                            } catch (profileErr) {
-                                console.error('Profile check/creation error (retry):', profileErr)
-                                // Continue anyway
-                            }
-
-                            // Redirect to correct subdomain
-                            clearTimeout(timeoutId)
-                            const redirectTarget = getRedirectTarget()
-                            setTimeout(() => router.push(redirectTarget), 500)
-                            return
-                        }
-                    } catch (oauthError) {
-                        console.error('OAuth processing error:', oauthError)
-                        clearTimeout(timeoutId)
-                        setError('OAuth processing failed')
-                        setTimeout(() => router.push('/login?message=Authentication failed'), 1000)
-                        return
-                    }
-                }
-
-                // For other flows (password reset, email confirmation)
+                // Handle different callback types
                 const type = searchParams.get('type')
-
+                
                 if (type === 'recovery') {
-                    console.log('Password recovery flow detected')
-                    clearTimeout(timeoutId)
-                    setTimeout(() => router.push('/auth/reset-password'), 500)
+                    console.log('AuthCallback: Password recovery flow')
+                    router.push('/auth/reset-password')
                     return
                 }
 
                 if (type === 'signup') {
-                    console.log('Email confirmation flow detected')
-                    clearTimeout(timeoutId)
+                    console.log('AuthCallback: Email confirmation flow')
                     const redirectTarget = getRedirectTarget()
-                    setTimeout(() => router.push(`${redirectTarget}?message=Email confirmed! Welcome to Kryloss.`), 500)
+                    router.push(`${redirectTarget}?message=Email confirmed! Welcome to Kryloss.`)
                     return
                 }
 
-                // Default: check for existing session and redirect
-                const { data: authData, error: authError } = await supabase.auth.getSession()
+                // For OAuth and default flows, let Supabase handle the session
+                console.log('AuthCallback: Checking session...')
+                const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
-                if (authError) {
-                    console.error('Auth session check error:', authError)
-                    clearTimeout(timeoutId)
-                    setError('Authentication check failed')
-                    setTimeout(() => router.push('/login?message=Authentication failed'), 1000)
+                if (sessionError) {
+                    console.error('AuthCallback: Session error:', sessionError)
+                    setError('Failed to establish session')
+                    setTimeout(() => router.push('/login?message=Authentication failed'), 2000)
                     return
                 }
 
-                if (authData?.session?.user) {
-                    const user = authData.session.user
-                    console.log('Session found for user:', user.email || 'unknown')
-                    clearTimeout(timeoutId)
-
-                    // Profile creation is now handled automatically by database trigger
-                    // No need for manual profile creation here
-
-                    // Redirect to correct subdomain
+                if (session?.user) {
+                    console.log('AuthCallback: Session established for:', session.user.email)
+                    
+                    // Redirect to appropriate page
                     const redirectTarget = getRedirectTarget()
-                    console.log('Redirecting to:', redirectTarget)
-                    setTimeout(() => router.push(redirectTarget), 500)
+                    console.log('AuthCallback: Redirecting to:', redirectTarget)
+                    router.push(redirectTarget)
                 } else {
-                    // No session found, redirect to login
-                    console.log('No session found in callback')
-                    clearTimeout(timeoutId)
+                    console.log('AuthCallback: No session found')
                     setError('Unable to establish session')
-                    setTimeout(() => router.push('/login?message=Authentication failed. Please try again.'), 1000)
+                    setTimeout(() => router.push('/login?message=Authentication failed'), 2000)
                 }
+
             } catch (err) {
-                console.error('Callback handling error:', err)
-                clearTimeout(timeoutId)
+                console.error('AuthCallback: Unexpected error:', err)
                 setError('Something went wrong during authentication')
-                setTimeout(() => router.push('/login?message=Authentication failed'), 1000)
+                setTimeout(() => router.push('/login?message=Authentication failed'), 2000)
+            } finally {
+                setProcessing(false)
             }
         }
 
-        handleAuthCallback()
+        // Helper function to determine redirect target
+        function getRedirectTarget() {
+            const subdomain = getCurrentSubdomain()
+            if (subdomain === 'healss') {
+                return '/workout'
+            }
+            return '/dashboard'
+        }
 
-        // Cleanup timeout on unmount
-        return () => clearTimeout(timeoutId)
+        handleAuthCallback()
     }, [router])
 
     if (error) {
@@ -310,19 +108,7 @@ export default function AuthCallbackPage() {
                         <h2 className="text-xl font-semibold text-[#FBF7FA] mb-2">Authentication Error</h2>
                         <p className="text-red-400 text-sm leading-relaxed">{error}</p>
                     </div>
-
-                    {error.includes('Configuration error') && (
-                        <div className="mb-6 p-4 bg-[#1E293B] border border-[#334155] rounded-lg">
-                            <h3 className="text-[#FBF7FA] font-medium mb-2">How to Fix This:</h3>
-                            <ol className="text-[#9CA9B7] text-sm space-y-1 list-decimal list-inside">
-                                <li>Create a <code className="bg-[#0F172A] px-1 rounded">.env.local</code> file in your project root</li>
-                                <li>Add your Supabase credentials from the <code className="bg-[#0F172A] px-1 rounded">env.example</code> file</li>
-                                <li>Restart your development server</li>
-                            </ol>
-                        </div>
-                    )}
-
-                    <p className="text-[#9CA9B7] text-sm">Redirecting...</p>
+                    <p className="text-[#9CA9B7] text-sm">Redirecting to login...</p>
                 </div>
             </div>
         )
@@ -332,7 +118,9 @@ export default function AuthCallbackPage() {
         <div className="min-h-screen bg-[#000000] flex items-center justify-center">
             <div className="text-center">
                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#4AA7FF]"></div>
-                <p className="text-[#9CA9B7] mt-4">Completing sign in...</p>
+                <p className="text-[#9CA9B7] mt-4">
+                    {processing ? 'Completing sign in...' : 'Redirecting...'}
+                </p>
             </div>
         </div>
     )
