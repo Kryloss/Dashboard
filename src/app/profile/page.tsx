@@ -13,12 +13,38 @@ export default async function ProfilePage({
 }) {
     const supabase = await createClient()
 
-    // Server-side authentication check
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
+    // Server-side authentication check with multiple methods
+    let user = null
+    let authMethod = 'none'
+
+    try {
+        // Method 1: Check session first
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user) {
+            user = session.user
+            authMethod = 'session'
+        }
+    } catch (sessionError) {
+        console.error('Profile session check failed:', sessionError)
+    }
+
+    // Method 2: Fallback to getUser if session failed
+    if (!user) {
+        try {
+            const { data: { user: tokenUser } } = await supabase.auth.getUser()
+            if (tokenUser) {
+                user = tokenUser
+                authMethod = 'token'
+            }
+        } catch (userError) {
+            console.error('Profile user check failed:', userError)
+        }
+    }
+
+    console.log(`Profile auth check: ${authMethod}`, user?.email || 'No user')
 
     if (!user) {
+        console.log('Profile: No user found, redirecting to login')
         redirect('/login')
     }
 

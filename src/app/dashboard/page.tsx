@@ -8,11 +8,38 @@ import Link from 'next/link'
 export default async function DashboardPage() {
     const supabase = await createClient()
 
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
+    // Try multiple authentication methods to be more robust
+    let user = null
+    let authMethod = 'none'
+
+    try {
+        // Method 1: Check session first
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user) {
+            user = session.user
+            authMethod = 'session'
+        }
+    } catch (sessionError) {
+        console.error('Dashboard session check failed:', sessionError)
+    }
+
+    // Method 2: Fallback to getUser if session failed
+    if (!user) {
+        try {
+            const { data: { user: tokenUser } } = await supabase.auth.getUser()
+            if (tokenUser) {
+                user = tokenUser
+                authMethod = 'token'
+            }
+        } catch (userError) {
+            console.error('Dashboard user check failed:', userError)
+        }
+    }
+
+    console.log(`Dashboard auth check: ${authMethod}`, user?.email || 'No user')
 
     if (!user) {
+        console.log('Dashboard: No user found, redirecting to login')
         redirect('/login')
     }
 

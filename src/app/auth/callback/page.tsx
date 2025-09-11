@@ -103,20 +103,40 @@ export default function AuthCallbackPage() {
 
                         if (data?.session?.user) {
                             console.log('OAuth session established for user:', data.session.user.email || 'unknown')
+                            console.log('User metadata:', JSON.stringify(data.session.user.user_metadata, null, 2))
+                            console.log('User email verified:', data.session.user.email_confirmed_at)
+                            console.log('User app metadata:', JSON.stringify(data.session.user.app_metadata, null, 2))
                             clearTimeout(timeoutId)
 
                             // Ensure profile exists for Google OAuth users
                             const user = data.session.user
+                            
+                            // Check if user has verified email
+                            if (!user.email_confirmed_at && !user.app_metadata?.provider) {
+                                console.warn('User email not confirmed, but continuing for OAuth')
+                            }
+
                             try {
                                 // Check if profile exists
-                                const { data: existingProfile } = await supabase
+                                const { data: existingProfile, error: profileFetchError } = await supabase
                                     .from('profiles')
                                     .select('*')
                                     .eq('id', user.id)
                                     .single()
 
+                                if (profileFetchError && profileFetchError.code !== 'PGRST116') {
+                                    console.error('Profile fetch error:', profileFetchError)
+                                }
+
                                 if (!existingProfile) {
                                     console.log('Creating profile for OAuth user...')
+                                    console.log('User data for profile creation:', {
+                                        id: user.id,
+                                        email: user.email,
+                                        full_name: user.user_metadata?.full_name,
+                                        avatar_url: user.user_metadata?.avatar_url
+                                    })
+                                    
                                     // Create profile for Google user
                                     const { error: profileError } = await supabase
                                         .from('profiles')
@@ -125,17 +145,24 @@ export default function AuthCallbackPage() {
                                                 id: user.id,
                                                 email: user.email!,
                                                 username: null, // Will prompt user to set username
-                                                full_name: user.user_metadata?.full_name || null,
-                                                avatar_url: user.user_metadata?.avatar_url || null
+                                                full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+                                                avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null
                                             }
                                         ])
 
                                     if (profileError) {
                                         console.error('Profile creation error:', profileError)
+                                        console.error('Profile creation error details:', {
+                                            message: profileError.message,
+                                            code: profileError.code,
+                                            details: profileError.details
+                                        })
                                         // Continue anyway - profile might be created by trigger
                                     } else {
                                         console.log('Profile created successfully for OAuth user')
                                     }
+                                } else {
+                                    console.log('Profile already exists for OAuth user')
                                 }
                             } catch (profileErr) {
                                 console.error('Profile check/creation error:', profileErr)

@@ -83,9 +83,11 @@ function LoginForm() {
                 provider: 'google',
                 options: {
                     redirectTo: callbackUrl,
+                    scopes: 'openid email profile',
                     queryParams: {
                         access_type: 'offline',
                         prompt: 'consent',
+                        include_granted_scopes: 'true'
                     }
                 },
             })
