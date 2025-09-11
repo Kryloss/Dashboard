@@ -32,8 +32,8 @@ export default function AuthCallbackPage() {
             if (subdomain === 'healss') {
                 return '/workout'
             }
-            // For main domain or other subdomains
-            return '/'
+            // For main domain or other subdomains - redirect to dashboard after auth
+            return '/dashboard'
         }
 
         const handleAuthCallback = async () => {
@@ -105,8 +105,42 @@ export default function AuthCallbackPage() {
                             console.log('OAuth session established for user:', data.session.user.email || 'unknown')
                             clearTimeout(timeoutId)
 
-                            // Profile creation is now handled automatically by database trigger
-                            // No need for manual profile creation here
+                            // Ensure profile exists for Google OAuth users
+                            const user = data.session.user
+                            try {
+                                // Check if profile exists
+                                const { data: existingProfile } = await supabase
+                                    .from('profiles')
+                                    .select('*')
+                                    .eq('id', user.id)
+                                    .single()
+
+                                if (!existingProfile) {
+                                    console.log('Creating profile for OAuth user...')
+                                    // Create profile for Google user
+                                    const { error: profileError } = await supabase
+                                        .from('profiles')
+                                        .insert([
+                                            {
+                                                id: user.id,
+                                                email: user.email!,
+                                                username: null, // Will prompt user to set username
+                                                full_name: user.user_metadata?.full_name || null,
+                                                avatar_url: user.user_metadata?.avatar_url || null
+                                            }
+                                        ])
+
+                                    if (profileError) {
+                                        console.error('Profile creation error:', profileError)
+                                        // Continue anyway - profile might be created by trigger
+                                    } else {
+                                        console.log('Profile created successfully for OAuth user')
+                                    }
+                                }
+                            } catch (profileErr) {
+                                console.error('Profile check/creation error:', profileErr)
+                                // Continue anyway - not critical for auth flow
+                            }
 
                             // Redirect to correct subdomain
                             const redirectTarget = getRedirectTarget()
@@ -129,8 +163,35 @@ export default function AuthCallbackPage() {
                                 return
                             }
 
-                            // Profile creation is now handled automatically by database trigger
-                            // No need for manual profile creation here
+                            // Ensure profile exists for Google OAuth users
+                            const retryUser = retryData.session.user
+                            try {
+                                // Check if profile exists
+                                const { data: existingProfile } = await supabase
+                                    .from('profiles')
+                                    .select('*')
+                                    .eq('id', retryUser.id)
+                                    .single()
+
+                                if (!existingProfile) {
+                                    console.log('Creating profile for OAuth user (retry)...')
+                                    // Create profile for Google user
+                                    await supabase
+                                        .from('profiles')
+                                        .insert([
+                                            {
+                                                id: retryUser.id,
+                                                email: retryUser.email!,
+                                                username: null,
+                                                full_name: retryUser.user_metadata?.full_name || null,
+                                                avatar_url: retryUser.user_metadata?.avatar_url || null
+                                            }
+                                        ])
+                                }
+                            } catch (profileErr) {
+                                console.error('Profile check/creation error (retry):', profileErr)
+                                // Continue anyway
+                            }
 
                             // Redirect to correct subdomain
                             clearTimeout(timeoutId)

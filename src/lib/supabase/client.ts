@@ -50,7 +50,7 @@ export function createClient() {
             },
             // Enable cross-subdomain authentication
             cookieOptions: {
-                domain: '.kryloss.com', // Allow cookies to be shared across all subdomains
+                domain: process.env.NODE_ENV === 'production' ? '.kryloss.com' : undefined, // Allow cookies to be shared across all subdomains in production
                 path: '/',
                 sameSite: 'lax',
                 secure: process.env.NODE_ENV === 'production'

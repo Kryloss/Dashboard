@@ -75,6 +75,8 @@ export async function signIn(formData: FormData) {
     }
 
     revalidatePath('/')
+    revalidatePath('/dashboard')
+    revalidatePath('/profile')
     redirect('/dashboard')
 }
 

@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils"
 import { useAuthContext } from "@/lib/contexts/AuthContext"
 import { createClient } from "@/lib/supabase/client"
 import { useState, useEffect, useRef } from "react"
+import { usePathname } from 'next/navigation'
 import type { Profile } from "@/lib/types/database.types"
 
 export function NavBar() {
@@ -35,6 +36,7 @@ export function NavBar() {
     const [hasAccount, setHasAccount] = useState(false)
     const [dynamicSubdomains, setDynamicSubdomains] = useState(subdomains)
     const mobileMenuRef = useRef<HTMLDivElement>(null)
+    const pathname = usePathname()
     const supabase = createClient()
 
     // Update subdomains on client side
@@ -45,39 +47,40 @@ export function NavBar() {
     useEffect(() => {
         async function checkMultipleAuthMethods() {
             let accountSignedIn = false
+            let currentUser = user
 
             console.log('NavBar: Starting auth check with user:', user)
 
-            // Method 1: Check if user exists from AuthContext
-            if (user) {
-                console.log('NavBar: Auth method 1 - User from context:', user.email)
-                accountSignedIn = true
+            // Method 1: Check session directly from Supabase (most reliable)
+            try {
+                const { data: { session } } = await supabase.auth.getSession()
+                if (session?.user) {
+                    console.log('NavBar: Auth method 1 - Session user:', session.user.email)
+                    accountSignedIn = true
+                    currentUser = session.user // Use session user as source of truth
+                }
+            } catch (err) {
+                console.log('NavBar: Auth method 1 failed:', err)
             }
 
-            // Method 2: Check session directly from Supabase
+            // Method 2: Check for stored auth token (fallback)
             if (!accountSignedIn) {
                 try {
-                    const { data: { session } } = await supabase.auth.getSession()
-                    if (session?.user) {
-                        console.log('NavBar: Auth method 2 - Session user:', session.user.email)
+                    const { data: { user: tokenUser } } = await supabase.auth.getUser()
+                    if (tokenUser) {
+                        console.log('NavBar: Auth method 2 - Token user:', tokenUser.email)
                         accountSignedIn = true
+                        currentUser = tokenUser
                     }
                 } catch (err) {
                     console.log('NavBar: Auth method 2 failed:', err)
                 }
             }
 
-            // Method 3: Check for stored auth token
-            if (!accountSignedIn) {
-                try {
-                    const { data: { user: tokenUser } } = await supabase.auth.getUser()
-                    if (tokenUser) {
-                        console.log('NavBar: Auth method 3 - Token user:', tokenUser.email)
-                        accountSignedIn = true
-                    }
-                } catch (err) {
-                    console.log('NavBar: Auth method 3 failed:', err)
-                }
+            // Method 3: Check if user exists from AuthContext (secondary)
+            if (!accountSignedIn && user) {
+                console.log('NavBar: Auth method 3 - User from context:', user.email)
+                accountSignedIn = true
             }
 
             // Method 4: Check Account Information - if email is present
@@ -87,12 +90,12 @@ export function NavBar() {
             }
 
             // If any method confirms sign-in, fetch profile for display
-            if (accountSignedIn && user) {
+            if (accountSignedIn && currentUser) {
                 try {
                     const { data: profile, error } = await supabase
                         .from('profiles')
                         .select('*')
-                        .eq('id', user.id)
+                        .eq('id', currentUser.id)
                         .single()
 
                     if (error && error.code !== 'PGRST116') {
@@ -128,7 +131,20 @@ export function NavBar() {
         }
 
         checkMultipleAuthMethods()
-    }, [user, supabase, profile])
+    }, [user, supabase, profile, pathname]) // Add pathname to refresh on route changes
+
+    // Force refresh auth state on protected routes
+    useEffect(() => {
+        const protectedRoutes = ['/dashboard', '/profile']
+        if (protectedRoutes.some(route => pathname.startsWith(route))) {
+            console.log('NavBar: On protected route, forcing auth refresh')
+            // Small delay to ensure any route-based auth changes are processed
+            const refreshTimeout = setTimeout(() => {
+                setLocalLoading(true) // Trigger re-check
+            }, 100)
+            return () => clearTimeout(refreshTimeout)
+        }
+    }, [pathname])
 
     // Add a timeout to prevent infinite loading
     useEffect(() => {
