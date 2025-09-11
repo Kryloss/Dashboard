@@ -1,20 +1,33 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { triggerWelcomeEmail } from '@/lib/actions/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
 import { useAuthContext } from '@/lib/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
+import { AuthErrorBoundary } from '@/components/auth-error-boundary'
 import type { Profile } from '@/lib/types/database.types'
 
-export default function DashboardPage() {
+function DashboardContent() {
     const { user, loading, signOut } = useAuthContext()
     const [profile, setProfile] = useState<Profile | null>(null)
     const [profileLoading, setProfileLoading] = useState(true)
+    const router = useRouter()
     
     const timestamp = new Date().toISOString()
+    
+    // ALL HOOKS MUST BE AT THE TOP - BEFORE ANY CONDITIONAL RETURNS
+    
+    // If not authenticated after loading, redirect to login
+    useEffect(() => {
+        if (!loading && !user) {
+            console.log('Dashboard: User not authenticated, redirecting to login')
+            router.replace('/login?message=Please sign in to access your dashboard')
+        }
+    }, [loading, user, router])
     
     // Fetch profile data when user is available
     useEffect(() => {
@@ -59,42 +72,35 @@ export default function DashboardPage() {
         }
     }
 
-    // Simple loading state
-    if (loading) {
+    // Show loading state while auth or profile is loading
+    if (loading || profileLoading) {
         return (
             <div className="min-h-screen bg-[#0B0C0D] pt-6">
                 <div className="container mx-auto max-w-7xl px-6">
                     <div className="flex items-center justify-center py-12">
                         <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#4AA7FF]"></div>
-                        <p className="text-[#9CA9B7] ml-4">Loading dashboard...</p>
+                        <p className="text-[#9CA9B7] ml-4">
+                            {loading ? 'Loading dashboard...' : 'Loading profile...'}
+                        </p>
                     </div>
                 </div>
             </div>
         )
     }
 
-    // If not authenticated after loading, let AuthContext/middleware handle redirect
-    // Don't interfere with the natural auth flow
+    // If user is not authenticated after loading, don't render anything
+    // The redirect effect above will handle the navigation
+    if (!user) {
+        return null
+    }
 
-    // Show loading state while profile is being fetched
-    if (profileLoading) {
+    // Add error handling for rendering
+    try {
         return (
             <div className="min-h-screen bg-[#0B0C0D] pt-6">
                 <div className="container mx-auto max-w-7xl px-6">
-                    <div className="flex items-center justify-center py-12">
-                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#4AA7FF]"></div>
-                        <p className="text-[#9CA9B7] ml-4">Loading profile...</p>
-                    </div>
-                </div>
-            </div>
-        )
-    }
-
-    return (
-        <div className="min-h-screen bg-[#0B0C0D] pt-6">
-            <div className="container mx-auto max-w-7xl px-6">
-                {/* Username Prompt for Google OAuth users */}
-                {profile && !profile.username && (
+                    {/* Username Prompt for Google OAuth users */}
+                    {profile && !profile.username && (
                     <div className="mb-6">
                         <Card className="bg-[rgba(37,122,218,0.10)] border-[rgba(37,122,218,0.35)] rounded-2xl">
                             <CardContent className="p-6">
@@ -320,5 +326,33 @@ export default function DashboardPage() {
                 </div>
             </div>
         </div>
+    )} catch (error) {
+        // If any error occurs during rendering, redirect to login
+        console.error('Dashboard: Rendering error:', error)
+        router.replace('/login?message=An error occurred. Please sign in again.')
+        return null
+    }
+}
+
+export default function DashboardPage() {
+    return (
+        <AuthErrorBoundary 
+            fallback={
+                <div className="min-h-screen bg-[#0B0C0D] flex items-center justify-center">
+                    <div className="text-center space-y-4">
+                        <div className="text-red-400 text-xl font-semibold">Dashboard Error</div>
+                        <div className="text-[#9CA9B7]">There was an error loading the dashboard.</div>
+                        <Button 
+                            onClick={() => window.location.href = '/login'} 
+                            className="bg-[#4AA7FF] hover:bg-[#90C9FF]"
+                        >
+                            Go to Login
+                        </Button>
+                    </div>
+                </div>
+            }
+        >
+            <DashboardContent />
+        </AuthErrorBoundary>
     )
 }

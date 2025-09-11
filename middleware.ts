@@ -85,7 +85,18 @@ export async function middleware(request: NextRequest) {
         }
     }
 
-    // For main domain or unknown subdomains, continue normally
+    // For main domain, check authentication for protected routes
+    const { data: { session } } = await supabase.auth.getSession()
+    const protectedMainRoutes = ['/dashboard', '/profile']
+    const isProtectedMainRoute = protectedMainRoutes.some(route => url.pathname.startsWith(route))
+
+    if (!session && isProtectedMainRoute) {
+        // Redirect to login page for main domain protected routes
+        const loginUrl = new URL('/login', request.url)
+        loginUrl.searchParams.set('message', 'Please sign in to access this page')
+        return NextResponse.redirect(loginUrl)
+    }
+
     return supabaseResponse
 }
 
