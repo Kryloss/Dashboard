@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -47,10 +48,10 @@ export default function ProgressImageUpload({ onUploadSuccess }: ProgressImageUp
                 }
 
                 setError(null)
-                
+
                 // Resize and compress image for progress photos
                 const compressedBlob = await resizeProgressImage(file, 1200, 1600, 0.8)
-                
+
                 // Create a new file with the compressed blob
                 const compressedFile = new File(
                     [compressedBlob],
@@ -72,7 +73,7 @@ export default function ProgressImageUpload({ onUploadSuccess }: ProgressImageUp
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        
+
         if (!selectedFile) {
             setError('Please select an image')
             return
@@ -149,14 +150,14 @@ export default function ProgressImageUpload({ onUploadSuccess }: ProgressImageUp
     return (
         <Dialog open={isOpen} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
-                <Button 
+                <Button
                     className="rounded-full bg-gradient-to-br from-[#114EB2] via-[#257ADA] to-[#4AA7FF] text-white shadow-[0_0_60px_rgba(37,122,218,0.35)] hover:from-[#257ADA] hover:to-[#90C9FF] hover:shadow-[0_0_72px_rgba(74,167,255,0.35)] hover:-translate-y-0.5 focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#121922] active:brightness-95 transition-all"
                 >
                     <Plus className="w-4 h-4 mr-2" />
                     Add Progress Photo
                 </Button>
             </DialogTrigger>
-            
+
             <DialogContent className="bg-[#121922] border-[#2A3442] shadow-[0_8px_24px_rgba(0,0,0,0.40)] rounded-2xl max-w-lg">
                 <div
                     className="absolute top-0 left-0 right-0 h-[1px] rounded-t-2xl"
@@ -164,7 +165,7 @@ export default function ProgressImageUpload({ onUploadSuccess }: ProgressImageUp
                         background: "linear-gradient(180deg, rgba(37,122,218,0.35) 0%, rgba(0,0,0,0) 100%)"
                     }}
                 />
-                
+
                 <DialogHeader>
                     <DialogTitle className="text-[#FBF7FA] text-xl font-bold">
                         Add Progress Photo
@@ -204,9 +205,11 @@ export default function ProgressImageUpload({ onUploadSuccess }: ProgressImageUp
                         ) : (
                             <div className="space-y-4">
                                 <div className="relative">
-                                    <img
+                                    <Image
                                         src={previewUrl || ''}
                                         alt="Preview"
+                                        width={400}
+                                        height={192}
                                         className="w-full h-48 object-cover rounded-xl"
                                     />
                                     <Button

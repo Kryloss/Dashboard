@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -122,7 +123,7 @@ export default function ProgressGallery({ onDataChange }: ProgressGalleryProps) 
 
     const handleUpdateImage = async (e: React.FormEvent) => {
         e.preventDefault()
-        
+
         if (!selectedImage) return
 
         try {
@@ -352,12 +353,14 @@ export default function ProgressGallery({ onDataChange }: ProgressGalleryProps) 
                                     <CarouselItem key={image.id} className="pl-4 md:basis-1/2 lg:basis-1/3">
                                         <div className="relative group">
                                             <div className="relative overflow-hidden rounded-xl bg-[#0F101A] border border-[#2A3442]">
-                                                <img
+                                                <Image
                                                     src={image.image_url}
                                                     alt={image.title || 'Progress photo'}
+                                                    width={400}
+                                                    height={256}
                                                     className="w-full h-64 object-cover transition-transform group-hover:scale-105"
                                                 />
-                                                
+
                                                 {/* Overlay with actions */}
                                                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
                                                     <Button

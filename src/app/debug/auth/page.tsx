@@ -1,25 +1,43 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import type { User } from '@supabase/supabase-js'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { createMissingProfile } from '@/lib/actions/fix-profile'
 
 export default function AuthDebugPage() {
-    const [authState, setAuthState] = useState<any>(null)
+    const [authState, setAuthState] = useState<{
+        session: {
+            exists: boolean;
+            user: User | null;
+            error: Error | null;
+        };
+        user: {
+            exists: boolean;
+            data: User | null;
+            error: Error | null;
+        };
+        profile: {
+            exists: boolean;
+            data: Record<string, unknown> | null;
+            error: Error | null;
+        };
+        timestamp: string;
+    } | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const supabase = createClient()
 
-    const checkAuthState = async () => {
+    const checkAuthState = useCallback(async () => {
         setLoading(true)
         setError(null)
 
         try {
             // Get session
             const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-            
+
             // Get user
             const { data: { user }, error: userError } = await supabase.auth.getUser()
 
@@ -59,11 +77,11 @@ export default function AuthDebugPage() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [supabase])
 
     useEffect(() => {
         checkAuthState()
-    }, [])
+    }, [checkAuthState])
 
     const handleRefresh = () => {
         checkAuthState()
@@ -176,11 +194,11 @@ export default function AuthDebugPage() {
                                     <div>✅ Email verified: {authState.user.data?.email_confirmed_at ? 'Yes' : 'No'}</div>
                                     <div>✅ Provider: {authState.user.data?.app_metadata?.provider || 'None'}</div>
                                 </div>
-                                
+
                                 {authState.session.exists && authState.user.exists && !authState.profile.exists && (
                                     <div className="text-yellow-400 mt-4">
                                         ⚠️ Issue: User has valid session but no profile in database. This will cause redirects to login page.
-                                        <Button 
+                                        <Button
                                             onClick={handleCreateProfile}
                                             className="ml-4 bg-yellow-600 hover:bg-yellow-700 text-white"
                                             size="sm"
@@ -189,7 +207,7 @@ export default function AuthDebugPage() {
                                         </Button>
                                     </div>
                                 )}
-                                
+
                                 {!authState.session.exists && authState.user.exists && (
                                     <div className="text-yellow-400 mt-4">
                                         ⚠️ Issue: User token exists but session is invalid. This can cause inconsistent auth state.
