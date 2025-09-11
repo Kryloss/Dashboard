@@ -95,13 +95,19 @@ export async function uploadProgressImage(formData: FormData) {
 
         if (dbError) {
             console.error('Database error:', dbError)
+            console.error('Error details:', {
+                message: dbError.message,
+                code: dbError.code,
+                details: dbError.details,
+                hint: dbError.hint
+            })
             
             // Clean up uploaded file if database insert fails
             await supabase.storage
                 .from('progress-images')
                 .remove([fileName])
             
-            return { error: 'Failed to save progress image record' }
+            return { error: `Failed to save progress image record: ${dbError.message}` }
         }
 
         revalidatePath('/profile')
@@ -158,7 +164,13 @@ export async function getProgressImages(filters?: {
 
         if (error) {
             console.error('Database error:', error)
-            return { error: 'Failed to fetch progress images' }
+            console.error('Error details:', {
+                message: error.message,
+                code: error.code,
+                details: error.details,
+                hint: error.hint
+            })
+            return { error: `Failed to fetch progress images: ${error.message}` }
         }
 
         return { progressImages }
