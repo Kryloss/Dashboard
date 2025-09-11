@@ -4,6 +4,59 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { getCurrentSubdomain } from '@/lib/subdomains'
+import type { User, SupabaseClient } from '@supabase/supabase-js'
+
+// Helper function to ensure profile exists for OAuth users
+async function ensureProfileExists(supabase: SupabaseClient, user: User) {
+    try {
+        console.log('AuthCallback: Checking if profile exists for user:', user.id)
+        
+        // Check if profile already exists
+        const { data: existingProfile, error: fetchError } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('id', user.id)
+            .single()
+
+        if (fetchError && fetchError.code !== 'PGRST116') {
+            console.error('AuthCallback: Error checking profile:', fetchError)
+            return
+        }
+
+        if (!existingProfile) {
+            console.log('AuthCallback: Creating profile for OAuth user:', user.email)
+            
+            // Extract name from OAuth metadata
+            const fullName = user.user_metadata?.full_name || 
+                           user.user_metadata?.name || 
+                           user.user_metadata?.display_name ||
+                           null
+
+            // Create profile for OAuth user
+            const { error: insertError } = await supabase
+                .from('profiles')
+                .insert([
+                    {
+                        id: user.id,
+                        email: user.email!,
+                        full_name: fullName,
+                        username: null, // Will prompt user to set username
+                        avatar_url: user.user_metadata?.avatar_url || null
+                    }
+                ])
+
+            if (insertError) {
+                console.error('AuthCallback: Failed to create profile:', insertError)
+            } else {
+                console.log('AuthCallback: Profile created successfully for:', user.email)
+            }
+        } else {
+            console.log('AuthCallback: Profile already exists for:', user.email)
+        }
+    } catch (err) {
+        console.error('AuthCallback: Unexpected error ensuring profile:', err)
+    }
+}
 
 export default function AuthCallbackPage() {
     const router = useRouter()
@@ -63,6 +116,12 @@ export default function AuthCallbackPage() {
 
                 if (session?.user) {
                     console.log('AuthCallback: Session established for:', session.user.email)
+                    
+                    // For OAuth users, ensure profile exists
+                    if (session.user.app_metadata?.provider && session.user.app_metadata.provider !== 'email') {
+                        console.log('AuthCallback: OAuth user detected, checking profile...')
+                        await ensureProfileExists(supabase, session.user)
+                    }
                     
                     // Redirect to appropriate page
                     const redirectTarget = getRedirectTarget()

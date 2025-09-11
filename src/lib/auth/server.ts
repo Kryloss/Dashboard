@@ -22,13 +22,41 @@ export interface ServerAuthError {
 export async function getServerAuth(): Promise<{ user: User | null; error?: string }> {
     try {
         const supabase = await createClient()
-        const { data: { user }, error } = await supabase.auth.getUser()
-        
-        if (error) {
-            console.error('Server auth check failed:', error)
-            return { user: null, error: error.message }
+        let user: User | null = null
+        let authMethod = 'none'
+
+        // Method 1: Try to get session first (better for OAuth)
+        try {
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+            if (session?.user && !sessionError) {
+                user = session.user
+                authMethod = 'session'
+                console.log(`Server auth: Found user via session - ${user.email}`)
+            }
+        } catch {
+            console.log('Server auth: Session check failed, trying getUser')
         }
-        
+
+        // Method 2: Fallback to getUser if session failed
+        if (!user) {
+            try {
+                const { data: { user: tokenUser }, error: userError } = await supabase.auth.getUser()
+                if (tokenUser && !userError) {
+                    user = tokenUser
+                    authMethod = 'token'
+                    console.log(`Server auth: Found user via token - ${user.email}`)
+                }
+            } catch {
+                console.log('Server auth: Token check also failed')
+            }
+        }
+
+        if (!user) {
+            console.log('Server auth: No user found via any method')
+            return { user: null, error: 'Not authenticated' }
+        }
+
+        console.log(`Server auth successful: ${authMethod} for ${user.email}`)
         return { user, error: undefined }
     } catch (err) {
         console.error('Server auth check unexpected error:', err)
