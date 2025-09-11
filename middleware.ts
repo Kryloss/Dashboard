@@ -35,7 +35,7 @@ export async function middleware(request: NextRequest) {
                         // Configure cookies for cross-subdomain authentication
                         const enhancedOptions = {
                             ...options,
-                            domain: '.kryloss.com', // Allow cookies to be shared across all subdomains
+                            domain: process.env.NODE_ENV === 'production' ? '.kryloss.com' : undefined, // Allow cookies to be shared across all subdomains in production
                             path: '/',
                             sameSite: 'lax' as const,
                             secure: process.env.NODE_ENV === 'production',
