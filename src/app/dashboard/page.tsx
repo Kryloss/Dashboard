@@ -59,8 +59,8 @@ export default function DashboardPage() {
         }
     }
 
-    // Show loading state
-    if (loading || profileLoading) {
+    // Show loading state while auth is initializing
+    if (loading) {
         return (
             <div className="min-h-screen bg-[#0B0C0D] pt-6">
                 <div className="container mx-auto max-w-7xl px-6">
@@ -73,14 +73,20 @@ export default function DashboardPage() {
         )
     }
 
-    // Show error if not authenticated
-    if (!isAuthenticated || !user) {
+    // Redirect to login if not authenticated after loading completes
+    if (!loading && !isAuthenticated) {
+        window.location.href = '/login?message=Please sign in to access the dashboard'
+        return null
+    }
+
+    // Show loading state while profile is being fetched
+    if (profileLoading) {
         return (
             <div className="min-h-screen bg-[#0B0C0D] pt-6">
                 <div className="container mx-auto max-w-7xl px-6">
-                    <div className="text-center py-12">
-                        <p className="text-[#9CA9B7]">Please log in to access your dashboard.</p>
-                        <Link href="/login" className="text-[#4AA7FF] hover:underline">Go to login</Link>
+                    <div className="flex items-center justify-center py-12">
+                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#4AA7FF]"></div>
+                        <p className="text-[#9CA9B7] ml-4">Loading profile...</p>
                     </div>
                 </div>
             </div>
@@ -120,8 +126,8 @@ export default function DashboardPage() {
                 <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
                     <h3 className="text-yellow-400 font-semibold mb-2">Debug Info (Page Rendered: {timestamp})</h3>
                     <div className="text-sm text-yellow-200 space-y-1">
-                        <div>User ID: {user.id}</div>
-                        <div>Email: {user.email}</div>
+                        <div>User ID: {user!.id}</div>
+                        <div>Email: {user!.email}</div>
                         <div>Profile Email: {profile?.email || 'Not found'}</div>
                         <div>Profile Username: {profile?.username || 'Not set'}</div>
                         <div>Profile Full Name: {profile?.full_name || 'Not set'}</div>
@@ -278,7 +284,7 @@ export default function DashboardPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <p className="text-sm text-[#556274] mb-1">Email</p>
-                                <p className="text-[#FBF7FA] font-medium">{user.email}</p>
+                                <p className="text-[#FBF7FA] font-medium">{user!.email}</p>
                             </div>
                             <div>
                                 <p className="text-sm text-[#556274] mb-1">Username</p>
@@ -294,7 +300,7 @@ export default function DashboardPage() {
                             <div>
                                 <p className="text-sm text-[#556274] mb-1">Member Since</p>
                                 <p className="text-[#FBF7FA] font-medium">
-                                    {new Date(user.created_at).toLocaleDateString('en-US', {
+                                    {new Date(user!.created_at).toLocaleDateString('en-US', {
                                         month: 'long',
                                         day: 'numeric',
                                         year: 'numeric'

@@ -1,25 +1,90 @@
+'use client'
+
+import { useState, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import ProfileForm from '@/components/profile-form'
 import ProgressPhotosTab from '@/components/progress-photos-tab'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { getServerAuthWithProfile } from '@/lib/auth/server'
+import { useAuthContext } from '@/lib/contexts/AuthContext'
+import { createClient } from '@/lib/supabase/client'
+import type { Profile } from '@/lib/types/database.types'
 
-// Keep dynamic for now but allow some caching for performance
-export const dynamic = 'force-dynamic'
-
-export default async function ProfilePage({
-    searchParams,
-}: {
-    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
-}) {
+function ProfilePageContent() {
+    const { user, loading, isAuthenticated } = useAuthContext()
+    const [profile, setProfile] = useState<Profile | null>(null)
+    const [profileLoading, setProfileLoading] = useState(true)
+    const searchParams = useSearchParams()
+    const message = searchParams.get('message')
+    
     const timestamp = new Date().toISOString()
-    console.log(`[${timestamp}] Profile: Starting auth check`)
     
-    // Single, reliable auth check with profile
-    const { user, profile } = await getServerAuthWithProfile()
+    // Fetch profile data when user is available
+    useEffect(() => {
+        if (!user?.id) {
+            setProfile(null)
+            setProfileLoading(false)
+            return
+        }
+
+        async function fetchProfile() {
+            try {
+                console.log(`[${timestamp}] Profile: Fetching profile for ${user!.email}`)
+                const supabase = createClient()
+                const { data: profileData, error } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', user!.id)
+                    .single()
+
+                if (error && error.code !== 'PGRST116') {
+                    console.error('Profile: Profile fetch error:', error)
+                } else {
+                    setProfile(profileData || null)
+                    console.log(`[${timestamp}] Profile: Profile loaded for ${user!.email}`)
+                }
+            } catch (err) {
+                console.error('Profile: Profile fetch failed:', err)
+            } finally {
+                setProfileLoading(false)
+            }
+        }
+
+        fetchProfile()
+    }, [user])
     
-    console.log(`[${timestamp}] Profile: Auth completed for ${user.email}`)
-    
-    const finalProfile = profile
+    // Show loading state while auth is initializing
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-[#0B0C0D] pt-6">
+                <div className="container mx-auto max-w-6xl px-6">
+                    <div className="flex items-center justify-center py-12">
+                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#4AA7FF]"></div>
+                        <p className="text-[#9CA9B7] ml-4">Loading profile...</p>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    // Redirect to login if not authenticated after loading completes
+    if (!loading && !isAuthenticated) {
+        window.location.href = '/login?message=Please sign in to access your profile'
+        return null
+    }
+
+    // Show loading state while profile is being fetched
+    if (profileLoading) {
+        return (
+            <div className="min-h-screen bg-[#0B0C0D] pt-6">
+                <div className="container mx-auto max-w-6xl px-6">
+                    <div className="flex items-center justify-center py-12">
+                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#4AA7FF]"></div>
+                        <p className="text-[#9CA9B7] ml-4">Loading profile data...</p>
+                    </div>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="min-h-screen bg-[#0B0C0D] pt-6">
@@ -28,11 +93,11 @@ export default async function ProfilePage({
                 <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
                     <h3 className="text-yellow-400 font-semibold mb-2">Profile Debug Info (Page Rendered: {timestamp})</h3>
                     <div className="text-sm text-yellow-200 space-y-1">
-                        <div>User ID: {user.id}</div>
-                        <div>Email: {user.email}</div>
-                        <div>Profile Email: {finalProfile?.email || 'Not found'}</div>
-                        <div>Profile Username: {finalProfile?.username || 'Not set'}</div>
-                        <div>Profile Full Name: {finalProfile?.full_name || 'Not set'}</div>
+                        <div>User ID: {user!.id}</div>
+                        <div>Email: {user!.email}</div>
+                        <div>Profile Email: {profile?.email || 'Not found'}</div>
+                        <div>Profile Username: {profile?.username || 'Not set'}</div>
+                        <div>Profile Full Name: {profile?.full_name || 'Not set'}</div>
                     </div>
                 </div>
 
@@ -65,9 +130,9 @@ export default async function ProfilePage({
                     
                     <TabsContent value="account" className="mt-6">
                         <ProfileForm
-                            initialProfile={finalProfile}
-                            user={user}
-                            initialMessage={((await searchParams)?.message as string) || undefined}
+                            initialProfile={profile}
+                            user={user!}
+                            initialMessage={message || undefined}
                         />
                     </TabsContent>
                     
@@ -77,5 +142,22 @@ export default async function ProfilePage({
                 </Tabs>
             </div>
         </div>
+    )
+}
+
+export default function ProfilePage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-[#0B0C0D] pt-6">
+                <div className="container mx-auto max-w-6xl px-6">
+                    <div className="flex items-center justify-center py-12">
+                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#4AA7FF]"></div>
+                        <p className="text-[#9CA9B7] ml-4">Loading...</p>
+                    </div>
+                </div>
+            </div>
+        }>
+            <ProfilePageContent />
+        </Suspense>
     )
 }

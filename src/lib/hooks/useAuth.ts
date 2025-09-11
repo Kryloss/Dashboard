@@ -132,7 +132,7 @@ export function useAuth() {
 
     return {
         user,
-        loading: loading && !initialized,
+        loading: loading || !initialized,
         signOut,
         refreshSession,
         isAuthenticated: !!user && initialized,
