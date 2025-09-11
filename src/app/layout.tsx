@@ -5,6 +5,7 @@ import { AuthProvider } from "@/lib/contexts/AuthContext";
 import { NotificationProvider } from "@/lib/contexts/NotificationContext";
 import { SubdomainLayout } from "@/components/subdomain-layout";
 import { NotificationContainer } from "@/components/notifications/NotificationContainer";
+import { AuthStateMonitor } from "@/components/auth-state-monitor";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -43,6 +44,7 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans antialiased bg-[#0B0C0D] text-[#FBF7FA]`}>
         <AuthProvider>
           <NotificationProvider>
+            <AuthStateMonitor />
             <SubdomainLayout>{children}</SubdomainLayout>
             <NotificationContainer />
           </NotificationProvider>

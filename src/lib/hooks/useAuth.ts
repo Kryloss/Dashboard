@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { User, Session, AuthChangeEvent } from '@supabase/supabase-js'
+import { invalidateAuthCache } from '@/lib/actions/cache-invalidation'
 
 export function useAuth() {
     const [user, setUser] = useState<User | null>(null)
@@ -49,15 +50,30 @@ export function useAuth() {
                 switch (event) {
                     case 'SIGNED_IN':
                         console.log('User signed in:', currentSession?.user?.email)
+                        // Invalidate cache when new user signs in
+                        try {
+                            await invalidateAuthCache()
+                            console.log('Cache invalidated after sign in')
+                        } catch (cacheError) {
+                            console.warn('Cache invalidation failed after sign in:', cacheError)
+                        }
                         break
                     case 'SIGNED_OUT':
                         console.log('User signed out')
+                        // Cache is already invalidated in signOut function
                         break
                     case 'TOKEN_REFRESHED':
                         console.log('Token refreshed')
                         break
                     case 'USER_UPDATED':
                         console.log('User updated:', currentSession?.user?.email)
+                        // Invalidate cache when user data changes
+                        try {
+                            await invalidateAuthCache()
+                            console.log('Cache invalidated after user update')
+                        } catch (cacheError) {
+                            console.warn('Cache invalidation failed after user update:', cacheError)
+                        }
                         break
                     case 'PASSWORD_RECOVERY':
                         console.log('Password recovery initiated')
@@ -76,9 +92,52 @@ export function useAuth() {
 
     const signOut = async () => {
         try {
+            console.log('useAuth: Signing out...')
+            
+            // Invalidate server cache first
+            try {
+                await invalidateAuthCache()
+                console.log('useAuth: Server cache invalidated')
+            } catch (cacheError) {
+                console.warn('useAuth: Cache invalidation failed:', cacheError)
+            }
+            
             await supabase.auth.signOut()
+            
+            // Clear all auth state immediately 
+            setSession(null)
+            setUser(null)
+            
+            // Clear any cached auth data in localStorage/sessionStorage
+            if (typeof window !== 'undefined') {
+                try {
+                    // Clear Supabase storage keys
+                    Object.keys(localStorage).forEach(key => {
+                        if (key.startsWith('supabase.auth.')) {
+                            localStorage.removeItem(key)
+                        }
+                    })
+                    Object.keys(sessionStorage).forEach(key => {
+                        if (key.startsWith('supabase.auth.')) {
+                            sessionStorage.removeItem(key)
+                        }
+                    })
+                    console.log('useAuth: Cleared local storage auth data')
+                } catch (storageError) {
+                    console.warn('useAuth: Could not clear storage:', storageError)
+                }
+
+                // Force reload to clear all caches
+                window.location.href = '/login?message=Signed out successfully'
+            }
         } catch (error) {
             console.error('Error signing out:', error)
+            // Even if sign out fails, clear local state and redirect
+            setSession(null)
+            setUser(null)
+            if (typeof window !== 'undefined') {
+                window.location.href = '/login?message=Sign out failed - please try again'
+            }
         }
     }
 
