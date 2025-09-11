@@ -54,7 +54,7 @@ function LoginForm() {
 
             const supabase = createClient()
 
-            // Determine the correct redirect URL based on current subdomain
+            // Determine the correct redirect URL based on environment
             let redirectUrl: string
 
             if (typeof window !== 'undefined') {
@@ -63,12 +63,12 @@ function LoginForm() {
                 const isLocalhost = currentOrigin.includes('localhost') || currentOrigin.includes('127.0.0.1')
 
                 if (isLocalhost) {
-                    // Always use localhost for local development
-                    redirectUrl = 'http://localhost:3000'
-                    console.log('Local development detected, using localhost:3000')
-                } else {
-                    // Production environment - use current origin to maintain subdomain
+                    // Always use localhost for local development - use current origin to get correct port
                     redirectUrl = currentOrigin
+                    console.log('Local development detected, using:', currentOrigin)
+                } else {
+                    // Production environment - ensure we use the configured site URL
+                    redirectUrl = process.env.NEXT_PUBLIC_SITE_URL || currentOrigin
                     console.log('Production environment detected, using:', redirectUrl)
                 }
             } else {

@@ -44,7 +44,9 @@
       "Bash(npm run typecheck:*)",
       "mcp__shadcn__list_items_in_registries",
       "Bash(npm run lint)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(netstat:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": [],

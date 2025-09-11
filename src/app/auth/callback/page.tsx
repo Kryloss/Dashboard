@@ -144,6 +144,19 @@ export default function AuthCallbackPage() {
 
         // Helper function to determine redirect target
         function getRedirectTarget() {
+            // Check if we're on localhost (development)
+            if (typeof window !== 'undefined') {
+                const currentOrigin = window.location.origin
+                const isLocalhost = currentOrigin.includes('localhost') || currentOrigin.includes('127.0.0.1')
+                
+                if (isLocalhost) {
+                    // For localhost, always redirect to dashboard
+                    console.log('AuthCallback: Localhost detected, redirecting to /dashboard')
+                    return '/dashboard'
+                }
+            }
+            
+            // For production, check subdomain
             const subdomain = getCurrentSubdomain()
             if (subdomain === 'healss') {
                 return '/workout'
