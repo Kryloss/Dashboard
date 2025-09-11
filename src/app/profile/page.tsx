@@ -16,8 +16,6 @@ function ProfilePageContent() {
     const searchParams = useSearchParams()
     const message = searchParams.get('message')
     
-    const timestamp = new Date().toISOString()
-    
     // Fetch profile data when user is available
     useEffect(() => {
         if (!user?.id) {
@@ -28,6 +26,7 @@ function ProfilePageContent() {
 
         async function fetchProfile() {
             try {
+                const timestamp = new Date().toISOString()
                 console.log(`[${timestamp}] Profile: Fetching profile for ${user!.email}`)
                 const supabase = createClient()
                 const { data: profileData, error } = await supabase
@@ -88,7 +87,7 @@ function ProfilePageContent() {
             <div className="container mx-auto max-w-6xl px-6">
                 {/* Debug Info (temporary) */}
                 <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                    <h3 className="text-yellow-400 font-semibold mb-2">Profile Debug Info (Page Rendered: {timestamp})</h3>
+                    <h3 className="text-yellow-400 font-semibold mb-2">Profile Debug Info</h3>
                     <div className="text-sm text-yellow-200 space-y-1">
                         <div>User ID: {user!.id}</div>
                         <div>Email: {user!.email}</div>
