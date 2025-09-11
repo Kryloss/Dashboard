@@ -99,11 +99,12 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(loginUrl)
     }
 
-    // Redirect authenticated users away from auth pages
+    // Redirect authenticated users away from auth pages (but not during form submissions)
     const authRoutes = ['/login', '/signup']
     const isAuthRoute = authRoutes.includes(url.pathname)
+    const isFormSubmission = request.method === 'POST'
 
-    if (isAuthRoute && user) {
+    if (isAuthRoute && user && !isFormSubmission) {
         const dashboardUrl = new URL('/dashboard', request.url)
         return NextResponse.redirect(dashboardUrl)
     }
