@@ -25,11 +25,10 @@ import { cn } from "@/lib/utils"
 import { useAuthContext } from "@/lib/contexts/AuthContext"
 import { createClient } from "@/lib/supabase/client"
 import { useState, useEffect, useRef, useCallback } from "react"
-import { usePathname } from 'next/navigation'
 import type { Profile } from "@/lib/types/database.types"
 
 export function NavBar() {
-    const { user, loading, signOut: authSignOut, isAuthenticated, initialized } = useAuthContext()
+    const { user, loading, signOut: authSignOut, isAuthenticated } = useAuthContext()
     const [profile, setProfile] = useState<Profile | null>(null)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
     const [dynamicSubdomains, setDynamicSubdomains] = useState(subdomains)

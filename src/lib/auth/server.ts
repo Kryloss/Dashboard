@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
+import type { Profile } from '@/lib/types/database.types'
 
 export interface ServerAuthResult {
     user: User
@@ -60,7 +61,7 @@ export async function requireAuth(): Promise<User> {
  */
 export async function getServerAuthWithProfile(): Promise<{
     user: User
-    profile: any | null
+    profile: Profile | null
 }> {
     const user = await requireAuth()
     

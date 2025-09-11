@@ -4,11 +4,12 @@ import { useAuthContext } from '@/lib/contexts/AuthContext'
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import type { Session } from '@supabase/supabase-js'
 
 export function AuthDebug() {
     const { user, loading, isAuthenticated, initialized, supabase } = useAuthContext()
     const [showDebug, setShowDebug] = useState(false)
-    const [sessionInfo, setSessionInfo] = useState<any>(null)
+    const [sessionInfo, setSessionInfo] = useState<Session | null>(null)
 
     // Only show in development
     useEffect(() => {
@@ -58,7 +59,7 @@ export function AuthDebug() {
                     <div>Email Verified: {user?.email_confirmed_at ? 'Yes' : 'No'}</div>
                     {sessionInfo && (
                         <>
-                            <div>Session Expires: {new Date(sessionInfo.expires_at * 1000).toLocaleTimeString()}</div>
+                            <div>Session Expires: {sessionInfo.expires_at ? new Date(sessionInfo.expires_at * 1000).toLocaleTimeString() : 'Unknown'}</div>
                             <div>Access Token: {sessionInfo.access_token ? 'Present' : 'Missing'}</div>
                         </>
                     )}

@@ -12,7 +12,7 @@ interface Props {
 interface State {
     hasError: boolean
     error: Error | null
-    errorInfo: any
+    errorInfo: React.ErrorInfo | null
 }
 
 export class AuthErrorBoundary extends Component<Props, State> {
@@ -25,7 +25,7 @@ export class AuthErrorBoundary extends Component<Props, State> {
         return { hasError: true, error, errorInfo: null }
     }
 
-    componentDidCatch(error: Error, errorInfo: any) {
+    componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
         console.error('AuthErrorBoundary caught an error:', error, errorInfo)
         this.setState({ errorInfo })
 
@@ -69,7 +69,7 @@ export class AuthErrorBoundary extends Component<Props, State> {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="text-[#9CA9B7]">
-                                Something went wrong with the authentication system. This usually happens when there's a problem with the connection or session.
+                                Something went wrong with the authentication system. This usually happens when there&apos;s a problem with the connection or session.
                             </div>
                             
                             {process.env.NODE_ENV === 'development' && this.state.error && (
