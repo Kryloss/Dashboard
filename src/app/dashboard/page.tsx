@@ -1,20 +1,91 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { signOut, triggerWelcomeEmail } from '@/lib/actions/auth'
+import { triggerWelcomeEmail } from '@/lib/actions/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
-import { getServerAuthWithProfile } from '@/lib/auth/server'
+import { useAuthContext } from '@/lib/contexts/AuthContext'
+import { createClient } from '@/lib/supabase/client'
+import type { Profile } from '@/lib/types/database.types'
 
-// Keep dynamic for now but allow some caching for performance
-export const dynamic = 'force-dynamic'
-
-export default async function DashboardPage() {
+export default function DashboardPage() {
+    const { user, loading, signOut, isAuthenticated } = useAuthContext()
+    const [profile, setProfile] = useState<Profile | null>(null)
+    const [profileLoading, setProfileLoading] = useState(true)
+    
     const timestamp = new Date().toISOString()
-    console.log(`[${timestamp}] Dashboard: Starting auth check`)
     
-    // Single, reliable auth check with profile
-    const { user, profile } = await getServerAuthWithProfile()
-    
-    console.log(`[${timestamp}] Dashboard: Auth completed for ${user.email}`)
+    // Fetch profile data when user is available
+    useEffect(() => {
+        if (!user?.id) {
+            setProfile(null)
+            setProfileLoading(false)
+            return
+        }
+
+        async function fetchProfile() {
+            try {
+                console.log(`Dashboard: Fetching profile for ${user!.email}`)
+                const supabase = createClient()
+                const { data: profileData, error } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', user!.id)
+                    .single()
+
+                if (error && error.code !== 'PGRST116') {
+                    console.error('Dashboard: Profile fetch error:', error)
+                } else {
+                    setProfile(profileData || null)
+                    console.log(`Dashboard: Profile loaded for ${user!.email}`)
+                }
+            } catch (err) {
+                console.error('Dashboard: Profile fetch failed:', err)
+            } finally {
+                setProfileLoading(false)
+            }
+        }
+
+        fetchProfile()
+    }, [user])
+
+    const handleSignOut = async () => {
+        try {
+            console.log('Dashboard: Initiating sign out...')
+            await signOut()
+        } catch (error) {
+            console.error('Dashboard: Sign out error:', error)
+        }
+    }
+
+    // Show loading state
+    if (loading || profileLoading) {
+        return (
+            <div className="min-h-screen bg-[#0B0C0D] pt-6">
+                <div className="container mx-auto max-w-7xl px-6">
+                    <div className="flex items-center justify-center py-12">
+                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#4AA7FF]"></div>
+                        <p className="text-[#9CA9B7] ml-4">Loading dashboard...</p>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    // Show error if not authenticated
+    if (!isAuthenticated || !user) {
+        return (
+            <div className="min-h-screen bg-[#0B0C0D] pt-6">
+                <div className="container mx-auto max-w-7xl px-6">
+                    <div className="text-center py-12">
+                        <p className="text-[#9CA9B7]">Please log in to access your dashboard.</p>
+                        <Link href="/login" className="text-[#4AA7FF] hover:underline">Go to login</Link>
+                    </div>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="min-h-screen bg-[#0B0C0D] pt-6">
@@ -236,15 +307,13 @@ export default async function DashboardPage() {
 
                 {/* Sign Out */}
                 <div className="mt-6 flex justify-end">
-                    <form action={signOut}>
-                        <Button
-                            type="submit"
-                            variant="outline"
-                            className="rounded-full border-[#2A3442] bg-transparent text-[#FBF7FA] hover:bg-white/5 hover:text-white hover:border-[#344253] focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#121922] transition-all px-6"
-                        >
-                            Sign Out
-                        </Button>
-                    </form>
+                    <Button
+                        onClick={handleSignOut}
+                        variant="outline"
+                        className="rounded-full border-[#2A3442] bg-transparent text-[#FBF7FA] hover:bg-white/5 hover:text-white hover:border-[#344253] focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#121922] transition-all px-6"
+                    >
+                        Sign Out
+                    </Button>
                 </div>
             </div>
         </div>

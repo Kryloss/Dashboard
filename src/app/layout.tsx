@@ -43,7 +43,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.variable} font-sans antialiased bg-[#0B0C0D] text-[#FBF7FA]`}>
+      <body className={`${inter.variable} font-sans antialiased bg-[#0B0C0D] text-[#FBF7FA]`} suppressHydrationWarning>
         <AuthErrorBoundary>
           <AuthProvider>
             <NotificationProvider>
