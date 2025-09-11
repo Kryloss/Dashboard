@@ -4,7 +4,9 @@ import ProfileForm from '@/components/profile-form'
 import ProgressPhotosTab from '@/components/progress-photos-tab'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
+// Force dynamic rendering and disable all caching
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export default async function ProfilePage({
     searchParams,
@@ -12,10 +14,13 @@ export default async function ProfilePage({
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
     const supabase = await createClient()
+    const timestamp = new Date().toISOString()
 
     // Server-side authentication check with multiple methods
     let user = null
     let authMethod = 'none'
+
+    console.log(`[${timestamp}] Profile: Starting auth check`)
 
     try {
         // Method 1: Check session first
@@ -23,9 +28,10 @@ export default async function ProfilePage({
         if (session?.user) {
             user = session.user
             authMethod = 'session'
+            console.log(`[${timestamp}] Profile: Found user via session - ${user.email}`)
         }
     } catch (sessionError) {
-        console.error('Profile session check failed:', sessionError)
+        console.error(`[${timestamp}] Profile session check failed:`, sessionError)
     }
 
     // Method 2: Fallback to getUser if session failed
@@ -35,20 +41,22 @@ export default async function ProfilePage({
             if (tokenUser) {
                 user = tokenUser
                 authMethod = 'token'
+                console.log(`[${timestamp}] Profile: Found user via token - ${user.email}`)
             }
         } catch (userError) {
-            console.error('Profile user check failed:', userError)
+            console.error(`[${timestamp}] Profile user check failed:`, userError)
         }
     }
 
-    console.log(`Profile auth check: ${authMethod}`, user?.email || 'No user')
+    console.log(`[${timestamp}] Profile auth check: ${authMethod}`, user?.email || 'No user')
 
     if (!user) {
-        console.log('Profile: No user found, redirecting to login')
+        console.log(`[${timestamp}] Profile: No user found, redirecting to login`)
         redirect('/login')
     }
 
     // Fetch profile data server-side
+    console.log(`[${timestamp}] Profile: Fetching profile for user ${user.id}`)
     const { data: profile, error } = await supabase
         .from('profiles')
         .select('id, email, username, full_name, avatar_url') // Added avatar_url
@@ -58,8 +66,10 @@ export default async function ProfilePage({
     // Profile creation is now handled automatically by database trigger
     // If profile doesn't exist, it will be created automatically
     if (error) {
-        console.error('Profile fetch error:', error.message, error.code, error.details)
-        console.log('Profile not found, will be created automatically by database trigger')
+        console.error(`[${timestamp}] Profile fetch error:`, error.message, error.code, error.details)
+        console.log(`[${timestamp}] Profile not found, will be created automatically by database trigger`)
+    } else {
+        console.log(`[${timestamp}] Profile: Profile fetched for ${profile?.email || 'unknown email'}`)
     }
 
     const finalProfile = profile
@@ -67,6 +77,19 @@ export default async function ProfilePage({
     return (
         <div className="min-h-screen bg-[#0B0C0D] pt-6">
             <div className="container mx-auto max-w-6xl px-6">
+                {/* Debug Info (temporary) */}
+                <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                    <h3 className="text-yellow-400 font-semibold mb-2">Profile Debug Info (Page Rendered: {timestamp})</h3>
+                    <div className="text-sm text-yellow-200 space-y-1">
+                        <div>User ID: {user.id}</div>
+                        <div>Email: {user.email}</div>
+                        <div>Profile Email: {finalProfile?.email || 'Not found'}</div>
+                        <div>Auth Method: {authMethod}</div>
+                        <div>Profile Username: {finalProfile?.username || 'Not set'}</div>
+                        <div>Profile Full Name: {finalProfile?.full_name || 'Not set'}</div>
+                    </div>
+                </div>
+
                 {/* Header */}
                 <div className="mb-8">
                     <h1 className="text-4xl md:text-5xl font-extrabold text-[#FBF7FA] mb-4 tracking-tight">

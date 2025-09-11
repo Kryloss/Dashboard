@@ -5,12 +5,19 @@ import { signOut, triggerWelcomeEmail } from '@/lib/actions/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
 
+// Force dynamic rendering and disable all caching
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function DashboardPage() {
     const supabase = await createClient()
+    const timestamp = new Date().toISOString()
 
     // Try multiple authentication methods to be more robust
     let user = null
     let authMethod = 'none'
+
+    console.log(`[${timestamp}] Dashboard: Starting auth check`)
 
     try {
         // Method 1: Check session first
@@ -18,9 +25,10 @@ export default async function DashboardPage() {
         if (session?.user) {
             user = session.user
             authMethod = 'session'
+            console.log(`[${timestamp}] Dashboard: Found user via session - ${user.email}`)
         }
     } catch (sessionError) {
-        console.error('Dashboard session check failed:', sessionError)
+        console.error(`[${timestamp}] Dashboard session check failed:`, sessionError)
     }
 
     // Method 2: Fallback to getUser if session failed
@@ -30,25 +38,33 @@ export default async function DashboardPage() {
             if (tokenUser) {
                 user = tokenUser
                 authMethod = 'token'
+                console.log(`[${timestamp}] Dashboard: Found user via token - ${user.email}`)
             }
         } catch (userError) {
-            console.error('Dashboard user check failed:', userError)
+            console.error(`[${timestamp}] Dashboard user check failed:`, userError)
         }
     }
 
-    console.log(`Dashboard auth check: ${authMethod}`, user?.email || 'No user')
+    console.log(`[${timestamp}] Dashboard auth check: ${authMethod}`, user?.email || 'No user')
 
     if (!user) {
-        console.log('Dashboard: No user found, redirecting to login')
+        console.log(`[${timestamp}] Dashboard: No user found, redirecting to login`)
         redirect('/login')
     }
 
-    // Get user profile
-    const { data: profile } = await supabase
+    // Get user profile with timestamp for debugging
+    console.log(`[${timestamp}] Dashboard: Fetching profile for user ${user.id}`)
+    const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single()
+    
+    if (profileError) {
+        console.error(`[${timestamp}] Dashboard: Profile fetch error:`, profileError)
+    } else {
+        console.log(`[${timestamp}] Dashboard: Profile fetched for ${profile?.email || 'unknown email'}`)
+    }
 
     return (
         <div className="min-h-screen bg-[#0B0C0D] pt-6">
@@ -78,6 +94,19 @@ export default async function DashboardPage() {
                         </Card>
                     </div>
                 )}
+
+                {/* Debug Info (temporary) */}
+                <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                    <h3 className="text-yellow-400 font-semibold mb-2">Debug Info (Page Rendered: {timestamp})</h3>
+                    <div className="text-sm text-yellow-200 space-y-1">
+                        <div>User ID: {user.id}</div>
+                        <div>Email: {user.email}</div>
+                        <div>Profile Email: {profile?.email || 'Not found'}</div>
+                        <div>Auth Method: {authMethod}</div>
+                        <div>Profile Username: {profile?.username || 'Not set'}</div>
+                        <div>Profile Full Name: {profile?.full_name || 'Not set'}</div>
+                    </div>
+                </div>
 
                 {/* Welcome Section */}
                 <div className="mb-8">
