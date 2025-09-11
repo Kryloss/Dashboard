@@ -10,10 +10,9 @@ import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/lib/types/database.types'
 
 function ProfilePageContent() {
-    const { user, loading, isAuthenticated, initialized } = useAuthContext()
+    const { user, loading } = useAuthContext()
     const [profile, setProfile] = useState<Profile | null>(null)
     const [profileLoading, setProfileLoading] = useState(true)
-    const [redirectTimeout, setRedirectTimeout] = useState<NodeJS.Timeout | null>(null)
     const searchParams = useSearchParams()
     const message = searchParams.get('message')
     
@@ -53,24 +52,7 @@ function ProfilePageContent() {
         fetchProfile()
     }, [user])
     
-    // Handle redirect to login with delay for auth sync
-    useEffect(() => {
-        if (!loading && initialized && !isAuthenticated) {
-            // Give a brief moment for session sync, then redirect
-            const timeout = setTimeout(() => {
-                window.location.href = '/login?message=Please sign in to access your profile'
-            }, 1000) // 1 second delay
-            
-            setRedirectTimeout(timeout)
-            return () => clearTimeout(timeout)
-        } else if (redirectTimeout && isAuthenticated) {
-            // Clear redirect if user becomes authenticated
-            clearTimeout(redirectTimeout)
-            setRedirectTimeout(null)
-        }
-    }, [loading, initialized, isAuthenticated, redirectTimeout])
-
-    // Show loading state while auth is initializing
+    // Simple loading state
     if (loading) {
         return (
             <div className="min-h-screen bg-[#0B0C0D] pt-6">
@@ -84,19 +66,8 @@ function ProfilePageContent() {
         )
     }
 
-    // Don't redirect immediately - let auth sync complete
-    if (!loading && initialized && !isAuthenticated) {
-        return (
-            <div className="min-h-screen bg-[#0B0C0D] pt-6">
-                <div className="container mx-auto max-w-6xl px-6">
-                    <div className="flex items-center justify-center py-12">
-                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#4AA7FF]"></div>
-                        <p className="text-[#9CA9B7] ml-4">Verifying authentication...</p>
-                    </div>
-                </div>
-            </div>
-        )
-    }
+    // If not authenticated after loading, let AuthContext/middleware handle redirect
+    // Don't interfere with the natural auth flow
 
     // Show loading state while profile is being fetched
     if (profileLoading) {
