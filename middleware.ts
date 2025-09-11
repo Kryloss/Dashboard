@@ -85,30 +85,7 @@ export async function middleware(request: NextRequest) {
         }
     }
 
-    // For main domain or unknown subdomains, still need to handle auth properly
-    const { data: { user } } = await supabase.auth.getUser()
-
-    // Protected routes for main domain
-    const protectedRoutes = ['/dashboard', '/profile', '/settings']
-    const isProtectedRoute = protectedRoutes.some(route => url.pathname.startsWith(route))
-
-    if (isProtectedRoute && !user) {
-        // Redirect to login if accessing protected route without authentication
-        const loginUrl = new URL('/login', request.url)
-        loginUrl.searchParams.set('redirectTo', url.pathname)
-        return NextResponse.redirect(loginUrl)
-    }
-
-    // Redirect authenticated users away from auth pages (but not during form submissions)
-    const authRoutes = ['/login', '/signup']
-    const isAuthRoute = authRoutes.includes(url.pathname)
-    const isFormSubmission = request.method === 'POST'
-
-    if (isAuthRoute && user && !isFormSubmission) {
-        const dashboardUrl = new URL('/dashboard', request.url)
-        return NextResponse.redirect(dashboardUrl)
-    }
-
+    // For main domain or unknown subdomains, continue normally
     return supabaseResponse
 }
 

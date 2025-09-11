@@ -47,41 +47,33 @@ export async function signIn(formData: FormData) {
     const emailOrUsername = formData.get('email') as string
     const password = formData.get('password') as string
 
-    console.log('signIn: Attempting sign in with:', emailOrUsername, 'environment:', process.env.NODE_ENV)
-
     let email = emailOrUsername
 
     // Check if input is a username (not an email)
     if (!emailOrUsername.includes('@')) {
-        console.log('signIn: Looking up username:', emailOrUsername)
         // Look up email by username
-        const { data: profile, error: profileError } = await supabase
+        const { data: profile } = await supabase
             .from('profiles')
             .select('email')
             .eq('username', emailOrUsername)
             .single()
 
-        if (!profile || profileError) {
-            console.log('signIn: Username lookup failed:', profileError)
+        if (!profile) {
             return { error: 'Invalid username or password' }
         }
 
         email = profile.email
-        console.log('signIn: Found email for username:', email)
     }
 
-    console.log('signIn: Attempting authentication with email:', email)
     const { error } = await supabase.auth.signInWithPassword({
         email: email,
         password: password,
     })
 
     if (error) {
-        console.log('signIn: Authentication failed:', error.message, error.status)
         return { error: error.message }
     }
 
-    console.log('signIn: Authentication successful, redirecting to dashboard')
     revalidatePath('/')
     revalidatePath('/dashboard')
     revalidatePath('/profile')
