@@ -65,7 +65,7 @@ export async function signIn(formData: FormData) {
         email = profile.email
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data: { session }, error } = await supabase.auth.signInWithPassword({
         email: email,
         password: password,
     })
@@ -73,6 +73,12 @@ export async function signIn(formData: FormData) {
     if (error) {
         return { error: error.message }
     }
+
+    if (!session) {
+        return { error: 'Failed to establish session. Please try again.' }
+    }
+
+    console.log('Built-in auth: Session established for user:', session.user.email)
 
     revalidatePath('/')
     revalidatePath('/dashboard')
