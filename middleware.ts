@@ -114,6 +114,7 @@ export async function middleware(request: NextRequest) {
         userId: user?.id || session?.user?.id,
         userEmail: user?.email || session?.user?.email,
         isProtectedRoute: isProtectedMainRoute,
+        authProvider: user?.app_metadata?.provider || session?.user?.app_metadata?.provider || 'unknown',
         cookies: request.cookies.getAll().map(c => c.name).filter(name => name.includes('supabase'))
     })
 

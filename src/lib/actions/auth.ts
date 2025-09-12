@@ -83,9 +83,9 @@ export async function signIn(formData: FormData) {
     revalidatePath('/')
     revalidatePath('/dashboard')
     revalidatePath('/profile')
-    
-    // Use callback flow like OAuth for consistent session handling
-    return { success: true, redirectTo: '/auth/callback?type=signin' }
+
+    // For built-in auth, redirect directly to dashboard since session is already established
+    return { success: true, redirectTo: '/dashboard' }
 }
 
 export async function signOut() {

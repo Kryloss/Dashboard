@@ -34,9 +34,9 @@ function LoginForm() {
             if (result?.error) {
                 setError(result.error)
             } else if (result?.success && result?.redirectTo) {
-                // Client-side redirect after successful authentication
-                console.log('Client-side redirect to:', result.redirectTo)
-                window.location.href = result.redirectTo
+                // For built-in auth, use window.location.replace to avoid back button issues
+                console.log('Built-in auth successful, redirecting to:', result.redirectTo)
+                window.location.replace(result.redirectTo)
             }
         })
     }
