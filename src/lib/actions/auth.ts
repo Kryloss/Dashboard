@@ -84,6 +84,9 @@ export async function signIn(formData: FormData) {
     revalidatePath('/dashboard')
     revalidatePath('/profile')
 
+    // Add small delay to ensure session cookies are properly set before redirect
+    await new Promise(resolve => setTimeout(resolve, 100))
+
     // Original working approach - redirect directly
     redirect('/dashboard')
 }
