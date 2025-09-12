@@ -33,6 +33,10 @@ function LoginForm() {
             const result = await signIn(formData)
             if (result?.error) {
                 setError(result.error)
+            } else if (result?.success && result?.redirectTo) {
+                // Client-side redirect after successful authentication
+                console.log('Client-side redirect to:', result.redirectTo)
+                window.location.href = result.redirectTo
             }
         })
     }

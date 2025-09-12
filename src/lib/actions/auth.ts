@@ -80,13 +80,12 @@ export async function signIn(formData: FormData) {
 
     console.log('Built-in auth: Session established for user:', session.user.email)
 
-    // Force session refresh to ensure middleware can read it
-    await supabase.auth.getSession()
-    
     revalidatePath('/')
     revalidatePath('/dashboard')
     revalidatePath('/profile')
-    redirect('/dashboard')
+    
+    // Return success instead of server redirect to allow client-side handling
+    return { success: true, redirectTo: '/dashboard' }
 }
 
 export async function signOut() {
