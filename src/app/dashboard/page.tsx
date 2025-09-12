@@ -15,19 +15,21 @@ function DashboardContent() {
     const { user, loading, signOut } = useAuthContext()
     const [profile, setProfile] = useState<Profile | null>(null)
     const [profileLoading, setProfileLoading] = useState(true)
+    const [redirected, setRedirected] = useState(false)
     const router = useRouter()
     
     const timestamp = new Date().toISOString()
     
     // ALL HOOKS MUST BE AT THE TOP - BEFORE ANY CONDITIONAL RETURNS
     
-    // If not authenticated after loading, redirect to login
+    // If not authenticated after loading, redirect to login (but only once)
     useEffect(() => {
-        if (!loading && !user) {
+        if (!loading && !user && !redirected) {
             console.log('Dashboard: User not authenticated, redirecting to login')
+            setRedirected(true)
             router.replace('/login?message=Please sign in to access your dashboard')
         }
-    }, [loading, user, router])
+    }, [loading, user, router, redirected])
     
     // Fetch profile data when user is available
     useEffect(() => {
