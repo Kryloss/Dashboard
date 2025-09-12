@@ -52,14 +52,26 @@ export async function middleware(request: NextRequest) {
     if (subdomain && subdomains[subdomain as keyof typeof subdomains]) {
         const targetRoute = subdomains[subdomain as keyof typeof subdomains]
 
-        // Check authentication status
+        // Check authentication status with dual check
+        const { data: { user } } = await supabase.auth.getUser()
         const { data: { session } } = await supabase.auth.getSession()
+        const isAuthenticated = !!(user || session)
 
         // If user is not authenticated and trying to access protected routes
         const protectedRoutes = ['/workout', '/progress', '/nutrition', '/dashboard']
         const isProtectedRoute = protectedRoutes.some(route => url.pathname.startsWith(route))
 
-        if (!session && isProtectedRoute) {
+        console.log('Subdomain middleware auth check:', {
+            subdomain,
+            pathname: url.pathname,
+            hasUser: !!user,
+            hasSession: !!session,
+            isAuthenticated,
+            isProtectedRoute
+        })
+
+        if (!isAuthenticated && isProtectedRoute) {
+            console.log('Subdomain middleware: No authentication found, redirecting to login')
             // Redirect to login page on the same subdomain
             const loginUrl = new URL('/login', request.url)
             return NextResponse.redirect(loginUrl)
@@ -86,11 +98,27 @@ export async function middleware(request: NextRequest) {
     }
 
     // For main domain, check authentication for protected routes
+    // Try both getUser and getSession for more reliable auth check
+    const { data: { user } } = await supabase.auth.getUser()
     const { data: { session } } = await supabase.auth.getSession()
     const protectedMainRoutes = ['/dashboard', '/profile']
     const isProtectedMainRoute = protectedMainRoutes.some(route => url.pathname.startsWith(route))
 
-    if (!session && isProtectedMainRoute) {
+    const isAuthenticated = !!(user || session)
+
+    console.log('Middleware auth check:', {
+        pathname: url.pathname,
+        hasUser: !!user,
+        hasSession: !!session,
+        isAuthenticated,
+        userId: user?.id || session?.user?.id,
+        userEmail: user?.email || session?.user?.email,
+        isProtectedRoute: isProtectedMainRoute,
+        cookies: request.cookies.getAll().map(c => c.name).filter(name => name.includes('supabase'))
+    })
+
+    if (!isAuthenticated && isProtectedMainRoute) {
+        console.log('Middleware: No authentication found, redirecting to login')
         // Redirect to login page for main domain protected routes
         const loginUrl = new URL('/login', request.url)
         loginUrl.searchParams.set('message', 'Please sign in to access this page')
