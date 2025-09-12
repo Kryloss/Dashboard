@@ -103,6 +103,13 @@ export default function AuthCallbackPage() {
                     return
                 }
 
+                if (type === 'signin') {
+                    console.log('AuthCallback: Built-in login flow')
+                    const redirectTarget = getRedirectTarget()
+                    router.push(`${redirectTarget}?message=Welcome back!`)
+                    return
+                }
+
                 // For OAuth and default flows, let Supabase handle the session
                 console.log('AuthCallback: Checking session...')
                 const { data: { session }, error: sessionError } = await supabase.auth.getSession()

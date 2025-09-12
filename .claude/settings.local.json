@@ -47,7 +47,10 @@
       "Bash(npm run:*)",
       "Bash(netstat:*)",
       "Bash(taskkill:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "WebFetch(domain:kryloss.com)",
+      "WebSearch",
+      "mcp__vercel__web_fetch_vercel_url"
     ],
     "deny": [],
     "ask": [],
