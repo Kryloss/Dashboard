@@ -1,0 +1,9 @@
+[33mcommit 50bbc332264b3282624d89904bc34ad2225bcd2c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: Kryloss <mr.repar07@gmail.com>
+Date:   Thu Sep 11 22:32:24 2025 -0400
+
+    Update
+
+middleware.ts
+src/app/(auth)/login/page.tsx
+src/lib/actions/auth.ts

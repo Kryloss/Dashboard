@@ -71,21 +71,29 @@ export async function signIn(formData: FormData) {
     })
 
     if (error) {
+        console.error('Built-in auth: Sign in error:', error)
         return { error: error.message }
     }
 
     if (!session) {
+        console.error('Built-in auth: No session returned after sign in')
         return { error: 'Failed to establish session. Please try again.' }
     }
 
     console.log('Built-in auth: Session established for user:', session.user.email)
+    console.log('Built-in auth: Session details:', {
+        userId: session.user.id,
+        email: session.user.email,
+        provider: session.user.app_metadata?.provider,
+        expiresAt: session.expires_at
+    })
 
     revalidatePath('/')
     revalidatePath('/dashboard')
     revalidatePath('/profile')
 
-    // For built-in auth, redirect directly to dashboard since session is already established
-    return { success: true, redirectTo: '/dashboard' }
+    // Return success - let client handle redirect to avoid middleware timing issues
+    return { success: true, user: session.user }
 }
 
 export async function signOut() {
