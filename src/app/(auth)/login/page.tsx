@@ -30,21 +30,9 @@ function LoginForm() {
         setError(null)
 
         startTransition(async () => {
-            try {
-                const result = await signIn(formData)
-
-                if (result?.error) {
-                    setError(result.error)
-                } else if (result?.success) {
-                    console.log('Built-in auth successful, redirecting to dashboard...')
-                    // Small delay to ensure session is properly established
-                    setTimeout(() => {
-                        window.location.href = '/dashboard'
-                    }, 100)
-                }
-            } catch (error) {
-                console.error('Unexpected error during sign in:', error)
-                setError('An unexpected error occurred. Please try again.')
+            const result = await signIn(formData)
+            if (result?.error) {
+                setError(result.error)
             }
         })
     }
