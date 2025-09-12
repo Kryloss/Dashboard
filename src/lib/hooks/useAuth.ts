@@ -11,6 +11,7 @@ export function useAuth() {
     const supabase = createClient()
     const router = useRouter()
     const mountedRef = useRef(true)
+    const signOutPendingRef = useRef(false)
 
     useEffect(() => {
         mountedRef.current = true
@@ -47,27 +48,48 @@ export function useAuth() {
 
                         console.log('useAuth: Auth state change:', event, currentSession?.user?.email || 'No user')
 
-                        // Update state immediately
-                        setUser(currentSession?.user ?? null)
-                        setLoading(false)
-
-                        // Handle specific events
+                        // Handle specific events with more careful state management
                         switch (event) {
+                            case 'INITIAL_SESSION':
+                                // Set initial state but don't redirect
+                                setUser(currentSession?.user ?? null)
+                                setLoading(false)
+                                break
                             case 'SIGNED_IN':
                                 console.log('useAuth: User signed in successfully')
+                                setUser(currentSession?.user ?? null)
+                                setLoading(false)
+                                signOutPendingRef.current = false // Reset sign out flag
                                 break
                             case 'SIGNED_OUT':
-                                console.log('useAuth: User signed out - redirecting to login')
-                                // Clear cache and redirect
-                                try {
-                                    await invalidateAuthCache()
-                                } catch (cacheError) {
-                                    console.warn('useAuth: Cache invalidation failed:', cacheError)
+                                // Only redirect if this wasn't part of our own sign out process
+                                if (!signOutPendingRef.current) {
+                                    console.log('useAuth: Unexpected sign out - redirecting to login')
+                                    setUser(null)
+                                    setLoading(false)
+                                    // Clear cache and redirect
+                                    try {
+                                        await invalidateAuthCache()
+                                    } catch (cacheError) {
+                                        console.warn('useAuth: Cache invalidation failed:', cacheError)
+                                    }
+                                    router.replace('/login?message=Session expired. Please sign in again.')
+                                } else {
+                                    console.log('useAuth: Initiated sign out completed')
+                                    setUser(null)
+                                    setLoading(false)
+                                    signOutPendingRef.current = false // Reset flag
                                 }
-                                router.replace('/login?message=Signed out successfully')
                                 break
                             case 'TOKEN_REFRESHED':
                                 console.log('useAuth: Token refreshed')
+                                setUser(currentSession?.user ?? null)
+                                setLoading(false)
+                                break
+                            default:
+                                // For any other event, update user state
+                                setUser(currentSession?.user ?? null)
+                                setLoading(false)
                                 break
                         }
                     }
@@ -102,15 +124,27 @@ export function useAuth() {
             console.log('useAuth: Starting sign out process...')
             setLoading(true)
             
+            // Set flag to indicate this is an intentional sign out
+            signOutPendingRef.current = true
+            
             // Supabase sign out - this will trigger the SIGNED_OUT event
             await supabase.auth.signOut()
             
-            console.log('useAuth: Sign out completed')
+            // Clear cache and redirect
+            try {
+                await invalidateAuthCache()
+            } catch (cacheError) {
+                console.warn('useAuth: Cache invalidation failed:', cacheError)
+            }
+            
+            console.log('useAuth: Sign out completed - redirecting to login')
+            router.replace('/login?message=Signed out successfully')
         } catch (error) {
             console.error('useAuth: Sign out error:', error)
             // Even if sign out fails, clear local state
             setUser(null)
             setLoading(false)
+            signOutPendingRef.current = false
             router.replace('/login?message=Sign out failed - please try again')
         }
     }, [supabase, router, initialized])

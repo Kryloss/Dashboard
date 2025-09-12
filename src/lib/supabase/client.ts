@@ -48,14 +48,17 @@ export function createClient() {
                 persistSession: true,
                 detectSessionInUrl: true,
                 storageKey: 'supabase.auth.token',
-                storage: typeof window !== 'undefined' ? window.localStorage : undefined
+                storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+                debug: process.env.NODE_ENV === 'development'
             },
             // Enable cross-subdomain authentication
             cookieOptions: {
-                domain: process.env.NODE_ENV === 'production' ? 'kryloss.com' : undefined, // Use main domain without dot prefix
+                domain: process.env.NODE_ENV === 'production' ? '.kryloss.com' : undefined, // Use dot prefix for subdomains
                 path: '/',
                 sameSite: 'lax',
-                secure: process.env.NODE_ENV === 'production'
+                secure: process.env.NODE_ENV === 'production',
+                httpOnly: false, // Required for client-side auth
+                maxAge: 60 * 60 * 24 * 7 // 7 days
             }
         })
         return client
