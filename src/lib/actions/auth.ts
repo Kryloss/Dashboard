@@ -80,15 +80,19 @@ export async function signIn(formData: FormData) {
 
     console.log('Built-in auth: Session established for user:', session.user.email)
 
+    // Wait longer to ensure cookies are fully written
+    await new Promise(resolve => setTimeout(resolve, 300))
+    
     revalidatePath('/')
     revalidatePath('/dashboard')
     revalidatePath('/profile')
 
-    // Add small delay to ensure session cookies are properly set before redirect
-    await new Promise(resolve => setTimeout(resolve, 100))
-
-    // Use callback flow like Google OAuth for consistent session handling
-    redirect('/auth/callback?type=signin')
+    // Return success and let client handle redirect
+    return { 
+        success: true, 
+        redirectTo: '/auth/callback?type=signin',
+        message: 'Login successful' 
+    }
 }
 
 export async function signOut() {

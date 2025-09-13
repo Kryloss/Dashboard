@@ -33,6 +33,11 @@ function LoginForm() {
             const result = await signIn(formData)
             if (result?.error) {
                 setError(result.error)
+            } else if (result?.success && result?.redirectTo) {
+                // Client-side redirect with delay to ensure cookies are set
+                setTimeout(() => {
+                    window.location.href = result.redirectTo
+                }, 500)
             }
         })
     }

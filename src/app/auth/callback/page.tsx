@@ -110,10 +110,34 @@ export default function AuthCallbackPage() {
 
                 // For OAuth and default flows, let Supabase handle the session
                 console.log('AuthCallback: Checking session...')
-                const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+                
+                // Try multiple times to get session (for timing issues)
+                let session = null
+                let sessionError = null
+                
+                for (let attempt = 0; attempt < 3; attempt++) {
+                    const result = await supabase.auth.getSession()
+                    session = result.data?.session
+                    sessionError = result.error
+                    
+                    if (sessionError) {
+                        console.error(`AuthCallback: Session error (attempt ${attempt + 1}):`, sessionError)
+                        break
+                    }
+                    
+                    if (session?.user) {
+                        console.log(`AuthCallback: Session found on attempt ${attempt + 1}:`, session.user.email)
+                        break
+                    }
+                    
+                    if (attempt < 2) {
+                        console.log(`AuthCallback: No session on attempt ${attempt + 1}, retrying...`)
+                        await new Promise(resolve => setTimeout(resolve, 500))
+                    }
+                }
 
                 if (sessionError) {
-                    console.error('AuthCallback: Session error:', sessionError)
+                    console.error('AuthCallback: Final session error:', sessionError)
                     setError('Failed to establish session')
                     setTimeout(() => router.push('/login?message=Authentication failed'), 2000)
                     return
@@ -137,9 +161,16 @@ export default function AuthCallbackPage() {
                     console.log('AuthCallback: Redirecting to:', redirectUrl)
                     router.push(redirectUrl)
                 } else {
-                    console.log('AuthCallback: No session found')
+                    console.log('AuthCallback: No session found after all attempts')
+                    console.log('AuthCallback: Type param:', type)
+                    console.log('AuthCallback: Current URL:', window.location.href)
+                    
+                    // Check if cookies exist
+                    const cookies = document.cookie.split(';').map(c => c.trim()).filter(c => c.includes('sb-'))
+                    console.log('AuthCallback: Available Supabase cookies:', cookies)
+                    
                     setError('Unable to establish session')
-                    setTimeout(() => router.push('/login?message=Authentication failed'), 2000)
+                    setTimeout(() => router.push('/login?message=Authentication failed'), 3000)
                 }
 
             } catch (err) {
