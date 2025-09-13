@@ -24,6 +24,13 @@ export function useAuth() {
                 // Get initial session
                 const { data: { session }, error } = await supabase.auth.getSession()
                 
+                // Debug: Check what cookies are available
+                if (typeof window !== 'undefined') {
+                    const cookies = document.cookie.split(';').map(c => c.trim()).filter(c => c.includes('sb-'))
+                    console.log('useAuth: Available cookies:', cookies)
+                    console.log('useAuth: Current domain:', window.location.hostname)
+                }
+                
                 if (error) {
                     console.error('useAuth: Session fetch error:', error)
                     if (mountedRef.current) {

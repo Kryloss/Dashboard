@@ -50,7 +50,8 @@
       "Bash(findstr:*)",
       "WebFetch(domain:kryloss.com)",
       "WebSearch",
-      "mcp__vercel__web_fetch_vercel_url"
+      "mcp__vercel__web_fetch_vercel_url",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": [],

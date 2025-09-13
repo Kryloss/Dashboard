@@ -79,6 +79,12 @@ export async function signIn(formData: FormData) {
     }
 
     console.log('Built-in auth: Session established for user:', session.user.email)
+    console.log('Built-in auth: Session details:', {
+        access_token: session.access_token ? 'present' : 'missing',
+        refresh_token: session.refresh_token ? 'present' : 'missing',
+        expires_at: session.expires_at,
+        user_id: session.user.id
+    })
 
     revalidatePath('/')
     revalidatePath('/dashboard')
