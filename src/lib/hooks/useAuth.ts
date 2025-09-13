@@ -18,27 +18,27 @@ export function useAuth() {
         let authStateListener: { unsubscribe: () => void } | null = null
 
         async function initializeAuth() {
+            // Check for session bridge data first (outside try block for scope)
+            let sessionBridge = null
+            if (typeof window !== 'undefined') {
+                const bridgeData = sessionStorage.getItem('auth_bridge')
+                console.log('🌀 AUTH_HOOK: Checking for session bridge...', !!bridgeData)
+                if (bridgeData) {
+                    try {
+                        sessionBridge = JSON.parse(bridgeData)
+                        console.log('🌀 AUTH_HOOK: Found session bridge for user:', sessionBridge.email)
+                        console.log('🌀 AUTH_HOOK: Bridge timestamp:', new Date(sessionBridge.timestamp).toISOString())
+                        sessionStorage.removeItem('auth_bridge') // Clean up
+                    } catch (e) {
+                        console.warn('🌀 AUTH_HOOK: Invalid session bridge data:', e)
+                    }
+                } else {
+                    console.log('🌀 AUTH_HOOK: No session bridge found - normal startup')
+                }
+            }
+            
             try {
                 console.log('🌀 AUTH_HOOK: Initializing authentication system...')
-                
-                // Check for session bridge data
-                let sessionBridge = null
-                if (typeof window !== 'undefined') {
-                    const bridgeData = sessionStorage.getItem('auth_bridge')
-                    console.log('🌀 AUTH_HOOK: Checking for session bridge...', !!bridgeData)
-                    if (bridgeData) {
-                        try {
-                            sessionBridge = JSON.parse(bridgeData)
-                            console.log('🌀 AUTH_HOOK: Found session bridge for user:', sessionBridge.email)
-                            console.log('🌀 AUTH_HOOK: Bridge timestamp:', new Date(sessionBridge.timestamp).toISOString())
-                            sessionStorage.removeItem('auth_bridge') // Clean up
-                        } catch (e) {
-                            console.warn('🌀 AUTH_HOOK: Invalid session bridge data:', e)
-                        }
-                    } else {
-                        console.log('🌀 AUTH_HOOK: No session bridge found - normal startup')
-                    }
-                }
                 
                 // Get initial session with retry logic if we have bridge data
                 let session = null
