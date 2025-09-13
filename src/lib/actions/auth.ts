@@ -79,12 +79,6 @@ export async function signIn(formData: FormData) {
     }
 
     console.log('Built-in auth: Session established for user:', session.user.email)
-    console.log('Built-in auth: Session details:', {
-        access_token: session.access_token ? 'present' : 'missing',
-        refresh_token: session.refresh_token ? 'present' : 'missing',
-        expires_at: session.expires_at,
-        user_id: session.user.id
-    })
 
     revalidatePath('/')
     revalidatePath('/dashboard')
@@ -93,8 +87,8 @@ export async function signIn(formData: FormData) {
     // Add small delay to ensure session cookies are properly set before redirect
     await new Promise(resolve => setTimeout(resolve, 100))
 
-    // Original working approach - redirect directly
-    redirect('/dashboard')
+    // Use callback flow like Google OAuth for consistent session handling
+    redirect('/auth/callback?type=signin')
 }
 
 export async function signOut() {

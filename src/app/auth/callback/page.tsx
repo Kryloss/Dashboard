@@ -104,10 +104,8 @@ export default function AuthCallbackPage() {
                 }
 
                 if (type === 'signin') {
-                    console.log('AuthCallback: Built-in login flow')
-                    const redirectTarget = getRedirectTarget()
-                    router.push(`${redirectTarget}?message=Welcome back!`)
-                    return
+                    console.log('AuthCallback: Built-in login flow - validating session')
+                    // Don't return here - let it fall through to session validation below
                 }
 
                 // For OAuth and default flows, let Supabase handle the session
@@ -124,16 +122,20 @@ export default function AuthCallbackPage() {
                 if (session?.user) {
                     console.log('AuthCallback: Session established for:', session.user.email)
                     
-                    // For OAuth users, ensure profile exists
-                    if (session.user.app_metadata?.provider && session.user.app_metadata.provider !== 'email') {
-                        console.log('AuthCallback: OAuth user detected, checking profile...')
-                        await ensureProfileExists(supabase, session.user)
-                    }
+                    // For all users, ensure profile exists
+                    console.log('AuthCallback: Checking profile for user:', session.user.email, 'provider:', session.user.app_metadata?.provider)
+                    await ensureProfileExists(supabase, session.user)
                     
-                    // Redirect to appropriate page
+                    // Small delay to ensure session is fully established
+                    await new Promise(resolve => setTimeout(resolve, 100))
+                    
+                    // Redirect to appropriate page with appropriate message
                     const redirectTarget = getRedirectTarget()
-                    console.log('AuthCallback: Redirecting to:', redirectTarget)
-                    router.push(redirectTarget)
+                    const redirectUrl = type === 'signin' 
+                        ? `${redirectTarget}?message=Welcome back!`
+                        : redirectTarget
+                    console.log('AuthCallback: Redirecting to:', redirectUrl)
+                    router.push(redirectUrl)
                 } else {
                     console.log('AuthCallback: No session found')
                     setError('Unable to establish session')
