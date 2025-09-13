@@ -19,10 +19,58 @@ export function useAuth() {
 
         async function initializeAuth() {
             try {
-                console.log('useAuth: Initializing authentication...')
+                console.log('🌀 AUTH_HOOK: Initializing authentication system...')
                 
-                // Get initial session
-                const { data: { session }, error } = await supabase.auth.getSession()
+                // Check for session bridge data
+                let sessionBridge = null
+                if (typeof window !== 'undefined') {
+                    const bridgeData = sessionStorage.getItem('auth_bridge')
+                    console.log('🌀 AUTH_HOOK: Checking for session bridge...', !!bridgeData)
+                    if (bridgeData) {
+                        try {
+                            sessionBridge = JSON.parse(bridgeData)
+                            console.log('🌀 AUTH_HOOK: Found session bridge for user:', sessionBridge.email)
+                            console.log('🌀 AUTH_HOOK: Bridge timestamp:', new Date(sessionBridge.timestamp).toISOString())
+                            sessionStorage.removeItem('auth_bridge') // Clean up
+                        } catch (e) {
+                            console.warn('🌀 AUTH_HOOK: Invalid session bridge data:', e)
+                        }
+                    } else {
+                        console.log('🌀 AUTH_HOOK: No session bridge found - normal startup')
+                    }
+                }
+                
+                // Get initial session with retry logic if we have bridge data
+                let session = null
+                let error = null
+                
+                const maxAttempts = sessionBridge ? 5 : 1
+                console.log(`🌀 AUTH_HOOK: Will attempt session detection ${maxAttempts} times`)
+                
+                for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                    console.log(`🌀 AUTH_HOOK: Session detection attempt ${attempt + 1}/${maxAttempts}`)
+                    const result = await supabase.auth.getSession()
+                    session = result.data?.session
+                    error = result.error
+                    
+                    if (error) {
+                        console.error(`🌀 AUTH_HOOK: Session error (attempt ${attempt + 1}):`, error)
+                        break
+                    }
+                    
+                    if (session?.user) {
+                        console.log(`🌀 AUTH_HOOK: ✅ Session found on attempt ${attempt + 1}!`)
+                        console.log(`🌀 AUTH_HOOK: User: ${session.user.email}, Provider: ${session.user.app_metadata?.provider || 'email'}`)
+                        break
+                    }
+                    
+                    if (sessionBridge && attempt < maxAttempts - 1) {
+                        console.log(`🌀 AUTH_HOOK: No session yet (attempt ${attempt + 1}), will retry in 300ms...`)
+                        await new Promise(resolve => setTimeout(resolve, 300))
+                    } else if (!sessionBridge) {
+                        console.log(`🌀 AUTH_HOOK: No session found (no bridge data - normal startup)`)
+                    }
+                }
                 
                 if (error) {
                     console.error('useAuth: Session fetch error:', error)
@@ -38,7 +86,15 @@ export function useAuth() {
                     setUser(session?.user ?? null)
                     setLoading(false)
                     setInitialized(true)
-                    console.log('useAuth: Initial auth state set:', session?.user?.email || 'No user')
+                    
+                    if (session?.user) {
+                        console.log('🌀 AUTH_HOOK: ✅ Authentication successful! State updated.')
+                    } else {
+                        console.log('🌀 AUTH_HOOK: No session detected - user not authenticated')
+                        if (sessionBridge) {
+                            console.log('🌀 AUTH_HOOK: ⚠️ Session bridge was provided but no session found!')
+                        }
+                    }
                 }
 
                 // Set up auth state change listener
@@ -97,7 +153,28 @@ export function useAuth() {
 
                 authStateListener = subscription
             } catch (error) {
-                console.error('useAuth: Initialization failed:', error)
+                console.error('🌀 AUTH_HOOK: 🛑 Initialization failed:', error)
+                
+                // Try to recover from initialization failure
+                if (sessionBridge && typeof window !== 'undefined') {
+                    console.log('🌀 AUTH_HOOK: 🔄 Attempting session recovery...')
+                    try {
+                        // Force a session refresh
+                        await supabase.auth.refreshSession()
+                        const { data: { session: recoveredSession } } = await supabase.auth.getSession()
+                        
+                        if (recoveredSession?.user && mountedRef.current) {
+                            console.log('🌀 AUTH_HOOK: ✅ Session recovered successfully!')
+                            setUser(recoveredSession.user)
+                            setLoading(false)
+                            setInitialized(true)
+                            return
+                        }
+                    } catch (recoveryError) {
+                        console.error('🌀 AUTH_HOOK: Session recovery failed:', recoveryError)
+                    }
+                }
+                
                 if (mountedRef.current) {
                     setUser(null)
                     setLoading(false)

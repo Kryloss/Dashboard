@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
+// Universal cookie configuration for all Supabase clients
+const UNIVERSAL_COOKIE_CONFIG = {
+    domain: process.env.NODE_ENV === 'production' ? '.kryloss.com' : undefined,
+    path: '/',
+    sameSite: 'lax' as const,
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: false, // Required for client-side auth compatibility
+    maxAge: 60 * 60 * 24 * 7 // 7 days
+}
+
 // Define your subdomains and their corresponding routes
 const subdomains = {
     'healss': '/healss',
@@ -32,14 +42,10 @@ export async function middleware(request: NextRequest) {
                 },
                 setAll(cookiesToSet) {
                     cookiesToSet.forEach(({ name, value, options }) => {
-                        // Configure cookies for cross-subdomain authentication
+                        // Use universal cookie configuration
                         const enhancedOptions = {
-                            ...options,
-                            domain: process.env.NODE_ENV === 'production' ? '.kryloss.com' : undefined, // Use dot prefix for subdomains
-                            path: '/',
-                            sameSite: 'lax' as const,
-                            secure: process.env.NODE_ENV === 'production',
-                            ...options
+                            ...UNIVERSAL_COOKIE_CONFIG,
+                            ...options // Allow override if needed
                         }
                         supabaseResponse.cookies.set(name, value, enhancedOptions)
                     })

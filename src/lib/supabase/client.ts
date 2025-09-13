@@ -1,6 +1,16 @@
 import { createBrowserClient } from '@supabase/ssr'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+// Universal cookie configuration for all Supabase clients
+const UNIVERSAL_COOKIE_CONFIG = {
+    domain: process.env.NODE_ENV === 'production' ? '.kryloss.com' : undefined,
+    path: '/',
+    sameSite: 'lax' as const,
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: false, // Required for client-side auth
+    maxAge: 60 * 60 * 24 * 7 // 7 days
+}
+
 export function createClient() {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -51,15 +61,8 @@ export function createClient() {
                 storage: typeof window !== 'undefined' ? window.localStorage : undefined,
                 debug: process.env.NODE_ENV === 'development'
             },
-            // Enable cross-subdomain authentication
-            cookieOptions: {
-                domain: process.env.NODE_ENV === 'production' ? '.kryloss.com' : undefined, // Use dot prefix for subdomains
-                path: '/',
-                sameSite: 'lax',
-                secure: process.env.NODE_ENV === 'production',
-                httpOnly: false, // Required for client-side auth
-                maxAge: 60 * 60 * 24 * 7 // 7 days
-            }
+            // Universal cookie configuration
+            cookieOptions: UNIVERSAL_COOKIE_CONFIG
         })
         return client
     } catch (error) {

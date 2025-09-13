@@ -44,21 +44,11 @@ CREATE POLICY "Users can insert own profile" ON public.profiles
 FOR INSERT 
 WITH CHECK (auth.uid() = id);
 
--- Allow users to update their own profile with username uniqueness check
+-- Allow users to update their own profile
 CREATE POLICY "Users can update own profile" ON public.profiles
 FOR UPDATE 
 USING (auth.uid() = id) 
-WITH CHECK (
-    auth.uid() = id AND 
-    (
-        -- If username is not being changed, allow update
-        username = OLD.username OR 
-        -- If username is being set to null, allow
-        username IS NULL OR 
-        -- If username is being changed, ensure it's unique
-        (SELECT COUNT(*) FROM public.profiles WHERE username = NEW.username AND id != NEW.id) = 0
-    )
-);
+WITH CHECK (auth.uid() = id);
 
 -- 6. Create function to handle updated_at timestamp
 CREATE OR REPLACE FUNCTION handle_updated_at()
@@ -106,18 +96,26 @@ CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- 10. Create indexes for performance
+-- 10. Add username constraint and validation
+ALTER TABLE public.profiles 
+DROP CONSTRAINT IF EXISTS username_length_check;
+
+ALTER TABLE public.profiles 
+ADD CONSTRAINT username_length_check 
+CHECK (username IS NULL OR (length(username) >= 3 AND length(username) <= 20));
+
+-- 11. Create indexes for performance
 CREATE INDEX IF NOT EXISTS profiles_username_idx ON public.profiles(username);
 CREATE INDEX IF NOT EXISTS profiles_email_idx ON public.profiles(email);
 
--- 11. Test the setup with a sample query (this should work for authenticated users)
+-- 12. Test the setup with a sample query (this should work for authenticated users)
 -- SELECT * FROM profiles WHERE id = auth.uid();
 
--- 12. Grant necessary permissions
+-- 13. Grant necessary permissions
 GRANT USAGE ON SCHEMA public TO authenticated;
 GRANT ALL ON public.profiles TO authenticated;
 
--- 13. Grant execute permission on the trigger function
+-- 14. Grant execute permission on the trigger function
 GRANT EXECUTE ON FUNCTION public.handle_new_user() TO authenticated;
 
 -- Verification queries (run these to check your setup):

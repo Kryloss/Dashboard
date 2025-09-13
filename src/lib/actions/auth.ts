@@ -42,56 +42,85 @@ export async function signUp(formData: FormData) {
 }
 
 export async function signIn(formData: FormData) {
+    console.log('🔐 AUTH: Starting built-in sign-in process')
     const supabase = await createClient()
 
     const emailOrUsername = formData.get('email') as string
     const password = formData.get('password') as string
 
+    console.log('🔐 AUTH: Input received:', { emailOrUsername: emailOrUsername.substring(0, 3) + '***' })
+
     let email = emailOrUsername
 
     // Check if input is a username (not an email)
     if (!emailOrUsername.includes('@')) {
+        console.log('🔐 AUTH: Username detected, looking up email')
         // Look up email by username
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('email')
             .eq('username', emailOrUsername)
             .single()
 
-        if (!profile) {
+        if (profileError || !profile) {
+            console.log('🔐 AUTH: Username lookup failed:', profileError?.message)
             return { error: 'Invalid username or password' }
         }
 
         email = profile.email
+        console.log('🔐 AUTH: Username resolved to email:', email.substring(0, 3) + '***')
     }
 
+    console.log('🔐 AUTH: Attempting authentication with Supabase')
     const { data: { session }, error } = await supabase.auth.signInWithPassword({
         email: email,
         password: password,
     })
 
     if (error) {
+        console.log('🔐 AUTH: Authentication failed:', error.message)
         return { error: error.message }
     }
 
     if (!session) {
+        console.log('🔐 AUTH: No session returned from Supabase')
         return { error: 'Failed to establish session. Please try again.' }
     }
 
-    console.log('Built-in auth: Session established for user:', session.user.email)
+    console.log('🔐 AUTH: Session established successfully for:', session.user.email)
+    console.log('🔐 AUTH: Session details:', {
+        userId: session.user.id,
+        provider: session.user.app_metadata?.provider || 'email',
+        hasAccessToken: !!session.access_token,
+        hasRefreshToken: !!session.refresh_token,
+        expiresAt: session.expires_at ? new Date(session.expires_at * 1000).toISOString() : 'unknown'
+    })
 
-    // Wait longer to ensure cookies are fully written
-    await new Promise(resolve => setTimeout(resolve, 300))
+    // Set a session bridge flag that client will detect
+    const sessionBridge = {
+        userId: session.user.id,
+        email: session.user.email,
+        timestamp: Date.now(),
+        type: 'built_in_signin'
+    }
+
+    console.log('🔐 AUTH: Creating session bridge for client:', sessionBridge)
+
+    // Wait for cookies to be written
+    console.log('🔐 AUTH: Waiting for cookies to propagate...')
+    await new Promise(resolve => setTimeout(resolve, 200))
     
+    console.log('🔐 AUTH: Revalidating paths...')
     revalidatePath('/')
     revalidatePath('/dashboard')
     revalidatePath('/profile')
 
-    // Return success and let client handle redirect
+    console.log('🔐 AUTH: Server-side authentication completed successfully')
+    // Return session bridge data for client handling
     return { 
-        success: true, 
-        redirectTo: '/auth/callback?type=signin',
-        message: 'Login successful' 
+        success: true,
+        sessionBridge,
+        message: 'Authentication successful' 
     }
 }
 

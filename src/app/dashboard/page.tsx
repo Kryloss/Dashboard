@@ -16,6 +16,7 @@ function DashboardContent() {
     const [profile, setProfile] = useState<Profile | null>(null)
     const [profileLoading, setProfileLoading] = useState(true)
     const [redirected, setRedirected] = useState(false)
+    const [sessionRecoveryAttempted, setSessionRecoveryAttempted] = useState(false)
     const router = useRouter()
     
     const timestamp = new Date().toISOString()
@@ -24,12 +25,45 @@ function DashboardContent() {
     
     // If not authenticated after loading, redirect to login (but only once)
     useEffect(() => {
+        console.log('🏠 DASHBOARD: Auth state check:', { 
+            loading, 
+            hasUser: !!user, 
+            userEmail: user?.email,
+            redirected,
+            timestamp: new Date().toISOString()
+        })
+        
         if (!loading && !user && !redirected) {
-            console.log('Dashboard: User not authenticated, redirecting to login')
-            setRedirected(true)
-            router.replace('/login?message=Please sign in to access your dashboard')
+            // Try session recovery once before redirecting
+            if (!sessionRecoveryAttempted) {
+                console.log('🏠 DASHBOARD: Attempting session recovery...')
+                setSessionRecoveryAttempted(true)
+                
+                // Check if there's session bridge data that might help
+                const bridgeData = sessionStorage.getItem('auth_bridge')
+                if (bridgeData) {
+                    console.log('🏠 DASHBOARD: Found auth bridge data, refreshing page...')
+                    window.location.reload()
+                    return
+                }
+                
+                // Small delay before redirect to give auth context another chance
+                setTimeout(() => {
+                    if (!user) {
+                        console.log('🏠 DASHBOARD: ⚠️ Session recovery failed, redirecting to login')
+                        setRedirected(true)
+                        router.replace('/login?message=Please sign in to access your dashboard')
+                    }
+                }, 500)
+            } else {
+                console.log('🏠 DASHBOARD: ⚠️ User not authenticated after recovery attempt, redirecting to login')
+                setRedirected(true)
+                router.replace('/login?message=Please sign in to access your dashboard')
+            }
+        } else if (!loading && user) {
+            console.log('🏠 DASHBOARD: ✅ User authenticated successfully!', user.email)
         }
-    }, [loading, user, router, redirected])
+    }, [loading, user, router, redirected, sessionRecoveryAttempted])
     
     // Fetch profile data when user is available
     useEffect(() => {

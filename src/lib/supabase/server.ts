@@ -1,6 +1,16 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
+// Universal cookie configuration for all Supabase clients
+const UNIVERSAL_COOKIE_CONFIG = {
+    domain: process.env.NODE_ENV === 'production' ? '.kryloss.com' : undefined,
+    path: '/',
+    sameSite: 'lax' as const,
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: false, // Required for client-side auth compatibility
+    maxAge: 60 * 60 * 24 * 7 // 7 days
+}
+
 export async function createClient() {
     const cookieStore = await cookies()
 
@@ -15,14 +25,10 @@ export async function createClient() {
                 setAll(cookiesToSet) {
                     try {
                         cookiesToSet.forEach(({ name, value, options }) => {
-                            // Configure cookies for cross-subdomain authentication
+                            // Use universal cookie configuration
                             const enhancedOptions = {
-                                ...options,
-                                domain: process.env.NODE_ENV === 'production' ? '.kryloss.com' : undefined, // Use dot prefix for subdomains
-                                path: '/',
-                                sameSite: 'lax' as const,
-                                secure: process.env.NODE_ENV === 'production',
-                                ...options
+                                ...UNIVERSAL_COOKIE_CONFIG,
+                                ...options // Allow override if needed
                             }
                             cookieStore.set(name, value, enhancedOptions)
                         })
