@@ -3,8 +3,6 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import ProfileForm from '@/components/profile-form'
-import ProgressPhotosTab from '@/components/progress-photos-tab'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuthContext } from '@/lib/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/lib/types/database.types'
@@ -107,35 +105,14 @@ function ProfilePageContent() {
                     </p>
                 </div>
 
-                {/* Tabbed interface */}
-                <Tabs defaultValue="account" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 bg-[#121922] border-[#2A3442] rounded-xl">
-                        <TabsTrigger 
-                            value="account" 
-                            className="data-[state=active]:bg-[#4AA7FF] data-[state=active]:text-white text-[#9CA9B7] hover:text-[#FBF7FA] rounded-lg transition-all"
-                        >
-                            Account Settings
-                        </TabsTrigger>
-                        <TabsTrigger 
-                            value="progress" 
-                            className="data-[state=active]:bg-[#4AA7FF] data-[state=active]:text-white text-[#9CA9B7] hover:text-[#FBF7FA] rounded-lg transition-all"
-                        >
-                            Progress Photos
-                        </TabsTrigger>
-                    </TabsList>
-                    
-                    <TabsContent value="account" className="mt-6">
-                        <ProfileForm
-                            initialProfile={profile}
-                            user={user!}
-                            initialMessage={message || undefined}
-                        />
-                    </TabsContent>
-                    
-                    <TabsContent value="progress" className="mt-6">
-                        <ProgressPhotosTab />
-                    </TabsContent>
-                </Tabs>
+                {/* Profile Form */}
+                <div className="mt-6">
+                    <ProfileForm
+                        initialProfile={profile}
+                        user={user!}
+                        initialMessage={message || undefined}
+                    />
+                </div>
             </div>
         </div>
     )

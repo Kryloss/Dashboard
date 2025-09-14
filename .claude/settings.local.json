@@ -54,7 +54,8 @@
       "Bash(curl:*)",
       "Bash(del \"C:\\Users\\mrRep\\Desktop\\Dashboard\\src\\lib\\supabase\\session-utils.ts\")",
       "Bash(del \"C:\\Users\\mrRep\\Desktop\\Dashboard\\src\\lib\\session-fix.ts\")",
-      "Bash(git clean:*)"
+      "Bash(git clean:*)",
+      "Bash(del \"C:\\Users\\mrRep\\Desktop\\Dashboard\\src\\components\\progress-photos-tab.tsx\")"
     ],
     "deny": [],
     "ask": [],

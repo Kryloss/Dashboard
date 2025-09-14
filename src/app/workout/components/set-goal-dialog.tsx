@@ -8,7 +8,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { User, Target, Weight, Moon, Flame, Dumbbell } from "lucide-react"
+import ProgressImageUpload from '@/components/progress-image-upload'
+import ProgressGalleryCompact from '@/components/progress-gallery-compact'
+import { User, Target, Weight, Moon, Flame, Dumbbell, Camera } from "lucide-react"
 
 interface SetGoalDialogProps {
     open: boolean
@@ -37,6 +39,7 @@ interface Goals {
 
 export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
     const [activeTab, setActiveTab] = useState("account")
+    const [refreshKey, setRefreshKey] = useState(0)
     
     const [profile, setProfile] = useState<UserProfile>({
         weight: "",
@@ -155,6 +158,11 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
         console.log("Saving goals:", goals)
     }
 
+    const handleDataChange = () => {
+        // Force refresh of the gallery when new images are uploaded or changed
+        setRefreshKey(prev => prev + 1)
+    }
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden p-0 z-[9998]" onInteractOutside={(e) => e.preventDefault()}>
@@ -172,8 +180,8 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                 onClick={() => setActiveTab("account")}
                                 className={`
                                     flex-1 flex items-center justify-center space-x-2 px-3 py-2 text-sm font-medium transition-all rounded-md
-                                    ${activeTab === "account" 
-                                        ? "bg-[#2A8CEA] text-white shadow-sm" 
+                                    ${activeTab === "account"
+                                        ? "bg-[#2A8CEA] text-white shadow-sm"
                                         : "text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)]"
                                     }
                                 `}
@@ -185,14 +193,27 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                 onClick={() => setActiveTab("goals")}
                                 className={`
                                     flex-1 flex items-center justify-center space-x-2 px-3 py-2 text-sm font-medium transition-all rounded-md
-                                    ${activeTab === "goals" 
-                                        ? "bg-[#2A8CEA] text-white shadow-sm" 
+                                    ${activeTab === "goals"
+                                        ? "bg-[#2A8CEA] text-white shadow-sm"
                                         : "text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)]"
                                     }
                                 `}
                             >
                                 <Target className="w-4 h-4" />
                                 <span>Goals</span>
+                            </button>
+                            <button
+                                onClick={() => setActiveTab("photos")}
+                                className={`
+                                    flex-1 flex items-center justify-center space-x-2 px-3 py-2 text-sm font-medium transition-all rounded-md
+                                    ${activeTab === "photos"
+                                        ? "bg-[#2A8CEA] text-white shadow-sm"
+                                        : "text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)]"
+                                    }
+                                `}
+                            >
+                                <Camera className="w-4 h-4" />
+                                <span>Photos</span>
                             </button>
                         </div>
 
@@ -472,6 +493,28 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                         >
                                             Save Goals
                                         </Button>
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+
+                            <TabsContent value="photos" className="mt-0">
+                                <Card className="bg-[#121318] border-[#212227]">
+                                    <CardHeader className="pb-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center space-x-3">
+                                                <div className="w-8 h-8 bg-[rgba(255,255,255,0.03)] border border-[#2A2B31] rounded-lg flex items-center justify-center">
+                                                    <Camera className="w-4 h-4 text-[#A1A1AA]" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm text-[#F3F4F6] font-medium">Progress Photos</p>
+                                                    <p className="text-xs text-[#A1A1AA]">Track your fitness journey visually</p>
+                                                </div>
+                                            </div>
+                                            <ProgressImageUpload onUploadSuccess={handleDataChange} />
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <ProgressGalleryCompact key={refreshKey} onDataChange={handleDataChange} />
                                     </CardContent>
                                 </Card>
                             </TabsContent>
