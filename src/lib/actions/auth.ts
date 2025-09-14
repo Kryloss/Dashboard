@@ -71,7 +71,9 @@ export async function signIn(formData: FormData) {
         return { error: error.message }
     }
 
-    revalidatePath('/')
+    // Revalidate paths to ensure fresh auth state
+    revalidatePath('/', 'layout')
+    revalidatePath('/dashboard')
     redirect('/dashboard')
 }
 

@@ -29,6 +29,15 @@ import type { Profile } from "@/lib/types/database.types"
 
 export function NavBar() {
     const { user, loading, signOut: authSignOut, isAuthenticated } = useAuthContext()
+
+    // Debug authentication state changes
+    useEffect(() => {
+        console.log('NavBar: Auth state changed:', {
+            user: user?.email || null,
+            loading,
+            isAuthenticated
+        })
+    }, [user, loading, isAuthenticated])
     const [profile, setProfile] = useState<Profile | null>(null)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
     const [dynamicSubdomains, setDynamicSubdomains] = useState(subdomains)

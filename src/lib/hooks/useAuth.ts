@@ -14,6 +14,7 @@ export function useAuth() {
         const getInitialSession = async () => {
             try {
                 const { data: { session } } = await supabase.auth.getSession()
+                console.log('Initial session:', session?.user?.email || 'No session')
                 setUser(session?.user ?? null)
             } catch (error) {
                 console.error('Error getting initial session:', error)
@@ -25,21 +26,59 @@ export function useAuth() {
 
         getInitialSession()
 
+        // Also refresh session when component mounts (in case of redirects)
+        const refreshSession = async () => {
+            try {
+                await supabase.auth.refreshSession()
+                console.log('Session refreshed')
+            } catch (error) {
+                console.error('Error refreshing session:', error)
+            }
+        }
+
+        refreshSession()
+
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event: AuthChangeEvent, session: Session | null) => {
-                console.log('Auth state change:', event)
+                console.log('Auth state change:', event, session?.user?.email)
 
                 setUser(session?.user ?? null)
+                setLoading(false) // Ensure loading is false when auth state changes
+
+                if (event === 'SIGNED_IN' && session?.user) {
+                    console.log('User signed in:', session.user.email)
+                    // User is now authenticated - the UI will update automatically
+                }
 
                 if (event === 'SIGNED_OUT') {
+                    console.log('User signed out')
                     router.replace('/login')
                 }
             }
         )
 
-        return () => subscription.unsubscribe()
-    }, [supabase, router])
+        // Refresh auth state when window regains focus (helps with server redirects)
+        const handleFocus = async () => {
+            console.log('Window focused, refreshing auth state')
+            try {
+                const { data: { session } } = await supabase.auth.getSession()
+                if (session?.user && !user) {
+                    console.log('Found session on focus, updating user:', session.user.email)
+                    setUser(session.user)
+                }
+            } catch (error) {
+                console.error('Error refreshing auth on focus:', error)
+            }
+        }
+
+        window.addEventListener('focus', handleFocus)
+
+        return () => {
+            subscription.unsubscribe()
+            window.removeEventListener('focus', handleFocus)
+        }
+    }, [supabase, router, user])
 
     const signOut = useCallback(async () => {
         try {
