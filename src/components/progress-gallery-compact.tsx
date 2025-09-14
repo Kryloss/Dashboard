@@ -164,16 +164,16 @@ export default function ProgressGalleryCompact({ onDataChange }: ProgressGallery
                     </div>
                 </div>
             ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     {images.map((image) => (
                         <div key={image.id} className="relative group">
-                            <div className="relative overflow-hidden rounded-lg bg-[#0E0F13] border border-[#212227]">
+                            <div className="relative overflow-hidden rounded-lg bg-[#0E0F13] border border-[#212227] aspect-square">
                                 <Image
                                     src={image.image_url}
                                     alt={image.title || 'Progress photo'}
-                                    width={200}
-                                    height={150}
-                                    className="w-full h-24 sm:h-32 object-cover transition-transform group-hover:scale-105"
+                                    fill
+                                    sizes="(max-width: 640px) 50vw, 33vw"
+                                    className="object-cover transition-transform group-hover:scale-105"
                                 />
 
                                 {/* Overlay with actions */}
@@ -211,23 +211,24 @@ export default function ProgressGalleryCompact({ onDataChange }: ProgressGallery
                             </div>
 
                             {/* Image info */}
-                            <div className="p-2 space-y-1">
+                            <div className="p-3 space-y-2 bg-[#0E0F13]/50">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="font-medium text-[#F3F4F6] truncate text-xs">
+                                    <h3 className="font-medium text-[#F3F4F6] truncate text-sm">
                                         {image.title || 'Untitled'}
                                     </h3>
-                                    <div className="flex items-center text-[10px] text-[#9CA3AF]">
-                                        <Calendar className="w-2 h-2 mr-1" />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center text-xs text-[#9CA3AF]">
+                                        <Calendar className="w-3 h-3 mr-1" />
                                         {formatDate(image.created_at)}
                                     </div>
+                                    {image.weight_kg && (
+                                        <div className="flex items-center text-xs text-[#9CA3AF]">
+                                            <Weight className="w-3 h-3 mr-1" />
+                                            {image.weight_kg} kg
+                                        </div>
+                                    )}
                                 </div>
-
-                                {image.weight_kg && (
-                                    <div className="flex items-center text-xs text-[#9CA3AF]">
-                                        <Weight className="w-3 h-3 mr-1" />
-                                        {image.weight_kg} kg
-                                    </div>
-                                )}
                             </div>
                         </div>
                     ))}
