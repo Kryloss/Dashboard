@@ -69,12 +69,14 @@ function LoginForm() {
                     redirectUrl = currentOrigin
                     console.log('Local development detected, using:', currentOrigin)
                 } else {
-                    // Production environment - ensure we use the configured site URL
+                    // Production environment - prioritize NEXT_PUBLIC_SITE_URL, fallback to current origin
                     redirectUrl = process.env.NEXT_PUBLIC_SITE_URL || currentOrigin
                     console.log('Production environment detected, using:', redirectUrl)
+                    console.log('Current origin:', currentOrigin)
+                    console.log('Configured site URL:', process.env.NEXT_PUBLIC_SITE_URL)
                 }
             } else {
-                // Fallback for SSR
+                // Fallback for SSR - use configured site URL or localhost
                 redirectUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
             }
 
