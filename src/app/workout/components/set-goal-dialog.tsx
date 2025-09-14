@@ -202,19 +202,6 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                 <Target className="w-4 h-4" />
                                 <span>Goals</span>
                             </button>
-                            <button
-                                onClick={() => setActiveTab("photos")}
-                                className={`
-                                    flex-1 flex items-center justify-center space-x-2 px-3 py-2 text-sm font-medium transition-all rounded-md
-                                    ${activeTab === "photos"
-                                        ? "bg-[#2A8CEA] text-white shadow-sm"
-                                        : "text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)]"
-                                    }
-                                `}
-                            >
-                                <Camera className="w-4 h-4" />
-                                <span>Photos</span>
-                            </button>
                         </div>
 
                         {/* Scrollable Content */}
@@ -300,12 +287,33 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                             </div>
                                         </div>
 
-                                        <Button 
+                                        <Button
                                             onClick={handleSaveProfile}
                                             className="w-full bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-lg border border-[rgba(42,140,234,0.35)] shadow-[0_4px_16px_rgba(42,140,234,0.28)] hover:shadow-[0_6px_24px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all h-9 text-sm font-medium mt-6"
                                         >
                                             Save Profile
                                         </Button>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Progress Photos Section */}
+                                <Card className="bg-[#121318] border-[#212227] mt-6">
+                                    <CardHeader className="pb-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center space-x-3">
+                                                <div className="w-8 h-8 bg-[rgba(255,255,255,0.03)] border border-[#2A2B31] rounded-lg flex items-center justify-center">
+                                                    <Camera className="w-4 h-4 text-[#A1A1AA]" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm text-[#F3F4F6] font-medium">Progress Photos</p>
+                                                    <p className="text-xs text-[#A1A1AA]">Track your fitness journey visually</p>
+                                                </div>
+                                            </div>
+                                            <ProgressImageUpload onUploadSuccess={handleDataChange} />
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <ProgressGalleryCompact key={refreshKey} onDataChange={handleDataChange} />
                                     </CardContent>
                                 </Card>
                             </TabsContent>
@@ -493,28 +501,6 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                         >
                                             Save Goals
                                         </Button>
-                                    </CardContent>
-                                </Card>
-                            </TabsContent>
-
-                            <TabsContent value="photos" className="mt-0">
-                                <Card className="bg-[#121318] border-[#212227]">
-                                    <CardHeader className="pb-4">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center space-x-3">
-                                                <div className="w-8 h-8 bg-[rgba(255,255,255,0.03)] border border-[#2A2B31] rounded-lg flex items-center justify-center">
-                                                    <Camera className="w-4 h-4 text-[#A1A1AA]" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm text-[#F3F4F6] font-medium">Progress Photos</p>
-                                                    <p className="text-xs text-[#A1A1AA]">Track your fitness journey visually</p>
-                                                </div>
-                                            </div>
-                                            <ProgressImageUpload onUploadSuccess={handleDataChange} />
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <ProgressGalleryCompact key={refreshKey} onDataChange={handleDataChange} />
                                     </CardContent>
                                 </Card>
                             </TabsContent>
