@@ -26,17 +26,22 @@ export function useAuth() {
 
         getInitialSession()
 
-        // Also refresh session when component mounts (in case of redirects)
-        const refreshSession = async () => {
-            try {
-                await supabase.auth.refreshSession()
-                console.log('Session refreshed')
-            } catch (error) {
-                console.error('Error refreshing session:', error)
-            }
-        }
+        // Only refresh session on specific pages (avoid interfering with OAuth callbacks)
+        const currentPath = window.location.pathname
+        const shouldRefreshSession = currentPath === '/dashboard' || currentPath === '/profile'
 
-        refreshSession()
+        if (shouldRefreshSession) {
+            const refreshSession = async () => {
+                try {
+                    console.log('Refreshing session for page:', currentPath)
+                    await supabase.auth.refreshSession()
+                    console.log('Session refreshed')
+                } catch (error) {
+                    console.error('Error refreshing session:', error)
+                }
+            }
+            refreshSession()
+        }
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -53,13 +58,29 @@ export function useAuth() {
 
                 if (event === 'SIGNED_OUT') {
                     console.log('User signed out')
-                    router.replace('/login')
+
+                    // Don't redirect during OAuth callback flows
+                    const currentPath = window.location.pathname
+                    if (!currentPath.includes('/auth/callback')) {
+                        router.replace('/login')
+                    } else {
+                        console.log('Skipping logout redirect during OAuth callback')
+                    }
                 }
             }
         )
 
         // Refresh auth state when window regains focus (helps with server redirects)
+        // But avoid during OAuth callback flows
         const handleFocus = async () => {
+            const currentPath = window.location.pathname
+            const isOAuthCallback = currentPath.includes('/auth/callback')
+
+            if (isOAuthCallback) {
+                console.log('Skipping focus refresh during OAuth callback')
+                return
+            }
+
             console.log('Window focused, refreshing auth state')
             try {
                 const { data: { session } } = await supabase.auth.getSession()
