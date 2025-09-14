@@ -168,13 +168,20 @@ export default function ProgressGalleryCompact({ onDataChange }: ProgressGallery
                     {images.map((image) => (
                         <div key={image.id} className="relative group">
                             <div className="relative overflow-hidden rounded-lg bg-[#0E0F13] border border-[#212227] aspect-square">
-                                <Image
-                                    src={image.image_url}
-                                    alt={image.title || 'Progress photo'}
-                                    fill
-                                    sizes="(max-width: 640px) 50vw, 33vw"
-                                    className="object-cover transition-transform group-hover:scale-105"
-                                />
+                                {image.image_url ? (
+                                    <Image
+                                        src={image.image_url}
+                                        alt={image.title || 'Progress photo'}
+                                        fill
+                                        sizes="(max-width: 640px) 50vw, 33vw"
+                                        className="object-cover transition-transform group-hover:scale-105"
+                                        priority={false}
+                                    />
+                                ) : (
+                                    <div className="absolute inset-0 flex items-center justify-center text-[#6B7280]">
+                                        No Image Available
+                                    </div>
+                                )}
 
                                 {/* Overlay with actions */}
                                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-1">
