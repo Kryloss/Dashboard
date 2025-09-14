@@ -165,7 +165,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden p-0 z-[9998]" onInteractOutside={(e) => e.preventDefault()}>
+            <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-hidden p-0 z-[9998]" onInteractOutside={(e) => e.preventDefault()}>
                 <DialogHeader className="px-6 pt-6 pb-4">
                     <DialogTitle className="text-xl font-semibold text-[#F3F4F6]">
                         Settings

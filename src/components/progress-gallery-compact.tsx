@@ -245,7 +245,7 @@ export default function ProgressGalleryCompact({ onDataChange }: ProgressGallery
 
             {/* Edit Dialog */}
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogContent className="bg-[#121318] border-[#212227] shadow-[0_8px_24px_rgba(0,0,0,0.40)] rounded-2xl max-w-lg">
+                <DialogContent className="bg-[#121318] border-[#212227] shadow-[0_8px_24px_rgba(0,0,0,0.40)] rounded-2xl max-w-lg z-[9999]">
                     <DialogHeader>
                         <DialogTitle className="text-[#F3F4F6] text-xl font-bold">
                             Edit Progress Photo
@@ -349,7 +349,7 @@ export default function ProgressGalleryCompact({ onDataChange }: ProgressGallery
 
             {/* Delete Confirmation Dialog */}
             <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                <DialogContent className="bg-[#121318] border-[#212227] shadow-[0_8px_24px_rgba(0,0,0,0.40)] rounded-2xl max-w-md">
+                <DialogContent className="bg-[#121318] border-[#212227] shadow-[0_8px_24px_rgba(0,0,0,0.40)] rounded-2xl max-w-md z-[9999]">
                     <DialogHeader>
                         <DialogTitle className="text-[#F3F4F6] text-xl font-bold">
                             Delete Progress Photo

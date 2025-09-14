@@ -151,14 +151,15 @@ export default function ProgressImageUpload({ onUploadSuccess }: ProgressImageUp
         <Dialog open={isOpen} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
                 <Button
-                    className="rounded-full bg-gradient-to-br from-[#114EB2] via-[#257ADA] to-[#4AA7FF] text-white shadow-[0_0_60px_rgba(37,122,218,0.35)] hover:from-[#257ADA] hover:to-[#90C9FF] hover:shadow-[0_0_72px_rgba(74,167,255,0.35)] hover:-translate-y-0.5 focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#121922] active:brightness-95 transition-all"
+                    size="sm"
+                    className="rounded-full bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white border border-[rgba(42,140,234,0.35)] shadow-[0_4px_16px_rgba(42,140,234,0.28)] hover:shadow-[0_6px_24px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all text-xs"
                 >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Progress Photo
+                    <Plus className="w-3 h-3 mr-1" />
+                    Add Photo
                 </Button>
             </DialogTrigger>
 
-            <DialogContent className="bg-[#121922] border-[#2A3442] shadow-[0_8px_24px_rgba(0,0,0,0.40)] rounded-2xl max-w-lg">
+            <DialogContent className="bg-[#121922] border-[#2A3442] shadow-[0_8px_24px_rgba(0,0,0,0.40)] rounded-2xl max-w-lg z-[9999]">
                 <div
                     className="absolute top-0 left-0 right-0 h-[1px] rounded-t-2xl"
                     style={{
