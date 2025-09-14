@@ -71,10 +71,10 @@ export async function signIn(formData: FormData) {
         return { error: error.message }
     }
 
-    // Revalidate paths to ensure fresh auth state
+    // For built-in sign-in, revalidate and redirect with a page refresh signal
     revalidatePath('/', 'layout')
     revalidatePath('/dashboard')
-    redirect('/dashboard')
+    redirect('/dashboard?builtin=true')
 }
 
 export async function signOut() {

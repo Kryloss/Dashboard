@@ -17,6 +17,19 @@ function DashboardContent() {
     const [profileLoading, setProfileLoading] = useState(true)
     const router = useRouter()
 
+    // Handle built-in sign-in refresh (only for built-in auth)
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search)
+        const isBuiltinSignin = urlParams.get('builtin') === 'true'
+
+        if (isBuiltinSignin) {
+            console.log('Built-in sign-in detected, refreshing page for auth state sync')
+            // Clean the URL and refresh once to ensure auth state is synced
+            window.history.replaceState(null, '', '/dashboard')
+            window.location.reload()
+        }
+    }, [])
+
     // Redirect to login if not authenticated
     useEffect(() => {
         if (!loading && !isAuthenticated) {

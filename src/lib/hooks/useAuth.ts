@@ -26,23 +26,6 @@ export function useAuth() {
 
         getInitialSession()
 
-        // Only refresh session on specific pages (avoid interfering with OAuth callbacks)
-        const currentPath = window.location.pathname
-        const shouldRefreshSession = currentPath === '/dashboard' || currentPath === '/profile'
-
-        if (shouldRefreshSession) {
-            const refreshSession = async () => {
-                try {
-                    console.log('Refreshing session for page:', currentPath)
-                    await supabase.auth.refreshSession()
-                    console.log('Session refreshed')
-                } catch (error) {
-                    console.error('Error refreshing session:', error)
-                }
-            }
-            refreshSession()
-        }
-
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event: AuthChangeEvent, session: Session | null) => {
@@ -58,48 +41,13 @@ export function useAuth() {
 
                 if (event === 'SIGNED_OUT') {
                     console.log('User signed out')
-
-                    // Don't redirect during OAuth callback flows
-                    const currentPath = window.location.pathname
-                    if (!currentPath.includes('/auth/callback')) {
-                        router.replace('/login')
-                    } else {
-                        console.log('Skipping logout redirect during OAuth callback')
-                    }
+                    router.replace('/login')
                 }
             }
         )
 
-        // Refresh auth state when window regains focus (helps with server redirects)
-        // But avoid during OAuth callback flows
-        const handleFocus = async () => {
-            const currentPath = window.location.pathname
-            const isOAuthCallback = currentPath.includes('/auth/callback')
-
-            if (isOAuthCallback) {
-                console.log('Skipping focus refresh during OAuth callback')
-                return
-            }
-
-            console.log('Window focused, refreshing auth state')
-            try {
-                const { data: { session } } = await supabase.auth.getSession()
-                if (session?.user && !user) {
-                    console.log('Found session on focus, updating user:', session.user.email)
-                    setUser(session.user)
-                }
-            } catch (error) {
-                console.error('Error refreshing auth on focus:', error)
-            }
-        }
-
-        window.addEventListener('focus', handleFocus)
-
-        return () => {
-            subscription.unsubscribe()
-            window.removeEventListener('focus', handleFocus)
-        }
-    }, [supabase, router, user])
+        return () => subscription.unsubscribe()
+    }, [supabase, router])
 
     const signOut = useCallback(async () => {
         try {
