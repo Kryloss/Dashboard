@@ -1,16 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-// Universal cookie configuration for all Supabase clients
-const UNIVERSAL_COOKIE_CONFIG = {
-    domain: process.env.NODE_ENV === 'production' ? '.kryloss.com' : undefined,
-    path: '/',
-    sameSite: 'lax' as const,
-    secure: process.env.NODE_ENV === 'production',
-    httpOnly: false, // Required for client-side auth compatibility
-    maxAge: 60 * 60 * 24 * 7 // 7 days
-}
-
 export async function createClient() {
     const cookieStore = await cookies()
 
@@ -25,17 +15,18 @@ export async function createClient() {
                 setAll(cookiesToSet) {
                     try {
                         cookiesToSet.forEach(({ name, value, options }) => {
-                            // Use universal cookie configuration
-                            const enhancedOptions = {
-                                ...UNIVERSAL_COOKIE_CONFIG,
-                                ...options // Allow override if needed
+                            const cookieOptions = {
+                                domain: process.env.NODE_ENV === 'production' ? '.kryloss.com' : undefined,
+                                path: '/',
+                                sameSite: 'lax' as const,
+                                secure: process.env.NODE_ENV === 'production',
+                                maxAge: 60 * 60 * 24 * 7, // 7 days
+                                ...options
                             }
-                            cookieStore.set(name, value, enhancedOptions)
+                            cookieStore.set(name, value, cookieOptions)
                         })
-                    } catch {
-                        // The `setAll` method was called from a Server Component.
-                        // This can be ignored if you have middleware refreshing
-                        // user sessions.
+                    } catch (error) {
+                        // Ignore errors in server components
                     }
                 },
             },

@@ -8,9 +8,7 @@ interface AuthContextType {
     user: User | null
     loading: boolean
     signOut: () => Promise<void>
-    refreshSession: () => Promise<Session | null>
     isAuthenticated: boolean
-    initialized: boolean
     supabase: SupabaseClient
 }
 

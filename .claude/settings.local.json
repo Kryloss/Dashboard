@@ -51,7 +51,9 @@
       "WebFetch(domain:kryloss.com)",
       "WebSearch",
       "mcp__vercel__web_fetch_vercel_url",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(del \"C:\\Users\\mrRep\\Desktop\\Dashboard\\src\\lib\\supabase\\session-utils.ts\")",
+      "Bash(del \"C:\\Users\\mrRep\\Desktop\\Dashboard\\src\\lib\\session-fix.ts\")"
     ],
     "deny": [],
     "ask": [],

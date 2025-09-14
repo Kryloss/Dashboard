@@ -7,6 +7,7 @@ import { SubdomainLayout } from "@/components/subdomain-layout";
 import { NotificationContainer } from "@/components/notifications/NotificationContainer";
 import { AuthStateMonitor } from "@/components/auth-state-monitor";
 import { AuthDebugIndicator } from "@/components/auth-debug";
+import { AuthErrorBoundary } from "@/components/auth-error-boundary";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -43,14 +44,16 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${inter.variable} font-sans antialiased bg-[#0B0C0D] text-[#FBF7FA]`} suppressHydrationWarning>
-        <AuthProvider>
-          <NotificationProvider>
-            <AuthStateMonitor />
-            <AuthDebugIndicator />
-            <SubdomainLayout>{children}</SubdomainLayout>
-            <NotificationContainer />
-          </NotificationProvider>
-        </AuthProvider>
+        <AuthErrorBoundary>
+          <AuthProvider>
+            <NotificationProvider>
+              <AuthStateMonitor />
+              <AuthDebugIndicator />
+              <SubdomainLayout>{children}</SubdomainLayout>
+              <NotificationContainer />
+            </NotificationProvider>
+          </AuthProvider>
+        </AuthErrorBoundary>
       </body>
     </html>
   );

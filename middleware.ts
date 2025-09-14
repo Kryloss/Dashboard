@@ -1,16 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
-// Universal cookie configuration for all Supabase clients
-const UNIVERSAL_COOKIE_CONFIG = {
-    domain: process.env.NODE_ENV === 'production' ? '.kryloss.com' : undefined,
-    path: '/',
-    sameSite: 'lax' as const,
-    secure: process.env.NODE_ENV === 'production',
-    httpOnly: false, // Required for client-side auth compatibility
-    maxAge: 60 * 60 * 24 * 7 // 7 days
-}
-
 // Define your subdomains and their corresponding routes
 const subdomains = {
     'healss': '/healss',
@@ -42,91 +32,58 @@ export async function middleware(request: NextRequest) {
                 },
                 setAll(cookiesToSet) {
                     cookiesToSet.forEach(({ name, value, options }) => {
-                        // Use universal cookie configuration
-                        const enhancedOptions = {
-                            ...UNIVERSAL_COOKIE_CONFIG,
-                            ...options // Allow override if needed
+                        const cookieOptions = {
+                            domain: process.env.NODE_ENV === 'production' ? '.kryloss.com' : undefined,
+                            path: '/',
+                            sameSite: 'lax' as const,
+                            secure: process.env.NODE_ENV === 'production',
+                            maxAge: 60 * 60 * 24 * 7, // 7 days
+                            ...options
                         }
-                        supabaseResponse.cookies.set(name, value, enhancedOptions)
+                        supabaseResponse.cookies.set(name, value, cookieOptions)
                     })
                 },
             },
         }
     )
 
+    // Get user authentication status
+    const { data: { user } } = await supabase.auth.getUser()
+    const isAuthenticated = !!user
+
     // Check if this is a subdomain we want to handle
     if (subdomain && subdomains[subdomain as keyof typeof subdomains]) {
         const targetRoute = subdomains[subdomain as keyof typeof subdomains]
 
-        // Check authentication status with dual check
-        const { data: { user } } = await supabase.auth.getUser()
-        const { data: { session } } = await supabase.auth.getSession()
-        const isAuthenticated = !!(user || session)
-
-        // If user is not authenticated and trying to access protected routes
+        // Protected routes for subdomains
         const protectedRoutes = ['/workout', '/progress', '/nutrition', '/dashboard']
         const isProtectedRoute = protectedRoutes.some(route => url.pathname.startsWith(route))
 
-        console.log('Subdomain middleware auth check:', {
-            subdomain,
-            pathname: url.pathname,
-            hasUser: !!user,
-            hasSession: !!session,
-            isAuthenticated,
-            isProtectedRoute
-        })
-
         if (!isAuthenticated && isProtectedRoute) {
-            console.log('Subdomain middleware: No authentication found, redirecting to login')
-            // Redirect to login page on the same subdomain
             const loginUrl = new URL('/login', request.url)
             return NextResponse.redirect(loginUrl)
         }
 
         // Handle URL rewriting for subdomains
         if (url.pathname === '/') {
-            // Root path: rewrite to serve the subdomain route content
             const newUrl = request.nextUrl.clone()
             newUrl.pathname = targetRoute
-            console.log(`Rewriting ${hostname}${url.pathname} to serve ${targetRoute} content`)
             return NextResponse.rewrite(newUrl)
         } else if (url.pathname.startsWith(targetRoute)) {
-            // Already on the correct route, continue normally
             return NextResponse.next()
         } else {
-            // Any other path: rewrite to serve from subdomain route
             const newPath = `${targetRoute}${url.pathname}`
             const newUrl = request.nextUrl.clone()
             newUrl.pathname = newPath
-            console.log(`Rewriting ${hostname}${url.pathname} to serve ${newPath} content`)
             return NextResponse.rewrite(newUrl)
         }
     }
 
     // For main domain, check authentication for protected routes
-    // Try both getUser and getSession for more reliable auth check
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data: { session } } = await supabase.auth.getSession()
     const protectedMainRoutes = ['/dashboard', '/profile']
     const isProtectedMainRoute = protectedMainRoutes.some(route => url.pathname.startsWith(route))
 
-    const isAuthenticated = !!(user || session)
-
-    console.log('Middleware auth check:', {
-        pathname: url.pathname,
-        hasUser: !!user,
-        hasSession: !!session,
-        isAuthenticated,
-        userId: user?.id || session?.user?.id,
-        userEmail: user?.email || session?.user?.email,
-        isProtectedRoute: isProtectedMainRoute,
-        authProvider: user?.app_metadata?.provider || session?.user?.app_metadata?.provider || 'unknown',
-        cookies: request.cookies.getAll().map(c => c.name).filter(name => name.includes('supabase'))
-    })
-
     if (!isAuthenticated && isProtectedMainRoute) {
-        console.log('Middleware: No authentication found, redirecting to login')
-        // Redirect to login page for main domain protected routes
         const loginUrl = new URL('/login', request.url)
         loginUrl.searchParams.set('message', 'Please sign in to access this page')
         return NextResponse.redirect(loginUrl)

@@ -16,73 +16,26 @@ import { signIn } from "@/lib/actions/auth"
 import { createClient } from "@/lib/supabase/client"
 import { AuthHealthCheck } from "@/components/database-health-check"
 import { useState, useTransition, Suspense } from "react"
-import { useSearchParams, useRouter } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import { getCurrentSubdomain } from "@/lib/subdomains"
 
 function LoginForm() {
     const [error, setError] = useState<string | null>(null)
     const [isPending, startTransition] = useTransition()
     const [isGoogleLoading, setIsGoogleLoading] = useState(false)
-    const [isProcessingAuth, setIsProcessingAuth] = useState(false)
-    const [retryCount, setRetryCount] = useState(0)
     const searchParams = useSearchParams()
-    const router = useRouter()
     const message = searchParams.get('message')
 
     const handleSubmit = async (formData: FormData) => {
         setError(null)
 
         startTransition(async () => {
-            console.log('🟦 CLIENT: Starting sign-in process')
             const result = await signIn(formData)
-            
+
             if (result?.error) {
-                console.log('🟦 CLIENT: Server returned error:', result.error)
                 setError(result.error)
-            } else if (result?.success && result?.sessionBridge) {
-                console.log('🟦 CLIENT: Server authentication successful!')
-                console.log('🟦 CLIENT: Session bridge received:', result.sessionBridge)
-                setIsProcessingAuth(true)
-                
-                // Store session bridge data temporarily
-                if (typeof window !== 'undefined') {
-                    sessionStorage.setItem('auth_bridge', JSON.stringify(result.sessionBridge))
-                    console.log('🟦 CLIENT: Session bridge stored in sessionStorage')
-                }
-                
-                console.log('🟦 CLIENT: Waiting for cookie propagation, then redirecting...')
-                
-                // Reset retry count on success
-                setRetryCount(0)
-                
-                // Give cookies time to propagate then redirect
-                setTimeout(() => {
-                    console.log('🟦 CLIENT: Redirecting to dashboard...')
-                    router.push('/dashboard')
-                }, 800)
-            } else {
-                console.log('🟦 CLIENT: Unexpected server response:', result)
-                
-                // Implement retry logic for unexpected responses
-                if (retryCount < 2) {
-                    console.log(`🟦 CLIENT: Retrying login (attempt ${retryCount + 1}/2)...`)
-                    setRetryCount(prev => prev + 1)
-                    setTimeout(() => {
-                        // Retry the form submission
-                        const form = new FormData()
-                        const emailInput = document.querySelector('input[name="email"]') as HTMLInputElement
-                        const passwordInput = document.querySelector('input[name="password"]') as HTMLInputElement
-                        if (emailInput && passwordInput) {
-                            form.append('email', emailInput.value)
-                            form.append('password', passwordInput.value)
-                            handleSubmit(form)
-                        }
-                    }, 1000)
-                } else {
-                    setError('Authentication failed after multiple attempts. Please try again.')
-                    setRetryCount(0)
-                }
             }
+            // If no error, the server action will handle the redirect
         })
     }
 
@@ -261,10 +214,10 @@ function LoginForm() {
 
                             <Button
                                 type="submit"
-                                disabled={isPending || isProcessingAuth}
+                                disabled={isPending}
                                 className="w-full rounded-full bg-gradient-to-br from-[#114EB2] via-[#257ADA] to-[#4AA7FF] text-white shadow-[0_0_60px_rgba(37,122,218,0.35)] hover:from-[#257ADA] hover:to-[#90C9FF] hover:shadow-[0_0_72px_rgba(74,167,255,0.35)] hover:-translate-y-0.5 focus:ring-2 focus:ring-[#93C5FD] focus:ring-offset-2 focus:ring-offset-[#121922] active:brightness-95 transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:transform-none"
                             >
-                                {isPending ? "Signing In..." : isProcessingAuth ? "Preparing Dashboard..." : "Sign In"}
+                                {isPending ? "Signing In..." : "Sign In"}
                             </Button>
                         </form>
                     </CardContent>

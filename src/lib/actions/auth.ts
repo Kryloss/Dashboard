@@ -34,27 +34,20 @@ export async function signUp(formData: FormData) {
         return { error: error.message }
     }
 
-    // Profile creation is now handled automatically by database trigger
-    // Welcome email will be sent automatically when profile is created
-
     revalidatePath('/')
-    redirect('/login?message=Account created successfully! Welcome email sent.')
+    redirect('/login?message=Account created successfully! Please check your email.')
 }
 
 export async function signIn(formData: FormData) {
-    console.log('🔐 AUTH: Starting built-in sign-in process')
     const supabase = await createClient()
 
     const emailOrUsername = formData.get('email') as string
     const password = formData.get('password') as string
 
-    console.log('🔐 AUTH: Input received:', { emailOrUsername: emailOrUsername.substring(0, 3) + '***' })
-
     let email = emailOrUsername
 
     // Check if input is a username (not an email)
     if (!emailOrUsername.includes('@')) {
-        console.log('🔐 AUTH: Username detected, looking up email')
         // Look up email by username
         const { data: profile, error: profileError } = await supabase
             .from('profiles')
@@ -63,65 +56,23 @@ export async function signIn(formData: FormData) {
             .single()
 
         if (profileError || !profile) {
-            console.log('🔐 AUTH: Username lookup failed:', profileError?.message)
             return { error: 'Invalid username or password' }
         }
 
         email = profile.email
-        console.log('🔐 AUTH: Username resolved to email:', email.substring(0, 3) + '***')
     }
 
-    console.log('🔐 AUTH: Attempting authentication with Supabase')
-    const { data: { session }, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
         email: email,
         password: password,
     })
 
     if (error) {
-        console.log('🔐 AUTH: Authentication failed:', error.message)
         return { error: error.message }
     }
 
-    if (!session) {
-        console.log('🔐 AUTH: No session returned from Supabase')
-        return { error: 'Failed to establish session. Please try again.' }
-    }
-
-    console.log('🔐 AUTH: Session established successfully for:', session.user.email)
-    console.log('🔐 AUTH: Session details:', {
-        userId: session.user.id,
-        provider: session.user.app_metadata?.provider || 'email',
-        hasAccessToken: !!session.access_token,
-        hasRefreshToken: !!session.refresh_token,
-        expiresAt: session.expires_at ? new Date(session.expires_at * 1000).toISOString() : 'unknown'
-    })
-
-    // Set a session bridge flag that client will detect
-    const sessionBridge = {
-        userId: session.user.id,
-        email: session.user.email,
-        timestamp: Date.now(),
-        type: 'built_in_signin'
-    }
-
-    console.log('🔐 AUTH: Creating session bridge for client:', sessionBridge)
-
-    // Wait for cookies to be written
-    console.log('🔐 AUTH: Waiting for cookies to propagate...')
-    await new Promise(resolve => setTimeout(resolve, 200))
-    
-    console.log('🔐 AUTH: Revalidating paths...')
     revalidatePath('/')
-    revalidatePath('/dashboard')
-    revalidatePath('/profile')
-
-    console.log('🔐 AUTH: Server-side authentication completed successfully')
-    // Return session bridge data for client handling
-    return { 
-        success: true,
-        sessionBridge,
-        message: 'Authentication successful' 
-    }
+    redirect('/dashboard')
 }
 
 export async function signOut() {
@@ -165,24 +116,23 @@ export async function updatePassword(formData: FormData) {
 export async function triggerWelcomeEmail() {
     const supabase = await createClient()
 
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user }, error } = await supabase.auth.getUser()
 
-    if (!user) {
+    if (error || !user) {
         redirect('/login?error=Not authenticated')
     }
 
-    // Welcome emails are now sent automatically via database trigger
-    // This function is kept for backward compatibility but no longer sends emails
+    // Welcome emails are sent automatically via database trigger
     revalidatePath('/dashboard')
-    redirect('/dashboard?message=Welcome emails are now sent automatically when profiles are created.')
+    redirect('/dashboard?message=Welcome emails are sent automatically.')
 }
 
 export async function updateProfile(formData: FormData) {
     const supabase = await createClient()
 
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (!user) {
+    if (authError || !user) {
         return { error: 'Not authenticated' }
     }
 
@@ -227,16 +177,10 @@ export async function updateProfile(formData: FormData) {
         .eq('id', user.id)
 
     if (error) {
-        console.error('Profile update error:', error.message, error.code, error.details)
-
-        // Provide more specific error messages
-        if (error.code === '42501') {
-            return { error: 'Permission denied. Please check your database policies.' }
-        } else if (error.code === '23505') {
+        if (error.code === '23505') {
             return { error: 'Username is already taken' }
-        } else {
-            return { error: `Update failed: ${error.message}` }
         }
+        return { error: 'Failed to update profile' }
     }
 
     revalidatePath('/profile')

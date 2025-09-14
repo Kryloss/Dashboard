@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import type { Session } from '@supabase/supabase-js'
 
 export function AuthDebug() {
-    const { user, loading, isAuthenticated, initialized, supabase } = useAuthContext()
+    const { user, loading, isAuthenticated, supabase } = useAuthContext()
     const [showDebug, setShowDebug] = useState(false)
     const [sessionInfo, setSessionInfo] = useState<Session | null>(null)
 
@@ -52,7 +52,6 @@ export function AuthDebug() {
                 </CardHeader>
                 <CardContent className="pt-0 space-y-1">
                     <div>Status: {loading ? 'Loading' : isAuthenticated ? 'Authenticated' : 'Not authenticated'}</div>
-                    <div>Initialized: {initialized ? 'Yes' : 'No'}</div>
                     <div>User ID: {user?.id || 'None'}</div>
                     <div>Email: {user?.email || 'None'}</div>
                     <div>Provider: {user?.app_metadata?.provider || 'None'}</div>
