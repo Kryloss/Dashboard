@@ -194,6 +194,14 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+    /* Prevent scroll jumping on iOS */
+    -webkit-overflow-scrolling: touch;
+    overflow-x: hidden;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    overflow-x: hidden;
   }
 }
 

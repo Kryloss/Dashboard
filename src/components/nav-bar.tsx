@@ -96,7 +96,11 @@ export function NavBar() {
         }
     }, [authSignOut])
 
-    const isOnHealss = window.location.hostname.includes('healss.kryloss.com');
+    // Safe client-side hostname check
+    const [isOnHealss, setIsOnHealss] = useState(false)
+    useEffect(() => {
+        setIsOnHealss(window.location.hostname.includes('healss.kryloss.com'))
+    }, [])
 
     return (
         <header className="sticky top-0 z-50 w-full border-b border-[#1C2430] bg-[#0B0C0D]/80 backdrop-blur">

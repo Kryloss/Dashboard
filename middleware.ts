@@ -12,6 +12,16 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl
     const hostname = request.headers.get('host') || ''
 
+    // Skip middleware for static files, API routes, and auth callback
+    if (
+        url.pathname.startsWith('/_next/') ||
+        url.pathname.startsWith('/api/') ||
+        url.pathname.startsWith('/auth/callback') ||
+        url.pathname === '/favicon.ico'
+    ) {
+        return NextResponse.next()
+    }
+
     // Extract subdomain from hostname
     const subdomain = hostname.split('.')[0]
 
@@ -47,9 +57,15 @@ export async function middleware(request: NextRequest) {
         }
     )
 
-    // Get user authentication status
-    const { data: { user } } = await supabase.auth.getUser()
-    const isAuthenticated = !!user
+    // Get user authentication status - handle auth errors gracefully
+    let isAuthenticated = false
+    try {
+        const { data: { user }, error } = await supabase.auth.getUser()
+        isAuthenticated = !!user && !error
+    } catch (error) {
+        console.error('Middleware auth check failed:', error)
+        isAuthenticated = false
+    }
 
     // Check if this is a subdomain we want to handle
     if (subdomain && subdomains[subdomain as keyof typeof subdomains]) {
@@ -59,19 +75,20 @@ export async function middleware(request: NextRequest) {
         const protectedRoutes = ['/workout', '/progress', '/nutrition', '/dashboard']
         const isProtectedRoute = protectedRoutes.some(route => url.pathname.startsWith(route))
 
-        if (!isAuthenticated && isProtectedRoute) {
+        // Don't redirect if already on login or signup
+        if (!isAuthenticated && isProtectedRoute && !url.pathname.startsWith('/login') && !url.pathname.startsWith('/signup')) {
             const loginUrl = new URL('/login', request.url)
             return NextResponse.redirect(loginUrl)
         }
 
         // Handle URL rewriting for subdomains
-        if (url.pathname === '/') {
+        if (url.pathname === '/' && isAuthenticated) {
             const newUrl = request.nextUrl.clone()
             newUrl.pathname = targetRoute
             return NextResponse.rewrite(newUrl)
         } else if (url.pathname.startsWith(targetRoute)) {
             return NextResponse.next()
-        } else {
+        } else if (isAuthenticated && !url.pathname.startsWith('/login') && !url.pathname.startsWith('/signup')) {
             const newPath = `${targetRoute}${url.pathname}`
             const newUrl = request.nextUrl.clone()
             newUrl.pathname = newPath
@@ -83,10 +100,17 @@ export async function middleware(request: NextRequest) {
     const protectedMainRoutes = ['/dashboard', '/profile']
     const isProtectedMainRoute = protectedMainRoutes.some(route => url.pathname.startsWith(route))
 
-    if (!isAuthenticated && isProtectedMainRoute) {
+    // Don't redirect if already on login or signup
+    if (!isAuthenticated && isProtectedMainRoute && !url.pathname.startsWith('/login') && !url.pathname.startsWith('/signup')) {
         const loginUrl = new URL('/login', request.url)
         loginUrl.searchParams.set('message', 'Please sign in to access this page')
         return NextResponse.redirect(loginUrl)
+    }
+
+    // Redirect authenticated users away from auth pages
+    if (isAuthenticated && (url.pathname === '/login' || url.pathname === '/signup')) {
+        const dashboardUrl = new URL('/dashboard', request.url)
+        return NextResponse.redirect(dashboardUrl)
     }
 
     return supabaseResponse
