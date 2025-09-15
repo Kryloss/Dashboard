@@ -1,6 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
+import { useAuth } from "@/lib/hooks/useAuth"
+import { useNotifications } from "@/lib/contexts/NotificationContext"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -38,8 +40,11 @@ interface Goals {
 }
 
 export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
+    const { user, supabase } = useAuth()
+    const notifications = useNotifications()
     const [activeTab, setActiveTab] = useState("account")
     const [refreshKey, setRefreshKey] = useState(0)
+    const [isLoading, setIsLoading] = useState(false)
     
     const [profile, setProfile] = useState<UserProfile>({
         weight: "",
@@ -63,7 +68,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
 
     // Detect if user is on mobile device
     const [isMobile, setIsMobile] = useState(false)
-    
+
     useEffect(() => {
         const checkMobile = () => {
             const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
@@ -71,11 +76,75 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                  ('ontouchstart' in window)
             setIsMobile(isMobileDevice)
         }
-        
+
         checkMobile()
         window.addEventListener('resize', checkMobile)
         return () => window.removeEventListener('resize', checkMobile)
     }, [])
+
+    // Load existing profile and goals data when dialog opens
+    useEffect(() => {
+        if (open && user && supabase) {
+            loadUserData()
+        }
+    }, [open, user, supabase, loadUserData])
+
+    const loadUserData = useCallback(async () => {
+        if (!user || !supabase) return
+
+        try {
+            setIsLoading(true)
+
+            // Load user profile
+            const { data: profileData, error: profileError } = await supabase
+                .from('user_profiles')
+                .select('*')
+                .eq('user_id', user.id)
+                .single()
+
+            if (profileError && profileError.code !== 'PGRST116') { // PGRST116 = no rows returned
+                console.error('Error loading profile:', profileError)
+            } else if (profileData) {
+                setProfile({
+                    weight: profileData.weight?.toString() || "",
+                    age: profileData.age?.toString() || "",
+                    height: profileData.height?.toString() || "",
+                    weightUnit: profileData.weight_unit || "kg",
+                    heightUnit: profileData.height_unit || "cm"
+                })
+            }
+
+            // Load user goals
+            const { data: goalsData, error: goalsError } = await supabase
+                .from('user_goals')
+                .select('*')
+                .eq('user_id', user.id)
+                .single()
+
+            if (goalsError && goalsError.code !== 'PGRST116') { // PGRST116 = no rows returned
+                console.error('Error loading goals:', goalsError)
+            } else if (goalsData) {
+                setGoals({
+                    dailyExerciseMinutes: goalsData.daily_exercise_minutes?.toString() || "30",
+                    weeklyExerciseSessions: goalsData.weekly_exercise_sessions?.toString() || "3",
+                    dailyCalories: goalsData.daily_calories?.toString() || "2000",
+                    activityLevel: goalsData.activity_level || "moderate",
+                    sleepHours: goalsData.sleep_hours?.toString() || "8",
+                    recoveryMinutes: goalsData.recovery_minutes?.toString() || "60",
+                    startingWeight: goalsData.starting_weight?.toString() || "",
+                    goalWeight: goalsData.goal_weight?.toString() || "",
+                    dietType: goalsData.diet_type || "maintenance"
+                })
+            }
+        } catch (error) {
+            console.error('Error loading user data:', error)
+            notifications.error('Load failed', {
+                description: 'Could not load your profile data'
+            })
+        } finally {
+            setIsLoading(false)
+        }
+    }, [user, supabase, notifications])
 
     // Handle numeric input with validation - prevents letters including 'e' and limits digits
     const handleNumericInput = (value: string, maxDigits: number, allowDecimal: boolean = false) => {
@@ -148,14 +217,90 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
         )
     }
 
-    const handleSaveProfile = () => {
-        // TODO: Implement profile saving logic
-        console.log("Saving profile:", profile)
+    const handleSaveProfile = async () => {
+        if (!user || !supabase) {
+            notifications.warning('Sign in required', {
+                description: 'Please sign in to save your profile'
+            })
+            return
+        }
+
+        try {
+            setIsLoading(true)
+
+            const profileData = {
+                user_id: user.id,
+                weight: profile.weight ? parseFloat(profile.weight) : null,
+                age: profile.age ? parseInt(profile.age) : null,
+                height: profile.height ? parseFloat(profile.height) : null,
+                weight_unit: profile.weightUnit,
+                height_unit: profile.heightUnit
+            }
+
+            const { error } = await supabase
+                .from('user_profiles')
+                .upsert(profileData, { onConflict: 'user_id' })
+
+            if (error) {
+                throw error
+            }
+
+            notifications.success('Profile saved', {
+                description: 'Your profile has been updated successfully'
+            })
+        } catch (error) {
+            console.error('Error saving profile:', error)
+            notifications.error('Save failed', {
+                description: 'Could not save your profile'
+            })
+        } finally {
+            setIsLoading(false)
+        }
     }
 
-    const handleSaveGoals = () => {
-        // TODO: Implement goals saving logic
-        console.log("Saving goals:", goals)
+    const handleSaveGoals = async () => {
+        if (!user || !supabase) {
+            notifications.warning('Sign in required', {
+                description: 'Please sign in to save your goals'
+            })
+            return
+        }
+
+        try {
+            setIsLoading(true)
+
+            const goalsData = {
+                user_id: user.id,
+                daily_exercise_minutes: goals.dailyExerciseMinutes ? parseInt(goals.dailyExerciseMinutes) : 30,
+                weekly_exercise_sessions: goals.weeklyExerciseSessions ? parseInt(goals.weeklyExerciseSessions) : 3,
+                daily_calories: goals.dailyCalories ? parseInt(goals.dailyCalories) : 2000,
+                activity_level: goals.activityLevel,
+                sleep_hours: goals.sleepHours ? parseFloat(goals.sleepHours) : 8.0,
+                recovery_minutes: goals.recoveryMinutes ? parseInt(goals.recoveryMinutes) : 60,
+                starting_weight: goals.startingWeight ? parseFloat(goals.startingWeight) : null,
+                goal_weight: goals.goalWeight ? parseFloat(goals.goalWeight) : null,
+                diet_type: goals.dietType
+            }
+
+            const { error } = await supabase
+                .from('user_goals')
+                .upsert(goalsData, { onConflict: 'user_id' })
+
+            if (error) {
+                throw error
+            }
+
+            notifications.success('Goals saved', {
+                description: 'Your goals have been updated successfully'
+            })
+        } catch (error) {
+            console.error('Error saving goals:', error)
+            notifications.error('Save failed', {
+                description: 'Could not save your goals'
+            })
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     const handleDataChange = () => {
@@ -289,9 +434,10 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
 
                                         <Button
                                             onClick={handleSaveProfile}
-                                            className="w-full bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-lg border border-[rgba(42,140,234,0.35)] shadow-[0_4px_16px_rgba(42,140,234,0.28)] hover:shadow-[0_6px_24px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all h-9 text-sm font-medium mt-6"
+                                            disabled={isLoading}
+                                            className="w-full bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-lg border border-[rgba(42,140,234,0.35)] shadow-[0_4px_16px_rgba(42,140,234,0.28)] hover:shadow-[0_6px_24px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all h-9 text-sm font-medium mt-6 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                                         >
-                                            Save Profile
+                                            {isLoading ? 'Saving...' : 'Save Profile'}
                                         </Button>
                                     </CardContent>
                                 </Card>
@@ -495,11 +641,12 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                             </div>
                                         </div>
 
-                                        <Button 
+                                        <Button
                                             onClick={handleSaveGoals}
-                                            className="w-full bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-lg border border-[rgba(42,140,234,0.35)] shadow-[0_4px_16px_rgba(42,140,234,0.28)] hover:shadow-[0_6px_24px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all h-9 text-sm font-medium mt-6"
+                                            disabled={isLoading}
+                                            className="w-full bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-lg border border-[rgba(42,140,234,0.35)] shadow-[0_4px_16px_rgba(42,140,234,0.28)] hover:shadow-[0_6px_24px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all h-9 text-sm font-medium mt-6 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                                         >
-                                            Save Goals
+                                            {isLoading ? 'Saving...' : 'Save Goals'}
                                         </Button>
                                     </CardContent>
                                 </Card>
