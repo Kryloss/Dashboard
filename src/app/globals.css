@@ -255,7 +255,7 @@ body {
   }
 
   .sleep-slider [data-radix-slider-track] {
-    background: #2A2B31;
+    background: transparent;
     position: relative;
     flex-grow: 1;
     border-radius: 9999px;
@@ -266,35 +266,30 @@ body {
     position: absolute;
     background: linear-gradient(to right, #2BD2FF, #2A8CEA);
     border-radius: 9999px;
-    height: 100%;
+    height: 12px;
+    top: -2px;
+    box-shadow: 0 2px 8px rgba(43, 210, 255, 0.4);
   }
 
   .sleep-slider [data-radix-slider-thumb] {
-    display: block;
-    width: 24px;
-    height: 24px;
-    background: linear-gradient(to bottom, #2BD2FF, #2A8CEA);
-    border: 3px solid #121318;
+    width: 20px;
+    height: 20px;
+    background: transparent;
+    border: none;
     border-radius: 50%;
-    box-shadow: 0 2px 8px rgba(43, 210, 255, 0.3), 0 0 0 1px rgba(43, 210, 255, 0.2);
     cursor: grab;
+    opacity: 0;
     transition: all 0.15s ease;
   }
 
   .sleep-slider [data-radix-slider-thumb]:hover {
-    box-shadow: 0 4px 12px rgba(43, 210, 255, 0.4), 0 0 0 2px rgba(43, 210, 255, 0.3);
-    transform: scale(1.1);
-  }
-
-  .sleep-slider [data-radix-slider-thumb]:focus {
-    outline: none;
-    box-shadow: 0 4px 12px rgba(43, 210, 255, 0.4), 0 0 0 3px rgba(43, 210, 255, 0.4);
-    transform: scale(1.1);
+    opacity: 0.3;
+    background: rgba(43, 210, 255, 0.5);
   }
 
   .sleep-slider [data-radix-slider-thumb]:active {
     cursor: grabbing;
-    transform: scale(1.05);
-    box-shadow: 0 2px 8px rgba(43, 210, 255, 0.5), 0 0 0 2px rgba(43, 210, 255, 0.4);
+    opacity: 0.5;
+    background: rgba(43, 210, 255, 0.7);
   }
 }
