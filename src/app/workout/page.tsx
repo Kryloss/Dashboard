@@ -17,7 +17,7 @@ import { UserDataStorage } from "@/lib/user-data-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 import { workoutStateManager, WorkoutState, forceRefreshOngoingWorkout, debugWorkoutState } from "@/lib/workout-state-manager"
-import { runWorkoutDiagnostics, checkWorkoutHealth, checkGoalHealth, logWorkoutState } from "@/lib/workout-diagnostics"
+import { runWorkoutDiagnostics, logWorkoutState } from "@/lib/workout-diagnostics"
 import { Plus, Flame, Dumbbell, User, Timer, Bike, Clock, Heart, FileText, Play, Edit3, Trash2, Moon, Footprints } from "lucide-react"
 
 export default function WorkoutPage() {

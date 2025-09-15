@@ -96,7 +96,7 @@ export default function WorkoutHistoryPage() {
         return () => {
             clearTimeout(initializeWithDelay)
         }
-    }, [user, supabase, filterType, limit, notifications, router])
+    }, [user, supabase, filterType, limit, notifications, router, loading])
 
     const loadMoreActivities = async () => {
         if (!user || !supabase || isLoading) return

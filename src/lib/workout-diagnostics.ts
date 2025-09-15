@@ -52,7 +52,7 @@ export class WorkoutDiagnostics {
 
         // Check goal progress calculation
         let goalProgressHealthy = false
-        let cacheValid = false
+        const cacheValid = false // Cache validation not implemented yet
         let lastCalculation: number | null = null
 
         try {
@@ -70,7 +70,7 @@ export class WorkoutDiagnostics {
         try {
             const goals = await UserDataStorage.getUserGoals()
             hasGoals = goals !== null
-            goalsValid = hasGoals && goals.dailyExerciseMinutes > 0
+            goalsValid = hasGoals && goals !== null && goals.dailyExerciseMinutes > 0
         } catch (error) {
             issues.push(`User goals check failed: ${error}`)
         }
