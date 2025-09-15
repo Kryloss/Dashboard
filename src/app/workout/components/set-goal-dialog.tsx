@@ -251,20 +251,59 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
         } catch (error: unknown) {
             console.error('Error saving profile:', error)
 
+            // Enhanced error handling with detailed diagnostics
+            let errorTitle = 'Profile Save Failed'
             let errorMessage = 'Could not save your profile'
+            let debugInfo = ''
+
             if (error && typeof error === 'object' && 'message' in error) {
-                const errorMsg = (error as Error).message
-                if (errorMsg.includes('relation "user_profiles" does not exist')) {
-                    errorMessage = 'Database tables not set up. Please run the SQL setup file.'
-                } else if (errorMsg.includes('permission denied')) {
-                    errorMessage = 'Permission denied. Please check your authentication.'
+                const errorMsg = (error as Error).message.toLowerCase()
+                const fullErrorMsg = (error as Error).message
+
+                // Log detailed error for debugging
+                console.log('Full error details:', {
+                    message: fullErrorMsg,
+                    error: error,
+                    user: user?.id,
+                    profileData: profile
+                })
+
+                if (errorMsg.includes('relation') && errorMsg.includes('user_profiles') && errorMsg.includes('does not exist')) {
+                    errorTitle = 'Database Setup Required'
+                    errorMessage = 'The user_profiles table does not exist in your database.'
+                    debugInfo = 'Solution: Run user-profiles-goals-safe-setup.sql in Supabase SQL Editor'
+                } else if (errorMsg.includes('permission denied') || errorMsg.includes('rls') || errorMsg.includes('policy')) {
+                    errorTitle = 'Permission Denied'
+                    errorMessage = 'Row Level Security is blocking this operation.'
+                    debugInfo = 'Solution: Run fix-profile-permissions.sql or check if you\'re properly signed in'
+                } else if (errorMsg.includes('duplicate key') || errorMsg.includes('unique constraint')) {
+                    errorTitle = 'Data Conflict'
+                    errorMessage = 'A profile already exists for this user.'
+                    debugInfo = 'This should auto-update. Check database policies.'
+                } else if (errorMsg.includes('foreign key') || errorMsg.includes('violates')) {
+                    errorTitle = 'Data Validation Error'
+                    errorMessage = 'Invalid data format or user reference.'
+                    debugInfo = `User ID: ${user?.id || 'undefined'}`
+                } else if (errorMsg.includes('network') || errorMsg.includes('fetch') || errorMsg.includes('connection')) {
+                    errorTitle = 'Connection Error'
+                    errorMessage = 'Unable to connect to database.'
+                    debugInfo = 'Check your internet connection and try again'
+                } else if (errorMsg.includes('invalid') && errorMsg.includes('jwt')) {
+                    errorTitle = 'Authentication Expired'
+                    errorMessage = 'Your session has expired.'
+                    debugInfo = 'Please sign out and sign back in'
                 } else {
-                    errorMessage = `Database error: ${errorMsg}`
+                    errorTitle = 'Database Error'
+                    errorMessage = `Unexpected database error: ${fullErrorMsg}`
+                    debugInfo = `Error type: ${(error as any)?.code || 'unknown'}`
                 }
+            } else {
+                debugInfo = `Unknown error type: ${typeof error}`
             }
 
-            notifications.error('Save failed', {
-                description: errorMessage
+            notifications.error(errorTitle, {
+                description: `${errorMessage}${debugInfo ? `\n\n💡 ${debugInfo}` : ''}`,
+                duration: 8000 // Longer duration for detailed messages
             })
         } finally {
             setIsLoading(false)
@@ -309,20 +348,63 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
         } catch (error: unknown) {
             console.error('Error saving goals:', error)
 
+            // Enhanced error handling with detailed diagnostics
+            let errorTitle = 'Goals Save Failed'
             let errorMessage = 'Could not save your goals'
+            let debugInfo = ''
+
             if (error && typeof error === 'object' && 'message' in error) {
-                const errorMsg = (error as Error).message
-                if (errorMsg.includes('relation "user_goals" does not exist')) {
-                    errorMessage = 'Database tables not set up. Please run the SQL setup file.'
-                } else if (errorMsg.includes('permission denied')) {
-                    errorMessage = 'Permission denied. Please check your authentication.'
+                const errorMsg = (error as Error).message.toLowerCase()
+                const fullErrorMsg = (error as Error).message
+
+                // Log detailed error for debugging
+                console.log('Full goals error details:', {
+                    message: fullErrorMsg,
+                    error: error,
+                    user: user?.id,
+                    goalsData: goals
+                })
+
+                if (errorMsg.includes('relation') && errorMsg.includes('user_goals') && errorMsg.includes('does not exist')) {
+                    errorTitle = 'Database Setup Required'
+                    errorMessage = 'The user_goals table does not exist in your database.'
+                    debugInfo = 'Solution: Run user-profiles-goals-safe-setup.sql in Supabase SQL Editor'
+                } else if (errorMsg.includes('permission denied') || errorMsg.includes('rls') || errorMsg.includes('policy')) {
+                    errorTitle = 'Permission Denied'
+                    errorMessage = 'Row Level Security is blocking this operation.'
+                    debugInfo = 'Solution: Run fix-profile-permissions.sql or check if you\'re properly signed in'
+                } else if (errorMsg.includes('duplicate key') || errorMsg.includes('unique constraint')) {
+                    errorTitle = 'Data Conflict'
+                    errorMessage = 'Goals already exist for this user.'
+                    debugInfo = 'This should auto-update. Check database policies.'
+                } else if (errorMsg.includes('foreign key') || errorMsg.includes('violates')) {
+                    errorTitle = 'Data Validation Error'
+                    errorMessage = 'Invalid data format or user reference.'
+                    debugInfo = `User ID: ${user?.id || 'undefined'}`
+                } else if (errorMsg.includes('network') || errorMsg.includes('fetch') || errorMsg.includes('connection')) {
+                    errorTitle = 'Connection Error'
+                    errorMessage = 'Unable to connect to database.'
+                    debugInfo = 'Check your internet connection and try again'
+                } else if (errorMsg.includes('invalid') && errorMsg.includes('jwt')) {
+                    errorTitle = 'Authentication Expired'
+                    errorMessage = 'Your session has expired.'
+                    debugInfo = 'Please sign out and sign back in'
+                } else if (errorMsg.includes('check constraint') || errorMsg.includes('violates check')) {
+                    errorTitle = 'Invalid Values'
+                    errorMessage = 'One or more goal values are outside allowed ranges.'
+                    debugInfo = 'Check activity level, diet type, and numeric values'
                 } else {
-                    errorMessage = `Database error: ${errorMsg}`
+                    errorTitle = 'Database Error'
+                    errorMessage = `Unexpected database error: ${fullErrorMsg}`
+                    debugInfo = `Error type: ${(error as any)?.code || 'unknown'}`
                 }
+            } else {
+                debugInfo = `Unknown error type: ${typeof error}`
             }
 
-            notifications.error('Save failed', {
-                description: errorMessage
+            notifications.error(errorTitle, {
+                description: `${errorMessage}${debugInfo ? `\n\n💡 ${debugInfo}` : ''}`,
+                duration: 8000 // Longer duration for detailed messages
             })
         } finally {
             setIsLoading(false)
