@@ -142,12 +142,15 @@ export function QuickLogDialog({ open, onOpenChange, onActivityLogged }: QuickLo
                 }, 2000)
             }
 
-            // Call the callback to refresh activities
-            if (onActivityLogged) {
-                onActivityLogged()
-            }
+            // Small delay to allow events to propagate before closing
+            setTimeout(() => {
+                // Call the callback to refresh activities
+                if (onActivityLogged) {
+                    onActivityLogged()
+                }
 
-            handleClose()
+                handleClose()
+            }, 100)
         } catch (error) {
             console.error('Error logging workout:', error)
             notifications.error('Log failed', {

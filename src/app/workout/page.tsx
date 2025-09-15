@@ -168,11 +168,11 @@ export default function WorkoutPage() {
                             console.error('Error loading ongoing workout:', error)
                         }
 
-                        // Refresh activities more frequently to catch new workout completions
-                        // Check every 30 seconds with higher probability
-                        if (Math.random() < 0.3) { // 30% chance every 30 seconds = ~every 2 minutes
+                        // Check for new workout completions less frequently and more intelligently
+                        // Only check every 2 minutes instead of constantly
+                        if (Math.random() < 0.05) { // 5% chance every 30 seconds = ~every 10 minutes
                             try {
-                                const activities = await WorkoutStorage.getRecentActivities(5) // Get more activities
+                                const activities = await WorkoutStorage.getRecentActivities(5)
                                 const currentActivityIds = recentActivities.map(a => a.id).sort().join(',')
                                 const newActivityIds = activities.map(a => a.id).sort().join(',')
 
@@ -184,7 +184,7 @@ export default function WorkoutPage() {
                                     GoalProgressCalculator.invalidateCache()
                                     await refreshGoalProgress(true)
 
-                                    console.log('🔄 New workout activity detected, updated rings')
+                                    console.log('🔄 New workout activity detected via polling, updated rings')
                                 }
                             } catch (error) {
                                 console.error('Error loading recent activities:', error)

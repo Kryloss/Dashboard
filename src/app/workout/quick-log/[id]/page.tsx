@@ -255,15 +255,21 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
                 description: 'Saved to history',
                 duration: 3000
             })
-            
+
             console.log('Quick log workout saved to history')
-            router.push('/workout')
+
+            // Small delay to allow events to propagate before navigation
+            setTimeout(() => {
+                router.push('/workout')
+            }, 200)
         } catch (error) {
             console.error('Error saving quick log workout:', error)
             notifications.error('Log failed', {
                 description: 'Could not save workout'
             })
-            router.push('/workout')
+            setTimeout(() => {
+                router.push('/workout')
+            }, 200)
         }
     }
 
