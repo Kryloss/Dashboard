@@ -152,6 +152,9 @@ export default function WorkoutPage() {
                     setTimeout(showWelcomeIfNewUser, 1000)
 
                     // Set up periodic check for ongoing workout updates only
+                    let lastActivityCheck = Date.now()
+                    const ACTIVITY_CHECK_INTERVAL = 5 * 60 * 1000 // Check for new activities every 5 minutes
+
                     const interval = setInterval(async () => {
                         try {
                             const workout = await WorkoutStorage.getOngoingWorkout()
@@ -168,9 +171,10 @@ export default function WorkoutPage() {
                             console.error('Error loading ongoing workout:', error)
                         }
 
-                        // Check for new workout completions less frequently and more intelligently
-                        // Only check every 2 minutes instead of constantly
-                        if (Math.random() < 0.05) { // 5% chance every 30 seconds = ~every 10 minutes
+                        // Check for new workout completions only every 5 minutes (instead of random polling)
+                        const now = Date.now()
+                        if (now - lastActivityCheck > ACTIVITY_CHECK_INTERVAL) {
+                            lastActivityCheck = now
                             try {
                                 const activities = await WorkoutStorage.getRecentActivities(5)
                                 const currentActivityIds = recentActivities.map(a => a.id).sort().join(',')
@@ -184,13 +188,13 @@ export default function WorkoutPage() {
                                     GoalProgressCalculator.invalidateCache()
                                     await refreshGoalProgress(true)
 
-                                    console.log('🔄 New workout activity detected via polling, updated rings')
+                                    console.log('🔄 New workout activity detected via periodic check, updated rings')
                                 }
                             } catch (error) {
                                 console.error('Error loading recent activities:', error)
                             }
                         }
-                    }, 30000) // Check every 30 seconds
+                    }, 30000) // Check every 30 seconds for ongoing workout updates
 
                     return () => clearInterval(interval)
                 } else if (user === null) {
@@ -326,6 +330,14 @@ export default function WorkoutPage() {
                         GoalProgressCalculator.invalidateCache()
                         await refreshGoalProgress(true)
                         console.log('✅ Same-tab workout data refreshed successfully')
+
+                        // Show success notification for quick-log completion
+                        if (e.detail?.source === 'quick-log' || e.detail?.source === 'quick-log-dialog') {
+                            notifications.success('Workout logged!', {
+                                description: 'Goal progress updated',
+                                duration: 3000
+                            })
+                        }
                     } catch (error) {
                         console.error('❌ Error refreshing after same-tab workout completion:', error)
                     }

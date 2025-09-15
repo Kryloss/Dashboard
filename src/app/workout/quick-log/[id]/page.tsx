@@ -116,12 +116,12 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
 
         const updatedExercises = [...exercises, newExercise]
         setExercises(updatedExercises)
-        
+
         notifications.success('Exercise added', {
             description: newExerciseName.trim(),
             duration: 2000
         })
-        
+
         setNewExerciseName("")
         setShowAddExercise(false)
     }
@@ -140,7 +140,7 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
         })
 
         setExercises(updatedExercises)
-        
+
         if (exercise) {
             notifications.info('Set added', {
                 description: `${exercise.name}`,
@@ -173,7 +173,7 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
         const exerciseToRemove = exercises.find(e => e.id === exerciseId)
         const updatedExercises = exercises.filter(exercise => exercise.id !== exerciseId)
         setExercises(updatedExercises)
-        
+
         if (exerciseToRemove) {
             notifications.warning('Exercise removed', {
                 description: exerciseToRemove.name,
@@ -218,7 +218,7 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
             // Only show on user action, with rate limiting
             const lastQuickLogNotification = localStorage.getItem('last-quicklog-notification')
             const now = Date.now()
-            
+
             if (!lastQuickLogNotification || now - parseInt(lastQuickLogNotification) > 60000) { // 1 minute
                 notifications.warning('Sign in required', {
                     description: 'Please sign in to log workouts',
@@ -257,6 +257,11 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
             })
 
             console.log('Quick log workout saved to history')
+
+            // Trigger refresh event for the main workout page
+            window.dispatchEvent(new CustomEvent('workoutCompleted', {
+                detail: { source: 'quick-log', workoutType, duration: durationSeconds }
+            }))
 
             // Small delay to allow events to propagate before navigation
             setTimeout(() => {

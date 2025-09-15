@@ -85,7 +85,7 @@ export function QuickLogDialog({ open, onOpenChange, onActivityLogged }: QuickLo
 
     const handleLogWorkout = async () => {
         if (!selectedType || (!hours && !minutes)) return
-        
+
         if (!user) {
             notifications.warning('Sign in required', {
                 description: 'Please sign in to log workouts',
@@ -141,6 +141,11 @@ export function QuickLogDialog({ open, onOpenChange, onActivityLogged }: QuickLo
                     })
                 }, 2000)
             }
+
+            // Trigger refresh event for the main workout page
+            window.dispatchEvent(new CustomEvent('workoutCompleted', {
+                detail: { source: 'quick-log-dialog', workoutType: selectedType, duration: durationSeconds }
+            }))
 
             // Small delay to allow events to propagate before closing
             setTimeout(() => {
