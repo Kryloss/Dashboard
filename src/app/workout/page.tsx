@@ -34,6 +34,8 @@ export default function WorkoutPage() {
     const [showSetGoalDialog, setShowSetGoalDialog] = useState(false)
     const [goalProgress, setGoalProgress] = useState<DailyGoalProgress | null>(null)
     const [isLoadingGoals, setIsLoadingGoals] = useState(true)
+    const [isInitialLoad, setIsInitialLoad] = useState(true)
+    const [lastUpdateKey, setLastUpdateKey] = useState<string>('')
 
 
 
@@ -173,7 +175,8 @@ export default function WorkoutPage() {
                                 setRecentActivities(activities)
 
                                 // Also refresh goal progress when activities change
-                                await refreshGoalProgress()
+                                GoalProgressCalculator.invalidateCache()
+                                await refreshGoalProgress(true)
                             } catch (error) {
                                 console.error('Error loading recent activities:', error)
                             }
@@ -226,12 +229,36 @@ export default function WorkoutPage() {
         }
     }, [ongoingWorkout?.isRunning])
 
-    // Function to refresh goal progress (accessible throughout component)
-    const refreshGoalProgress = async () => {
+    // Create update key for smart caching
+    const createUpdateKey = () => {
+        const today = new Date().toDateString()
+        const activitiesCount = recentActivities.length
+        const activitiesHash = recentActivities.map(a => `${a.id}-${a.durationSeconds}`).join(',')
+        return `${today}-${activitiesCount}-${activitiesHash}`
+    }
+
+    // Function to refresh goal progress with smart caching
+    const refreshGoalProgress = async (force = false) => {
         try {
-            setIsLoadingGoals(true)
+            const newUpdateKey = createUpdateKey()
+
+            // Skip update if data hasn't changed and it's not a forced update
+            if (!force && lastUpdateKey === newUpdateKey && goalProgress && !isInitialLoad) {
+                return
+            }
+
+            // Only show loading for initial load or significant changes
+            if (isInitialLoad || force) {
+                setIsLoadingGoals(true)
+            }
+
             const progress = await GoalProgressCalculator.calculateDailyProgress()
             setGoalProgress(progress)
+            setLastUpdateKey(newUpdateKey)
+
+            if (isInitialLoad) {
+                setIsInitialLoad(false)
+            }
         } catch (error) {
             console.error('Error refreshing goal progress:', error)
         } finally {
@@ -302,8 +329,25 @@ export default function WorkoutPage() {
 
 
 
+    // Get placeholder data for initial loading
+    const getPlaceholderRingData = () => {
+        // Show subtle progress to indicate activity while loading
+        const timeBasedProgress = Math.min((new Date().getHours() / 24) * 0.3, 0.3)
+        return {
+            recovery: timeBasedProgress,
+            nutrition: timeBasedProgress * 0.8,
+            exercise: timeBasedProgress * 1.2
+        }
+    }
+
     // Goal progress calculations
     const getGoalRingData = () => {
+        // For initial load, show placeholder data
+        if (isInitialLoad && !goalProgress) {
+            return getPlaceholderRingData()
+        }
+
+        // If we have previous data but are refreshing, keep showing previous data
         if (!goalProgress) {
             return {
                 recovery: 0,
@@ -553,8 +597,9 @@ export default function WorkoutPage() {
             await WorkoutStorage.deleteWorkoutActivity(activity.id)
             setRecentActivities(prev => prev.filter(a => a.id !== activity.id))
 
-            // Refresh goal progress after activity deletion
-            await refreshGoalProgress()
+            // Invalidate cache and refresh goal progress after activity deletion
+            GoalProgressCalculator.invalidateCache()
+            await refreshGoalProgress(true)
 
             notifications.success('Activity deleted', {
                 description: 'Workout removed from history',
@@ -593,8 +638,9 @@ export default function WorkoutPage() {
                 notes: updatedActivity.notes
             })
 
-            // Refresh goal progress after activity update
-            await refreshGoalProgress()
+            // Invalidate cache and refresh goal progress after activity update
+            GoalProgressCalculator.invalidateCache()
+            await refreshGoalProgress(true)
 
             notifications.success('Activity updated', {
                 description: 'Changes saved successfully',
@@ -653,19 +699,19 @@ export default function WorkoutPage() {
 
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
                                 <div className="flex flex-col items-center lg:items-start">
-                                    <div className="flex justify-center lg:justify-start">
-                                        {isLoadingGoals ? (
-                                            <div className="w-80 h-80 flex items-center justify-center">
-                                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2A8CEA]"></div>
+                                    <div className="flex justify-center lg:justify-start relative">
+                                        <GoalRings
+                                            size="lg"
+                                            recoveryProgress={getGoalRingData().recovery}
+                                            nutritionProgress={getGoalRingData().nutrition}
+                                            exerciseProgress={getGoalRingData().exercise}
+                                            streak={mockData.streak}
+                                            className={isInitialLoad && !goalProgress ? 'opacity-60' : ''}
+                                        />
+                                        {isLoadingGoals && isInitialLoad && (
+                                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2A8CEA] opacity-50"></div>
                                             </div>
-                                        ) : (
-                                            <GoalRings
-                                                size="lg"
-                                                recoveryProgress={getGoalRingData().recovery}
-                                                nutritionProgress={getGoalRingData().nutrition}
-                                                exerciseProgress={getGoalRingData().exercise}
-                                                streak={mockData.streak}
-                                            />
                                         )}
                                     </div>
                                 </div>
@@ -684,7 +730,7 @@ export default function WorkoutPage() {
                                                     <span className="text-[#F3F4F6] font-medium text-sm">Recovery</span>
                                                 </div>
                                                 <span className="text-[#2BD2FF] text-sm font-semibold">
-                                                    {isLoadingGoals ? '...' : `${Math.round(getGoalRingData().recovery * 100)}%`}
+                                                    {isLoadingGoals && isInitialLoad ? '...' : `${Math.round(getGoalRingData().recovery * 100)}%`}
                                                 </span>
                                             </div>
                                             {!isLoadingGoals && goalProgress && (
@@ -705,7 +751,7 @@ export default function WorkoutPage() {
                                                     <span className="text-[#F3F4F6] font-medium text-sm">Nutrition</span>
                                                 </div>
                                                 <span className="text-[#9BE15D] text-sm font-semibold">
-                                                    {isLoadingGoals ? '...' : `${Math.round(getGoalRingData().nutrition * 100)}%`}
+                                                    {isLoadingGoals && isInitialLoad ? '...' : `${Math.round(getGoalRingData().nutrition * 100)}%`}
                                                 </span>
                                             </div>
                                             {!isLoadingGoals && goalProgress && (
@@ -726,7 +772,7 @@ export default function WorkoutPage() {
                                                     <span className="text-[#F3F4F6] font-medium text-sm">Exercise</span>
                                                 </div>
                                                 <span className="text-[#FF2D55] text-sm font-semibold">
-                                                    {isLoadingGoals ? '...' : `${Math.round(getGoalRingData().exercise * 100)}%`}
+                                                    {isLoadingGoals && isInitialLoad ? '...' : `${Math.round(getGoalRingData().exercise * 100)}%`}
                                                 </span>
                                             </div>
                                             {!isLoadingGoals && goalProgress && (

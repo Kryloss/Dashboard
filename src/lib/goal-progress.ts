@@ -28,7 +28,17 @@ export interface DailyGoalProgress {
     }
 }
 
+// Cache for goal progress calculations
+interface ProgressCache {
+    date: string
+    data: DailyGoalProgress
+    timestamp: number
+}
+
 export class GoalProgressCalculator {
+    private static cache: ProgressCache | null = null
+    private static readonly CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+
     // Get today's date in user's local timezone
     static getTodayDateString(): string {
         const today = new Date()
@@ -55,8 +65,8 @@ export class GoalProgressCalculator {
     // Calculate exercise progress from today's completed workouts
     static async calculateExerciseProgress(userGoals: UserGoals): Promise<DailyGoalProgress['exercise']> {
         try {
-            // Get all recent activities (we'll filter for today)
-            const allActivities = await WorkoutStorage.getWorkoutActivities(100, 0)
+            // Get activities with optimized query (reduced limit for performance)
+            const allActivities = await WorkoutStorage.getWorkoutActivities(50, 0)
 
             // Filter for today's workouts
             const todayWorkouts = allActivities.filter(activity =>
@@ -156,9 +166,25 @@ export class GoalProgressCalculator {
         }
     }
 
-    // Main function to calculate all daily progress
-    static async calculateDailyProgress(): Promise<DailyGoalProgress | null> {
+    // Check if cache is valid
+    private static isCacheValid(): boolean {
+        if (!this.cache) return false
+
+        const now = Date.now()
+        const isExpired = now - this.cache.timestamp > this.CACHE_DURATION
+        const isDifferentDay = this.cache.date !== this.getTodayDateString()
+
+        return !isExpired && !isDifferentDay
+    }
+
+    // Main function to calculate all daily progress with caching
+    static async calculateDailyProgress(forceRefresh = false): Promise<DailyGoalProgress | null> {
         try {
+            // Return cached data if valid and not forcing refresh
+            if (!forceRefresh && this.isCacheValid()) {
+                return this.cache!.data
+            }
+
             // Get user goals
             const userGoals = await UserDataStorage.getUserGoals()
             if (!userGoals) {
@@ -171,20 +197,34 @@ export class GoalProgressCalculator {
             const nutrition = this.calculateNutritionProgress(userGoals)
             const recovery = this.calculateRecoveryProgress(userGoals)
 
-            return {
+            const result = {
                 exercise,
                 nutrition,
                 recovery
             }
+
+            // Update cache
+            this.cache = {
+                date: this.getTodayDateString(),
+                data: result,
+                timestamp: Date.now()
+            }
+
+            return result
         } catch (error) {
             console.error('Error calculating daily progress:', error)
             return null
         }
     }
 
+    // Invalidate cache (call when workout data changes)
+    static invalidateCache(): void {
+        this.cache = null
+    }
+
     // Refresh progress and notify listeners (for real-time updates)
     static async refreshProgress(): Promise<DailyGoalProgress | null> {
-        return this.calculateDailyProgress()
+        return this.calculateDailyProgress(true) // Force refresh for real-time updates
     }
 
     // Get progress for specific date (future enhancement)
