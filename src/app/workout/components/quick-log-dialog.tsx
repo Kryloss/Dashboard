@@ -142,12 +142,24 @@ export function QuickLogDialog({ open, onOpenChange, onActivityLogged }: QuickLo
                 }, 2000)
             }
 
-            // Trigger refresh event for the main workout page
+            // Trigger refresh event for the main workout page (dispatch immediately)
+            const eventDetail = { source: 'quick-log-dialog', workoutType: selectedType, duration: durationSeconds }
+            console.log('🚀 Dispatching workoutCompleted event from dialog:', eventDetail)
             window.dispatchEvent(new CustomEvent('workoutCompleted', {
-                detail: { source: 'quick-log-dialog', workoutType: selectedType, duration: durationSeconds }
+                detail: eventDetail
             }))
 
-            // Small delay to allow events to propagate before closing
+            // Also set localStorage flag as backup for cross-tab communication
+            const localStorageData = {
+                source: 'quick-log-dialog',
+                workoutType: selectedType,
+                duration: durationSeconds,
+                timestamp: Date.now()
+            }
+            console.log('💾 Setting localStorage backup from dialog:', localStorageData)
+            localStorage.setItem('workout-completed', JSON.stringify(localStorageData))
+
+            // Small delay to ensure events are processed before closing
             setTimeout(() => {
                 // Call the callback to refresh activities
                 if (onActivityLogged) {
@@ -155,7 +167,7 @@ export function QuickLogDialog({ open, onOpenChange, onActivityLogged }: QuickLo
                 }
 
                 handleClose()
-            }, 100)
+            }, 200)
         } catch (error) {
             console.error('Error logging workout:', error)
             notifications.error('Log failed', {

@@ -321,6 +321,7 @@ export default function WorkoutPage() {
         // Listen for custom events (same-tab workout completion)
         const handleCustomWorkoutEvent = (e: CustomEvent) => {
             console.log('🎯 Same-tab workout completion detected:', e.detail)
+            console.log('🎯 Event source:', e.detail?.source)
             if (user && supabase) {
                 const refreshData = async () => {
                     try {

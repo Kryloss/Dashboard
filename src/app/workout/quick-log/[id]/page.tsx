@@ -258,15 +258,27 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
 
             console.log('Quick log workout saved to history')
 
-            // Trigger refresh event for the main workout page
+            // Trigger refresh event for the main workout page (dispatch immediately)
+            const eventDetail = { source: 'quick-log', workoutType, duration: durationSeconds }
+            console.log('🚀 Dispatching workoutCompleted event:', eventDetail)
             window.dispatchEvent(new CustomEvent('workoutCompleted', {
-                detail: { source: 'quick-log', workoutType, duration: durationSeconds }
+                detail: eventDetail
             }))
 
-            // Small delay to allow events to propagate before navigation
+            // Also set localStorage flag as backup for cross-tab communication
+            const localStorageData = {
+                source: 'quick-log',
+                workoutType,
+                duration: durationSeconds,
+                timestamp: Date.now()
+            }
+            console.log('💾 Setting localStorage backup:', localStorageData)
+            localStorage.setItem('workout-completed', JSON.stringify(localStorageData))
+
+            // Small delay to ensure events are processed before navigation
             setTimeout(() => {
                 router.push('/workout')
-            }, 200)
+            }, 300)
         } catch (error) {
             console.error('Error saving quick log workout:', error)
             notifications.error('Log failed', {
