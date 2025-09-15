@@ -1,6 +1,6 @@
 "use client"
 
-import { Moon, Clock } from "lucide-react"
+import { Moon, Clock, Star, Smile, Meh, Frown } from "lucide-react"
 import { SleepData } from "@/lib/user-data-storage"
 
 interface SleepCardProps {
@@ -8,9 +8,10 @@ interface SleepCardProps {
 }
 
 export function SleepCard({ sleepData }: SleepCardProps) {
-    // Sleep quality emojis
-    const qualityEmojis = ['😴', '😌', '😊', '😄', '⭐']
+    // Sleep quality icons
+    const qualityIcons = [Frown, Meh, Smile, Smile, Star]
     const qualityLabels = ['Poor', 'Fair', 'Good', 'Great', 'Excellent']
+    const qualityColors = ['text-red-400', 'text-orange-400', 'text-yellow-400', 'text-green-400', 'text-blue-400']
 
     // Format time from minutes to display format
     const formatTime = (minutes: number) => {
@@ -105,7 +106,11 @@ export function SleepCard({ sleepData }: SleepCardProps) {
 
                 {/* Sleep Quality */}
                 <div className="flex flex-col items-center space-y-1 ml-4">
-                    <span className="text-2xl">{qualityEmojis[sleepData.qualityRating - 1]}</span>
+                    {(() => {
+                        const IconComponent = qualityIcons[sleepData.qualityRating - 1]
+                        const colorClass = qualityColors[sleepData.qualityRating - 1]
+                        return <IconComponent className={`w-6 h-6 ${colorClass}`} />
+                    })()}
                     <span className="text-xs text-[#A1A1AA] text-center">
                         {qualityLabels[sleepData.qualityRating - 1]}
                     </span>
