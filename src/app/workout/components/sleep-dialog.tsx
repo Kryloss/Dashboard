@@ -1,12 +1,11 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 import { UserDataStorage } from "@/lib/user-data-storage"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Slider } from "@/components/ui/slider"
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Moon, Plus, X, Star, Smile, Meh, Frown } from "lucide-react"
@@ -31,6 +30,11 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
     const [isLoading, setIsLoading] = useState(false)
     const [sleepQuality, setSleepQuality] = useState(3) // 1-5 rating
     const [sleepSessions, setSleepSessions] = useState<SleepSession[]>([])
+    const [selectedSession, setSelectedSession] = useState<string | null>(null)
+    const [isDragging, setIsDragging] = useState(false)
+    const [dragType, setDragType] = useState<'start' | 'end' | 'move' | null>(null)
+    const [dragOffset, setDragOffset] = useState(0)
+    const timelineRef = useRef<HTMLDivElement>(null)
 
     // Sleep quality icons
     const qualityIcons = [Frown, Meh, Smile, Smile, Star]
@@ -100,14 +104,154 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         return { hours, minutes, totalMinutes: duration }
     }
 
-    // Update session time
-    const updateSessionTime = (sessionId: string, startTime: number, endTime: number) => {
-        setSleepSessions(prev => prev.map(session =>
-            session.id === sessionId
-                ? { ...session, startTime, endTime }
-                : session
-        ))
+    // Convert pixel position to time (in minutes)
+    const pixelToTime = (pixel: number, timelineWidth: number): number => {
+        const ratio = pixel / timelineWidth
+        return Math.round((ratio * 720) / 15) * 15 // 720 minutes (12 hours), snap to 15-min intervals
     }
+
+    // Convert time to pixel position
+    const timeToPixel = (time: number, timelineWidth: number): number => {
+        const adjustedTime = time < 0 ? time + 720 : time // Handle negative times
+        return (Math.max(0, Math.min(720, adjustedTime)) / 720) * timelineWidth
+    }
+
+    // Handle timeline click - create or modify sleep sessions
+    const handleTimelineClick = (event: React.MouseEvent<HTMLDivElement>) => {
+        if (!timelineRef.current || isDragging) return
+
+        const rect = timelineRef.current.getBoundingClientRect()
+        const clickX = event.clientX - rect.left
+        const timelineWidth = rect.width
+        const clickedTime = pixelToTime(clickX, timelineWidth)
+
+        // Check if clicking on an existing session
+        const clickedSession = sleepSessions.find(session => {
+            const startPos = timeToPixel(session.startTime, timelineWidth)
+            const endPos = timeToPixel(session.endTime, timelineWidth)
+            return clickX >= startPos && clickX <= endPos
+        })
+
+        if (clickedSession) {
+            // Select the session for editing
+            setSelectedSession(clickedSession.id)
+        } else {
+            // Create new nap session at clicked position
+            if (sleepSessions.length >= 5) {
+                notifications.warning('Session limit', {
+                    description: 'Maximum 5 sleep sessions allowed',
+                    duration: 3000
+                })
+                return
+            }
+
+            const newSession: SleepSession = {
+                id: `nap-${Date.now()}`,
+                startTime: clickedTime,
+                endTime: Math.min(clickedTime + 60, 720), // 1 hour default, max 12 PM
+                wakeUps: 0,
+                type: 'nap'
+            }
+
+            setSleepSessions(prev => [...prev, newSession])
+            setSelectedSession(newSession.id)
+        }
+    }
+
+    // Handle mouse down on session for dragging
+    const handleSessionMouseDown = (event: React.MouseEvent, sessionId: string, dragMode: 'start' | 'end' | 'move') => {
+        event.stopPropagation()
+        if (!timelineRef.current) return
+
+        const rect = timelineRef.current.getBoundingClientRect()
+        const session = sleepSessions.find(s => s.id === sessionId)
+        if (!session) return
+
+        setIsDragging(true)
+        setDragType(dragMode)
+        setSelectedSession(sessionId)
+
+        const mouseX = event.clientX - rect.left
+        if (dragMode === 'move') {
+            const sessionStart = timeToPixel(session.startTime, rect.width)
+            setDragOffset(mouseX - sessionStart)
+        } else {
+            setDragOffset(0)
+        }
+    }
+
+    // Handle mouse move for dragging
+    const handleMouseMove = useCallback((event: MouseEvent) => {
+        if (!isDragging || !dragType || !selectedSession || !timelineRef.current) return
+
+        const rect = timelineRef.current.getBoundingClientRect()
+        const mouseX = event.clientX - rect.left
+        const timelineWidth = rect.width
+
+        setSleepSessions(prev => prev.map(session => {
+            if (session.id !== selectedSession) return session
+
+            const duration = session.endTime - session.startTime
+
+            switch (dragType) {
+                case 'start': {
+                    const newStartTime = pixelToTime(mouseX, timelineWidth)
+                    const maxStart = session.endTime - 15 // Minimum 15 minutes
+                    return {
+                        ...session,
+                        startTime: Math.max(
+                            session.type === 'main' ? -240 : 0, // 8 PM for main sleep
+                            Math.min(newStartTime, maxStart)
+                        )
+                    }
+                }
+                case 'end': {
+                    const newEndTime = pixelToTime(mouseX, timelineWidth)
+                    const minEnd = session.startTime + 15 // Minimum 15 minutes
+                    return {
+                        ...session,
+                        endTime: Math.max(minEnd, Math.min(newEndTime, 720))
+                    }
+                }
+                case 'move': {
+                    const newStartTime = pixelToTime(mouseX - dragOffset, timelineWidth)
+                    const maxStart = 720 - duration
+                    const minStart = session.type === 'main' ? -240 : 0
+                    const clampedStart = Math.max(minStart, Math.min(newStartTime, maxStart))
+                    return {
+                        ...session,
+                        startTime: clampedStart,
+                        endTime: clampedStart + duration
+                    }
+                }
+                default:
+                    return session
+            }
+        }))
+    }, [isDragging, dragType, selectedSession, dragOffset])
+
+    // Handle mouse up
+    const handleMouseUp = useCallback(() => {
+        setIsDragging(false)
+        setDragType(null)
+        setDragOffset(0)
+    }, [])
+
+    // Add mouse event listeners
+    useEffect(() => {
+        if (isDragging) {
+            document.addEventListener('mousemove', handleMouseMove)
+            document.addEventListener('mouseup', handleMouseUp)
+            document.body.style.cursor = dragType === 'move' ? 'grabbing' : 'col-resize'
+        }
+
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove)
+            document.removeEventListener('mouseup', handleMouseUp)
+            document.body.style.cursor = 'auto'
+        }
+    }, [isDragging, handleMouseMove, handleMouseUp, dragType])
+
 
     // Add wake-up to session
     const addWakeUp = (sessionId: string) => {
@@ -243,111 +387,166 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                     <span>12 PM</span>
                                 </div>
 
-                                {/* Timeline with Enhanced Sliders */}
+                                {/* Interactive Timeline */}
                                 <div className="relative w-full mb-8">
-                                    {/* Timeline container with extra height for enhanced sliders */}
-                                    <div className="relative w-full h-8 flex items-center">
+                                    {/* Instructions */}
+                                    <div className="text-xs text-[#A1A1AA] mb-3 text-center">
+                                        Click on timeline to add nap • Click and drag sleep bars to adjust time • Drag edges to resize
+                                    </div>
+
+                                    {/* Timeline container */}
+                                    <div
+                                        ref={timelineRef}
+                                        className="relative w-full h-12 flex items-center cursor-pointer select-none"
+                                        onClick={handleTimelineClick}
+                                    >
                                         {/* Timeline base */}
-                                        <div className="relative w-full h-2 bg-[#2A2B31] rounded-full">
+                                        <div className="relative w-full h-3 bg-[#2A2B31] rounded-full">
                                             {/* Hour markers */}
                                             {Array.from({ length: 13 }, (_, i) => (
                                                 <div
                                                     key={i}
-                                                    className="absolute w-px h-6 bg-[#4A4B51] top-1/2 transform -translate-y-1/2"
+                                                    className="absolute w-px h-8 bg-[#4A4B51] top-1/2 transform -translate-y-1/2"
                                                     style={{ left: `${(i / 12) * 100}%` }}
                                                 />
                                             ))}
+
+                                            {/* Time labels */}
+                                            <div className="absolute -top-6 left-0 text-xs text-[#7A7F86]">12 AM</div>
+                                            <div className="absolute -top-6 left-1/4 text-xs text-[#7A7F86]">3 AM</div>
+                                            <div className="absolute -top-6 left-1/2 text-xs text-[#7A7F86]">6 AM</div>
+                                            <div className="absolute -top-6 left-3/4 text-xs text-[#7A7F86]">9 AM</div>
+                                            <div className="absolute -top-6 right-0 text-xs text-[#7A7F86]">12 PM</div>
                                         </div>
 
-                                        {/* Sleep Session Sliders on Timeline */}
+                                        {/* Sleep Session Bars */}
                                         {sleepSessions.map((session, index) => {
-                                            const sliderValue = [session.startTime, session.endTime]
+                                            if (!timelineRef.current) return null
+
+                                            const timelineWidth = timelineRef.current.offsetWidth
+                                            const startPos = timeToPixel(session.startTime, timelineWidth)
+                                            const endPos = timeToPixel(session.endTime, timelineWidth)
+                                            const width = Math.max(endPos - startPos, 20) // Minimum 20px width
+                                            const isSelected = selectedSession === session.id
+
                                             return (
                                                 <div
                                                     key={session.id}
-                                                    className="absolute top-1/2 transform -translate-y-1/2 w-full h-6"
+                                                    className={`absolute top-1/2 transform -translate-y-1/2 h-4 rounded-lg border-2 transition-all duration-200 ${
+                                                        session.type === 'main'
+                                                            ? 'bg-gradient-to-r from-[#2BD2FF] to-[#2A8CEA] border-[#2BD2FF]'
+                                                            : 'bg-gradient-to-r from-[#9BE15D] to-[#7BC142] border-[#9BE15D]'
+                                                    } ${
+                                                        isSelected
+                                                            ? 'ring-2 ring-white ring-opacity-50 shadow-lg scale-105'
+                                                            : 'hover:scale-102 hover:shadow-md'
+                                                    }`}
                                                     style={{
+                                                        left: `${startPos}px`,
+                                                        width: `${width}px`,
                                                         zIndex: session.type === 'main' ? 10 + index : 5 + index,
-                                                        pointerEvents: 'auto'
                                                     }}
+                                                    onMouseDown={(e) => handleSessionMouseDown(e, session.id, 'move')}
                                                 >
-                                                    <Slider
-                                                        value={sliderValue}
-                                                        onValueChange={([start, end]) => updateSessionTime(session.id, start, end)}
-                                                        min={session.type === 'main' ? -4 * 60 : 0}
-                                                        max={12 * 60}
-                                                        step={15}
-                                                        className={`w-full ${session.type === 'main' ? 'sleep-slider-main' : 'sleep-slider-nap'}`}
+                                                    {/* Start resize handle */}
+                                                    <div
+                                                        className="absolute left-0 top-0 w-2 h-full cursor-col-resize opacity-0 hover:opacity-100 bg-white bg-opacity-30 rounded-l-lg transition-opacity"
+                                                        onMouseDown={(e) => handleSessionMouseDown(e, session.id, 'start')}
+                                                    />
+
+                                                    {/* Session label */}
+                                                    {width > 60 && (
+                                                        <div className="absolute inset-0 flex items-center justify-center text-white text-xs font-medium pointer-events-none">
+                                                            {session.type === 'main' ? 'Sleep' : 'Nap'}
+                                                        </div>
+                                                    )}
+
+                                                    {/* End resize handle */}
+                                                    <div
+                                                        className="absolute right-0 top-0 w-2 h-full cursor-col-resize opacity-0 hover:opacity-100 bg-white bg-opacity-30 rounded-r-lg transition-opacity"
+                                                        onMouseDown={(e) => handleSessionMouseDown(e, session.id, 'end')}
                                                     />
                                                 </div>
                                             )
                                         })}
                                     </div>
+
+                                    {/* Selected session details */}
+                                    {selectedSession && (
+                                        <div className="mt-4 p-3 bg-[#0E0F13] border border-[#2A8CEA] rounded-lg">
+                                            {(() => {
+                                                const session = sleepSessions.find(s => s.id === selectedSession)
+                                                if (!session) return null
+                                                const duration = calculateDuration(session.startTime, session.endTime)
+
+                                                return (
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center space-x-3">
+                                                            <div className={`w-3 h-3 rounded-full ${
+                                                                session.type === 'main' ? 'bg-[#2BD2FF]' : 'bg-[#9BE15D]'
+                                                            }`} />
+                                                            <span className="text-sm font-medium text-[#F3F4F6]">
+                                                                {session.type === 'main' ? 'Main Sleep' : 'Nap'} • {formatTime(session.startTime)} - {formatTime(session.endTime)}
+                                                            </span>
+                                                            <span className="text-xs text-[#A1A1AA]">
+                                                                {duration.hours}h {duration.minutes}m
+                                                            </span>
+                                                            {session.wakeUps > 0 && (
+                                                                <span className="text-xs text-[#A1A1AA]">
+                                                                    • {session.wakeUps} wake-ups
+                                                                </span>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="flex items-center space-x-2">
+                                                            <Button
+                                                                onClick={() => addWakeUp(session.id)}
+                                                                variant="ghost"
+                                                                className="text-xs h-auto px-2 py-1 text-[#A1A1AA] hover:text-[#F3F4F6]"
+                                                            >
+                                                                + Wake-up
+                                                            </Button>
+                                                            {session.type === 'nap' && (
+                                                                <Button
+                                                                    onClick={() => removeSession(session.id)}
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="w-6 h-6 text-[#A1A1AA] hover:text-red-400 hover:bg-red-500/10"
+                                                                >
+                                                                    <X className="w-3 h-3" />
+                                                                </Button>
+                                                            )}
+                                                            <Button
+                                                                onClick={() => setSelectedSession(null)}
+                                                                variant="ghost"
+                                                                className="text-xs h-auto px-2 py-1 text-[#A1A1AA] hover:text-[#F3F4F6]"
+                                                            >
+                                                                Done
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })()}
+                                        </div>
+                                    )}
                                 </div>
 
-                                {/* Sleep Sessions Info */}
-                                <div className="space-y-4 mb-6">
-                                    {sleepSessions.map((session) => {
-                                        const duration = calculateDuration(session.startTime, session.endTime)
-
-                                        return (
-                                            <div key={session.id} className="flex items-center justify-between p-3 bg-[#0E0F13] border border-[#212227] rounded-lg">
-                                                <div className="flex items-center space-x-3">
-                                                    <div className={`w-3 h-3 rounded-full ${
-                                                        session.type === 'main'
-                                                            ? 'bg-[#2BD2FF]'
-                                                            : 'bg-[#9BE15D]'
-                                                    }`} />
-                                                    <span className="text-sm font-medium text-[#F3F4F6]">
-                                                        {session.type === 'main' ? 'Main Sleep' : 'Nap'}
-                                                    </span>
-                                                    <span className="text-xs text-[#A1A1AA]">
-                                                        {formatTime(session.startTime)} - {formatTime(session.endTime)}
-                                                    </span>
-                                                    <span className="text-xs text-[#A1A1AA]">
-                                                        {duration.hours}h {duration.minutes}m
-                                                    </span>
-                                                    {session.wakeUps > 0 && (
-                                                        <span className="text-xs text-[#A1A1AA]">
-                                                            • {session.wakeUps} wake-ups
-                                                        </span>
-                                                    )}
-                                                </div>
-
-                                                <div className="flex items-center space-x-2">
-                                                    <Button
-                                                        onClick={() => addWakeUp(session.id)}
-                                                        variant="ghost"
-                                                        className="text-xs h-auto px-2 py-1 text-[#A1A1AA] hover:text-[#F3F4F6]"
-                                                    >
-                                                        + Wake-up
-                                                    </Button>
-                                                    {session.type === 'nap' && (
-                                                        <Button
-                                                            onClick={() => removeSession(session.id)}
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="w-6 h-6 text-[#A1A1AA] hover:text-red-400 hover:bg-red-500/10"
-                                                        >
-                                                            <X className="w-3 h-3" />
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )
-                                    })}
-                                </div>
 
                                 {/* Add Nap Button */}
                                 {sleepSessions.length < 5 && (
-                                    <Button
-                                        onClick={addNapSession}
-                                        variant="outline"
-                                        className="w-full border-[#212227] text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)]"
-                                    >
-                                        <Plus className="w-4 h-4 mr-2" />
-                                        Add Nap
-                                    </Button>
+                                    <div className="text-center mb-6">
+                                        <Button
+                                            onClick={addNapSession}
+                                            variant="outline"
+                                            className="border-[#212227] text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)]"
+                                        >
+                                            <Plus className="w-4 h-4 mr-2" />
+                                            Add Nap
+                                        </Button>
+                                        <div className="text-xs text-[#7A7F86] mt-2">
+                                            Or click anywhere on the timeline above
+                                        </div>
+                                    </div>
                                 )}
                             </div>
                         </div>
