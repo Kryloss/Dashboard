@@ -17,6 +17,7 @@ import { UserDataStorage } from "@/lib/user-data-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 import { workoutStateManager, WorkoutState, forceRefreshOngoingWorkout, debugWorkoutState } from "@/lib/workout-state-manager"
+import { runWorkoutDiagnostics, checkWorkoutHealth, checkGoalHealth, logWorkoutState } from "@/lib/workout-diagnostics"
 import { Plus, Flame, Dumbbell, User, Timer, Bike, Clock, Heart, FileText, Play, Edit3, Trash2, Moon, Footprints } from "lucide-react"
 
 export default function WorkoutPage() {
@@ -623,6 +624,38 @@ export default function WorkoutPage() {
                                         >
                                             🔍 Debug
                                         </Button>
+                                        <Button
+                                            onClick={async () => {
+                                                console.log('🏥 Running comprehensive diagnostics...')
+                                                const result = await runWorkoutDiagnostics()
+                                                console.log('🏥 Diagnostic Results:', result)
+
+                                                const status = result.overallHealth === 'healthy' ? 'success' :
+                                                    result.overallHealth === 'warning' ? 'warning' : 'error'
+
+                                                notifications[status](`Diagnostics: ${result.overallHealth}`, {
+                                                    description: `${result.issues.length} issues found`,
+                                                    duration: 4000
+                                                })
+                                            }}
+                                            variant="ghost"
+                                            className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full text-xs"
+                                        >
+                                            🏥 Diagnose
+                                        </Button>
+                                        <Button
+                                            onClick={() => {
+                                                logWorkoutState()
+                                                notifications.info('System state logged', {
+                                                    description: 'Check console for detailed state',
+                                                    duration: 2000
+                                                })
+                                            }}
+                                            variant="ghost"
+                                            className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full text-xs"
+                                        >
+                                            📊 State
+                                        </Button>
                                     </>
                                 )}
                                 <Button
@@ -665,7 +698,7 @@ export default function WorkoutPage() {
                                                     {workoutState.goalProgress && (
                                                         <div className="text-xs text-[#A1A1AA]">
                                                             {workoutState.goalProgress.recovery.currentHours.toFixed(1)}h of {workoutState.goalProgress.recovery.targetHours}h
-                                                            {workoutState.goalProgress.recovery.placeholder && <span className="ml-1 text-[#9CA3AF]">(estimated)</span>}
+                                                            {workoutState.goalProgress.recovery.placeholder && <span className="ml-1 text-[#9CA3AF]"></span>}
                                                         </div>
                                                     )}
                                                 </div>
@@ -688,7 +721,7 @@ export default function WorkoutPage() {
                                                     {workoutState.goalProgress && (
                                                         <div className="text-xs text-[#A1A1AA]">
                                                             {workoutState.goalProgress.nutrition.currentCalories} of {workoutState.goalProgress.nutrition.targetCalories} cal
-                                                            {workoutState.goalProgress.nutrition.placeholder && <span className="ml-1 text-[#9CA3AF]">(estimated)</span>}
+                                                            {workoutState.goalProgress.nutrition.placeholder && <span className="ml-1 text-[#9CA3AF]"></span>}
                                                         </div>
                                                     )}
                                                 </div>
