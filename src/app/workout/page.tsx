@@ -587,22 +587,24 @@ export default function WorkoutPage() {
                                         {/* Recovery Summary */}
                                         <div className="p-3 bg-[#121318] border border-[#212227] rounded-[12px] hover:border-[#2A2B31] transition-colors cursor-pointer">
                                             <div className="flex items-center justify-between">
-                                                <div className="flex items-center space-x-3">
+                                                <div className="flex items-center space-x-3 flex-1">
                                                     <div className="w-6 h-6 bg-gradient-to-br from-[#2BD2FF] to-[#2A8CEA] rounded-[8px] flex items-center justify-center">
                                                         <Moon className="w-3 h-3 text-white" />
                                                     </div>
-                                                    <span className="text-[#F3F4F6] font-medium text-sm">Recovery</span>
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className="text-[#2BD2FF] text-sm font-semibold">
-                                                        {workoutState.isLoading ? '—' : `${Math.round(getGoalRingData().recovery * 100)}%`}
-                                                    </div>
-                                                    {!workoutState.isLoading && workoutState.goalProgress && (
-                                                        <div className="text-xs text-[#A1A1AA]">
-                                                            {workoutState.goalProgress.recovery.currentHours.toFixed(1)}h of {workoutState.goalProgress.recovery.targetHours}h
-                                                            {workoutState.goalProgress.recovery.placeholder && <span className="ml-1 text-[#9CA3AF]">(estimated)</span>}
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-[#F3F4F6] font-medium text-sm">Recovery</span>
+                                                            <span className="text-[#2BD2FF] text-sm font-semibold">
+                                                                {workoutState.isLoading ? '—' : `${Math.round(getGoalRingData().recovery * 100)}%`}
+                                                            </span>
                                                         </div>
-                                                    )}
+                                                        {!workoutState.isLoading && workoutState.goalProgress && (
+                                                            <div className="text-xs text-[#A1A1AA] mt-1">
+                                                                {workoutState.goalProgress.recovery.currentHours.toFixed(1)}h of {workoutState.goalProgress.recovery.targetHours}h
+                                                                {workoutState.goalProgress.recovery.placeholder && <span className="ml-1 text-[#9CA3AF]">(estimated)</span>}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -610,22 +612,24 @@ export default function WorkoutPage() {
                                         {/* Nutrition Summary */}
                                         <div className="p-3 bg-[#121318] border border-[#212227] rounded-[12px] hover:border-[#2A2B31] transition-colors cursor-pointer">
                                             <div className="flex items-center justify-between">
-                                                <div className="flex items-center space-x-3">
+                                                <div className="flex items-center space-x-3 flex-1">
                                                     <div className="w-6 h-6 bg-gradient-to-br from-[#9BE15D] to-[#00E676] rounded-[8px] flex items-center justify-center">
                                                         <Flame className="w-3 h-3 text-white" />
                                                     </div>
-                                                    <span className="text-[#F3F4F6] font-medium text-sm">Nutrition</span>
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className="text-[#9BE15D] text-sm font-semibold">
-                                                        {workoutState.isLoading ? '—' : `${Math.round(getGoalRingData().nutrition * 100)}%`}
-                                                    </div>
-                                                    {!workoutState.isLoading && workoutState.goalProgress && (
-                                                        <div className="text-xs text-[#A1A1AA]">
-                                                            {workoutState.goalProgress.nutrition.currentCalories} of {workoutState.goalProgress.nutrition.targetCalories} cal
-                                                            {workoutState.goalProgress.nutrition.placeholder && <span className="ml-1 text-[#9CA3AF]">(estimated)</span>}
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-[#F3F4F6] font-medium text-sm">Nutrition</span>
+                                                            <span className="text-[#9BE15D] text-sm font-semibold">
+                                                                {workoutState.isLoading ? '—' : `${Math.round(getGoalRingData().nutrition * 100)}%`}
+                                                            </span>
                                                         </div>
-                                                    )}
+                                                        {!workoutState.isLoading && workoutState.goalProgress && (
+                                                            <div className="text-xs text-[#A1A1AA] mt-1">
+                                                                {workoutState.goalProgress.nutrition.currentCalories} of {workoutState.goalProgress.nutrition.targetCalories} cal
+                                                                {workoutState.goalProgress.nutrition.placeholder && <span className="ml-1 text-[#9CA3AF]">(estimated)</span>}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -633,24 +637,26 @@ export default function WorkoutPage() {
                                         {/* Exercise Summary */}
                                         <div className="p-3 bg-[#121318] border border-[#212227] rounded-[12px] hover:border-[#2A2B31] transition-colors cursor-pointer">
                                             <div className="flex items-center justify-between">
-                                                <div className="flex items-center space-x-3">
+                                                <div className="flex items-center space-x-3 flex-1">
                                                     <div className="w-6 h-6 bg-gradient-to-br from-[#FF2D55] to-[#FF375F] rounded-[8px] flex items-center justify-center">
                                                         <Dumbbell className="w-3 h-3 text-white" />
                                                     </div>
-                                                    <span className="text-[#F3F4F6] font-medium text-sm">Exercise</span>
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className="text-[#FF2D55] text-sm font-semibold">
-                                                        {workoutState.isLoading ? '—' : `${Math.round(getGoalRingData().exercise * 100)}%`}
-                                                    </div>
-                                                    {!workoutState.isLoading && workoutState.goalProgress && (
-                                                        <div className="text-xs text-[#A1A1AA]">
-                                                            {workoutState.goalProgress.exercise.currentMinutes}m of {workoutState.goalProgress.exercise.targetMinutes}m
-                                                            {workoutState.goalProgress.exercise.sessionCount > 0 && (
-                                                                <span className="ml-2">• {workoutState.goalProgress.exercise.sessionCount} session{workoutState.goalProgress.exercise.sessionCount !== 1 ? 's' : ''}</span>
-                                                            )}
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-[#F3F4F6] font-medium text-sm">Exercise</span>
+                                                            <span className="text-[#FF2D55] text-sm font-semibold">
+                                                                {workoutState.isLoading ? '—' : `${Math.round(getGoalRingData().exercise * 100)}%`}
+                                                            </span>
                                                         </div>
-                                                    )}
+                                                        {!workoutState.isLoading && workoutState.goalProgress && (
+                                                            <div className="text-xs text-[#A1A1AA] mt-1">
+                                                                {workoutState.goalProgress.exercise.currentMinutes}m of {workoutState.goalProgress.exercise.targetMinutes}m
+                                                                {workoutState.goalProgress.exercise.sessionCount > 0 && (
+                                                                    <span className="ml-2">• {workoutState.goalProgress.exercise.sessionCount} session{workoutState.goalProgress.exercise.sessionCount !== 1 ? 's' : ''}</span>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
