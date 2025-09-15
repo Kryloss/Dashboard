@@ -621,8 +621,23 @@ export class WorkoutStorage {
         }
 
         // Always trigger cross-tab communication for workout completion
-        localStorage.setItem('workout-completed', `${Date.now()}-${newActivity.id}`)
-        localStorage.removeItem('workout-completed')
+        try {
+            const eventData = `${Date.now()}-${newActivity.id}`
+            localStorage.setItem('workout-completed', eventData)
+            console.log('🚀 Workout completion event triggered:', eventData)
+
+            // Also trigger a custom event for same-tab detection
+            window.dispatchEvent(new CustomEvent('workoutCompleted', {
+                detail: { activityId: newActivity.id, timestamp: Date.now() }
+            }))
+
+            // Use setTimeout to ensure the event has time to propagate
+            setTimeout(() => {
+                localStorage.removeItem('workout-completed')
+            }, 100)
+        } catch (error) {
+            console.warn('Could not trigger cross-tab workout completion event:', error)
+        }
 
         return newActivity
     }

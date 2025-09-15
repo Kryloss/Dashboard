@@ -293,17 +293,41 @@ export default function WorkoutPage() {
 
         // Listen for localStorage changes (workout completion events from other tabs)
         const handleStorageChange = (e: StorageEvent) => {
-            if (e.key === 'workout-completed' && user && supabase) {
-                console.log('🎯 Workout completion detected from another tab')
+            console.log('📱 Storage event detected:', e.key, e.newValue)
+
+            if (e.key === 'workout-completed' && e.newValue && user && supabase) {
+                console.log('🎯 Workout completion detected:', e.newValue)
                 // Immediately refresh activities and goal progress
                 const refreshData = async () => {
                     try {
+                        console.log('🔄 Refreshing workout data after completion...')
                         const activities = await WorkoutStorage.getRecentActivities(5)
                         setRecentActivities(activities)
                         GoalProgressCalculator.invalidateCache()
                         await refreshGoalProgress(true)
+                        console.log('✅ Workout data refreshed successfully')
                     } catch (error) {
-                        console.error('Error refreshing after workout completion:', error)
+                        console.error('❌ Error refreshing after workout completion:', error)
+                    }
+                }
+                refreshData()
+            }
+        }
+
+        // Listen for custom events (same-tab workout completion)
+        const handleCustomWorkoutEvent = (e: CustomEvent) => {
+            console.log('🎯 Same-tab workout completion detected:', e.detail)
+            if (user && supabase) {
+                const refreshData = async () => {
+                    try {
+                        console.log('🔄 Refreshing workout data after same-tab completion...')
+                        const activities = await WorkoutStorage.getRecentActivities(5)
+                        setRecentActivities(activities)
+                        GoalProgressCalculator.invalidateCache()
+                        await refreshGoalProgress(true)
+                        console.log('✅ Same-tab workout data refreshed successfully')
+                    } catch (error) {
+                        console.error('❌ Error refreshing after same-tab workout completion:', error)
                     }
                 }
                 refreshData()
@@ -313,11 +337,13 @@ export default function WorkoutPage() {
         document.addEventListener('visibilitychange', handleVisibilityChange)
         window.addEventListener('focus', handleFocus)
         window.addEventListener('storage', handleStorageChange)
+        window.addEventListener('workoutCompleted', handleCustomWorkoutEvent as EventListener)
 
         return () => {
             document.removeEventListener('visibilitychange', handleVisibilityChange)
             window.removeEventListener('focus', handleFocus)
             window.removeEventListener('storage', handleStorageChange)
+            window.removeEventListener('workoutCompleted', handleCustomWorkoutEvent as EventListener)
         }
     }, [user, supabase])
 
