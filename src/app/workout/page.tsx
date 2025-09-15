@@ -594,7 +594,7 @@ export default function WorkoutPage() {
                                                     <span className="text-[#F3F4F6] font-medium text-sm">Recovery</span>
                                                 </div>
                                                 <div className="flex-1 text-center">
-                                                    {!workoutState.isLoading && workoutState.goalProgress && (
+                                                    {workoutState.goalProgress && (
                                                         <div className="text-xs text-[#A1A1AA]">
                                                             {workoutState.goalProgress.recovery.currentHours.toFixed(1)}h of {workoutState.goalProgress.recovery.targetHours}h
                                                             {workoutState.goalProgress.recovery.placeholder && <span className="ml-1 text-[#9CA3AF]">(estimated)</span>}
@@ -602,7 +602,7 @@ export default function WorkoutPage() {
                                                     )}
                                                 </div>
                                                 <div className="text-[#2BD2FF] text-sm font-semibold">
-                                                    {workoutState.isLoading ? '—' : `${Math.round(getGoalRingData().recovery * 100)}%`}
+                                                    {workoutState.goalProgress ? `${Math.round(getGoalRingData().recovery * 100)}%` : '—'}
                                                 </div>
                                             </div>
                                         </div>
@@ -617,7 +617,7 @@ export default function WorkoutPage() {
                                                     <span className="text-[#F3F4F6] font-medium text-sm">Nutrition</span>
                                                 </div>
                                                 <div className="flex-1 text-center">
-                                                    {!workoutState.isLoading && workoutState.goalProgress && (
+                                                    {workoutState.goalProgress && (
                                                         <div className="text-xs text-[#A1A1AA]">
                                                             {workoutState.goalProgress.nutrition.currentCalories} of {workoutState.goalProgress.nutrition.targetCalories} cal
                                                             {workoutState.goalProgress.nutrition.placeholder && <span className="ml-1 text-[#9CA3AF]">(estimated)</span>}
@@ -625,7 +625,7 @@ export default function WorkoutPage() {
                                                     )}
                                                 </div>
                                                 <div className="text-[#9BE15D] text-sm font-semibold">
-                                                    {workoutState.isLoading ? '—' : `${Math.round(getGoalRingData().nutrition * 100)}%`}
+                                                    {workoutState.goalProgress ? `${Math.round(getGoalRingData().nutrition * 100)}%` : '—'}
                                                 </div>
                                             </div>
                                         </div>
@@ -640,7 +640,7 @@ export default function WorkoutPage() {
                                                     <span className="text-[#F3F4F6] font-medium text-sm">Exercise</span>
                                                 </div>
                                                 <div className="flex-1 text-center">
-                                                    {!workoutState.isLoading && workoutState.goalProgress && (
+                                                    {workoutState.goalProgress && (
                                                         <div className="text-xs text-[#A1A1AA]">
                                                             {workoutState.goalProgress.exercise.currentMinutes}m of {workoutState.goalProgress.exercise.targetMinutes}m
                                                             {workoutState.goalProgress.exercise.sessionCount > 0 && (
@@ -650,7 +650,7 @@ export default function WorkoutPage() {
                                                     )}
                                                 </div>
                                                 <div className="text-[#FF2D55] text-sm font-semibold">
-                                                    {workoutState.isLoading ? '—' : `${Math.round(getGoalRingData().exercise * 100)}%`}
+                                                    {workoutState.goalProgress ? `${Math.round(getGoalRingData().exercise * 100)}%` : '—'}
                                                 </div>
                                             </div>
                                         </div>
@@ -835,7 +835,7 @@ export default function WorkoutPage() {
                                 </div>
 
                                 <div className="space-y-4">
-                                    {workoutState.isLoading ? (
+                                    {workoutState.isLoading && workoutState.recentActivities.length === 0 ? (
                                         <>
                                             {Array.from({ length: 3 }, (_, index) => (
                                                 <div

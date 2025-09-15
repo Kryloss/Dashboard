@@ -65,7 +65,11 @@ class WorkoutStateManager {
     private async performRefresh(): Promise<void> {
         console.log('🔄 WorkoutStateManager: Starting refresh...')
 
-        this.setState({ isLoading: true })
+        // Don't set loading to true if we already have data - keep previous data visible
+        const hasExistingData = this.state.goalProgress !== null || this.state.recentActivities.length > 0
+        if (!hasExistingData) {
+            this.setState({ isLoading: true })
+        }
 
         try {
             // Invalidate cache to ensure fresh data
@@ -95,7 +99,10 @@ class WorkoutStateManager {
 
         } catch (error) {
             console.error('❌ WorkoutStateManager: Refresh failed', error)
-            this.setState({ isLoading: false })
+            // Only set loading to false if we were actually loading
+            if (!hasExistingData) {
+                this.setState({ isLoading: false })
+            }
         }
     }
 
