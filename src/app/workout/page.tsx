@@ -13,6 +13,7 @@ import { WorkoutTypeDialog } from "./components/workout-type-dialog"
 import { SetGoalDialog } from "./components/set-goal-dialog"
 import { ActivityEditModal } from "./history/components/activity-edit-modal"
 import { WorkoutStorage, OngoingWorkout, WorkoutActivity } from "@/lib/workout-storage"
+import { UserDataStorage } from "@/lib/user-data-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 import { Plus, Flame, Dumbbell, User, Timer, Bike, Clock, Heart, FileText, Play, Edit3, Trash2, Moon, Footprints } from "lucide-react"
@@ -44,6 +45,7 @@ export default function WorkoutPage() {
                 if (user && supabase) {
                     // Initialize storage with user context
                     WorkoutStorage.initialize(user, supabase)
+                    UserDataStorage.initialize(user, supabase)
 
                     // Check if this is a new user and show welcome message
                     const showWelcomeIfNewUser = () => {

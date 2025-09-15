@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
+import { UserDataStorage, UserProfile, UserGoals } from "@/lib/user-data-storage"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -19,7 +20,7 @@ interface SetGoalDialogProps {
     onOpenChange: (open: boolean) => void
 }
 
-interface UserProfile {
+interface ProfileFormData {
     weight: string
     age: string
     height: string
@@ -27,7 +28,7 @@ interface UserProfile {
     heightUnit: string
 }
 
-interface Goals {
+interface GoalsFormData {
     dailyExerciseMinutes: string
     weeklyExerciseSessions: string
     dailyCalories: string
@@ -46,7 +47,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
     const [refreshKey, setRefreshKey] = useState(0)
     const [isLoading, setIsLoading] = useState(false)
 
-    const [profile, setProfile] = useState<UserProfile>({
+    const [profile, setProfile] = useState<ProfileFormData>({
         weight: "",
         age: "",
         height: "",
@@ -54,7 +55,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
         heightUnit: "cm"
     })
 
-    const [goals, setGoals] = useState<Goals>({
+    const [goals, setGoals] = useState<GoalsFormData>({
         dailyExerciseMinutes: "30",
         weeklyExerciseSessions: "3",
         dailyCalories: "2000",
@@ -88,45 +89,34 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
         try {
             setIsLoading(true)
 
-            // Load user profile
-            const { data: profileData, error: profileError } = await supabase
-                .from('user_profiles')
-                .select('*')
-                .eq('user_id', user.id)
-                .single()
+            // Initialize UserDataStorage with current user and supabase client
+            UserDataStorage.initialize(user, supabase)
 
-            if (profileError && profileError.code !== 'PGRST116') { // PGRST116 = no rows returned
-                console.error('Error loading profile:', profileError)
-            } else if (profileData) {
+            // Load user profile
+            const profileData = await UserDataStorage.getUserProfile()
+            if (profileData) {
                 setProfile({
                     weight: profileData.weight?.toString() || "",
                     age: profileData.age?.toString() || "",
                     height: profileData.height?.toString() || "",
-                    weightUnit: profileData.weight_unit || "kg",
-                    heightUnit: profileData.height_unit || "cm"
+                    weightUnit: profileData.weightUnit,
+                    heightUnit: profileData.heightUnit
                 })
             }
 
             // Load user goals
-            const { data: goalsData, error: goalsError } = await supabase
-                .from('user_goals')
-                .select('*')
-                .eq('user_id', user.id)
-                .single()
-
-            if (goalsError && goalsError.code !== 'PGRST116') { // PGRST116 = no rows returned
-                console.error('Error loading goals:', goalsError)
-            } else if (goalsData) {
+            const goalsData = await UserDataStorage.getUserGoals()
+            if (goalsData) {
                 setGoals({
-                    dailyExerciseMinutes: goalsData.daily_exercise_minutes?.toString() || "30",
-                    weeklyExerciseSessions: goalsData.weekly_exercise_sessions?.toString() || "3",
-                    dailyCalories: goalsData.daily_calories?.toString() || "2000",
-                    activityLevel: goalsData.activity_level || "moderate",
-                    sleepHours: goalsData.sleep_hours?.toString() || "8",
-                    recoveryMinutes: goalsData.recovery_minutes?.toString() || "60",
-                    startingWeight: goalsData.starting_weight?.toString() || "",
-                    goalWeight: goalsData.goal_weight?.toString() || "",
-                    dietType: goalsData.diet_type || "maintenance"
+                    dailyExerciseMinutes: goalsData.dailyExerciseMinutes.toString(),
+                    weeklyExerciseSessions: goalsData.weeklyExerciseSessions.toString(),
+                    dailyCalories: goalsData.dailyCalories.toString(),
+                    activityLevel: goalsData.activityLevel,
+                    sleepHours: goalsData.sleepHours.toString(),
+                    recoveryMinutes: goalsData.recoveryMinutes.toString(),
+                    startingWeight: goalsData.startingWeight?.toString() || "",
+                    goalWeight: goalsData.goalWeight?.toString() || "",
+                    dietType: goalsData.dietType
                 })
             }
         } catch (error) {
@@ -228,22 +218,18 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
         try {
             setIsLoading(true)
 
+            // Initialize UserDataStorage if not already done
+            UserDataStorage.initialize(user, supabase)
+
             const profileData = {
-                user_id: user.id,
-                weight: profile.weight ? parseFloat(profile.weight) : null,
-                age: profile.age ? parseInt(profile.age) : null,
-                height: profile.height ? parseFloat(profile.height) : null,
-                weight_unit: profile.weightUnit,
-                height_unit: profile.heightUnit
+                weight: profile.weight ? parseFloat(profile.weight) : undefined,
+                age: profile.age ? parseInt(profile.age) : undefined,
+                height: profile.height ? parseFloat(profile.height) : undefined,
+                weightUnit: profile.weightUnit,
+                heightUnit: profile.heightUnit
             }
 
-            const { error } = await supabase
-                .from('user_profiles')
-                .upsert(profileData, { onConflict: 'user_id' })
-
-            if (error) {
-                throw error
-            }
+            await UserDataStorage.saveUserProfile(profileData)
 
             notifications.success('Profile saved', {
                 description: 'Your profile has been updated successfully'
@@ -282,26 +268,22 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
         try {
             setIsLoading(true)
 
+            // Initialize UserDataStorage if not already done
+            UserDataStorage.initialize(user, supabase)
+
             const goalsData = {
-                user_id: user.id,
-                daily_exercise_minutes: goals.dailyExerciseMinutes ? parseInt(goals.dailyExerciseMinutes) : 30,
-                weekly_exercise_sessions: goals.weeklyExerciseSessions ? parseInt(goals.weeklyExerciseSessions) : 3,
-                daily_calories: goals.dailyCalories ? parseInt(goals.dailyCalories) : 2000,
-                activity_level: goals.activityLevel,
-                sleep_hours: goals.sleepHours ? parseFloat(goals.sleepHours) : 8.0,
-                recovery_minutes: goals.recoveryMinutes ? parseInt(goals.recoveryMinutes) : 60,
-                starting_weight: goals.startingWeight ? parseFloat(goals.startingWeight) : null,
-                goal_weight: goals.goalWeight ? parseFloat(goals.goalWeight) : null,
-                diet_type: goals.dietType
+                dailyExerciseMinutes: goals.dailyExerciseMinutes ? parseInt(goals.dailyExerciseMinutes) : 30,
+                weeklyExerciseSessions: goals.weeklyExerciseSessions ? parseInt(goals.weeklyExerciseSessions) : 3,
+                dailyCalories: goals.dailyCalories ? parseInt(goals.dailyCalories) : 2000,
+                activityLevel: goals.activityLevel,
+                sleepHours: goals.sleepHours ? parseFloat(goals.sleepHours) : 8.0,
+                recoveryMinutes: goals.recoveryMinutes ? parseInt(goals.recoveryMinutes) : 60,
+                startingWeight: goals.startingWeight ? parseFloat(goals.startingWeight) : undefined,
+                goalWeight: goals.goalWeight ? parseFloat(goals.goalWeight) : undefined,
+                dietType: goals.dietType
             }
 
-            const { error } = await supabase
-                .from('user_goals')
-                .upsert(goalsData, { onConflict: 'user_id' })
-
-            if (error) {
-                throw error
-            }
+            await UserDataStorage.saveUserGoals(goalsData)
 
             notifications.success('Goals saved', {
                 description: 'Your goals have been updated successfully'
