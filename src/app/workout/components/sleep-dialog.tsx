@@ -116,14 +116,13 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         return (Math.max(0, Math.min(720, adjustedTime)) / 720) * timelineWidth
     }
 
-    // Handle timeline click - create or modify sleep sessions
+    // Handle timeline click - only select sessions, no creation
     const handleTimelineClick = (event: React.MouseEvent<HTMLDivElement>) => {
         if (!timelineRef.current || isDragging) return
 
         const rect = timelineRef.current.getBoundingClientRect()
         const clickX = event.clientX - rect.left
         const timelineWidth = rect.width
-        const clickedTime = pixelToTime(clickX, timelineWidth)
 
         // Check if clicking on an existing session
         const clickedSession = sleepSessions.find(session => {
@@ -136,25 +135,8 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
             // Select the session for editing
             setSelectedSession(clickedSession.id)
         } else {
-            // Create new nap session at clicked position
-            if (sleepSessions.length >= 5) {
-                notifications.warning('Session limit', {
-                    description: 'Maximum 5 sleep sessions allowed',
-                    duration: 3000
-                })
-                return
-            }
-
-            const newSession: SleepSession = {
-                id: `nap-${Date.now()}`,
-                startTime: clickedTime,
-                endTime: Math.min(clickedTime + 60, 720), // 1 hour default, max 12 PM
-                wakeUps: 0,
-                type: 'nap'
-            }
-
-            setSleepSessions(prev => [...prev, newSession])
-            setSelectedSession(newSession.id)
+            // Deselect if clicking on empty timeline
+            setSelectedSession(null)
         }
     }
 
@@ -180,53 +162,73 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         }
     }
 
+    // Check for overlaps with other sessions
+    const checkOverlap = (sessionId: string, newStartTime: number, newEndTime: number, sessions: SleepSession[]): boolean => {
+        return sessions.some(session => {
+            if (session.id === sessionId) return false
+
+            // Check if ranges overlap
+            return !(newEndTime <= session.startTime || newStartTime >= session.endTime)
+        })
+    }
+
     // Handle mouse move for dragging
     const handleMouseMove = useCallback((event: MouseEvent) => {
         if (!isDragging || !dragType || !selectedSession || !timelineRef.current) return
 
         const rect = timelineRef.current.getBoundingClientRect()
-        const mouseX = event.clientX - rect.left
+        const mouseX = Math.max(0, Math.min(event.clientX - rect.left, rect.width)) // Clamp to timeline bounds
         const timelineWidth = rect.width
 
         setSleepSessions(prev => prev.map(session => {
             if (session.id !== selectedSession) return session
 
             const duration = session.endTime - session.startTime
+            const newSession = { ...session }
 
             switch (dragType) {
                 case 'start': {
                     const newStartTime = pixelToTime(mouseX, timelineWidth)
                     const maxStart = session.endTime - 15 // Minimum 15 minutes
-                    return {
-                        ...session,
-                        startTime: Math.max(
-                            session.type === 'main' ? -240 : 0, // 8 PM for main sleep
-                            Math.min(newStartTime, maxStart)
-                        )
+                    const proposedStart = Math.max(
+                        session.type === 'main' ? -240 : 0, // 8 PM for main sleep
+                        Math.min(newStartTime, maxStart)
+                    )
+
+                    // Check for overlaps
+                    if (!checkOverlap(session.id, proposedStart, session.endTime, prev)) {
+                        newSession.startTime = proposedStart
                     }
+                    break
                 }
                 case 'end': {
                     const newEndTime = pixelToTime(mouseX, timelineWidth)
                     const minEnd = session.startTime + 15 // Minimum 15 minutes
-                    return {
-                        ...session,
-                        endTime: Math.max(minEnd, Math.min(newEndTime, 720))
+                    const proposedEnd = Math.max(minEnd, Math.min(newEndTime, 720))
+
+                    // Check for overlaps
+                    if (!checkOverlap(session.id, session.startTime, proposedEnd, prev)) {
+                        newSession.endTime = proposedEnd
                     }
+                    break
                 }
                 case 'move': {
                     const newStartTime = pixelToTime(mouseX - dragOffset, timelineWidth)
                     const maxStart = 720 - duration
                     const minStart = session.type === 'main' ? -240 : 0
                     const clampedStart = Math.max(minStart, Math.min(newStartTime, maxStart))
-                    return {
-                        ...session,
-                        startTime: clampedStart,
-                        endTime: clampedStart + duration
+                    const clampedEnd = clampedStart + duration
+
+                    // Check for overlaps
+                    if (!checkOverlap(session.id, clampedStart, clampedEnd, prev)) {
+                        newSession.startTime = clampedStart
+                        newSession.endTime = clampedEnd
                     }
+                    break
                 }
-                default:
-                    return session
             }
+
+            return newSession
         }))
     }, [isDragging, dragType, selectedSession, dragOffset])
 
@@ -391,7 +393,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                 <div className="relative w-full mb-8">
                                     {/* Instructions */}
                                     <div className="text-xs text-[#A1A1AA] mb-3 text-center">
-                                        Click on timeline to add nap • Click and drag sleep bars to adjust time • Drag edges to resize
+                                        Click sleep bars to select • Drag bars to move • Drag edges to resize
                                     </div>
 
                                     {/* Timeline container */}
@@ -420,7 +422,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                         </div>
 
                                         {/* Sleep Session Bars */}
-                                        {sleepSessions.map((session, index) => {
+                                        {sleepSessions.map((session) => {
                                             if (!timelineRef.current) return null
 
                                             const timelineWidth = timelineRef.current.offsetWidth
@@ -444,7 +446,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                     style={{
                                                         left: `${startPos}px`,
                                                         width: `${width}px`,
-                                                        zIndex: session.type === 'main' ? 10 + index : 5 + index,
+                                                        zIndex: isSelected ? 100 : (session.type === 'main' ? 20 : 10),
                                                     }}
                                                     onMouseDown={(e) => handleSessionMouseDown(e, session.id, 'move')}
                                                 >
@@ -471,62 +473,64 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                         })}
                                     </div>
 
-                                    {/* Selected session details */}
-                                    {selectedSession && (
-                                        <div className="mt-4 p-3 bg-[#0E0F13] border border-[#2A8CEA] rounded-lg">
-                                            {(() => {
-                                                const session = sleepSessions.find(s => s.id === selectedSession)
-                                                if (!session) return null
+                                    {/* All sessions details */}
+                                    {sleepSessions.length > 0 && (
+                                        <div className="mt-4 space-y-2">
+                                            <div className="text-sm font-medium text-[#F3F4F6] mb-2">Sleep Sessions</div>
+                                            {sleepSessions.map((session) => {
                                                 const duration = calculateDuration(session.startTime, session.endTime)
+                                                const isSelected = selectedSession === session.id
 
                                                 return (
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center space-x-3">
-                                                            <div className={`w-3 h-3 rounded-full ${
-                                                                session.type === 'main' ? 'bg-[#2BD2FF]' : 'bg-[#9BE15D]'
-                                                            }`} />
-                                                            <span className="text-sm font-medium text-[#F3F4F6]">
-                                                                {session.type === 'main' ? 'Main Sleep' : 'Nap'} • {formatTime(session.startTime)} - {formatTime(session.endTime)}
-                                                            </span>
-                                                            <span className="text-xs text-[#A1A1AA]">
-                                                                {duration.hours}h {duration.minutes}m
-                                                            </span>
-                                                            {session.wakeUps > 0 && (
-                                                                <span className="text-xs text-[#A1A1AA]">
-                                                                    • {session.wakeUps} wake-ups
+                                                    <div
+                                                        key={session.id}
+                                                        className={`p-3 rounded-lg border transition-all ${
+                                                            isSelected
+                                                                ? 'bg-[#0E0F13] border-[#2A8CEA]'
+                                                                : 'bg-[#121318] border-[#212227] hover:border-[#2A2B31]'
+                                                        }`}
+                                                    >
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center space-x-3">
+                                                                <div className={`w-3 h-3 rounded-full ${
+                                                                    session.type === 'main' ? 'bg-[#2BD2FF]' : 'bg-[#9BE15D]'
+                                                                }`} />
+                                                                <span className="text-sm font-medium text-[#F3F4F6]">
+                                                                    {session.type === 'main' ? 'Main Sleep' : 'Nap'} • {formatTime(session.startTime)} - {formatTime(session.endTime)}
                                                                 </span>
-                                                            )}
-                                                        </div>
+                                                                <span className="text-xs text-[#A1A1AA]">
+                                                                    {duration.hours}h {duration.minutes}m
+                                                                </span>
+                                                                {session.wakeUps > 0 && (
+                                                                    <span className="text-xs text-[#A1A1AA]">
+                                                                        • {session.wakeUps} wake-ups
+                                                                    </span>
+                                                                )}
+                                                            </div>
 
-                                                        <div className="flex items-center space-x-2">
-                                                            <Button
-                                                                onClick={() => addWakeUp(session.id)}
-                                                                variant="ghost"
-                                                                className="text-xs h-auto px-2 py-1 text-[#A1A1AA] hover:text-[#F3F4F6]"
-                                                            >
-                                                                + Wake-up
-                                                            </Button>
-                                                            {session.type === 'nap' && (
+                                                            <div className="flex items-center space-x-2">
                                                                 <Button
-                                                                    onClick={() => removeSession(session.id)}
+                                                                    onClick={() => addWakeUp(session.id)}
                                                                     variant="ghost"
-                                                                    size="icon"
-                                                                    className="w-6 h-6 text-[#A1A1AA] hover:text-red-400 hover:bg-red-500/10"
+                                                                    className="text-xs h-auto px-2 py-1 text-[#A1A1AA] hover:text-[#F3F4F6]"
                                                                 >
-                                                                    <X className="w-3 h-3" />
+                                                                    + Wake-up
                                                                 </Button>
-                                                            )}
-                                                            <Button
-                                                                onClick={() => setSelectedSession(null)}
-                                                                variant="ghost"
-                                                                className="text-xs h-auto px-2 py-1 text-[#A1A1AA] hover:text-[#F3F4F6]"
-                                                            >
-                                                                Done
-                                                            </Button>
+                                                                {session.type === 'nap' && (
+                                                                    <Button
+                                                                        onClick={() => removeSession(session.id)}
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="w-6 h-6 text-[#A1A1AA] hover:text-red-400 hover:bg-red-500/10"
+                                                                    >
+                                                                        <X className="w-3 h-3" />
+                                                                    </Button>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 )
-                                            })()}
+                                            })}
                                         </div>
                                     )}
                                 </div>
@@ -544,7 +548,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                             Add Nap
                                         </Button>
                                         <div className="text-xs text-[#7A7F86] mt-2">
-                                            Or click anywhere on the timeline above
+                                            Create a new nap session
                                         </div>
                                     </div>
                                 )}
