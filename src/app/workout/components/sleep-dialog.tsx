@@ -243,27 +243,33 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                     <span>12 PM</span>
                                 </div>
 
-                                {/* Timeline with Sliders */}
+                                {/* Timeline with Enhanced Sliders */}
                                 <div className="relative w-full mb-8">
-                                    {/* Timeline base */}
-                                    <div className="relative w-full h-2 bg-[#2A2B31] rounded-full">
-                                        {/* Hour markers */}
-                                        {Array.from({ length: 13 }, (_, i) => (
-                                            <div
-                                                key={i}
-                                                className="absolute w-px h-4 bg-[#4A4B51] top-1/2 transform -translate-y-1/2"
-                                                style={{ left: `${(i / 12) * 100}%` }}
-                                            />
-                                        ))}
+                                    {/* Timeline container with extra height for enhanced sliders */}
+                                    <div className="relative w-full h-8 flex items-center">
+                                        {/* Timeline base */}
+                                        <div className="relative w-full h-2 bg-[#2A2B31] rounded-full">
+                                            {/* Hour markers */}
+                                            {Array.from({ length: 13 }, (_, i) => (
+                                                <div
+                                                    key={i}
+                                                    className="absolute w-px h-6 bg-[#4A4B51] top-1/2 transform -translate-y-1/2"
+                                                    style={{ left: `${(i / 12) * 100}%` }}
+                                                />
+                                            ))}
+                                        </div>
 
                                         {/* Sleep Session Sliders on Timeline */}
-                                        {sleepSessions.map((session) => {
+                                        {sleepSessions.map((session, index) => {
                                             const sliderValue = [session.startTime, session.endTime]
                                             return (
                                                 <div
                                                     key={session.id}
-                                                    className="absolute top-0 w-full h-2"
-                                                    style={{ zIndex: session.type === 'main' ? 2 : 1 }}
+                                                    className="absolute top-1/2 transform -translate-y-1/2 w-full h-6"
+                                                    style={{
+                                                        zIndex: session.type === 'main' ? 10 + index : 5 + index,
+                                                        pointerEvents: 'auto'
+                                                    }}
                                                 >
                                                     <Slider
                                                         value={sliderValue}

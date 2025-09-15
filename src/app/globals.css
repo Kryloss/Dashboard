@@ -252,7 +252,7 @@ body {
     user-select: none;
     touch-action: none;
     width: 100%;
-    height: 20px;
+    height: 24px;
   }
 
   .sleep-slider-main [data-radix-slider-track],
@@ -260,55 +260,121 @@ body {
     background: transparent;
     position: relative;
     flex-grow: 1;
-    border-radius: 9999px;
-    height: 8px;
+    border-radius: 12px;
+    height: 12px;
   }
 
-  /* Main Sleep Slider - Blue gradient */
+  /* Main Sleep Slider - Blue gradient with enhanced styling */
   .sleep-slider-main [data-radix-slider-range] {
     position: absolute;
-    background: linear-gradient(to right, #2BD2FF, #2A8CEA);
-    border-radius: 9999px;
-    height: 8px;
-    top: 0;
-    box-shadow: 0 2px 8px rgba(43, 210, 255, 0.4);
+    background: linear-gradient(135deg, #2BD2FF 0%, #2A8CEA 50%, #1E7CE8 100%);
+    border-radius: 12px;
+    height: 12px;
+    top: -2px;
+    box-shadow:
+      0 4px 12px rgba(43, 210, 255, 0.3),
+      0 2px 6px rgba(43, 210, 255, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(43, 210, 255, 0.4);
+    cursor: grab;
+    transition: all 0.2s ease;
   }
 
-  /* Nap Slider - Green gradient */
+  .sleep-slider-main [data-radix-slider-range]:hover {
+    box-shadow:
+      0 6px 16px rgba(43, 210, 255, 0.4),
+      0 3px 8px rgba(43, 210, 255, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+  }
+
+  .sleep-slider-main [data-radix-slider-range]:active {
+    cursor: grabbing;
+    transform: translateY(0px);
+    box-shadow:
+      0 2px 8px rgba(43, 210, 255, 0.5),
+      0 1px 4px rgba(43, 210, 255, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  /* Nap Slider - Green gradient with enhanced styling */
   .sleep-slider-nap [data-radix-slider-range] {
     position: absolute;
-    background: linear-gradient(to right, #9BE15D, #7BC142);
-    border-radius: 9999px;
-    height: 6px;
-    top: 1px;
-    box-shadow: 0 2px 6px rgba(155, 225, 93, 0.4);
+    background: linear-gradient(135deg, #9BE15D 0%, #7BC142 50%, #6BA83A 100%);
+    border-radius: 10px;
+    height: 10px;
+    top: -1px;
+    box-shadow:
+      0 3px 10px rgba(155, 225, 93, 0.3),
+      0 2px 5px rgba(155, 225, 93, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(155, 225, 93, 0.4);
+    cursor: grab;
+    transition: all 0.2s ease;
   }
 
+  .sleep-slider-nap [data-radix-slider-range]:hover {
+    box-shadow:
+      0 5px 14px rgba(155, 225, 93, 0.4),
+      0 3px 7px rgba(155, 225, 93, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+  }
+
+  .sleep-slider-nap [data-radix-slider-range]:active {
+    cursor: grabbing;
+    transform: translateY(0px);
+    box-shadow:
+      0 2px 8px rgba(155, 225, 93, 0.5),
+      0 1px 4px rgba(155, 225, 93, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  /* Enhanced thumb handles - invisible but functional */
   .sleep-slider-main [data-radix-slider-thumb],
   .sleep-slider-nap [data-radix-slider-thumb] {
-    width: 20px;
-    height: 20px;
+    display: block;
+    width: 24px;
+    height: 24px;
     background: transparent;
     border: none;
-    border-radius: 50%;
+    border-radius: 12px;
     cursor: grab;
     opacity: 0;
-    transition: all 0.15s ease;
+    transition: all 0.2s ease;
+    outline: none;
   }
 
+  /* Thumb hover effects - subtle visual feedback */
   .sleep-slider-main [data-radix-slider-thumb]:hover {
-    opacity: 0.3;
-    background: rgba(43, 210, 255, 0.5);
+    opacity: 0.15;
+    background: radial-gradient(circle, rgba(43, 210, 255, 0.3) 0%, transparent 70%);
+    transform: scale(1.1);
   }
 
   .sleep-slider-nap [data-radix-slider-thumb]:hover {
-    opacity: 0.3;
-    background: rgba(155, 225, 93, 0.5);
+    opacity: 0.15;
+    background: radial-gradient(circle, rgba(155, 225, 93, 0.3) 0%, transparent 70%);
+    transform: scale(1.1);
   }
 
   .sleep-slider-main [data-radix-slider-thumb]:active,
   .sleep-slider-nap [data-radix-slider-thumb]:active {
     cursor: grabbing;
-    opacity: 0.5;
+    opacity: 0.25;
+    transform: scale(1.05);
+  }
+
+  /* Focus styles for accessibility */
+  .sleep-slider-main [data-radix-slider-thumb]:focus-visible {
+    opacity: 0.3;
+    background: radial-gradient(circle, rgba(43, 210, 255, 0.4) 0%, transparent 70%);
+    box-shadow: 0 0 0 3px rgba(43, 210, 255, 0.3);
+  }
+
+  .sleep-slider-nap [data-radix-slider-thumb]:focus-visible {
+    opacity: 0.3;
+    background: radial-gradient(circle, rgba(155, 225, 93, 0.4) 0%, transparent 70%);
+    box-shadow: 0 0 0 3px rgba(155, 225, 93, 0.3);
   }
 }
