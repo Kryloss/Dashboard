@@ -23,7 +23,7 @@ class WorkoutStateManager {
     private updatePromise: Promise<void> | null = null
     private lastRefreshTime = 0
     private readonly MIN_REFRESH_INTERVAL = 2000 // Minimum 2 seconds between refreshes
-    
+
     // Real-time workout tracking
     private ongoingWorkoutInterval: NodeJS.Timeout | null = null
     private readonly ONGOING_WORKOUT_UPDATE_INTERVAL = 60000 // Update every minute
@@ -167,14 +167,19 @@ class WorkoutStateManager {
         this.stopOngoingWorkoutTracking()
 
         console.log('🔄 WorkoutStateManager: Starting ongoing workout tracking')
-        
+
         this.ongoingWorkoutInterval = setInterval(async () => {
             try {
                 // Check if there's an ongoing workout
                 const ongoingWorkout = await WorkoutStorage.getOngoingWorkout()
-                
+
                 if (ongoingWorkout && ongoingWorkout.isRunning) {
-                    console.log('⏱️ WorkoutStateManager: Updating rings for ongoing workout')
+                    const realTimeElapsed = WorkoutStorage.getBackgroundElapsedTime()
+                    console.log('⏱️ WorkoutStateManager: Updating rings for ongoing workout', {
+                        elapsedSeconds: realTimeElapsed,
+                        elapsedMinutes: Math.round(realTimeElapsed / 60),
+                        workoutType: ongoingWorkout.type
+                    })
                     // Refresh with ongoing workout data
                     await this.refreshAll(true, true) // force refresh and include ongoing workout
                 } else {

@@ -84,7 +84,16 @@ export class GoalProgressCalculator {
             if (includeOngoingWorkout) {
                 const ongoingWorkout = await WorkoutStorage.getOngoingWorkout()
                 if (ongoingWorkout && ongoingWorkout.isRunning) {
-                    const ongoingMinutes = Math.round(ongoingWorkout.elapsedTime / 60)
+                    // Use real-time elapsed time for accurate live progress
+                    const realTimeElapsedSeconds = WorkoutStorage.getBackgroundElapsedTime()
+                    const ongoingMinutes = Math.round(realTimeElapsedSeconds / 60)
+                    console.log('🏃 GoalProgress: Including ongoing workout', {
+                        workoutType: ongoingWorkout.type,
+                        elapsedSeconds: realTimeElapsedSeconds,
+                        elapsedMinutes: ongoingMinutes,
+                        totalMinutesBefore: totalMinutes,
+                        totalMinutesAfter: totalMinutes + ongoingMinutes
+                    })
                     totalMinutes += ongoingMinutes
                     sessionCount += 1 // Count ongoing workout as an active session
                 }
@@ -104,8 +113,10 @@ export class GoalProgressCalculator {
             if (includeOngoingWorkout) {
                 const ongoingWorkout = await WorkoutStorage.getOngoingWorkout()
                 if (ongoingWorkout && ongoingWorkout.isRunning) {
+                    // Use real-time elapsed time for accurate session duration
+                    const realTimeElapsedSeconds = WorkoutStorage.getBackgroundElapsedTime()
                     sessions.push({
-                        duration: Math.round(ongoingWorkout.elapsedTime / 60),
+                        duration: Math.round(realTimeElapsedSeconds / 60),
                         type: ongoingWorkout.type,
                         completedAt: ongoingWorkout.startTime // Use start time for ongoing workouts
                     })

@@ -68,12 +68,21 @@ export default function WorkoutPage() {
                     const workout = await WorkoutStorage.getOngoingWorkout()
                     setOngoingWorkout(workout)
 
-                    // Initialize live workout time
+                    // Initialize live workout time and start real-time tracking if needed
                     if (workout?.isRunning) {
                         const backgroundElapsedTime = WorkoutStorage.getBackgroundElapsedTime()
                         setLiveWorkoutTime(backgroundElapsedTime)
+
+                        // Start real-time ring updates for ongoing workout
+                        console.log('🚀 Starting real-time ring updates for ongoing workout (initial load)')
+                        workoutStateManager.startOngoingWorkoutTracking()
                     } else if (workout) {
                         setLiveWorkoutTime(workout.elapsedTime)
+                        // Stop real-time ring updates if workout is paused
+                        workoutStateManager.stopOngoingWorkoutTracking()
+                    } else {
+                        // No ongoing workout, stop tracking
+                        workoutStateManager.stopOngoingWorkoutTracking()
                     }
 
                     // Refresh workout state (rings and activities)
@@ -99,8 +108,9 @@ export default function WorkoutPage() {
                     if (workout?.isRunning) {
                         const backgroundElapsedTime = WorkoutStorage.getBackgroundElapsedTime()
                         setLiveWorkoutTime(backgroundElapsedTime)
-                        
+
                         // Start real-time ring updates for ongoing workout
+                        console.log('🚀 Starting real-time ring updates for ongoing workout (periodic check)')
                         workoutStateManager.startOngoingWorkoutTracking()
                     } else if (workout) {
                         setLiveWorkoutTime(workout.elapsedTime)
@@ -136,7 +146,7 @@ export default function WorkoutPage() {
                         }
                     })
                 }
-            }, 1500) // 1.5 second delay to allow auth state to load
+            }, 3000) // 3 second delay to allow auth state to load
         }
     }, [user, supabase, notifications, router])
 
