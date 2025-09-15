@@ -16,7 +16,7 @@ import { WorkoutStorage, OngoingWorkout, WorkoutActivity } from "@/lib/workout-s
 import { UserDataStorage } from "@/lib/user-data-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
-import { workoutStateManager, WorkoutState } from "@/lib/workout-state-manager"
+import { workoutStateManager, WorkoutState, forceRefreshOngoingWorkout, debugWorkoutState } from "@/lib/workout-state-manager"
 import { Plus, Flame, Dumbbell, User, Timer, Bike, Clock, Heart, FileText, Play, Edit3, Trash2, Moon, Footprints } from "lucide-react"
 
 export default function WorkoutPage() {
@@ -585,7 +585,39 @@ export default function WorkoutPage() {
                     <div className="container mx-auto max-w-7xl px-6 py-4">
                         {/* Daily Goals Section */}
                         <section className="mb-6">
-                            <div className="flex items-center justify-end mb-3">
+                            <div className="flex items-center justify-end mb-3 space-x-2">
+                                {/* Debug buttons - only show in development */}
+                                {process.env.NODE_ENV === 'development' && (
+                                    <>
+                                        <Button
+                                            onClick={async () => {
+                                                console.log('🔧 Manual refresh triggered')
+                                                await forceRefreshOngoingWorkout()
+                                                notifications.info('Debug refresh', {
+                                                    description: 'Forced workout state refresh',
+                                                    duration: 2000
+                                                })
+                                            }}
+                                            variant="ghost"
+                                            className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full text-xs"
+                                        >
+                                            🔄 Refresh
+                                        </Button>
+                                        <Button
+                                            onClick={() => {
+                                                debugWorkoutState()
+                                                notifications.info('Debug state', {
+                                                    description: 'Check console for state details',
+                                                    duration: 2000
+                                                })
+                                            }}
+                                            variant="ghost"
+                                            className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full text-xs"
+                                        >
+                                            🔍 Debug
+                                        </Button>
+                                    </>
+                                )}
                                 <Button
                                     onClick={() => setShowSetGoalDialog(true)}
                                     variant="ghost"

@@ -37,7 +37,7 @@ interface ProgressCache {
 
 export class GoalProgressCalculator {
     private static cache: ProgressCache | null = null
-    private static readonly CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+    private static readonly CACHE_DURATION = 2 * 60 * 1000 // 2 minutes for more responsive updates
 
     // Get today's date in user's local timezone
     static getTodayDateString(): string {

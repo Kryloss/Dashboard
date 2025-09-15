@@ -417,9 +417,26 @@ export class WorkoutStorage {
         // This handles the case where the workout was running when the page was closed
         const now = Date.now()
         const startTime = new Date(workout.startTime).getTime()
+
+        // Validate startTime is not in the future or too far in the past
+        if (startTime > now) {
+            console.warn('Workout startTime is in the future, using stored elapsedTime')
+            return workout.elapsedTime
+        }
+
         const realTimeElapsed = Math.floor((now - startTime) / 1000)
 
-        // Return the calculated elapsed time
+        // Debug logging for troubleshooting
+        console.log('🕐 Background elapsed time calculation:', {
+            startTime: new Date(startTime).toISOString(),
+            now: new Date(now).toISOString(),
+            realTimeElapsed,
+            storedElapsedTime: workout.elapsedTime,
+            workoutType: workout.type,
+            isRunning: workout.isRunning
+        })
+
+        // Return the calculated elapsed time, ensuring it's not less than stored time
         return Math.max(realTimeElapsed, workout.elapsedTime)
     }
 

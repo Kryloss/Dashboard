@@ -26,7 +26,7 @@ class WorkoutStateManager {
 
     // Real-time workout tracking
     private ongoingWorkoutInterval: NodeJS.Timeout | null = null
-    private readonly ONGOING_WORKOUT_UPDATE_INTERVAL = 60000 // Update every minute
+    private readonly ONGOING_WORKOUT_UPDATE_INTERVAL = 30000 // Update every 30 seconds for more responsive updates
 
     // Subscribe to state changes
     subscribe(listener: StateListener): () => void {
@@ -178,8 +178,14 @@ class WorkoutStateManager {
                     console.log('⏱️ WorkoutStateManager: Updating rings for ongoing workout', {
                         elapsedSeconds: realTimeElapsed,
                         elapsedMinutes: Math.round(realTimeElapsed / 60),
-                        workoutType: ongoingWorkout.type
+                        workoutType: ongoingWorkout.type,
+                        startTime: ongoingWorkout.startTime,
+                        storedElapsedTime: ongoingWorkout.elapsedTime
                     })
+
+                    // Force invalidate cache to ensure fresh calculation
+                    GoalProgressCalculator.invalidateCache()
+
                     // Refresh with ongoing workout data
                     await this.refreshAll(true, true) // force refresh and include ongoing workout
                 } else {
@@ -202,12 +208,40 @@ class WorkoutStateManager {
         }
     }
 
+    // Force immediate refresh for ongoing workouts (for debugging/manual refresh)
+    async forceRefreshOngoingWorkout(): Promise<void> {
+        console.log('🔄 WorkoutStateManager: Force refreshing ongoing workout')
+
+        try {
+            const ongoingWorkout = await WorkoutStorage.getOngoingWorkout()
+            if (ongoingWorkout && ongoingWorkout.isRunning) {
+                const realTimeElapsed = WorkoutStorage.getBackgroundElapsedTime()
+                console.log('⏱️ Force refresh - Ongoing workout details:', {
+                    elapsedSeconds: realTimeElapsed,
+                    elapsedMinutes: Math.round(realTimeElapsed / 60),
+                    workoutType: ongoingWorkout.type,
+                    startTime: ongoingWorkout.startTime,
+                    storedElapsedTime: ongoingWorkout.elapsedTime
+                })
+
+                // Force invalidate cache and refresh
+                GoalProgressCalculator.invalidateCache()
+                await this.refreshAll(true, true)
+            } else {
+                console.log('🛑 Force refresh - No ongoing workout found')
+            }
+        } catch (error) {
+            console.error('❌ Force refresh failed:', error)
+        }
+    }
+
     // Debug current state
     debugState(): void {
         console.log('🔍 WorkoutStateManager Debug:', {
             state: this.state,
             listenersCount: this.listeners.size,
-            hasUpdatePromise: !!this.updatePromise
+            hasUpdatePromise: !!this.updatePromise,
+            hasOngoingInterval: !!this.ongoingWorkoutInterval
         })
     }
 }
@@ -219,3 +253,5 @@ export const workoutStateManager = new WorkoutStateManager()
 export const refreshWorkoutRings = () => workoutStateManager.refreshAll(true)
 export const subscribeToWorkoutState = (listener: StateListener) => workoutStateManager.subscribe(listener)
 export const handleWorkoutCompletion = (source: string, data?: unknown) => workoutStateManager.handleWorkoutCompleted(source, data)
+export const forceRefreshOngoingWorkout = () => workoutStateManager.forceRefreshOngoingWorkout()
+export const debugWorkoutState = () => workoutStateManager.debugState()
