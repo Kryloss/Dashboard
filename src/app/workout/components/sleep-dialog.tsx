@@ -116,8 +116,8 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         return (Math.max(0, Math.min(720, adjustedTime)) / 720) * timelineWidth
     }
 
-    // Handle timeline click - only select sessions, no creation
-    const handleTimelineClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    // Handle timeline click/tap - only select sessions, no creation
+    const handleTimelinePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
         if (!timelineRef.current || isDragging) return
 
         const rect = timelineRef.current.getBoundingClientRect()
@@ -140,9 +140,10 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         }
     }
 
-    // Handle mouse down on session for dragging
-    const handleSessionMouseDown = (event: React.MouseEvent, sessionId: string, dragMode: 'start' | 'end' | 'move') => {
+    // Handle mouse/touch down on session for dragging
+    const handleSessionPointerDown = (event: React.PointerEvent, sessionId: string, dragMode: 'start' | 'end' | 'move') => {
         event.stopPropagation()
+        event.preventDefault()
         if (!timelineRef.current) return
 
         const rect = timelineRef.current.getBoundingClientRect()
@@ -153,106 +154,167 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         setDragType(dragMode)
         setSelectedSession(sessionId)
 
-        const mouseX = event.clientX - rect.left
+        const pointerX = event.clientX - rect.left
         if (dragMode === 'move') {
             const sessionStart = timeToPixel(session.startTime, rect.width)
-            setDragOffset(mouseX - sessionStart)
+            setDragOffset(pointerX - sessionStart)
         } else {
             setDragOffset(0)
         }
+
+        // Capture pointer for better mobile experience
+        if (event.currentTarget.setPointerCapture) {
+            event.currentTarget.setPointerCapture(event.pointerId)
+        }
     }
 
-    // Check for overlaps with other sessions
-    const checkOverlap = (sessionId: string, newStartTime: number, newEndTime: number, sessions: SleepSession[]): boolean => {
-        return sessions.some(session => {
-            if (session.id === sessionId) return false
 
-            // Check if ranges overlap
-            return !(newEndTime <= session.startTime || newStartTime >= session.endTime)
-        })
-    }
+    // Throttle function for performance optimization
+    const throttleRef = useRef<number | null>(null)
 
-    // Handle mouse move for dragging
-    const handleMouseMove = useCallback((event: MouseEvent) => {
+    // Handle pointer move for dragging - optimized version with touch support
+    const handlePointerMove = useCallback((event: PointerEvent) => {
         if (!isDragging || !dragType || !selectedSession || !timelineRef.current) return
 
-        const rect = timelineRef.current.getBoundingClientRect()
-        const mouseX = Math.max(0, Math.min(event.clientX - rect.left, rect.width)) // Clamp to timeline bounds
-        const timelineWidth = rect.width
+        // Throttle pointer events for better performance
+        if (throttleRef.current) {
+            cancelAnimationFrame(throttleRef.current)
+        }
 
-        setSleepSessions(prev => prev.map(session => {
-            if (session.id !== selectedSession) return session
+        throttleRef.current = requestAnimationFrame(() => {
+            if (!timelineRef.current) return
 
-            const duration = session.endTime - session.startTime
-            const newSession = { ...session }
+            const rect = timelineRef.current.getBoundingClientRect()
+            const pointerX = event.clientX - rect.left // Don't clamp - allow negative values
+            const timelineWidth = rect.width
 
-            switch (dragType) {
-                case 'start': {
-                    const newStartTime = pixelToTime(mouseX, timelineWidth)
-                    const maxStart = session.endTime - 15 // Minimum 15 minutes
-                    const proposedStart = Math.max(
-                        session.type === 'main' ? -240 : 0, // 8 PM for main sleep
-                        Math.min(newStartTime, maxStart)
-                    )
+            setSleepSessions(prev => prev.map(session => {
+                if (session.id !== selectedSession) return session
 
-                    // Check for overlaps
-                    if (!checkOverlap(session.id, proposedStart, session.endTime, prev)) {
+                const duration = session.endTime - session.startTime
+                const newSession = { ...session }
+
+                switch (dragType) {
+                    case 'start': {
+                        const newStartTime = pixelToTime(pointerX, timelineWidth)
+                        const maxStart = session.endTime - 15 // Minimum 15 minutes
+                        const proposedStart = Math.max(
+                            session.type === 'main' ? -240 : 0, // 8 PM for main sleep
+                            Math.min(newStartTime, maxStart)
+                        )
+
                         newSession.startTime = proposedStart
+                        break
                     }
-                    break
-                }
-                case 'end': {
-                    const newEndTime = pixelToTime(mouseX, timelineWidth)
-                    const minEnd = session.startTime + 15 // Minimum 15 minutes
-                    const proposedEnd = Math.max(minEnd, Math.min(newEndTime, 720))
+                    case 'end': {
+                        const newEndTime = pixelToTime(pointerX, timelineWidth)
+                        const minEnd = session.startTime + 15 // Minimum 15 minutes
+                        const proposedEnd = Math.max(minEnd, Math.min(newEndTime, 720))
 
-                    // Check for overlaps
-                    if (!checkOverlap(session.id, session.startTime, proposedEnd, prev)) {
                         newSession.endTime = proposedEnd
+                        break
                     }
-                    break
-                }
-                case 'move': {
-                    const newStartTime = pixelToTime(mouseX - dragOffset, timelineWidth)
-                    const maxStart = 720 - duration
-                    const minStart = session.type === 'main' ? -240 : 0
-                    const clampedStart = Math.max(minStart, Math.min(newStartTime, maxStart))
-                    const clampedEnd = clampedStart + duration
+                    case 'move': {
+                        const newStartTime = pixelToTime(pointerX - dragOffset, timelineWidth)
+                        const maxStart = 720 - duration
+                        const minStart = session.type === 'main' ? -240 : 0
+                        const clampedStart = Math.max(minStart, Math.min(newStartTime, maxStart))
+                        const clampedEnd = clampedStart + duration
 
-                    // Check for overlaps
-                    if (!checkOverlap(session.id, clampedStart, clampedEnd, prev)) {
                         newSession.startTime = clampedStart
                         newSession.endTime = clampedEnd
+                        break
                     }
-                    break
                 }
-            }
 
-            return newSession
-        }))
+                return newSession
+            }))
+        })
     }, [isDragging, dragType, selectedSession, dragOffset])
 
-    // Handle mouse up
-    const handleMouseUp = useCallback(() => {
+    // Handle pointer up
+    const handlePointerUp = useCallback(() => {
+        // Cancel any pending throttled mouse moves
+        if (throttleRef.current) {
+            cancelAnimationFrame(throttleRef.current)
+            throttleRef.current = null
+        }
+
+        // Check for overlaps when releasing and resolve them
+        if (selectedSession) {
+            setSleepSessions(prev => {
+                const draggedSession = prev.find(s => s.id === selectedSession)
+                if (!draggedSession) return prev
+
+                // Check if the dragged session overlaps with others
+                const hasOverlap = prev.some(session => {
+                    if (session.id === selectedSession) return false
+                    return !(draggedSession.endTime <= session.startTime || draggedSession.startTime >= session.endTime)
+                })
+
+                if (hasOverlap) {
+                    // Find a safe position for the session
+                    const sortedSessions = prev
+                        .filter(s => s.id !== selectedSession)
+                        .sort((a, b) => a.startTime - b.startTime)
+
+                    const duration = draggedSession.endTime - draggedSession.startTime
+                    let safeStart = draggedSession.startTime
+
+                    // Try to find a gap
+                    for (let i = 0; i < sortedSessions.length; i++) {
+                        const currentSession = sortedSessions[i]
+                        const nextSession = sortedSessions[i + 1]
+
+                        // Check if we can fit before the current session
+                        if (safeStart + duration <= currentSession.startTime) {
+                            break
+                        }
+
+                        // Try after current session
+                        safeStart = currentSession.endTime
+
+                        // Check if we can fit before the next session (or at the end)
+                        if (!nextSession || safeStart + duration <= nextSession.startTime) {
+                            break
+                        }
+                    }
+
+                    // Apply the safe position
+                    return prev.map(session =>
+                        session.id === selectedSession
+                            ? { ...session, startTime: safeStart, endTime: safeStart + duration }
+                            : session
+                    )
+                }
+
+                return prev
+            })
+        }
+
         setIsDragging(false)
         setDragType(null)
         setDragOffset(0)
-    }, [])
+    }, [selectedSession])
 
-    // Add mouse event listeners
+    // Add pointer event listeners for better mobile/touch support
     useEffect(() => {
         if (isDragging) {
-            document.addEventListener('mousemove', handleMouseMove)
-            document.addEventListener('mouseup', handleMouseUp)
+            document.addEventListener('pointermove', handlePointerMove)
+            document.addEventListener('pointerup', handlePointerUp)
+            document.addEventListener('pointercancel', handlePointerUp)
             document.body.style.cursor = dragType === 'move' ? 'grabbing' : 'col-resize'
+            document.body.style.touchAction = 'none' // Prevent scrolling during drag
         }
 
         return () => {
-            document.removeEventListener('mousemove', handleMouseMove)
-            document.removeEventListener('mouseup', handleMouseUp)
+            document.removeEventListener('pointermove', handlePointerMove)
+            document.removeEventListener('pointerup', handlePointerUp)
+            document.removeEventListener('pointercancel', handlePointerUp)
             document.body.style.cursor = 'auto'
+            document.body.style.touchAction = 'auto'
         }
-    }, [isDragging, handleMouseMove, handleMouseUp, dragType])
+    }, [isDragging, handlePointerMove, handlePointerUp, dragType])
 
 
     // Add wake-up to session
@@ -365,7 +427,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden p-0">
+            <DialogContent className="sm:max-w-2xl max-w-[95vw] max-h-[90vh] overflow-hidden p-0">
                 <DialogHeader className="px-6 pt-6 pb-4">
                     <DialogTitle className="flex items-center space-x-3 text-lg font-semibold text-[#F3F4F6]">
                         <div className="w-8 h-8 bg-gradient-to-br from-[#2BD2FF] to-[#2A8CEA] rounded-lg flex items-center justify-center">
@@ -399,8 +461,8 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                     {/* Timeline container */}
                                     <div
                                         ref={timelineRef}
-                                        className="relative w-full h-12 flex items-center cursor-pointer select-none"
-                                        onClick={handleTimelineClick}
+                                        className="relative w-full h-12 flex items-center cursor-pointer select-none touch-manipulation"
+                                        onPointerDown={handleTimelinePointerDown}
                                     >
                                         {/* Timeline base */}
                                         <div className="relative w-full h-3 bg-[#2A2B31] rounded-full">
@@ -428,13 +490,13 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                             const timelineWidth = timelineRef.current.offsetWidth
                                             const startPos = timeToPixel(session.startTime, timelineWidth)
                                             const endPos = timeToPixel(session.endTime, timelineWidth)
-                                            const width = Math.max(endPos - startPos, 20) // Minimum 20px width
+                                            const width = Math.max(endPos - startPos, 40) // Minimum 40px width for better touch targets
                                             const isSelected = selectedSession === session.id
 
                                             return (
                                                 <div
                                                     key={session.id}
-                                                    className={`absolute top-1/2 transform -translate-y-1/2 h-4 rounded-lg border-2 transition-all duration-200 ${
+                                                    className={`absolute top-1/2 transform -translate-y-1/2 h-6 rounded-lg border-2 transition-all duration-200 touch-manipulation ${
                                                         session.type === 'main'
                                                             ? 'bg-gradient-to-r from-[#2BD2FF] to-[#2A8CEA] border-[#2BD2FF]'
                                                             : 'bg-gradient-to-r from-[#9BE15D] to-[#7BC142] border-[#9BE15D]'
@@ -446,14 +508,14 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                     style={{
                                                         left: `${startPos}px`,
                                                         width: `${width}px`,
-                                                        zIndex: isSelected ? 100 : (session.type === 'main' ? 20 : 10),
+                                                        zIndex: isDragging && isSelected ? 1000 : (isSelected ? 100 : (session.type === 'main' ? 20 : 10)),
                                                     }}
-                                                    onMouseDown={(e) => handleSessionMouseDown(e, session.id, 'move')}
+                                                    onPointerDown={(e) => handleSessionPointerDown(e, session.id, 'move')}
                                                 >
                                                     {/* Start resize handle */}
                                                     <div
-                                                        className="absolute left-0 top-0 w-2 h-full cursor-col-resize opacity-0 hover:opacity-100 bg-white bg-opacity-30 rounded-l-lg transition-opacity"
-                                                        onMouseDown={(e) => handleSessionMouseDown(e, session.id, 'start')}
+                                                        className="absolute left-0 top-0 w-4 h-full cursor-col-resize opacity-30 hover:opacity-100 active:opacity-100 bg-white bg-opacity-30 rounded-l-lg transition-opacity touch-manipulation md:opacity-0 md:hover:opacity-100"
+                                                        onPointerDown={(e) => handleSessionPointerDown(e, session.id, 'start')}
                                                     />
 
                                                     {/* Session label */}
@@ -465,8 +527,8 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
 
                                                     {/* End resize handle */}
                                                     <div
-                                                        className="absolute right-0 top-0 w-2 h-full cursor-col-resize opacity-0 hover:opacity-100 bg-white bg-opacity-30 rounded-r-lg transition-opacity"
-                                                        onMouseDown={(e) => handleSessionMouseDown(e, session.id, 'end')}
+                                                        className="absolute right-0 top-0 w-4 h-full cursor-col-resize opacity-30 hover:opacity-100 active:opacity-100 bg-white bg-opacity-30 rounded-r-lg transition-opacity touch-manipulation md:opacity-0 md:hover:opacity-100"
+                                                        onPointerDown={(e) => handleSessionPointerDown(e, session.id, 'end')}
                                                     />
                                                 </div>
                                             )
