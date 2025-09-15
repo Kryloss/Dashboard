@@ -308,24 +308,14 @@ export default function WorkoutPage() {
             return {
                 recovery: 0,
                 nutrition: 0,
-                exercise: 0,
-                exerciseSessions: undefined
+                exercise: 0
             }
         }
-
-        // Convert sessions data for ring visualization
-        const exerciseSessions = goalProgress.exercise.sessions.length > 1
-            ? goalProgress.exercise.sessions.map(session => ({
-                duration: session.duration,
-                progress: session.duration / goalProgress.exercise.currentMinutes // Relative to actual time worked, not target
-            }))
-            : undefined
 
         return {
             recovery: goalProgress.recovery.progress,
             nutrition: goalProgress.nutrition.progress,
-            exercise: goalProgress.exercise.progress,
-            exerciseSessions
+            exercise: goalProgress.exercise.progress
         }
     }
 
@@ -674,7 +664,6 @@ export default function WorkoutPage() {
                                                 recoveryProgress={getGoalRingData().recovery}
                                                 nutritionProgress={getGoalRingData().nutrition}
                                                 exerciseProgress={getGoalRingData().exercise}
-                                                exerciseSessions={getGoalRingData().exerciseSessions}
                                                 streak={mockData.streak}
                                             />
                                         )}

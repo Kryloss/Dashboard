@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react"
 import { cn } from "@/lib/utils"
-import { ReactElement } from "react"
 
 interface GoalRingsProps {
     size?: 'xs' | 'sm' | 'md' | 'lg'
@@ -17,10 +16,6 @@ interface GoalRingsProps {
         subtitle?: string
     }
     streak?: number // Consecutive days streak
-    exerciseSessions?: Array<{
-        duration: number // minutes
-        progress: number // 0-1 portion of this session
-    }>
 }
 
 const sizeConfig = {
@@ -78,8 +73,7 @@ export function GoalRings({
     animated = true,
     className,
     centerContent,
-    streak,
-    exerciseSessions
+    streak
 }: GoalRingsProps) {
     const svgRef = useRef<SVGSVGElement>(null)
     const config = sizeConfig[size]
@@ -91,81 +85,9 @@ export function GoalRings({
     const getCircumference = (radius: number) => 2 * Math.PI * radius
     const getDashOffset = (progress: number, circumference: number) => {
         const clampedProgress = Math.max(0, Math.min(1, progress))
-        // Offset by quarter circle to start from 12 o'clock and fill clockwise
-        const quarterCircle = circumference / 4
-        return quarterCircle + (circumference * (1 - clampedProgress))
+        return circumference * (1 - clampedProgress)
     }
 
-    // Helper function to render exercise ring with session segments
-    const renderExerciseRing = () => {
-        const hasMultipleSessions = exerciseSessions && exerciseSessions.length > 1
-        const circumference = innerCircumference
-
-        if (!hasMultipleSessions || !exerciseSessions) {
-            // Single session or no session data - render normal ring
-            return (
-                <circle
-                    cx={config.canvas / 2}
-                    cy={config.canvas / 2}
-                    r={innerRadius}
-                    fill="none"
-                    stroke="url(#exerciseGradient)"
-                    strokeWidth={config.thicknessInner}
-                    strokeLinecap="round"
-                    strokeDasharray={circumference}
-                    strokeDashoffset={getDashOffset(exerciseProgress, circumference)}
-                    transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
-                    className="progress-ring"
-                    style={exerciseProgress >= 1 ? {
-                        filter: 'drop-shadow(0 0 12px rgba(255,45,85,0.6)) drop-shadow(0 0 24px rgba(255,55,95,0.4))'
-                    } : undefined}
-                />
-            )
-        }
-
-        // Multiple sessions - render segments with gaps
-        const totalProgress = exerciseProgress
-        const segmentElements: ReactElement[] = []
-        let currentOffset = 0
-
-        // Small gap between sessions (2% of circumference)
-        const gapSize = circumference * 0.02
-
-        exerciseSessions.forEach((session, index) => {
-            const sessionProgress = session.progress * totalProgress
-            const sessionLength = circumference * sessionProgress
-
-            if (sessionLength > 0) {
-                // Calculate dash array for this segment
-                const dashArray = sessionLength
-                const dashOffset = circumference * (1 - currentOffset - sessionProgress)
-
-                segmentElements.push(
-                    <circle
-                        key={`session-${index}`}
-                        cx={config.canvas / 2}
-                        cy={config.canvas / 2}
-                        r={innerRadius}
-                        fill="none"
-                        stroke="url(#exerciseGradient)"
-                        strokeWidth={config.thicknessInner}
-                        strokeLinecap="round"
-                        strokeDasharray={`${dashArray} ${circumference - dashArray}`}
-                        strokeDashoffset={dashOffset}
-                        transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
-                        className="progress-ring"
-                        style={exerciseProgress >= 1 ? {
-                            filter: 'drop-shadow(0 0 12px rgba(255,45,85,0.6)) drop-shadow(0 0 24px rgba(255,55,95,0.4))'
-                        } : undefined}
-                    />
-                )
-
-                currentOffset += sessionProgress + (gapSize / circumference)
-            }
-        })
-
-        return <>{segmentElements}</>
-    }
 
     const outerCircumference = getCircumference(outerRadius)
     const middleCircumference = getCircumference(middleRadius)
@@ -272,7 +194,22 @@ export function GoalRings({
                     strokeWidth={config.thicknessInner}
                     strokeLinecap="round"
                 />
-                {renderExerciseRing()}
+                <circle
+                    cx={config.canvas / 2}
+                    cy={config.canvas / 2}
+                    r={innerRadius}
+                    fill="none"
+                    stroke="url(#exerciseGradient)"
+                    strokeWidth={config.thicknessInner}
+                    strokeLinecap="round"
+                    strokeDasharray={innerCircumference}
+                    strokeDashoffset={getDashOffset(exerciseProgress, innerCircumference)}
+                    transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
+                    className="progress-ring"
+                    style={exerciseProgress >= 1 ? {
+                        filter: 'drop-shadow(0 0 12px rgba(255,45,85,0.6)) drop-shadow(0 0 24px rgba(255,55,95,0.4))'
+                    } : undefined}
+                />
             </svg>
 
             {/* Center Content */}
