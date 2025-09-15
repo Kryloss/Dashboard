@@ -95,12 +95,20 @@ export default function WorkoutPage() {
                     const workout = await WorkoutStorage.getOngoingWorkout()
                     setOngoingWorkout(workout)
 
-                    // If workout is running, calculate live time
+                    // If workout is running, calculate live time and start real-time ring updates
                     if (workout?.isRunning) {
                         const backgroundElapsedTime = WorkoutStorage.getBackgroundElapsedTime()
                         setLiveWorkoutTime(backgroundElapsedTime)
+                        
+                        // Start real-time ring updates for ongoing workout
+                        workoutStateManager.startOngoingWorkoutTracking()
                     } else if (workout) {
                         setLiveWorkoutTime(workout.elapsedTime)
+                        // Stop real-time ring updates if workout is paused
+                        workoutStateManager.stopOngoingWorkoutTracking()
+                    } else {
+                        // No ongoing workout, stop tracking
+                        workoutStateManager.stopOngoingWorkoutTracking()
                     }
                 } catch (error) {
                     console.error('Error loading ongoing workout:', error)
@@ -110,6 +118,8 @@ export default function WorkoutPage() {
             return () => {
                 clearInterval(interval)
                 unsubscribe()
+                // Stop ongoing workout tracking when component unmounts
+                workoutStateManager.stopOngoingWorkoutTracking()
             }
         } else if (onHealss && user === null && !signInNotificationShownRef.current) {
             // Add a delay to ensure authentication state has loaded

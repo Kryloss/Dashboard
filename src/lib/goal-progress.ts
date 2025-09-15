@@ -63,7 +63,7 @@ export class GoalProgressCalculator {
     }
 
     // Calculate exercise progress from today's completed workouts
-    static async calculateExerciseProgress(userGoals: UserGoals): Promise<DailyGoalProgress['exercise']> {
+    static async calculateExerciseProgress(userGoals: UserGoals, includeOngoingWorkout = false): Promise<DailyGoalProgress['exercise']> {
         try {
             // Get activities with optimized query (reduced limit for performance)
             const allActivities = await WorkoutStorage.getWorkoutActivities(50, 0)
@@ -73,12 +73,23 @@ export class GoalProgressCalculator {
                 this.isWorkoutToday(activity.completedAt)
             )
 
-            // Calculate total minutes and sessions
-            const totalMinutes = todayWorkouts.reduce((sum, workout) => {
+            // Calculate total minutes and sessions from completed workouts
+            let totalMinutes = todayWorkouts.reduce((sum, workout) => {
                 return sum + Math.round(workout.durationSeconds / 60)
             }, 0)
 
-            const sessionCount = todayWorkouts.length
+            let sessionCount = todayWorkouts.length
+
+            // Include ongoing workout time if requested
+            if (includeOngoingWorkout) {
+                const ongoingWorkout = await WorkoutStorage.getOngoingWorkout()
+                if (ongoingWorkout && ongoingWorkout.isRunning) {
+                    const ongoingMinutes = Math.round(ongoingWorkout.elapsedTime / 60)
+                    totalMinutes += ongoingMinutes
+                    sessionCount += 1 // Count ongoing workout as an active session
+                }
+            }
+
             const targetMinutes = userGoals.dailyExerciseMinutes
             const progress = Math.min(totalMinutes / targetMinutes, 1.0)
 
@@ -88,6 +99,18 @@ export class GoalProgressCalculator {
                 type: workout.workoutType,
                 completedAt: workout.completedAt
             }))
+
+            // Add ongoing workout session if included
+            if (includeOngoingWorkout) {
+                const ongoingWorkout = await WorkoutStorage.getOngoingWorkout()
+                if (ongoingWorkout && ongoingWorkout.isRunning) {
+                    sessions.push({
+                        duration: Math.round(ongoingWorkout.elapsedTime / 60),
+                        type: ongoingWorkout.type,
+                        completedAt: ongoingWorkout.startTime // Use start time for ongoing workouts
+                    })
+                }
+            }
 
             return {
                 progress,
@@ -178,10 +201,10 @@ export class GoalProgressCalculator {
     }
 
     // Main function to calculate all daily progress with caching
-    static async calculateDailyProgress(forceRefresh = false): Promise<DailyGoalProgress | null> {
+    static async calculateDailyProgress(forceRefresh = false, includeOngoingWorkout = false): Promise<DailyGoalProgress | null> {
         try {
-            // Return cached data if valid and not forcing refresh
-            if (!forceRefresh && this.isCacheValid()) {
+            // Return cached data if valid and not forcing refresh, but not if we need ongoing workout data
+            if (!forceRefresh && !includeOngoingWorkout && this.isCacheValid()) {
                 return this.cache!.data
             }
 
@@ -193,7 +216,7 @@ export class GoalProgressCalculator {
             }
 
             // Calculate each ring's progress
-            const exercise = await this.calculateExerciseProgress(userGoals)
+            const exercise = await this.calculateExerciseProgress(userGoals, includeOngoingWorkout)
             const nutrition = this.calculateNutritionProgress(userGoals)
             const recovery = this.calculateRecoveryProgress(userGoals)
 
