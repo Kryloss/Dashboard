@@ -89,8 +89,10 @@ export function GoalRings({
     const innerRadius = middleRadius - config.thicknessMiddle - config.gap
 
     const getCircumference = (radius: number) => 2 * Math.PI * radius
-    const getDashOffset = (progress: number, circumference: number) =>
-        circumference * (1 - Math.max(0, Math.min(1, progress)))
+    const getDashOffset = (progress: number, circumference: number) => {
+        const clampedProgress = Math.max(0, Math.min(1, progress))
+        return circumference * (1 - clampedProgress)
+    }
 
     // Helper function to render exercise ring with session segments
     const renderExerciseRing = () => {

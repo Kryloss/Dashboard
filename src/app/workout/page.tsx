@@ -317,7 +317,7 @@ export default function WorkoutPage() {
         const exerciseSessions = goalProgress.exercise.sessions.length > 1
             ? goalProgress.exercise.sessions.map(session => ({
                 duration: session.duration,
-                progress: session.duration / goalProgress.exercise.targetMinutes
+                progress: session.duration / goalProgress.exercise.currentMinutes // Relative to actual time worked, not target
             }))
             : undefined
 
@@ -686,8 +686,8 @@ export default function WorkoutPage() {
 
                                     <div className="grid grid-cols-1 gap-2">
                                         {/* Recovery Summary */}
-                                        <div className="p-2.5 bg-[#121318] border border-[#212227] rounded-[12px] hover:border-[#2A2B31] transition-colors cursor-pointer">
-                                            <div className="flex items-center justify-between">
+                                        <div className="p-3 bg-[#121318] border border-[#212227] rounded-[12px] hover:border-[#2A2B31] transition-colors cursor-pointer">
+                                            <div className="flex items-center justify-between mb-1">
                                                 <div className="flex items-center space-x-3">
                                                     <div className="w-6 h-6 bg-gradient-to-br from-[#2BD2FF] to-[#2A8CEA] rounded-[8px] flex items-center justify-center">
                                                         <Moon className="w-3 h-3 text-white" />
@@ -698,11 +698,17 @@ export default function WorkoutPage() {
                                                     {isLoadingGoals ? '...' : `${Math.round(getGoalRingData().recovery * 100)}%`}
                                                 </span>
                                             </div>
+                                            {!isLoadingGoals && goalProgress && (
+                                                <div className="text-xs text-[#A1A1AA] mt-1">
+                                                    {goalProgress.recovery.currentHours.toFixed(1)}h of {goalProgress.recovery.targetHours}h
+                                                    {goalProgress.recovery.placeholder && <span className="ml-1 text-[#9CA3AF]">(estimated)</span>}
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* Nutrition Summary */}
-                                        <div className="p-2.5 bg-[#121318] border border-[#212227] rounded-[12px] hover:border-[#2A2B31] transition-colors cursor-pointer">
-                                            <div className="flex items-center justify-between">
+                                        <div className="p-3 bg-[#121318] border border-[#212227] rounded-[12px] hover:border-[#2A2B31] transition-colors cursor-pointer">
+                                            <div className="flex items-center justify-between mb-1">
                                                 <div className="flex items-center space-x-3">
                                                     <div className="w-6 h-6 bg-gradient-to-br from-[#9BE15D] to-[#00E676] rounded-[8px] flex items-center justify-center">
                                                         <Flame className="w-3 h-3 text-white" />
@@ -713,11 +719,17 @@ export default function WorkoutPage() {
                                                     {isLoadingGoals ? '...' : `${Math.round(getGoalRingData().nutrition * 100)}%`}
                                                 </span>
                                             </div>
+                                            {!isLoadingGoals && goalProgress && (
+                                                <div className="text-xs text-[#A1A1AA] mt-1">
+                                                    {goalProgress.nutrition.currentCalories} of {goalProgress.nutrition.targetCalories} cal
+                                                    {goalProgress.nutrition.placeholder && <span className="ml-1 text-[#9CA3AF]">(estimated)</span>}
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* Exercise Summary */}
-                                        <div className="p-2.5 bg-[#121318] border border-[#212227] rounded-[12px] hover:border-[#2A2B31] transition-colors cursor-pointer">
-                                            <div className="flex items-center justify-between">
+                                        <div className="p-3 bg-[#121318] border border-[#212227] rounded-[12px] hover:border-[#2A2B31] transition-colors cursor-pointer">
+                                            <div className="flex items-center justify-between mb-1">
                                                 <div className="flex items-center space-x-3">
                                                     <div className="w-6 h-6 bg-gradient-to-br from-[#FF2D55] to-[#FF375F] rounded-[8px] flex items-center justify-center">
                                                         <Dumbbell className="w-3 h-3 text-white" />
@@ -728,6 +740,14 @@ export default function WorkoutPage() {
                                                     {isLoadingGoals ? '...' : `${Math.round(getGoalRingData().exercise * 100)}%`}
                                                 </span>
                                             </div>
+                                            {!isLoadingGoals && goalProgress && (
+                                                <div className="text-xs text-[#A1A1AA] mt-1">
+                                                    {goalProgress.exercise.currentMinutes}m of {goalProgress.exercise.targetMinutes}m
+                                                    {goalProgress.exercise.sessionCount > 0 && (
+                                                        <span className="ml-2">• {goalProgress.exercise.sessionCount} session{goalProgress.exercise.sessionCount !== 1 ? 's' : ''}</span>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
