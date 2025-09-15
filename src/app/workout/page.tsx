@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { isOnSubdomain } from "@/lib/subdomains"
 import { Button } from "@/components/ui/button"
@@ -38,6 +38,9 @@ export default function WorkoutPage() {
         isLoading: true,
         lastUpdate: 0
     })
+
+    // Track if we've shown the sign-in notification to avoid duplicates
+    const signInNotificationShownRef = useRef(false)
 
 
 
@@ -108,16 +111,22 @@ export default function WorkoutPage() {
                 clearInterval(interval)
                 unsubscribe()
             }
-        } else if (onHealss && user === null) {
-            // Show sign-in notification
-            notifications.warning('Sign in required', {
-                description: 'Please sign in to access workouts',
-                duration: 4000,
-                action: {
-                    label: 'Sign In',
-                    onClick: () => router.push('/auth/signin')
+        } else if (onHealss && user === null && !signInNotificationShownRef.current) {
+            // Add a delay to ensure authentication state has loaded
+            setTimeout(() => {
+                // Double-check user is still null after delay and we haven't shown notification yet
+                if (user === null && !signInNotificationShownRef.current) {
+                    signInNotificationShownRef.current = true
+                    notifications.warning('Sign in required', {
+                        description: 'Please sign in to access workouts',
+                        duration: 4000,
+                        action: {
+                            label: 'Sign In',
+                            onClick: () => router.push('/auth/signin')
+                        }
+                    })
                 }
-            })
+            }, 1500) // 1.5 second delay to allow auth state to load
         }
     }, [user, supabase, notifications, router])
 
