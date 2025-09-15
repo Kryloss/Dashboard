@@ -218,92 +218,171 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
     }
 
     const handleSaveProfile = async () => {
+        // Step 1: Comprehensive validation
         if (!user || !supabase) {
-            notifications.warning('Sign in required', {
-                description: 'Please sign in to save your profile'
+            notifications.warning('Authentication Required', {
+                description: 'Please sign in to save your profile',
+                duration: 5000
             })
             return
         }
 
-        try {
-            setIsLoading(true)
+        // Step 2: Validate profile data
+        const errors = []
+        if (profile.weight && (isNaN(parseFloat(profile.weight)) || parseFloat(profile.weight) <= 0)) {
+            errors.push('Weight must be a positive number')
+        }
+        if (profile.age && (isNaN(parseInt(profile.age)) || parseInt(profile.age) <= 0 || parseInt(profile.age) > 150)) {
+            errors.push('Age must be between 1 and 150')
+        }
+        if (profile.height && (isNaN(parseFloat(profile.height)) || parseFloat(profile.height) <= 0)) {
+            errors.push('Height must be a positive number')
+        }
 
+        if (errors.length > 0) {
+            notifications.error('Invalid Data', {
+                description: errors.join('\n'),
+                duration: 6000
+            })
+            return
+        }
+
+        setIsLoading(true)
+        console.log('🔄 Starting profile save operation...')
+
+        try {
+            // Step 3: Prepare data with explicit typing
             const profileData = {
                 user_id: user.id,
                 weight: profile.weight ? parseFloat(profile.weight) : null,
                 age: profile.age ? parseInt(profile.age) : null,
                 height: profile.height ? parseFloat(profile.height) : null,
-                weight_unit: profile.weightUnit,
-                height_unit: profile.heightUnit
+                weight_unit: profile.weightUnit || 'kg',
+                height_unit: profile.heightUnit || 'cm',
+                updated_at: new Date().toISOString()
             }
 
-            const { error } = await supabase
+            console.log('📝 Profile data prepared:', profileData)
+
+            // Step 4: Test database connection first
+            console.log('🔍 Testing database connection...')
+            const { data: testData, error: testError } = await supabase
                 .from('user_profiles')
-                .upsert(profileData, { onConflict: 'user_id' })
+                .select('id')
+                .limit(1)
 
-            if (error) {
-                throw error
+            if (testError) {
+                console.error('❌ Database connection test failed:', testError)
+                throw new Error(`Database connection failed: ${testError.message}`)
             }
 
-            notifications.success('Profile saved', {
-                description: 'Your profile has been updated successfully'
-            })
-        } catch (error: unknown) {
-            console.error('Error saving profile:', error)
+            console.log('✅ Database connection successful')
 
-            // Enhanced error handling with detailed diagnostics
+            // Step 5: Check if profile exists
+            console.log('🔍 Checking if profile exists...')
+            const { data: existingProfile, error: checkError } = await supabase
+                .from('user_profiles')
+                .select('id, user_id')
+                .eq('user_id', user.id)
+                .maybeSingle()
+
+            if (checkError) {
+                console.error('❌ Profile check failed:', checkError)
+                throw new Error(`Profile check failed: ${checkError.message}`)
+            }
+
+            console.log('📊 Existing profile check:', existingProfile ? 'Found' : 'Not found')
+
+            // Step 6: Perform upsert operation
+            console.log('💾 Saving profile data...')
+            const { data: savedData, error: saveError } = await supabase
+                .from('user_profiles')
+                .upsert(profileData, {
+                    onConflict: 'user_id',
+                    ignoreDuplicates: false
+                })
+                .select()
+
+            if (saveError) {
+                console.error('❌ Profile save failed:', saveError)
+                throw saveError
+            }
+
+            console.log('✅ Profile saved successfully:', savedData)
+
+            // Step 7: Success notification
+            notifications.success('Profile Saved! 🎉', {
+                description: 'Your profile has been updated successfully',
+                duration: 4000
+            })
+
+        } catch (error: unknown) {
+            console.error('💥 Profile save error:', error)
+
+            // Comprehensive error analysis
             let errorTitle = 'Profile Save Failed'
-            let errorMessage = 'Could not save your profile'
+            let errorMessage = 'An error occurred while saving your profile'
             let debugInfo = ''
+            let actionItems: string[] = []
 
             if (error && typeof error === 'object' && 'message' in error) {
-                const errorMsg = (error as Error).message.toLowerCase()
-                const fullErrorMsg = (error as Error).message
+                const errorMsg = (error as Error).message
+                const errorCode = (error as any)?.code
+                const errorDetails = (error as any)?.details
+                const errorHint = (error as any)?.hint
 
-                // Log detailed error for debugging
-                console.log('Full error details:', {
-                    message: fullErrorMsg,
-                    error: error,
-                    user: user?.id,
-                    profileData: profile
+                console.log('🔍 Error analysis:', {
+                    message: errorMsg,
+                    code: errorCode,
+                    details: errorDetails,
+                    hint: errorHint,
+                    userID: user?.id,
+                    profileData: profileData
                 })
 
-                if (errorMsg.includes('relation') && errorMsg.includes('user_profiles') && errorMsg.includes('does not exist')) {
-                    errorTitle = 'Database Setup Required'
-                    errorMessage = 'The user_profiles table does not exist in your database.'
-                    debugInfo = 'Solution: Run user-profiles-goals-safe-setup.sql in Supabase SQL Editor'
-                } else if (errorMsg.includes('permission denied') || errorMsg.includes('rls') || errorMsg.includes('policy')) {
-                    errorTitle = 'Permission Denied'
-                    errorMessage = 'Row Level Security is blocking this operation.'
-                    debugInfo = 'Solution: Run fix-profile-permissions.sql or check if you\'re properly signed in'
-                } else if (errorMsg.includes('duplicate key') || errorMsg.includes('unique constraint')) {
-                    errorTitle = 'Data Conflict'
-                    errorMessage = 'A profile already exists for this user.'
-                    debugInfo = 'This should auto-update. Check database policies.'
-                } else if (errorMsg.includes('foreign key') || errorMsg.includes('violates')) {
-                    errorTitle = 'Data Validation Error'
-                    errorMessage = 'Invalid data format or user reference.'
-                    debugInfo = `User ID: ${user?.id || 'undefined'}`
-                } else if (errorMsg.includes('network') || errorMsg.includes('fetch') || errorMsg.includes('connection')) {
-                    errorTitle = 'Connection Error'
-                    errorMessage = 'Unable to connect to database.'
-                    debugInfo = 'Check your internet connection and try again'
-                } else if (errorMsg.includes('invalid') && errorMsg.includes('jwt')) {
-                    errorTitle = 'Authentication Expired'
-                    errorMessage = 'Your session has expired.'
-                    debugInfo = 'Please sign out and sign back in'
+                // Analyze specific error types
+                if (errorMsg.includes('relation') && errorMsg.includes('does not exist')) {
+                    errorTitle = '🗄️ Database Setup Required'
+                    errorMessage = 'The user_profiles table is missing from your database'
+                    actionItems.push('Run the database setup SQL file')
+                    actionItems.push('Check Supabase project configuration')
+                } else if (errorMsg.includes('permission denied') || errorCode === 'PGRST301') {
+                    errorTitle = '🔒 Permission Denied'
+                    errorMessage = 'You do not have permission to save profile data'
+                    actionItems.push('Check if you are properly signed in')
+                    actionItems.push('Verify Row Level Security policies')
+                    actionItems.push('Contact support if issue persists')
+                } else if (errorMsg.includes('JWT') || errorMsg.includes('token')) {
+                    errorTitle = '🔑 Session Expired'
+                    errorMessage = 'Your authentication session has expired'
+                    actionItems.push('Sign out and sign back in')
+                    actionItems.push('Clear browser cookies if needed')
+                } else if (errorMsg.includes('network') || errorMsg.includes('fetch')) {
+                    errorTitle = '🌐 Connection Error'
+                    errorMessage = 'Unable to connect to the database'
+                    actionItems.push('Check your internet connection')
+                    actionItems.push('Try again in a few moments')
+                } else if (errorCode === 'PGRST116') {
+                    errorTitle = '📄 No Data Found'
+                    errorMessage = 'Could not locate your profile record'
+                    actionItems.push('This might be your first save - try again')
                 } else {
-                    errorTitle = 'Database Error'
-                    errorMessage = `Unexpected database error: ${fullErrorMsg}`
-                    debugInfo = `Error type: ${(error as Error & { code?: string })?.code || 'unknown'}`
+                    errorTitle = '⚠️ Database Error'
+                    errorMessage = `Database operation failed: ${errorMsg}`
+                    debugInfo = `Code: ${errorCode || 'unknown'}, Details: ${errorDetails || 'none'}`
+                }
+
+                if (actionItems.length > 0) {
+                    debugInfo = `\n\n🔧 Next steps:\n${actionItems.map(item => `• ${item}`).join('\n')}`
                 }
             } else {
-                debugInfo = `Unknown error type: ${typeof error}`
+                errorMessage = `Unexpected error type: ${typeof error}`
+                debugInfo = '\n\n🔧 Please check the browser console for more details'
             }
 
             notifications.error(errorTitle, {
-                description: `${errorMessage}${debugInfo ? `\n\n💡 ${debugInfo}` : ''}`,
-                duration: 8000 // Longer duration for detailed messages
+                description: `${errorMessage}${debugInfo}`,
+                duration: 10000
             })
         } finally {
             setIsLoading(false)
@@ -311,100 +390,202 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
     }
 
     const handleSaveGoals = async () => {
+        // Step 1: Comprehensive validation
         if (!user || !supabase) {
-            notifications.warning('Sign in required', {
-                description: 'Please sign in to save your goals'
+            notifications.warning('Authentication Required', {
+                description: 'Please sign in to save your goals',
+                duration: 5000
             })
             return
         }
 
-        try {
-            setIsLoading(true)
+        // Step 2: Validate goals data
+        const errors = []
+        const validActivityLevels = ['sedentary', 'light', 'moderate', 'active', 'extra']
+        const validDietTypes = ['cutting', 'bulking', 'maintenance']
 
+        if (goals.dailyExerciseMinutes && (isNaN(parseInt(goals.dailyExerciseMinutes)) || parseInt(goals.dailyExerciseMinutes) < 0 || parseInt(goals.dailyExerciseMinutes) > 720)) {
+            errors.push('Daily exercise minutes must be between 0 and 720')
+        }
+        if (goals.weeklyExerciseSessions && (isNaN(parseInt(goals.weeklyExerciseSessions)) || parseInt(goals.weeklyExerciseSessions) < 0 || parseInt(goals.weeklyExerciseSessions) > 14)) {
+            errors.push('Weekly exercise sessions must be between 0 and 14')
+        }
+        if (goals.dailyCalories && (isNaN(parseInt(goals.dailyCalories)) || parseInt(goals.dailyCalories) < 800 || parseInt(goals.dailyCalories) > 5000)) {
+            errors.push('Daily calories must be between 800 and 5000')
+        }
+        if (goals.activityLevel && !validActivityLevels.includes(goals.activityLevel)) {
+            errors.push('Activity level must be one of: ' + validActivityLevels.join(', '))
+        }
+        if (goals.sleepHours && (isNaN(parseFloat(goals.sleepHours)) || parseFloat(goals.sleepHours) < 1 || parseFloat(goals.sleepHours) > 16)) {
+            errors.push('Sleep hours must be between 1 and 16')
+        }
+        if (goals.recoveryMinutes && (isNaN(parseInt(goals.recoveryMinutes)) || parseInt(goals.recoveryMinutes) < 0 || parseInt(goals.recoveryMinutes) > 480)) {
+            errors.push('Recovery minutes must be between 0 and 480')
+        }
+        if (goals.startingWeight && (isNaN(parseFloat(goals.startingWeight)) || parseFloat(goals.startingWeight) <= 0 || parseFloat(goals.startingWeight) > 1000)) {
+            errors.push('Starting weight must be between 0 and 1000')
+        }
+        if (goals.goalWeight && (isNaN(parseFloat(goals.goalWeight)) || parseFloat(goals.goalWeight) <= 0 || parseFloat(goals.goalWeight) > 1000)) {
+            errors.push('Goal weight must be between 0 and 1000')
+        }
+        if (goals.dietType && !validDietTypes.includes(goals.dietType)) {
+            errors.push('Diet type must be one of: ' + validDietTypes.join(', '))
+        }
+
+        if (errors.length > 0) {
+            notifications.error('Invalid Data', {
+                description: errors.join('\n'),
+                duration: 8000
+            })
+            return
+        }
+
+        setIsLoading(true)
+        console.log('🎯 Starting goals save operation...')
+
+        try {
+            // Step 3: Prepare data with explicit validation
             const goalsData = {
                 user_id: user.id,
                 daily_exercise_minutes: goals.dailyExerciseMinutes ? parseInt(goals.dailyExerciseMinutes) : 30,
                 weekly_exercise_sessions: goals.weeklyExerciseSessions ? parseInt(goals.weeklyExerciseSessions) : 3,
                 daily_calories: goals.dailyCalories ? parseInt(goals.dailyCalories) : 2000,
-                activity_level: goals.activityLevel,
+                activity_level: goals.activityLevel || 'moderate',
                 sleep_hours: goals.sleepHours ? parseFloat(goals.sleepHours) : 8.0,
                 recovery_minutes: goals.recoveryMinutes ? parseInt(goals.recoveryMinutes) : 60,
                 starting_weight: goals.startingWeight ? parseFloat(goals.startingWeight) : null,
                 goal_weight: goals.goalWeight ? parseFloat(goals.goalWeight) : null,
-                diet_type: goals.dietType
+                diet_type: goals.dietType || 'maintenance',
+                updated_at: new Date().toISOString()
             }
 
-            const { error } = await supabase
+            console.log('📋 Goals data prepared:', goalsData)
+
+            // Step 4: Test database connection first
+            console.log('🔍 Testing database connection...')
+            const { data: testData, error: testError } = await supabase
                 .from('user_goals')
-                .upsert(goalsData, { onConflict: 'user_id' })
+                .select('id')
+                .limit(1)
 
-            if (error) {
-                throw error
+            if (testError) {
+                console.error('❌ Database connection test failed:', testError)
+                throw new Error(`Database connection failed: ${testError.message}`)
             }
 
-            notifications.success('Goals saved', {
-                description: 'Your goals have been updated successfully'
-            })
-        } catch (error: unknown) {
-            console.error('Error saving goals:', error)
+            console.log('✅ Database connection successful')
 
-            // Enhanced error handling with detailed diagnostics
+            // Step 5: Check if goals exist
+            console.log('🔍 Checking if goals exist...')
+            const { data: existingGoals, error: checkError } = await supabase
+                .from('user_goals')
+                .select('id, user_id')
+                .eq('user_id', user.id)
+                .maybeSingle()
+
+            if (checkError) {
+                console.error('❌ Goals check failed:', checkError)
+                throw new Error(`Goals check failed: ${checkError.message}`)
+            }
+
+            console.log('📊 Existing goals check:', existingGoals ? 'Found' : 'Not found')
+
+            // Step 6: Perform upsert operation
+            console.log('💾 Saving goals data...')
+            const { data: savedData, error: saveError } = await supabase
+                .from('user_goals')
+                .upsert(goalsData, {
+                    onConflict: 'user_id',
+                    ignoreDuplicates: false
+                })
+                .select()
+
+            if (saveError) {
+                console.error('❌ Goals save failed:', saveError)
+                throw saveError
+            }
+
+            console.log('✅ Goals saved successfully:', savedData)
+
+            // Step 7: Success notification
+            notifications.success('Goals Saved! 🎯', {
+                description: 'Your fitness goals have been updated successfully',
+                duration: 4000
+            })
+
+        } catch (error: unknown) {
+            console.error('💥 Goals save error:', error)
+
+            // Comprehensive error analysis
             let errorTitle = 'Goals Save Failed'
-            let errorMessage = 'Could not save your goals'
+            let errorMessage = 'An error occurred while saving your goals'
             let debugInfo = ''
+            let actionItems: string[] = []
 
             if (error && typeof error === 'object' && 'message' in error) {
-                const errorMsg = (error as Error).message.toLowerCase()
-                const fullErrorMsg = (error as Error).message
+                const errorMsg = (error as Error).message
+                const errorCode = (error as any)?.code
+                const errorDetails = (error as any)?.details
+                const errorHint = (error as any)?.hint
 
-                // Log detailed error for debugging
-                console.log('Full goals error details:', {
-                    message: fullErrorMsg,
-                    error: error,
-                    user: user?.id,
-                    goalsData: goals
+                console.log('🔍 Goals error analysis:', {
+                    message: errorMsg,
+                    code: errorCode,
+                    details: errorDetails,
+                    hint: errorHint,
+                    userID: user?.id,
+                    goalsData: goalsData
                 })
 
-                if (errorMsg.includes('relation') && errorMsg.includes('user_goals') && errorMsg.includes('does not exist')) {
-                    errorTitle = 'Database Setup Required'
-                    errorMessage = 'The user_goals table does not exist in your database.'
-                    debugInfo = 'Solution: Run user-profiles-goals-safe-setup.sql in Supabase SQL Editor'
-                } else if (errorMsg.includes('permission denied') || errorMsg.includes('rls') || errorMsg.includes('policy')) {
-                    errorTitle = 'Permission Denied'
-                    errorMessage = 'Row Level Security is blocking this operation.'
-                    debugInfo = 'Solution: Run fix-profile-permissions.sql or check if you\'re properly signed in'
-                } else if (errorMsg.includes('duplicate key') || errorMsg.includes('unique constraint')) {
-                    errorTitle = 'Data Conflict'
-                    errorMessage = 'Goals already exist for this user.'
-                    debugInfo = 'This should auto-update. Check database policies.'
-                } else if (errorMsg.includes('foreign key') || errorMsg.includes('violates')) {
-                    errorTitle = 'Data Validation Error'
-                    errorMessage = 'Invalid data format or user reference.'
-                    debugInfo = `User ID: ${user?.id || 'undefined'}`
-                } else if (errorMsg.includes('network') || errorMsg.includes('fetch') || errorMsg.includes('connection')) {
-                    errorTitle = 'Connection Error'
-                    errorMessage = 'Unable to connect to database.'
-                    debugInfo = 'Check your internet connection and try again'
-                } else if (errorMsg.includes('invalid') && errorMsg.includes('jwt')) {
-                    errorTitle = 'Authentication Expired'
-                    errorMessage = 'Your session has expired.'
-                    debugInfo = 'Please sign out and sign back in'
+                // Analyze specific error types
+                if (errorMsg.includes('relation') && errorMsg.includes('does not exist')) {
+                    errorTitle = '🗄️ Database Setup Required'
+                    errorMessage = 'The user_goals table is missing from your database'
+                    actionItems.push('Run the database setup SQL file')
+                    actionItems.push('Check Supabase project configuration')
+                } else if (errorMsg.includes('permission denied') || errorCode === 'PGRST301') {
+                    errorTitle = '🔒 Permission Denied'
+                    errorMessage = 'You do not have permission to save goals data'
+                    actionItems.push('Check if you are properly signed in')
+                    actionItems.push('Verify Row Level Security policies')
+                    actionItems.push('Contact support if issue persists')
                 } else if (errorMsg.includes('check constraint') || errorMsg.includes('violates check')) {
-                    errorTitle = 'Invalid Values'
-                    errorMessage = 'One or more goal values are outside allowed ranges.'
-                    debugInfo = 'Check activity level, diet type, and numeric values'
+                    errorTitle = '📏 Invalid Values'
+                    errorMessage = 'One or more goal values are outside allowed ranges'
+                    actionItems.push('Check that activity level is valid')
+                    actionItems.push('Check that diet type is valid')
+                    actionItems.push('Verify numeric values are within limits')
+                } else if (errorMsg.includes('JWT') || errorMsg.includes('token')) {
+                    errorTitle = '🔑 Session Expired'
+                    errorMessage = 'Your authentication session has expired'
+                    actionItems.push('Sign out and sign back in')
+                    actionItems.push('Clear browser cookies if needed')
+                } else if (errorMsg.includes('network') || errorMsg.includes('fetch')) {
+                    errorTitle = '🌐 Connection Error'
+                    errorMessage = 'Unable to connect to the database'
+                    actionItems.push('Check your internet connection')
+                    actionItems.push('Try again in a few moments')
+                } else if (errorCode === 'PGRST116') {
+                    errorTitle = '📄 No Data Found'
+                    errorMessage = 'Could not locate your goals record'
+                    actionItems.push('This might be your first save - try again')
                 } else {
-                    errorTitle = 'Database Error'
-                    errorMessage = `Unexpected database error: ${fullErrorMsg}`
-                    debugInfo = `Error type: ${(error as Error & { code?: string })?.code || 'unknown'}`
+                    errorTitle = '⚠️ Database Error'
+                    errorMessage = `Database operation failed: ${errorMsg}`
+                    debugInfo = `Code: ${errorCode || 'unknown'}, Details: ${errorDetails || 'none'}`
+                }
+
+                if (actionItems.length > 0) {
+                    debugInfo = `\n\n🔧 Next steps:\n${actionItems.map(item => `• ${item}`).join('\n')}`
                 }
             } else {
-                debugInfo = `Unknown error type: ${typeof error}`
+                errorMessage = `Unexpected error type: ${typeof error}`
+                debugInfo = '\n\n🔧 Please check the browser console for more details'
             }
 
             notifications.error(errorTitle, {
-                description: `${errorMessage}${debugInfo ? `\n\n💡 ${debugInfo}` : ''}`,
-                duration: 8000 // Longer duration for detailed messages
+                description: `${errorMessage}${debugInfo}`,
+                duration: 10000
             })
         } finally {
             setIsLoading(false)
