@@ -244,9 +244,9 @@ export default function WorkoutPage() {
         }
 
         return {
-            recovery: Math.max(workoutState.goalProgress.recovery.progress, 0.01),
-            nutrition: Math.max(workoutState.goalProgress.nutrition.progress, 0.01),
-            exercise: Math.max(workoutState.goalProgress.exercise.progress, 0.01)
+            recovery: Math.max(workoutState.goalProgress.recovery.progress, 0.002),
+            nutrition: Math.max(workoutState.goalProgress.nutrition.progress, 0.002),
+            exercise: Math.max(workoutState.goalProgress.exercise.progress, 0.002)
         }
     }
 
