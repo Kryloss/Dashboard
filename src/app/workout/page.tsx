@@ -168,15 +168,24 @@ export default function WorkoutPage() {
                             console.error('Error loading ongoing workout:', error)
                         }
 
-                        // Only refresh activities occasionally to avoid excessive calls
-                        if (Math.random() < 0.1) { // 10% chance every 30 seconds = ~every 5 minutes
+                        // Refresh activities more frequently to catch new workout completions
+                        // Check every 30 seconds with higher probability
+                        if (Math.random() < 0.3) { // 30% chance every 30 seconds = ~every 2 minutes
                             try {
-                                const activities = await WorkoutStorage.getRecentActivities(3)
-                                setRecentActivities(activities)
+                                const activities = await WorkoutStorage.getRecentActivities(5) // Get more activities
+                                const currentActivityIds = recentActivities.map(a => a.id).sort().join(',')
+                                const newActivityIds = activities.map(a => a.id).sort().join(',')
 
-                                // Also refresh goal progress when activities change
-                                GoalProgressCalculator.invalidateCache()
-                                await refreshGoalProgress(true)
+                                // Only update if activities actually changed
+                                if (currentActivityIds !== newActivityIds) {
+                                    setRecentActivities(activities)
+
+                                    // Refresh goal progress when new activities are detected
+                                    GoalProgressCalculator.invalidateCache()
+                                    await refreshGoalProgress(true)
+
+                                    console.log('🔄 New workout activity detected, updated rings')
+                                }
                             } catch (error) {
                                 console.error('Error loading recent activities:', error)
                             }
@@ -271,23 +280,44 @@ export default function WorkoutPage() {
         const handleVisibilityChange = () => {
             if (!document.hidden && user && supabase) {
                 // Page became visible again - refresh data in case workout was completed
-                refreshGoalProgress()
+                refreshGoalProgress(true)
             }
         }
 
         const handleFocus = () => {
             if (user && supabase) {
                 // Window regained focus - refresh data
-                refreshGoalProgress()
+                refreshGoalProgress(true)
+            }
+        }
+
+        // Listen for localStorage changes (workout completion events from other tabs)
+        const handleStorageChange = (e: StorageEvent) => {
+            if (e.key === 'workout-completed' && user && supabase) {
+                console.log('🎯 Workout completion detected from another tab')
+                // Immediately refresh activities and goal progress
+                const refreshData = async () => {
+                    try {
+                        const activities = await WorkoutStorage.getRecentActivities(5)
+                        setRecentActivities(activities)
+                        GoalProgressCalculator.invalidateCache()
+                        await refreshGoalProgress(true)
+                    } catch (error) {
+                        console.error('Error refreshing after workout completion:', error)
+                    }
+                }
+                refreshData()
             }
         }
 
         document.addEventListener('visibilitychange', handleVisibilityChange)
         window.addEventListener('focus', handleFocus)
+        window.addEventListener('storage', handleStorageChange)
 
         return () => {
             document.removeEventListener('visibilitychange', handleVisibilityChange)
             window.removeEventListener('focus', handleFocus)
+            window.removeEventListener('storage', handleStorageChange)
         }
     }, [user, supabase])
 
