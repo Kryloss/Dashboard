@@ -45,7 +45,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
     const [activeTab, setActiveTab] = useState("account")
     const [refreshKey, setRefreshKey] = useState(0)
     const [isLoading, setIsLoading] = useState(false)
-    
+
     const [profile, setProfile] = useState<UserProfile>({
         weight: "",
         age: "",
@@ -53,7 +53,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
         weightUnit: "kg",
         heightUnit: "cm"
     })
-    
+
     const [goals, setGoals] = useState<Goals>({
         dailyExerciseMinutes: "30",
         weeklyExerciseSessions: "3",
@@ -72,8 +72,8 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
     useEffect(() => {
         const checkMobile = () => {
             const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-                                 window.innerWidth <= 768 ||
-                                 ('ontouchstart' in window)
+                window.innerWidth <= 768 ||
+                ('ontouchstart' in window)
             setIsMobile(isMobileDevice)
         }
 
@@ -81,13 +81,6 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
         window.addEventListener('resize', checkMobile)
         return () => window.removeEventListener('resize', checkMobile)
     }, [])
-
-    // Load existing profile and goals data when dialog opens
-    useEffect(() => {
-        if (open && user && supabase) {
-            loadUserData()
-        }
-    }, [open, user, supabase, loadUserData])
 
     const loadUserData = useCallback(async () => {
         if (!user || !supabase) return
@@ -146,11 +139,18 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
         }
     }, [user, supabase, notifications])
 
+    // Load existing profile and goals data when dialog opens
+    useEffect(() => {
+        if (open && user && supabase) {
+            loadUserData()
+        }
+    }, [open, user, supabase, loadUserData])
+
     // Handle numeric input with validation - prevents letters including 'e' and limits digits
     const handleNumericInput = (value: string, maxDigits: number, allowDecimal: boolean = false) => {
         // Remove any non-numeric characters (including 'e', '+', '-')
         let cleanValue = value.replace(/[^0-9.]/g, '')
-        
+
         // Handle decimal places
         if (allowDecimal) {
             const parts = cleanValue.split('.')
@@ -166,14 +166,14 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
             // Remove decimal points if not allowed
             cleanValue = cleanValue.replace(/\./g, '')
         }
-        
+
         // Limit total digits (before decimal point)
         const wholePart = cleanValue.split('.')[0]
         if (wholePart.length > maxDigits) {
             const decimalPart = cleanValue.includes('.') ? '.' + cleanValue.split('.')[1] : ''
             cleanValue = wholePart.substring(0, maxDigits) + decimalPart
         }
-        
+
         return cleanValue
     }
 
@@ -375,14 +375,14 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                         id="weight"
                                                         type="text"
                                                         value={profile.weight}
-                                                        onChange={(e) => setProfile({...profile, weight: handleNumericInput(e.target.value, 3, true)})}
+                                                        onChange={(e) => setProfile({ ...profile, weight: handleNumericInput(e.target.value, 3, true) })}
                                                         className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-sm font-medium text-center w-24 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                         placeholder="70"
                                                         inputMode="decimal"
                                                     />
-                                                    <MobileSelect 
-                                                        value={profile.weightUnit} 
-                                                        onValueChange={(value) => setProfile({...profile, weightUnit: value})}
+                                                    <MobileSelect
+                                                        value={profile.weightUnit}
+                                                        onValueChange={(value) => setProfile({ ...profile, weightUnit: value })}
                                                         options={[
                                                             { value: "kg", label: "kg" },
                                                             { value: "lbs", label: "lbs" }
@@ -400,14 +400,14 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                         id="height"
                                                         type="text"
                                                         value={profile.height}
-                                                        onChange={(e) => setProfile({...profile, height: handleNumericInput(e.target.value, 3, true)})}
+                                                        onChange={(e) => setProfile({ ...profile, height: handleNumericInput(e.target.value, 3, true) })}
                                                         className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-sm font-medium text-center w-24 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                         placeholder="175"
                                                         inputMode="decimal"
                                                     />
-                                                    <MobileSelect 
-                                                        value={profile.heightUnit} 
-                                                        onValueChange={(value) => setProfile({...profile, heightUnit: value})}
+                                                    <MobileSelect
+                                                        value={profile.heightUnit}
+                                                        onValueChange={(value) => setProfile({ ...profile, heightUnit: value })}
                                                         options={[
                                                             { value: "cm", label: "cm" },
                                                             { value: "ft", label: "ft" }
@@ -424,7 +424,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                     id="age"
                                                     type="text"
                                                     value={profile.age}
-                                                    onChange={(e) => setProfile({...profile, age: handleNumericInput(e.target.value, 3, false)})}
+                                                    onChange={(e) => setProfile({ ...profile, age: handleNumericInput(e.target.value, 3, false) })}
                                                     className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-10 text-sm font-medium text-center w-20 focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                     placeholder="25"
                                                     inputMode="numeric"
@@ -494,7 +494,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                         id="dailyExercise"
                                                         type="text"
                                                         value={goals.dailyExerciseMinutes}
-                                                        onChange={(e) => setGoals({...goals, dailyExerciseMinutes: handleNumericInput(e.target.value, 3, false)})}
+                                                        onChange={(e) => setGoals({ ...goals, dailyExerciseMinutes: handleNumericInput(e.target.value, 3, false) })}
                                                         className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#FF2D55] focus:border-[#FF2D55] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                         placeholder="30"
                                                         inputMode="numeric"
@@ -506,7 +506,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                         id="weeklyExercise"
                                                         type="text"
                                                         value={goals.weeklyExerciseSessions}
-                                                        onChange={(e) => setGoals({...goals, weeklyExerciseSessions: handleNumericInput(e.target.value, 2, false)})}
+                                                        onChange={(e) => setGoals({ ...goals, weeklyExerciseSessions: handleNumericInput(e.target.value, 2, false) })}
                                                         className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#FF2D55] focus:border-[#FF2D55] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                         placeholder="3"
                                                         inputMode="numeric"
@@ -530,7 +530,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                         id="dailyCalories"
                                                         type="text"
                                                         value={goals.dailyCalories}
-                                                        onChange={(e) => setGoals({...goals, dailyCalories: handleNumericInput(e.target.value, 5, false)})}
+                                                        onChange={(e) => setGoals({ ...goals, dailyCalories: handleNumericInput(e.target.value, 5, false) })}
                                                         className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#9BE15D] focus:border-[#9BE15D] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                         placeholder="2000"
                                                         inputMode="numeric"
@@ -538,9 +538,9 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label htmlFor="activityLevel" className="text-xs text-[#A1A1AA] font-medium uppercase tracking-wide">Activity Level</Label>
-                                                    <MobileSelect 
-                                                        value={goals.activityLevel} 
-                                                        onValueChange={(value) => setGoals({...goals, activityLevel: value})}
+                                                    <MobileSelect
+                                                        value={goals.activityLevel}
+                                                        onValueChange={(value) => setGoals({ ...goals, activityLevel: value })}
                                                         options={[
                                                             { value: "sedentary", label: "Sedentary" },
                                                             { value: "light", label: "Light" },
@@ -569,7 +569,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                         id="sleepHours"
                                                         type="text"
                                                         value={goals.sleepHours}
-                                                        onChange={(e) => setGoals({...goals, sleepHours: handleNumericInput(e.target.value, 2, true)})}
+                                                        onChange={(e) => setGoals({ ...goals, sleepHours: handleNumericInput(e.target.value, 2, true) })}
                                                         className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#2BD2FF] focus:border-[#2BD2FF] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                         placeholder="8"
                                                         inputMode="decimal"
@@ -581,7 +581,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                         id="recoveryTime"
                                                         type="text"
                                                         value={goals.recoveryMinutes}
-                                                        onChange={(e) => setGoals({...goals, recoveryMinutes: handleNumericInput(e.target.value, 3, false)})}
+                                                        onChange={(e) => setGoals({ ...goals, recoveryMinutes: handleNumericInput(e.target.value, 3, false) })}
                                                         className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#2BD2FF] focus:border-[#2BD2FF] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                         placeholder="60"
                                                         inputMode="numeric"
@@ -601,9 +601,9 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                             <div className="space-y-3">
                                                 <div className="space-y-2">
                                                     <Label htmlFor="dietType" className="text-xs text-[#A1A1AA] font-medium uppercase tracking-wide">Goal Type</Label>
-                                                    <MobileSelect 
-                                                        value={goals.dietType} 
-                                                        onValueChange={(value) => setGoals({...goals, dietType: value})}
+                                                    <MobileSelect
+                                                        value={goals.dietType}
+                                                        onValueChange={(value) => setGoals({ ...goals, dietType: value })}
                                                         options={[
                                                             { value: "cutting", label: "Lose Weight" },
                                                             { value: "bulking", label: "Gain Weight" },
@@ -619,7 +619,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                             id="startingWeight"
                                                             type="text"
                                                             value={goals.startingWeight}
-                                                            onChange={(e) => setGoals({...goals, startingWeight: handleNumericInput(e.target.value, 3, true)})}
+                                                            onChange={(e) => setGoals({ ...goals, startingWeight: handleNumericInput(e.target.value, 3, true) })}
                                                             className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                             placeholder="70"
                                                             inputMode="decimal"
@@ -631,7 +631,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                             id="goalWeight"
                                                             type="text"
                                                             value={goals.goalWeight}
-                                                            onChange={(e) => setGoals({...goals, goalWeight: handleNumericInput(e.target.value, 3, true)})}
+                                                            onChange={(e) => setGoals({ ...goals, goalWeight: handleNumericInput(e.target.value, 3, true) })}
                                                             className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                             placeholder="75"
                                                             inputMode="decimal"

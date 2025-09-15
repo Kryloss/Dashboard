@@ -23,12 +23,6 @@ export class AuthErrorBoundary extends Component<Props, State> {
     }
 
     static getDerivedStateFromError(error: Error): State {
-        // Check if this is an auth-related error
-        const isAuthError = error.message.includes('Auth session missing') ||
-            error.message.includes('Invalid JWT') ||
-            error.message.includes('JWT expired') ||
-            error.name === 'AuthSessionMissingError'
-
         return {
             hasError: true,
             error,
