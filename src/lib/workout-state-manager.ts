@@ -26,7 +26,7 @@ class WorkoutStateManager {
 
     // Real-time workout tracking
     private ongoingWorkoutInterval: NodeJS.Timeout | null = null
-    private readonly ONGOING_WORKOUT_UPDATE_INTERVAL = 60000 // Update every 60 seconds
+    private readonly ONGOING_WORKOUT_UPDATE_INTERVAL = 30000 // Update every 30 seconds for better responsiveness
 
     // Subscribe to state changes
     subscribe(listener: StateListener): () => void {
@@ -168,35 +168,43 @@ class WorkoutStateManager {
 
         console.log('🔄 WorkoutStateManager: Starting ongoing workout tracking')
 
+        // Run immediate check first
+        this.checkAndUpdateOngoingWorkout()
+
         this.ongoingWorkoutInterval = setInterval(async () => {
-            try {
-                // Check if there's an ongoing workout
-                const ongoingWorkout = await WorkoutStorage.getOngoingWorkout()
-
-                if (ongoingWorkout && ongoingWorkout.isRunning) {
-                    const realTimeElapsed = WorkoutStorage.getBackgroundElapsedTime()
-                    console.log('⏱️ WorkoutStateManager: Updating rings for ongoing workout', {
-                        elapsedSeconds: realTimeElapsed,
-                        elapsedMinutes: Math.round(realTimeElapsed / 60),
-                        workoutType: ongoingWorkout.type,
-                        startTime: ongoingWorkout.startTime,
-                        storedElapsedTime: ongoingWorkout.elapsedTime
-                    })
-
-                    // Force invalidate cache to ensure fresh calculation
-                    GoalProgressCalculator.invalidateCache()
-
-                    // Refresh with ongoing workout data
-                    await this.refreshAll(true, true) // force refresh and include ongoing workout
-                } else {
-                    // No ongoing workout, stop tracking
-                    console.log('🛑 WorkoutStateManager: No ongoing workout, stopping tracking')
-                    this.stopOngoingWorkoutTracking()
-                }
-            } catch (error) {
-                console.error('❌ WorkoutStateManager: Error in ongoing workout tracking:', error)
-            }
+            await this.checkAndUpdateOngoingWorkout()
         }, this.ONGOING_WORKOUT_UPDATE_INTERVAL)
+    }
+
+    // Extract the ongoing workout check logic into a separate method
+    private async checkAndUpdateOngoingWorkout(): Promise<void> {
+        try {
+            // Check if there's an ongoing workout
+            const ongoingWorkout = await WorkoutStorage.getOngoingWorkout()
+
+            if (ongoingWorkout && ongoingWorkout.isRunning) {
+                const realTimeElapsed = WorkoutStorage.getBackgroundElapsedTime()
+                console.log('⏱️ WorkoutStateManager: Updating rings for ongoing workout', {
+                    elapsedSeconds: realTimeElapsed,
+                    elapsedMinutes: Math.round(realTimeElapsed / 60),
+                    workoutType: ongoingWorkout.type,
+                    startTime: ongoingWorkout.startTime,
+                    storedElapsedTime: ongoingWorkout.elapsedTime
+                })
+
+                // Force invalidate cache to ensure fresh calculation
+                GoalProgressCalculator.invalidateCache()
+
+                // Refresh with ongoing workout data
+                await this.refreshAll(true, true) // force refresh and include ongoing workout
+            } else {
+                // No ongoing workout, stop tracking
+                console.log('🛑 WorkoutStateManager: No ongoing workout, stopping tracking')
+                this.stopOngoingWorkoutTracking()
+            }
+        } catch (error) {
+            console.error('❌ WorkoutStateManager: Error in ongoing workout tracking:', error)
+        }
     }
 
     // Stop real-time tracking for ongoing workouts
@@ -214,6 +222,8 @@ class WorkoutStateManager {
 
         try {
             const ongoingWorkout = await WorkoutStorage.getOngoingWorkout()
+            console.log('🔍 Force refresh - Raw ongoing workout data:', ongoingWorkout)
+
             if (ongoingWorkout && ongoingWorkout.isRunning) {
                 const realTimeElapsed = WorkoutStorage.getBackgroundElapsedTime()
                 console.log('⏱️ Force refresh - Ongoing workout details:', {
@@ -221,14 +231,21 @@ class WorkoutStateManager {
                     elapsedMinutes: Math.round(realTimeElapsed / 60),
                     workoutType: ongoingWorkout.type,
                     startTime: ongoingWorkout.startTime,
-                    storedElapsedTime: ongoingWorkout.elapsedTime
+                    storedElapsedTime: ongoingWorkout.elapsedTime,
+                    isRunning: ongoingWorkout.isRunning
                 })
 
                 // Force invalidate cache and refresh
                 GoalProgressCalculator.invalidateCache()
                 await this.refreshAll(true, true)
+
+                // Also trigger the ongoing workout check
+                await this.checkAndUpdateOngoingWorkout()
             } else {
-                console.log('🛑 Force refresh - No ongoing workout found')
+                console.log('🛑 Force refresh - No ongoing workout found or not running:', {
+                    hasWorkout: !!ongoingWorkout,
+                    isRunning: ongoingWorkout?.isRunning || false
+                })
             }
         } catch (error) {
             console.error('❌ Force refresh failed:', error)

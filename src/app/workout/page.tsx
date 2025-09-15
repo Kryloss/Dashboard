@@ -18,6 +18,7 @@ import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 import { workoutStateManager, WorkoutState, forceRefreshOngoingWorkout, debugWorkoutState } from "@/lib/workout-state-manager"
 import { runWorkoutDiagnostics, logWorkoutState } from "@/lib/workout-diagnostics"
+import { debugOngoingWorkout, forceUpdateRings, logCurrentState } from "@/lib/workout-debug-helper"
 import { Plus, Flame, Dumbbell, User, Timer, Bike, Clock, Heart, FileText, Play, Edit3, Trash2, Moon, Footprints } from "lucide-react"
 
 export default function WorkoutPage() {
@@ -75,13 +76,24 @@ export default function WorkoutPage() {
                         setLiveWorkoutTime(backgroundElapsedTime)
 
                         // Start real-time ring updates for ongoing workout
-                        console.log('🚀 Starting real-time ring updates for ongoing workout (initial load)')
+                        console.log('🚀 Starting real-time ring updates for ongoing workout (initial load)', {
+                            workoutId: workout.workoutId,
+                            type: workout.type,
+                            isRunning: workout.isRunning,
+                            elapsedTime: workout.elapsedTime,
+                            backgroundElapsedTime
+                        })
                         workoutStateManager.startOngoingWorkoutTracking()
                     } else if (workout) {
                         setLiveWorkoutTime(workout.elapsedTime)
+                        console.log('⏸️ Workout is paused, stopping tracking', {
+                            workoutId: workout.workoutId,
+                            isRunning: workout.isRunning
+                        })
                         // Stop real-time ring updates if workout is paused
                         workoutStateManager.stopOngoingWorkoutTracking()
                     } else {
+                        console.log('❌ No ongoing workout found, stopping tracking')
                         // No ongoing workout, stop tracking
                         workoutStateManager.stopOngoingWorkoutTracking()
                     }
@@ -111,13 +123,24 @@ export default function WorkoutPage() {
                         setLiveWorkoutTime(backgroundElapsedTime)
 
                         // Start real-time ring updates for ongoing workout
-                        console.log('🚀 Starting real-time ring updates for ongoing workout (periodic check)')
+                        console.log('🚀 Starting real-time ring updates for ongoing workout (periodic check)', {
+                            workoutId: workout.workoutId,
+                            type: workout.type,
+                            isRunning: workout.isRunning,
+                            elapsedTime: workout.elapsedTime,
+                            backgroundElapsedTime
+                        })
                         workoutStateManager.startOngoingWorkoutTracking()
                     } else if (workout) {
                         setLiveWorkoutTime(workout.elapsedTime)
+                        console.log('⏸️ Workout is paused (periodic check), stopping tracking', {
+                            workoutId: workout.workoutId,
+                            isRunning: workout.isRunning
+                        })
                         // Stop real-time ring updates if workout is paused
                         workoutStateManager.stopOngoingWorkoutTracking()
                     } else {
+                        console.log('❌ No ongoing workout found (periodic check), stopping tracking')
                         // No ongoing workout, stop tracking
                         workoutStateManager.stopOngoingWorkoutTracking()
                     }
@@ -655,6 +678,34 @@ export default function WorkoutPage() {
                                             className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full text-xs"
                                         >
                                             📊 State
+                                        </Button>
+                                        <Button
+                                            onClick={async () => {
+                                                console.log('🔍 Running ongoing workout debug...')
+                                                await debugOngoingWorkout()
+                                                notifications.info('Ongoing workout debug', {
+                                                    description: 'Check console for detailed analysis',
+                                                    duration: 3000
+                                                })
+                                            }}
+                                            variant="ghost"
+                                            className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full text-xs"
+                                        >
+                                            🔍 Debug
+                                        </Button>
+                                        <Button
+                                            onClick={async () => {
+                                                console.log('🔄 Force updating rings...')
+                                                await forceUpdateRings()
+                                                notifications.success('Rings force updated', {
+                                                    description: 'Check if rings updated',
+                                                    duration: 2000
+                                                })
+                                            }}
+                                            variant="ghost"
+                                            className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full text-xs"
+                                        >
+                                            ⚡ Force
                                         </Button>
                                     </>
                                 )}
