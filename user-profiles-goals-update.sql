@@ -1,14 +1,35 @@
--- User Profiles and Goals Database Setup for Workout App
+-- User Profiles and Goals Database Update for Workout App
+-- This file safely handles existing tables and policies
 -- Copy and paste this SQL into your Supabase SQL Editor
 
 BEGIN;
 
 -- ============================================================================
--- TABLE CREATION
+-- DROP EXISTING POLICIES (if they exist)
 -- ============================================================================
 
--- User profiles table
-CREATE TABLE IF NOT EXISTS user_profiles (
+-- Drop existing policies for user_profiles
+DROP POLICY IF EXISTS "Users can view their own profile" ON user_profiles;
+DROP POLICY IF EXISTS "Users can insert their own profile" ON user_profiles;
+DROP POLICY IF EXISTS "Users can update their own profile" ON user_profiles;
+DROP POLICY IF EXISTS "Users can delete their own profile" ON user_profiles;
+
+-- Drop existing policies for user_goals
+DROP POLICY IF EXISTS "Users can view their own goals" ON user_goals;
+DROP POLICY IF EXISTS "Users can insert their own goals" ON user_goals;
+DROP POLICY IF EXISTS "Users can update their own goals" ON user_goals;
+DROP POLICY IF EXISTS "Users can delete their own goals" ON user_goals;
+
+-- ============================================================================
+-- DROP AND RECREATE TABLES (to ensure correct schema)
+-- ============================================================================
+
+-- Drop existing tables (CASCADE will remove dependent objects)
+DROP TABLE IF EXISTS user_goals CASCADE;
+DROP TABLE IF EXISTS user_profiles CASCADE;
+
+-- Recreate user profiles table with correct schema
+CREATE TABLE user_profiles (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
     weight DECIMAL(5,1), -- e.g., 70.5 kg or 155.2 lbs
@@ -20,8 +41,8 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- User goals table
-CREATE TABLE IF NOT EXISTS user_goals (
+-- Recreate user goals table with correct schema
+CREATE TABLE user_goals (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
     daily_exercise_minutes INTEGER DEFAULT 30,
@@ -41,19 +62,19 @@ CREATE TABLE IF NOT EXISTS user_goals (
 -- INDEXES
 -- ============================================================================
 
--- Optimize queries by user_id
-CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON user_profiles(user_id);
-CREATE INDEX IF NOT EXISTS idx_user_goals_user_id ON user_goals(user_id);
+-- Create indexes for optimal performance
+CREATE INDEX idx_user_profiles_user_id ON user_profiles(user_id);
+CREATE INDEX idx_user_goals_user_id ON user_goals(user_id);
 
 -- ============================================================================
 -- ROW LEVEL SECURITY (RLS)
 -- ============================================================================
 
--- Enable RLS on all tables
+-- Enable RLS on both tables
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_goals ENABLE ROW LEVEL SECURITY;
 
--- User profiles policies
+-- Create fresh policies for user_profiles
 CREATE POLICY "Users can view their own profile" ON user_profiles
     FOR SELECT USING (auth.uid() = user_id);
 
@@ -66,7 +87,7 @@ CREATE POLICY "Users can update their own profile" ON user_profiles
 CREATE POLICY "Users can delete their own profile" ON user_profiles
     FOR DELETE USING (auth.uid() = user_id);
 
--- User goals policies
+-- Create fresh policies for user_goals
 CREATE POLICY "Users can view their own goals" ON user_goals
     FOR SELECT USING (auth.uid() = user_id);
 
@@ -83,7 +104,7 @@ CREATE POLICY "Users can delete their own goals" ON user_goals
 -- TRIGGERS
 -- ============================================================================
 
--- Function to update updated_at timestamp (if not already exists)
+-- Create or replace the updated_at function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -92,7 +113,7 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Apply the trigger to tables that need updated_at
+-- Create triggers for updating updated_at timestamp
 CREATE TRIGGER update_user_profiles_updated_at
     BEFORE UPDATE ON user_profiles
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -101,13 +122,14 @@ CREATE TRIGGER update_user_goals_updated_at
     BEFORE UPDATE ON user_goals
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- ============================================================================
--- COMPLETION MESSAGE
--- ============================================================================
-
 COMMIT;
 
--- You can run this query to verify the setup worked:
--- SELECT 'User profiles and goals setup complete!' as status;
--- SELECT COUNT(*) as profiles_count FROM user_profiles;
--- SELECT COUNT(*) as goals_count FROM user_goals;
+-- ============================================================================
+-- VERIFICATION QUERIES
+-- ============================================================================
+
+-- Run these to verify the setup worked:
+-- SELECT 'User profiles and goals tables recreated successfully!' as status;
+-- SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('user_profiles', 'user_goals');
+-- \d user_profiles;
+-- \d user_goals;

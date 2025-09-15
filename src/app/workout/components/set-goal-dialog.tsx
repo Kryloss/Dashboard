@@ -248,10 +248,22 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
             notifications.success('Profile saved', {
                 description: 'Your profile has been updated successfully'
             })
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error saving profile:', error)
+
+            let errorMessage = 'Could not save your profile'
+            if (error?.message) {
+                if (error.message.includes('relation "user_profiles" does not exist')) {
+                    errorMessage = 'Database tables not set up. Please run the SQL setup file.'
+                } else if (error.message.includes('permission denied')) {
+                    errorMessage = 'Permission denied. Please check your authentication.'
+                } else {
+                    errorMessage = `Database error: ${error.message}`
+                }
+            }
+
             notifications.error('Save failed', {
-                description: 'Could not save your profile'
+                description: errorMessage
             })
         } finally {
             setIsLoading(false)
@@ -293,10 +305,22 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
             notifications.success('Goals saved', {
                 description: 'Your goals have been updated successfully'
             })
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error saving goals:', error)
+
+            let errorMessage = 'Could not save your goals'
+            if (error?.message) {
+                if (error.message.includes('relation "user_goals" does not exist')) {
+                    errorMessage = 'Database tables not set up. Please run the SQL setup file.'
+                } else if (error.message.includes('permission denied')) {
+                    errorMessage = 'Permission denied. Please check your authentication.'
+                } else {
+                    errorMessage = `Database error: ${error.message}`
+                }
+            }
+
             notifications.error('Save failed', {
-                description: 'Could not save your goals'
+                description: errorMessage
             })
         } finally {
             setIsLoading(false)
