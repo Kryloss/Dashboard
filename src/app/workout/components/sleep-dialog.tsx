@@ -243,27 +243,49 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                     <span>12 PM</span>
                                 </div>
 
-                                {/* Single Timeline line */}
-                                <div className="relative w-full h-2 bg-[#2A2B31] rounded-full mb-8">
-                                    {/* Hour markers */}
-                                    {Array.from({ length: 13 }, (_, i) => (
-                                        <div
-                                            key={i}
-                                            className="absolute w-px h-4 bg-[#4A4B51] top-1/2 transform -translate-y-1/2"
-                                            style={{ left: `${(i / 12) * 100}%` }}
-                                        />
-                                    ))}
+                                {/* Timeline with Sliders */}
+                                <div className="relative w-full mb-8">
+                                    {/* Timeline base */}
+                                    <div className="relative w-full h-2 bg-[#2A2B31] rounded-full">
+                                        {/* Hour markers */}
+                                        {Array.from({ length: 13 }, (_, i) => (
+                                            <div
+                                                key={i}
+                                                className="absolute w-px h-4 bg-[#4A4B51] top-1/2 transform -translate-y-1/2"
+                                                style={{ left: `${(i / 12) * 100}%` }}
+                                            />
+                                        ))}
+
+                                        {/* Sleep Session Sliders on Timeline */}
+                                        {sleepSessions.map((session) => {
+                                            const sliderValue = [session.startTime, session.endTime]
+                                            return (
+                                                <div
+                                                    key={session.id}
+                                                    className="absolute top-0 w-full h-2"
+                                                    style={{ zIndex: session.type === 'main' ? 2 : 1 }}
+                                                >
+                                                    <Slider
+                                                        value={sliderValue}
+                                                        onValueChange={([start, end]) => updateSessionTime(session.id, start, end)}
+                                                        min={session.type === 'main' ? -4 * 60 : 0}
+                                                        max={12 * 60}
+                                                        step={15}
+                                                        className={`w-full ${session.type === 'main' ? 'sleep-slider-main' : 'sleep-slider-nap'}`}
+                                                    />
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
                                 </div>
 
-                                {/* Sleep Sessions */}
-                                {sleepSessions.map((session) => {
-                                    const duration = calculateDuration(session.startTime, session.endTime)
-                                    const sliderValue = [session.startTime, session.endTime]
+                                {/* Sleep Sessions Info */}
+                                <div className="space-y-4 mb-6">
+                                    {sleepSessions.map((session) => {
+                                        const duration = calculateDuration(session.startTime, session.endTime)
 
-                                    return (
-                                        <div key={session.id} className="mb-6">
-                                            {/* Session Header */}
-                                            <div className="flex items-center justify-between mb-3">
+                                        return (
+                                            <div key={session.id} className="flex items-center justify-between p-3 bg-[#0E0F13] border border-[#212227] rounded-lg">
                                                 <div className="flex items-center space-x-3">
                                                     <div className={`w-3 h-3 rounded-full ${
                                                         session.type === 'main'
@@ -272,6 +294,9 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                     }`} />
                                                     <span className="text-sm font-medium text-[#F3F4F6]">
                                                         {session.type === 'main' ? 'Main Sleep' : 'Nap'}
+                                                    </span>
+                                                    <span className="text-xs text-[#A1A1AA]">
+                                                        {formatTime(session.startTime)} - {formatTime(session.endTime)}
                                                     </span>
                                                     <span className="text-xs text-[#A1A1AA]">
                                                         {duration.hours}h {duration.minutes}m
@@ -303,27 +328,9 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                     )}
                                                 </div>
                                             </div>
-
-                                            {/* Enhanced Slider */}
-                                            <div className="space-y-3">
-                                                <Slider
-                                                    value={sliderValue}
-                                                    onValueChange={([start, end]) => updateSessionTime(session.id, start, end)}
-                                                    min={session.type === 'main' ? -4 * 60 : 0} // Allow 8 PM start for main sleep
-                                                    max={12 * 60} // 12 PM
-                                                    step={15} // 15-minute intervals
-                                                    className="w-full sleep-slider"
-                                                />
-
-                                                {/* Selected Times Display */}
-                                                <div className="flex justify-between text-sm text-[#F3F4F6] font-medium">
-                                                    <span>{formatTime(session.startTime)}</span>
-                                                    <span>{formatTime(session.endTime)}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )
-                                })}
+                                        )
+                                    })}
+                                </div>
 
                                 {/* Add Nap Button */}
                                 {sleepSessions.length < 5 && (

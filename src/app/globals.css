@@ -244,7 +244,8 @@ body {
   }
 
   /* Enhanced Sleep Slider Styling */
-  .sleep-slider [data-radix-slider-root] {
+  .sleep-slider-main [data-radix-slider-root],
+  .sleep-slider-nap [data-radix-slider-root] {
     position: relative;
     display: flex;
     align-items: center;
@@ -254,7 +255,8 @@ body {
     height: 20px;
   }
 
-  .sleep-slider [data-radix-slider-track] {
+  .sleep-slider-main [data-radix-slider-track],
+  .sleep-slider-nap [data-radix-slider-track] {
     background: transparent;
     position: relative;
     flex-grow: 1;
@@ -262,16 +264,28 @@ body {
     height: 8px;
   }
 
-  .sleep-slider [data-radix-slider-range] {
+  /* Main Sleep Slider - Blue gradient */
+  .sleep-slider-main [data-radix-slider-range] {
     position: absolute;
     background: linear-gradient(to right, #2BD2FF, #2A8CEA);
     border-radius: 9999px;
-    height: 12px;
-    top: -2px;
+    height: 8px;
+    top: 0;
     box-shadow: 0 2px 8px rgba(43, 210, 255, 0.4);
   }
 
-  .sleep-slider [data-radix-slider-thumb] {
+  /* Nap Slider - Green gradient */
+  .sleep-slider-nap [data-radix-slider-range] {
+    position: absolute;
+    background: linear-gradient(to right, #9BE15D, #7BC142);
+    border-radius: 9999px;
+    height: 6px;
+    top: 1px;
+    box-shadow: 0 2px 6px rgba(155, 225, 93, 0.4);
+  }
+
+  .sleep-slider-main [data-radix-slider-thumb],
+  .sleep-slider-nap [data-radix-slider-thumb] {
     width: 20px;
     height: 20px;
     background: transparent;
@@ -282,14 +296,19 @@ body {
     transition: all 0.15s ease;
   }
 
-  .sleep-slider [data-radix-slider-thumb]:hover {
+  .sleep-slider-main [data-radix-slider-thumb]:hover {
     opacity: 0.3;
     background: rgba(43, 210, 255, 0.5);
   }
 
-  .sleep-slider [data-radix-slider-thumb]:active {
+  .sleep-slider-nap [data-radix-slider-thumb]:hover {
+    opacity: 0.3;
+    background: rgba(155, 225, 93, 0.5);
+  }
+
+  .sleep-slider-main [data-radix-slider-thumb]:active,
+  .sleep-slider-nap [data-radix-slider-thumb]:active {
     cursor: grabbing;
     opacity: 0.5;
-    background: rgba(43, 210, 255, 0.7);
   }
 }
