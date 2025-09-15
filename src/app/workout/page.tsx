@@ -14,7 +14,6 @@ import { SetGoalDialog } from "./components/set-goal-dialog"
 import { ActivityEditModal } from "./history/components/activity-edit-modal"
 import { WorkoutStorage, OngoingWorkout, WorkoutActivity } from "@/lib/workout-storage"
 import { UserDataStorage } from "@/lib/user-data-storage"
-import { GoalProgressCalculator, DailyGoalProgress } from "@/lib/goal-progress"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 import { workoutStateManager, WorkoutState } from "@/lib/workout-state-manager"
@@ -31,7 +30,7 @@ export default function WorkoutPage() {
     const [liveWorkoutTime, setLiveWorkoutTime] = useState(0)
     const [editingActivity, setEditingActivity] = useState<WorkoutActivity | null>(null)
     const [showSetGoalDialog, setShowSetGoalDialog] = useState(false)
-    
+
     // New centralized state management
     const [workoutState, setWorkoutState] = useState<WorkoutState>({
         goalProgress: null,
@@ -150,7 +149,7 @@ export default function WorkoutPage() {
                     e.detail?.source || 'unknown',
                     e.detail
                 )
-                
+
                 // Show success notification for quick-log completion
                 if (e.detail?.source === 'quick-log' || e.detail?.source === 'quick-log-dialog') {
                     notifications.success('Workout logged!', {
@@ -227,16 +226,6 @@ export default function WorkoutPage() {
 
 
 
-    // Get placeholder data for initial loading
-    const getPlaceholderRingData = () => {
-        // Show subtle progress to indicate activity while loading
-        const timeBasedProgress = Math.min((new Date().getHours() / 24) * 0.3, 0.3)
-        return {
-            recovery: timeBasedProgress,
-            nutrition: timeBasedProgress * 0.8,
-            exercise: timeBasedProgress * 1.2
-        }
-    }
 
     // Goal progress calculations
     const getGoalRingData = () => {
@@ -488,7 +477,7 @@ export default function WorkoutPage() {
 
         try {
             await WorkoutStorage.deleteWorkoutActivity(activity.id)
-            
+
             // Use state manager to refresh data
             await workoutStateManager.handleWorkoutDeleted()
 

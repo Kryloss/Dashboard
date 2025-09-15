@@ -1,10 +1,10 @@
 // Centralized workout state management for real-time ring updates
 import { GoalProgressCalculator, DailyGoalProgress } from './goal-progress'
-import { WorkoutStorage } from './workout-storage'
+import { WorkoutStorage, WorkoutActivity } from './workout-storage'
 
 export interface WorkoutState {
     goalProgress: DailyGoalProgress | null
-    recentActivities: any[]
+    recentActivities: WorkoutActivity[]
     isLoading: boolean
     lastUpdate: number
 }
@@ -25,10 +25,10 @@ class WorkoutStateManager {
     // Subscribe to state changes
     subscribe(listener: StateListener): () => void {
         this.listeners.add(listener)
-        
+
         // Immediately call with current state
         listener(this.state)
-        
+
         // Return unsubscribe function
         return () => {
             this.listeners.delete(listener)
@@ -54,7 +54,7 @@ class WorkoutStateManager {
 
     private async performRefresh(): Promise<void> {
         console.log('🔄 WorkoutStateManager: Starting refresh...')
-        
+
         this.setState({ isLoading: true })
 
         try {
@@ -63,7 +63,7 @@ class WorkoutStateManager {
 
             // Get fresh goal progress
             const goalProgress = await GoalProgressCalculator.calculateDailyProgress(true)
-            
+
             // Get recent activities
             const recentActivities = await WorkoutStorage.getRecentActivities(5)
 
@@ -107,12 +107,12 @@ class WorkoutStateManager {
     }
 
     // Handle workout completion
-    async handleWorkoutCompleted(source: string, workoutData?: any): Promise<void> {
+    async handleWorkoutCompleted(source: string, workoutData?: unknown): Promise<void> {
         console.log('🎯 WorkoutStateManager: Workout completed', { source, workoutData })
-        
+
         // Force immediate refresh
         await this.refreshAll(true)
-        
+
         // Also schedule a delayed refresh to catch any async updates
         setTimeout(() => {
             this.refreshAll(true)
@@ -147,4 +147,4 @@ export const workoutStateManager = new WorkoutStateManager()
 // Convenience functions for common operations
 export const refreshWorkoutRings = () => workoutStateManager.refreshAll(true)
 export const subscribeToWorkoutState = (listener: StateListener) => workoutStateManager.subscribe(listener)
-export const handleWorkoutCompletion = (source: string, data?: any) => workoutStateManager.handleWorkoutCompleted(source, data)
+export const handleWorkoutCompletion = (source: string, data?: unknown) => workoutStateManager.handleWorkoutCompleted(source, data)
