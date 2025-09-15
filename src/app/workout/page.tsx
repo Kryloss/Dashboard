@@ -17,6 +17,7 @@ import { UserDataStorage } from "@/lib/user-data-storage"
 import { GoalProgressCalculator, DailyGoalProgress } from "@/lib/goal-progress"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
+import { workoutStateManager, WorkoutState } from "@/lib/workout-state-manager"
 import { Plus, Flame, Dumbbell, User, Timer, Bike, Clock, Heart, FileText, Play, Edit3, Trash2, Moon, Footprints } from "lucide-react"
 
 export default function WorkoutPage() {
@@ -27,199 +28,97 @@ export default function WorkoutPage() {
     const [showWorkoutDialog, setShowWorkoutDialog] = useState(false)
     const [showQuickLogWorkoutDialog, setShowQuickLogWorkoutDialog] = useState(false)
     const [ongoingWorkout, setOngoingWorkout] = useState<OngoingWorkout | null>(null)
-    const [recentActivities, setRecentActivities] = useState<WorkoutActivity[]>([])
-    const [isLoadingActivities, setIsLoadingActivities] = useState(true)
     const [liveWorkoutTime, setLiveWorkoutTime] = useState(0)
     const [editingActivity, setEditingActivity] = useState<WorkoutActivity | null>(null)
     const [showSetGoalDialog, setShowSetGoalDialog] = useState(false)
-    const [goalProgress, setGoalProgress] = useState<DailyGoalProgress | null>(null)
-    const [isLoadingGoals, setIsLoadingGoals] = useState(true)
-    const [isInitialLoad, setIsInitialLoad] = useState(true)
-    const [lastUpdateKey, setLastUpdateKey] = useState<string>('')
+    
+    // New centralized state management
+    const [workoutState, setWorkoutState] = useState<WorkoutState>({
+        goalProgress: null,
+        recentActivities: [],
+        isLoading: true,
+        lastUpdate: 0
+    })
 
 
 
 
+    // Initialize workout state management
     useEffect(() => {
         const onHealss = isOnSubdomain('healss')
         setIsHealssSubdomain(onHealss)
 
-        // Add delay to allow auth state to settle
-        const initializeWithDelay = setTimeout(() => {
-            if (onHealss) {
-                if (user && supabase) {
-                    // Initialize storage with user context
-                    WorkoutStorage.initialize(user, supabase)
-                    UserDataStorage.initialize(user, supabase)
+        if (onHealss && user && supabase) {
+            // Initialize storage with user context
+            WorkoutStorage.initialize(user, supabase)
+            UserDataStorage.initialize(user, supabase)
 
-                    // Check if this is a new user and show welcome message
-                    const showWelcomeIfNewUser = () => {
-                        const hasSeenWelcome = localStorage.getItem('workout-welcome-shown')
-                        if (!hasSeenWelcome) {
-                            notifications.success('Welcome to Workouts!', {
-                                description: 'Start your first workout below',
-                                duration: 6000,
-                                action: {
-                                    label: 'Get Started',
-                                    onClick: () => setShowWorkoutDialog(true)
-                                }
-                            })
-                            localStorage.setItem('workout-welcome-shown', 'true')
-                        }
+            // Subscribe to workout state changes
+            const unsubscribe = workoutStateManager.subscribe((state) => {
+                console.log('📊 Workout state updated:', state)
+                setWorkoutState(state)
+            })
+
+            // Load initial data
+            const loadInitialData = async () => {
+                try {
+                    // Load ongoing workout
+                    const workout = await WorkoutStorage.getOngoingWorkout()
+                    setOngoingWorkout(workout)
+
+                    // Initialize live workout time
+                    if (workout?.isRunning) {
+                        const backgroundElapsedTime = WorkoutStorage.getBackgroundElapsedTime()
+                        setLiveWorkoutTime(backgroundElapsedTime)
+                    } else if (workout) {
+                        setLiveWorkoutTime(workout.elapsedTime)
                     }
 
-                    // Load goal progress
-                    const loadGoalProgress = async () => {
-                        try {
-                            setIsLoadingGoals(true)
-                            const progress = await GoalProgressCalculator.calculateDailyProgress()
-                            setGoalProgress(progress)
-                        } catch (error) {
-                            console.error('Error loading goal progress:', error)
-                            notifications.error('Goals failed', {
-                                description: 'Could not load today\'s progress'
-                            })
-                        } finally {
-                            setIsLoadingGoals(false)
-                        }
-                    }
+                    // Refresh workout state (rings and activities)
+                    await workoutStateManager.refreshAll(true)
 
-                    // Load initial data
-                    const loadInitialData = async () => {
-                        // Load ongoing workout
-                        try {
-                            const workout = await WorkoutStorage.getOngoingWorkout()
-                            setOngoingWorkout(workout)
-
-                            // Initialize live workout time
-                            if (workout?.isRunning) {
-                                const backgroundElapsedTime = WorkoutStorage.getBackgroundElapsedTime()
-                                setLiveWorkoutTime(backgroundElapsedTime)
-
-                                // Notify user that workout is running in background
-                                if (backgroundElapsedTime > workout.elapsedTime + 30) { // If significantly more time has passed
-                                    notifications.info('Timer running', {
-                                        description: 'Workout continued in background',
-                                        action: {
-                                            label: 'Resume',
-                                            onClick: () => router.push(`/workout/${workout.type}/${workout.workoutId}`)
-                                        }
-                                    })
-                                } else {
-                                    // Show background feature tip for first time users
-                                    const hasSeenBackgroundTip = localStorage.getItem('background-tip-shown')
-                                    if (!hasSeenBackgroundTip && workout.isRunning) {
-                                        setTimeout(() => {
-                                            notifications.info('Feature tip', {
-                                                description: 'Workouts continue timing in background',
-                                                duration: 4000
-                                            })
-                                            localStorage.setItem('background-tip-shown', 'true')
-                                        }, 1500)
-                                    }
-                                }
-                            } else if (workout) {
-                                setLiveWorkoutTime(workout.elapsedTime)
-                            }
-                        } catch (error) {
-                            console.error('Error loading ongoing workout:', error)
-                            notifications.error('Load failed', {
-                                description: 'Could not retrieve workout'
-                            })
-                        }
-
-                        // Load recent activities
-                        try {
-                            setIsLoadingActivities(true)
-                            const activities = await WorkoutStorage.getRecentActivities(3)
-                            setRecentActivities(activities)
-                        } catch (error) {
-                            console.error('Error loading recent activities:', error)
-                            notifications.error('Load failed', {
-                                description: 'Could not get activity history'
-                            })
-                        } finally {
-                            setIsLoadingActivities(false)
-                        }
-
-                        // Load goal progress
-                        await loadGoalProgress()
-                    }
-
-                    loadInitialData()
-
-                    // Show welcome message after initial load completes
-                    setTimeout(showWelcomeIfNewUser, 1000)
-
-                    // Set up periodic check for ongoing workout updates only
-                    let lastActivityCheck = Date.now()
-                    const ACTIVITY_CHECK_INTERVAL = 5 * 60 * 1000 // Check for new activities every 5 minutes
-
-                    const interval = setInterval(async () => {
-                        try {
-                            const workout = await WorkoutStorage.getOngoingWorkout()
-                            setOngoingWorkout(workout)
-
-                            // If workout is running, calculate live time
-                            if (workout?.isRunning) {
-                                const backgroundElapsedTime = WorkoutStorage.getBackgroundElapsedTime()
-                                setLiveWorkoutTime(backgroundElapsedTime)
-                            } else if (workout) {
-                                setLiveWorkoutTime(workout.elapsedTime)
-                            }
-                        } catch (error) {
-                            console.error('Error loading ongoing workout:', error)
-                        }
-
-                        // Check for new workout completions only every 5 minutes (instead of random polling)
-                        const now = Date.now()
-                        if (now - lastActivityCheck > ACTIVITY_CHECK_INTERVAL) {
-                            lastActivityCheck = now
-                            try {
-                                const activities = await WorkoutStorage.getRecentActivities(5)
-                                const currentActivityIds = recentActivities.map(a => a.id).sort().join(',')
-                                const newActivityIds = activities.map(a => a.id).sort().join(',')
-
-                                // Only update if activities actually changed
-                                if (currentActivityIds !== newActivityIds) {
-                                    setRecentActivities(activities)
-
-                                    // Refresh goal progress when new activities are detected
-                                    GoalProgressCalculator.invalidateCache()
-                                    await refreshGoalProgress(true)
-
-                                    console.log('🔄 New workout activity detected via periodic check, updated rings')
-                                }
-                            } catch (error) {
-                                console.error('Error loading recent activities:', error)
-                            }
-                        }
-                    }, 30000) // Check every 30 seconds for ongoing workout updates
-
-                    return () => clearInterval(interval)
-                } else if (user === null) {
-                    // Only show sign-in notification if user is explicitly null (not loading)
-                    // and we haven't shown it recently
-                    const lastSigninNotification = localStorage.getItem('last-signin-notification')
-                    const now = Date.now()
-
-                    if (!lastSigninNotification || now - parseInt(lastSigninNotification) > 300000) { // 5 minutes
-                        notifications.warning('Sign in required', {
-                            description: 'Please sign in to access workouts',
-                            duration: 4000,
-                            action: {
-                                label: 'Sign In',
-                                onClick: () => router.push('/auth/signin')
-                            }
-                        })
-                        localStorage.setItem('last-signin-notification', now.toString())
-                    }
+                } catch (error) {
+                    console.error('Error loading initial data:', error)
+                    notifications.error('Load failed', {
+                        description: 'Could not load workout data'
+                    })
                 }
             }
-        }, 2000) // 2 second delay to allow auth to settle
 
-        return () => {
-            clearTimeout(initializeWithDelay)
+            loadInitialData()
+
+            // Set up periodic check for ongoing workout updates only
+            const interval = setInterval(async () => {
+                try {
+                    const workout = await WorkoutStorage.getOngoingWorkout()
+                    setOngoingWorkout(workout)
+
+                    // If workout is running, calculate live time
+                    if (workout?.isRunning) {
+                        const backgroundElapsedTime = WorkoutStorage.getBackgroundElapsedTime()
+                        setLiveWorkoutTime(backgroundElapsedTime)
+                    } else if (workout) {
+                        setLiveWorkoutTime(workout.elapsedTime)
+                    }
+                } catch (error) {
+                    console.error('Error loading ongoing workout:', error)
+                }
+            }, 30000) // Check every 30 seconds for ongoing workout updates
+
+            return () => {
+                clearInterval(interval)
+                unsubscribe()
+            }
+        } else if (onHealss && user === null) {
+            // Show sign-in notification
+            notifications.warning('Sign in required', {
+                description: 'Please sign in to access workouts',
+                duration: 4000,
+                action: {
+                    label: 'Sign In',
+                    onClick: () => router.push('/auth/signin')
+                }
+            })
         }
     }, [user, supabase, notifications, router])
 
@@ -242,123 +141,53 @@ export default function WorkoutPage() {
         }
     }, [ongoingWorkout?.isRunning])
 
-    // Create update key for smart caching
-    const createUpdateKey = () => {
-        const today = new Date().toDateString()
-        const activitiesCount = recentActivities.length
-        const activitiesHash = recentActivities.map(a => `${a.id}-${a.durationSeconds}`).join(',')
-        return `${today}-${activitiesCount}-${activitiesHash}`
-    }
-
-    // Function to refresh goal progress with smart caching
-    const refreshGoalProgress = async (force = false) => {
-        try {
-            const newUpdateKey = createUpdateKey()
-
-            // Skip update if data hasn't changed and it's not a forced update
-            if (!force && lastUpdateKey === newUpdateKey && goalProgress && !isInitialLoad) {
-                return
-            }
-
-            // Only show loading for initial load or significant changes
-            if (isInitialLoad || force) {
-                setIsLoadingGoals(true)
-            }
-
-            const progress = await GoalProgressCalculator.calculateDailyProgress()
-            setGoalProgress(progress)
-            setLastUpdateKey(newUpdateKey)
-
-            if (isInitialLoad) {
-                setIsInitialLoad(false)
-            }
-        } catch (error) {
-            console.error('Error refreshing goal progress:', error)
-        } finally {
-            setIsLoadingGoals(false)
-        }
-    }
-
-    // Listen for workout completion events (when users return to this page)
+    // Listen for workout completion events
     useEffect(() => {
+        const handleWorkoutCompleted = (e: CustomEvent) => {
+            console.log('🎯 Workout completion detected:', e.detail)
+            if (user && supabase) {
+                workoutStateManager.handleWorkoutCompleted(
+                    e.detail?.source || 'unknown',
+                    e.detail
+                )
+                
+                // Show success notification for quick-log completion
+                if (e.detail?.source === 'quick-log' || e.detail?.source === 'quick-log-dialog') {
+                    notifications.success('Workout logged!', {
+                        description: 'Goal progress updated',
+                        duration: 3000
+                    })
+                }
+            }
+        }
+
+        const handleStorageChange = (e: StorageEvent) => {
+            if (e.key === 'workout-completed' && e.newValue && user && supabase) {
+                try {
+                    const data = JSON.parse(e.newValue)
+                    workoutStateManager.handleWorkoutCompleted(data.source || 'storage', data)
+                } catch (error) {
+                    console.error('Error parsing workout completion data:', error)
+                }
+            }
+        }
+
         const handleVisibilityChange = () => {
             if (!document.hidden && user && supabase) {
-                // Page became visible again - refresh data in case workout was completed
-                refreshGoalProgress(true)
+                workoutStateManager.refreshAll(true)
             }
         }
 
-        const handleFocus = () => {
-            if (user && supabase) {
-                // Window regained focus - refresh data
-                refreshGoalProgress(true)
-            }
-        }
-
-        // Listen for localStorage changes (workout completion events from other tabs)
-        const handleStorageChange = (e: StorageEvent) => {
-            console.log('📱 Storage event detected:', e.key, e.newValue)
-
-            if (e.key === 'workout-completed' && e.newValue && user && supabase) {
-                console.log('🎯 Workout completion detected:', e.newValue)
-                // Immediately refresh activities and goal progress
-                const refreshData = async () => {
-                    try {
-                        console.log('🔄 Refreshing workout data after completion...')
-                        const activities = await WorkoutStorage.getRecentActivities(5)
-                        setRecentActivities(activities)
-                        GoalProgressCalculator.invalidateCache()
-                        await refreshGoalProgress(true)
-                        console.log('✅ Workout data refreshed successfully')
-                    } catch (error) {
-                        console.error('❌ Error refreshing after workout completion:', error)
-                    }
-                }
-                refreshData()
-            }
-        }
-
-        // Listen for custom events (same-tab workout completion)
-        const handleCustomWorkoutEvent = (e: CustomEvent) => {
-            console.log('🎯 Same-tab workout completion detected:', e.detail)
-            console.log('🎯 Event source:', e.detail?.source)
-            if (user && supabase) {
-                const refreshData = async () => {
-                    try {
-                        console.log('🔄 Refreshing workout data after same-tab completion...')
-                        const activities = await WorkoutStorage.getRecentActivities(5)
-                        setRecentActivities(activities)
-                        GoalProgressCalculator.invalidateCache()
-                        await refreshGoalProgress(true)
-                        console.log('✅ Same-tab workout data refreshed successfully')
-
-                        // Show success notification for quick-log completion
-                        if (e.detail?.source === 'quick-log' || e.detail?.source === 'quick-log-dialog') {
-                            notifications.success('Workout logged!', {
-                                description: 'Goal progress updated',
-                                duration: 3000
-                            })
-                        }
-                    } catch (error) {
-                        console.error('❌ Error refreshing after same-tab workout completion:', error)
-                    }
-                }
-                refreshData()
-            }
-        }
-
-        document.addEventListener('visibilitychange', handleVisibilityChange)
-        window.addEventListener('focus', handleFocus)
+        window.addEventListener('workoutCompleted', handleWorkoutCompleted as EventListener)
         window.addEventListener('storage', handleStorageChange)
-        window.addEventListener('workoutCompleted', handleCustomWorkoutEvent as EventListener)
+        document.addEventListener('visibilitychange', handleVisibilityChange)
 
         return () => {
-            document.removeEventListener('visibilitychange', handleVisibilityChange)
-            window.removeEventListener('focus', handleFocus)
+            window.removeEventListener('workoutCompleted', handleWorkoutCompleted as EventListener)
             window.removeEventListener('storage', handleStorageChange)
-            window.removeEventListener('workoutCompleted', handleCustomWorkoutEvent as EventListener)
+            document.removeEventListener('visibilitychange', handleVisibilityChange)
         }
-    }, [user, supabase])
+    }, [user, supabase, notifications])
 
 
 
@@ -411,13 +240,8 @@ export default function WorkoutPage() {
 
     // Goal progress calculations
     const getGoalRingData = () => {
-        // For initial load, show placeholder data
-        if (isInitialLoad && !goalProgress) {
-            return getPlaceholderRingData()
-        }
-
-        // If we have previous data but are refreshing, keep showing previous data
-        if (!goalProgress) {
+        // If we have no data yet, show placeholder
+        if (!workoutState.goalProgress) {
             return {
                 recovery: 0,
                 nutrition: 0,
@@ -426,9 +250,9 @@ export default function WorkoutPage() {
         }
 
         return {
-            recovery: goalProgress.recovery.progress,
-            nutrition: goalProgress.nutrition.progress,
-            exercise: goalProgress.exercise.progress
+            recovery: workoutState.goalProgress.recovery.progress,
+            nutrition: workoutState.goalProgress.nutrition.progress,
+            exercise: workoutState.goalProgress.exercise.progress
         }
     }
 
@@ -664,11 +488,9 @@ export default function WorkoutPage() {
 
         try {
             await WorkoutStorage.deleteWorkoutActivity(activity.id)
-            setRecentActivities(prev => prev.filter(a => a.id !== activity.id))
-
-            // Invalidate cache and refresh goal progress after activity deletion
-            GoalProgressCalculator.invalidateCache()
-            await refreshGoalProgress(true)
+            
+            // Use state manager to refresh data
+            await workoutStateManager.handleWorkoutDeleted()
 
             notifications.success('Activity deleted', {
                 description: 'Workout removed from history',
@@ -685,21 +507,11 @@ export default function WorkoutPage() {
     const handleUpdateActivity = async (updatedActivity: WorkoutActivity) => {
         if (!user) return
 
-        // Optimistic update - update UI immediately
-        const optimisticUpdate = {
-            ...updatedActivity,
-            updatedAt: new Date().toISOString()
-        }
-
-        setRecentActivities(prev => prev.map(a =>
-            a.id === updatedActivity.id ? optimisticUpdate : a
-        ))
-
         // Close modal immediately for better UX
         setEditingActivity(null)
 
         try {
-            // Background update to database
+            // Update to database
             await WorkoutStorage.updateWorkoutActivity(updatedActivity.id, {
                 name: updatedActivity.name,
                 exercises: updatedActivity.exercises,
@@ -707,9 +519,8 @@ export default function WorkoutPage() {
                 notes: updatedActivity.notes
             })
 
-            // Invalidate cache and refresh goal progress after activity update
-            GoalProgressCalculator.invalidateCache()
-            await refreshGoalProgress(true)
+            // Use state manager to refresh data
+            await workoutStateManager.handleWorkoutUpdated()
 
             notifications.success('Activity updated', {
                 description: 'Changes saved successfully',
@@ -721,11 +532,6 @@ export default function WorkoutPage() {
             notifications.error('Update failed', {
                 description: 'Could not save changes'
             })
-
-            // Revert optimistic update on error
-            setRecentActivities(prev => prev.map(a =>
-                a.id === updatedActivity.id ? updatedActivity : a
-            ))
         }
     }
 
@@ -775,9 +581,9 @@ export default function WorkoutPage() {
                                             nutritionProgress={getGoalRingData().nutrition}
                                             exerciseProgress={getGoalRingData().exercise}
                                             streak={mockData.streak}
-                                            className={isInitialLoad && !goalProgress ? 'opacity-60' : ''}
+                                            className={workoutState.isLoading ? 'opacity-60' : ''}
                                         />
-                                        {isLoadingGoals && isInitialLoad && (
+                                        {workoutState.isLoading && (
                                             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2A8CEA] opacity-50"></div>
                                             </div>
@@ -799,13 +605,13 @@ export default function WorkoutPage() {
                                                     <span className="text-[#F3F4F6] font-medium text-sm">Recovery</span>
                                                 </div>
                                                 <span className="text-[#2BD2FF] text-sm font-semibold">
-                                                    {isLoadingGoals && isInitialLoad ? '...' : `${Math.round(getGoalRingData().recovery * 100)}%`}
+                                                    {workoutState.isLoading ? '...' : `${Math.round(getGoalRingData().recovery * 100)}%`}
                                                 </span>
                                             </div>
-                                            {!isLoadingGoals && goalProgress && (
+                                            {!workoutState.isLoading && workoutState.goalProgress && (
                                                 <div className="text-xs text-[#A1A1AA] mt-1">
-                                                    {goalProgress.recovery.currentHours.toFixed(1)}h of {goalProgress.recovery.targetHours}h
-                                                    {goalProgress.recovery.placeholder && <span className="ml-1 text-[#9CA3AF]">(estimated)</span>}
+                                                    {workoutState.goalProgress.recovery.currentHours.toFixed(1)}h of {workoutState.goalProgress.recovery.targetHours}h
+                                                    {workoutState.goalProgress.recovery.placeholder && <span className="ml-1 text-[#9CA3AF]">(estimated)</span>}
                                                 </div>
                                             )}
                                         </div>
@@ -820,13 +626,13 @@ export default function WorkoutPage() {
                                                     <span className="text-[#F3F4F6] font-medium text-sm">Nutrition</span>
                                                 </div>
                                                 <span className="text-[#9BE15D] text-sm font-semibold">
-                                                    {isLoadingGoals && isInitialLoad ? '...' : `${Math.round(getGoalRingData().nutrition * 100)}%`}
+                                                    {workoutState.isLoading ? '...' : `${Math.round(getGoalRingData().nutrition * 100)}%`}
                                                 </span>
                                             </div>
-                                            {!isLoadingGoals && goalProgress && (
+                                            {!workoutState.isLoading && workoutState.goalProgress && (
                                                 <div className="text-xs text-[#A1A1AA] mt-1">
-                                                    {goalProgress.nutrition.currentCalories} of {goalProgress.nutrition.targetCalories} cal
-                                                    {goalProgress.nutrition.placeholder && <span className="ml-1 text-[#9CA3AF]">(estimated)</span>}
+                                                    {workoutState.goalProgress.nutrition.currentCalories} of {workoutState.goalProgress.nutrition.targetCalories} cal
+                                                    {workoutState.goalProgress.nutrition.placeholder && <span className="ml-1 text-[#9CA3AF]">(estimated)</span>}
                                                 </div>
                                             )}
                                         </div>
@@ -841,14 +647,14 @@ export default function WorkoutPage() {
                                                     <span className="text-[#F3F4F6] font-medium text-sm">Exercise</span>
                                                 </div>
                                                 <span className="text-[#FF2D55] text-sm font-semibold">
-                                                    {isLoadingGoals && isInitialLoad ? '...' : `${Math.round(getGoalRingData().exercise * 100)}%`}
+                                                    {workoutState.isLoading ? '...' : `${Math.round(getGoalRingData().exercise * 100)}%`}
                                                 </span>
                                             </div>
-                                            {!isLoadingGoals && goalProgress && (
+                                            {!workoutState.isLoading && workoutState.goalProgress && (
                                                 <div className="text-xs text-[#A1A1AA] mt-1">
-                                                    {goalProgress.exercise.currentMinutes}m of {goalProgress.exercise.targetMinutes}m
-                                                    {goalProgress.exercise.sessionCount > 0 && (
-                                                        <span className="ml-2">• {goalProgress.exercise.sessionCount} session{goalProgress.exercise.sessionCount !== 1 ? 's' : ''}</span>
+                                                    {workoutState.goalProgress.exercise.currentMinutes}m of {workoutState.goalProgress.exercise.targetMinutes}m
+                                                    {workoutState.goalProgress.exercise.sessionCount > 0 && (
+                                                        <span className="ml-2">• {workoutState.goalProgress.exercise.sessionCount} session{workoutState.goalProgress.exercise.sessionCount !== 1 ? 's' : ''}</span>
                                                     )}
                                                 </div>
                                             )}
@@ -1034,7 +840,7 @@ export default function WorkoutPage() {
                                 </div>
 
                                 <div className="space-y-4">
-                                    {isLoadingActivities ? (
+                                    {workoutState.isLoading ? (
                                         <>
                                             {Array.from({ length: 3 }, (_, index) => (
                                                 <div
@@ -1062,14 +868,14 @@ export default function WorkoutPage() {
                                                 </div>
                                             ))}
                                         </>
-                                    ) : recentActivities.length === 0 ? (
+                                    ) : workoutState.recentActivities.length === 0 ? (
                                         <div className="text-center py-8 text-[#A1A1AA]">
                                             <p className="mb-2">No workout activities yet</p>
                                             <p className="text-sm">Complete your first workout to see it here!</p>
                                         </div>
                                     ) : (
                                         <>
-                                            {recentActivities.map((activity) => {
+                                            {workoutState.recentActivities.map((activity) => {
                                                 const getWorkoutIcon = (type: string) => {
                                                     switch (type) {
                                                         case 'strength': return <Dumbbell className="w-4 h-4" />
@@ -1138,7 +944,7 @@ export default function WorkoutPage() {
                                                 )
                                             })}
                                             {/* Empty placeholders to fill up to 3 activities */}
-                                            {Array.from({ length: 3 - recentActivities.length }, (_, index) => (
+                                            {Array.from({ length: 3 - workoutState.recentActivities.length }, (_, index) => (
                                                 <div key={`placeholder-${index}`} className="bg-[#121318] border border-[#212227] rounded-[20px] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)] opacity-50">
                                                     <div className="flex items-start justify-between">
                                                         <div className="flex-1">
