@@ -295,7 +295,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                 } else {
                     errorTitle = 'Database Error'
                     errorMessage = `Unexpected database error: ${fullErrorMsg}`
-                    debugInfo = `Error type: ${(error as any)?.code || 'unknown'}`
+                    debugInfo = `Error type: ${(error as Error & { code?: string })?.code || 'unknown'}`
                 }
             } else {
                 debugInfo = `Unknown error type: ${typeof error}`
@@ -396,7 +396,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                 } else {
                     errorTitle = 'Database Error'
                     errorMessage = `Unexpected database error: ${fullErrorMsg}`
-                    debugInfo = `Error type: ${(error as any)?.code || 'unknown'}`
+                    debugInfo = `Error type: ${(error as Error & { code?: string })?.code || 'unknown'}`
                 }
             } else {
                 debugInfo = `Unknown error type: ${typeof error}`
