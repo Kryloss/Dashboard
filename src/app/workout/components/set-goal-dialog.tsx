@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
-import { createClient } from "@/lib/supabase/client"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -229,18 +228,8 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
         try {
             setIsLoading(true)
 
-            // Force refresh session and get a fresh client
-            const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-
-            if (sessionError || !session?.user) {
-                throw new Error('Authentication session expired. Please refresh the page.')
-            }
-
-            // Create fresh client instance with current session
-            const freshSupabase = createClient()
-
             const profileData = {
-                user_id: session.user.id,
+                user_id: user.id,
                 weight: profile.weight ? parseFloat(profile.weight) : null,
                 age: profile.age ? parseInt(profile.age) : null,
                 height: profile.height ? parseFloat(profile.height) : null,
@@ -248,7 +237,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                 height_unit: profile.heightUnit
             }
 
-            const { error } = await freshSupabase
+            const { error } = await supabase
                 .from('user_profiles')
                 .upsert(profileData, { onConflict: 'user_id' })
 
@@ -265,7 +254,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
             let errorMessage = 'Could not save your profile'
             if (error && typeof error === 'object' && 'message' in error) {
                 const errorMsg = (error as Error).message
-                if (errorMsg.includes('permission denied')) {
+                if (errorMsg.includes('permission denied') || errorMsg.includes('JWT')) {
                     errorMessage = 'Session expired. Please refresh the page and try again.'
                 } else if (errorMsg.includes('does not exist')) {
                     errorMessage = 'Database table missing. Run setup SQL.'
@@ -293,18 +282,8 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
         try {
             setIsLoading(true)
 
-            // Force refresh session and get a fresh client
-            const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-
-            if (sessionError || !session?.user) {
-                throw new Error('Authentication session expired. Please refresh the page.')
-            }
-
-            // Create fresh client instance with current session
-            const freshSupabase = createClient()
-
             const goalsData = {
-                user_id: session.user.id,
+                user_id: user.id,
                 daily_exercise_minutes: goals.dailyExerciseMinutes ? parseInt(goals.dailyExerciseMinutes) : 30,
                 weekly_exercise_sessions: goals.weeklyExerciseSessions ? parseInt(goals.weeklyExerciseSessions) : 3,
                 daily_calories: goals.dailyCalories ? parseInt(goals.dailyCalories) : 2000,
@@ -316,7 +295,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                 diet_type: goals.dietType
             }
 
-            const { error } = await freshSupabase
+            const { error } = await supabase
                 .from('user_goals')
                 .upsert(goalsData, { onConflict: 'user_id' })
 
@@ -333,7 +312,7 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
             let errorMessage = 'Could not save your goals'
             if (error && typeof error === 'object' && 'message' in error) {
                 const errorMsg = (error as Error).message
-                if (errorMsg.includes('permission denied')) {
+                if (errorMsg.includes('permission denied') || errorMsg.includes('JWT')) {
                     errorMessage = 'Session expired. Please refresh the page and try again.'
                 } else if (errorMsg.includes('does not exist')) {
                     errorMessage = 'Database table missing. Run setup SQL.'

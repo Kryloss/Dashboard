@@ -13,9 +13,15 @@ export function useAuth() {
         // Get initial session
         const getInitialSession = async () => {
             try {
-                const { data: { session } } = await supabase.auth.getSession()
-                console.log('Initial session:', session?.user?.email || 'No session')
-                setUser(session?.user ?? null)
+                const { data: { session }, error } = await supabase.auth.getSession()
+
+                if (error) {
+                    console.error('Error getting initial session:', error)
+                    setUser(null)
+                } else {
+                    console.log('Initial session:', session?.user?.email || 'No session')
+                    setUser(session?.user ?? null)
+                }
             } catch (error) {
                 console.error('Error getting initial session:', error)
                 setUser(null)
@@ -42,6 +48,11 @@ export function useAuth() {
                 if (event === 'SIGNED_OUT') {
                     console.log('User signed out')
                     router.replace('/login')
+                }
+
+                if (event === 'TOKEN_REFRESHED') {
+                    console.log('Token refreshed for:', session?.user?.email)
+                    // Token was refreshed, session should be valid now
                 }
             }
         )
