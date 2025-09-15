@@ -21,6 +21,8 @@ class WorkoutStateManager {
 
     private listeners: Set<StateListener> = new Set()
     private updatePromise: Promise<void> | null = null
+    private lastRefreshTime = 0
+    private readonly MIN_REFRESH_INTERVAL = 2000 // Minimum 2 seconds between refreshes
 
     // Subscribe to state changes
     subscribe(listener: StateListener): () => void {
@@ -42,11 +44,19 @@ class WorkoutStateManager {
 
     // Force refresh of all data
     async refreshAll(force = false): Promise<void> {
+        const now = Date.now()
+
+        // Prevent too frequent updates unless forced
+        if (!force && now - this.lastRefreshTime < this.MIN_REFRESH_INTERVAL) {
+            return
+        }
+
         // Prevent concurrent updates
         if (this.updatePromise && !force) {
             return this.updatePromise
         }
 
+        this.lastRefreshTime = now
         this.updatePromise = this.performRefresh()
         await this.updatePromise
         this.updatePromise = null
@@ -113,10 +123,10 @@ class WorkoutStateManager {
         // Force immediate refresh
         await this.refreshAll(true)
 
-        // Also schedule a delayed refresh to catch any async updates
+        // Schedule a single delayed refresh to catch any async updates
         setTimeout(() => {
             this.refreshAll(true)
-        }, 1000)
+        }, 500)
     }
 
     // Handle workout deletion

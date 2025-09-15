@@ -173,7 +173,12 @@ export default function WorkoutPage() {
 
         const handleVisibilityChange = () => {
             if (!document.hidden && user && supabase) {
-                workoutStateManager.refreshAll(true)
+                // Only refresh if it's been more than 30 seconds since last update
+                const lastUpdate = workoutStateManager.getState().lastUpdate
+                const now = Date.now()
+                if (now - lastUpdate > 30000) {
+                    workoutStateManager.refreshAll(true)
+                }
             }
         }
 
@@ -570,13 +575,8 @@ export default function WorkoutPage() {
                                             nutritionProgress={getGoalRingData().nutrition}
                                             exerciseProgress={getGoalRingData().exercise}
                                             streak={mockData.streak}
-                                            className={workoutState.isLoading ? 'opacity-60' : ''}
+                                            className={workoutState.isLoading ? 'opacity-90' : ''}
                                         />
-                                        {workoutState.isLoading && (
-                                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2A8CEA] opacity-50"></div>
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
 
@@ -586,67 +586,73 @@ export default function WorkoutPage() {
                                     <div className="grid grid-cols-1 gap-2">
                                         {/* Recovery Summary */}
                                         <div className="p-3 bg-[#121318] border border-[#212227] rounded-[12px] hover:border-[#2A2B31] transition-colors cursor-pointer">
-                                            <div className="flex items-center justify-between mb-1">
+                                            <div className="flex items-center justify-between">
                                                 <div className="flex items-center space-x-3">
                                                     <div className="w-6 h-6 bg-gradient-to-br from-[#2BD2FF] to-[#2A8CEA] rounded-[8px] flex items-center justify-center">
                                                         <Moon className="w-3 h-3 text-white" />
                                                     </div>
                                                     <span className="text-[#F3F4F6] font-medium text-sm">Recovery</span>
                                                 </div>
-                                                <span className="text-[#2BD2FF] text-sm font-semibold">
-                                                    {workoutState.isLoading ? '...' : `${Math.round(getGoalRingData().recovery * 100)}%`}
-                                                </span>
-                                            </div>
-                                            {!workoutState.isLoading && workoutState.goalProgress && (
-                                                <div className="text-xs text-[#A1A1AA] mt-1">
-                                                    {workoutState.goalProgress.recovery.currentHours.toFixed(1)}h of {workoutState.goalProgress.recovery.targetHours}h
-                                                    {workoutState.goalProgress.recovery.placeholder && <span className="ml-1 text-[#9CA3AF]">(estimated)</span>}
+                                                <div className="text-right">
+                                                    <div className="text-[#2BD2FF] text-sm font-semibold">
+                                                        {workoutState.isLoading ? '—' : `${Math.round(getGoalRingData().recovery * 100)}%`}
+                                                    </div>
+                                                    {!workoutState.isLoading && workoutState.goalProgress && (
+                                                        <div className="text-xs text-[#A1A1AA]">
+                                                            {workoutState.goalProgress.recovery.currentHours.toFixed(1)}h of {workoutState.goalProgress.recovery.targetHours}h
+                                                            {workoutState.goalProgress.recovery.placeholder && <span className="ml-1 text-[#9CA3AF]">(estimated)</span>}
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            )}
+                                            </div>
                                         </div>
 
                                         {/* Nutrition Summary */}
                                         <div className="p-3 bg-[#121318] border border-[#212227] rounded-[12px] hover:border-[#2A2B31] transition-colors cursor-pointer">
-                                            <div className="flex items-center justify-between mb-1">
+                                            <div className="flex items-center justify-between">
                                                 <div className="flex items-center space-x-3">
                                                     <div className="w-6 h-6 bg-gradient-to-br from-[#9BE15D] to-[#00E676] rounded-[8px] flex items-center justify-center">
                                                         <Flame className="w-3 h-3 text-white" />
                                                     </div>
                                                     <span className="text-[#F3F4F6] font-medium text-sm">Nutrition</span>
                                                 </div>
-                                                <span className="text-[#9BE15D] text-sm font-semibold">
-                                                    {workoutState.isLoading ? '...' : `${Math.round(getGoalRingData().nutrition * 100)}%`}
-                                                </span>
-                                            </div>
-                                            {!workoutState.isLoading && workoutState.goalProgress && (
-                                                <div className="text-xs text-[#A1A1AA] mt-1">
-                                                    {workoutState.goalProgress.nutrition.currentCalories} of {workoutState.goalProgress.nutrition.targetCalories} cal
-                                                    {workoutState.goalProgress.nutrition.placeholder && <span className="ml-1 text-[#9CA3AF]">(estimated)</span>}
+                                                <div className="text-right">
+                                                    <div className="text-[#9BE15D] text-sm font-semibold">
+                                                        {workoutState.isLoading ? '—' : `${Math.round(getGoalRingData().nutrition * 100)}%`}
+                                                    </div>
+                                                    {!workoutState.isLoading && workoutState.goalProgress && (
+                                                        <div className="text-xs text-[#A1A1AA]">
+                                                            {workoutState.goalProgress.nutrition.currentCalories} of {workoutState.goalProgress.nutrition.targetCalories} cal
+                                                            {workoutState.goalProgress.nutrition.placeholder && <span className="ml-1 text-[#9CA3AF]">(estimated)</span>}
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            )}
+                                            </div>
                                         </div>
 
                                         {/* Exercise Summary */}
                                         <div className="p-3 bg-[#121318] border border-[#212227] rounded-[12px] hover:border-[#2A2B31] transition-colors cursor-pointer">
-                                            <div className="flex items-center justify-between mb-1">
+                                            <div className="flex items-center justify-between">
                                                 <div className="flex items-center space-x-3">
                                                     <div className="w-6 h-6 bg-gradient-to-br from-[#FF2D55] to-[#FF375F] rounded-[8px] flex items-center justify-center">
                                                         <Dumbbell className="w-3 h-3 text-white" />
                                                     </div>
                                                     <span className="text-[#F3F4F6] font-medium text-sm">Exercise</span>
                                                 </div>
-                                                <span className="text-[#FF2D55] text-sm font-semibold">
-                                                    {workoutState.isLoading ? '...' : `${Math.round(getGoalRingData().exercise * 100)}%`}
-                                                </span>
-                                            </div>
-                                            {!workoutState.isLoading && workoutState.goalProgress && (
-                                                <div className="text-xs text-[#A1A1AA] mt-1">
-                                                    {workoutState.goalProgress.exercise.currentMinutes}m of {workoutState.goalProgress.exercise.targetMinutes}m
-                                                    {workoutState.goalProgress.exercise.sessionCount > 0 && (
-                                                        <span className="ml-2">• {workoutState.goalProgress.exercise.sessionCount} session{workoutState.goalProgress.exercise.sessionCount !== 1 ? 's' : ''}</span>
+                                                <div className="text-right">
+                                                    <div className="text-[#FF2D55] text-sm font-semibold">
+                                                        {workoutState.isLoading ? '—' : `${Math.round(getGoalRingData().exercise * 100)}%`}
+                                                    </div>
+                                                    {!workoutState.isLoading && workoutState.goalProgress && (
+                                                        <div className="text-xs text-[#A1A1AA]">
+                                                            {workoutState.goalProgress.exercise.currentMinutes}m of {workoutState.goalProgress.exercise.targetMinutes}m
+                                                            {workoutState.goalProgress.exercise.sessionCount > 0 && (
+                                                                <span className="ml-2">• {workoutState.goalProgress.exercise.sessionCount} session{workoutState.goalProgress.exercise.sessionCount !== 1 ? 's' : ''}</span>
+                                                            )}
+                                                        </div>
                                                     )}
                                                 </div>
-                                            )}
+                                            </div>
                                         </div>
                                     </div>
 
@@ -834,12 +840,12 @@ export default function WorkoutPage() {
                                             {Array.from({ length: 3 }, (_, index) => (
                                                 <div
                                                     key={`loading-${index}`}
-                                                    className="bg-[#121318] border border-[#212227] rounded-[20px] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)]"
+                                                    className="bg-[#121318] border border-[#212227] rounded-[20px] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)] opacity-85"
                                                 >
                                                     <div className="flex items-center space-x-3 mb-2">
-                                                        {/* Loading spinner instead of icon */}
-                                                        <div className="w-8 h-8 bg-[rgba(255,255,255,0.03)] border border-[#2A2B31] rounded-[10px] flex items-center justify-center">
-                                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#2A8CEA]"></div>
+                                                        {/* Loading placeholder for icon */}
+                                                        <div className="w-8 h-8 bg-[rgba(255,255,255,0.05)] border border-[#2A2B31] rounded-[10px] flex items-center justify-center">
+                                                            <Dumbbell className="w-4 h-4 text-[#9CA3AF]" />
                                                         </div>
                                                         {/* Loading placeholder for label */}
                                                         <div className="w-24 h-3 bg-[#2A2B31] rounded animate-pulse"></div>
