@@ -11,6 +11,7 @@ import { StatCard } from "./components/stat-card"
 
 import { WorkoutTypeDialog } from "./components/workout-type-dialog"
 import { SetGoalDialog } from "./components/set-goal-dialog"
+import { SleepDialog } from "./components/sleep-dialog"
 import { ActivityEditModal } from "./history/components/activity-edit-modal"
 import { WorkoutStorage, OngoingWorkout, WorkoutActivity } from "@/lib/workout-storage"
 import { UserDataStorage } from "@/lib/user-data-storage"
@@ -18,7 +19,7 @@ import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 import { workoutStateManager, WorkoutState, forceRefreshOngoingWorkout, debugWorkoutState } from "@/lib/workout-state-manager"
 import { runWorkoutDiagnostics, logWorkoutState } from "@/lib/workout-diagnostics"
-import { debugOngoingWorkout, forceUpdateRings, logCurrentState } from "@/lib/workout-debug-helper"
+import { debugOngoingWorkout, forceUpdateRings } from "@/lib/workout-debug-helper"
 import { Plus, Flame, Dumbbell, User, Timer, Bike, Clock, Heart, FileText, Play, Edit3, Trash2, Moon, Footprints } from "lucide-react"
 
 export default function WorkoutPage() {
@@ -32,6 +33,7 @@ export default function WorkoutPage() {
     const [liveWorkoutTime, setLiveWorkoutTime] = useState(0)
     const [editingActivity, setEditingActivity] = useState<WorkoutActivity | null>(null)
     const [showSetGoalDialog, setShowSetGoalDialog] = useState(false)
+    const [showSleepDialog, setShowSleepDialog] = useState(false)
 
     // New centralized state management
     const [workoutState, setWorkoutState] = useState<WorkoutState>({
@@ -489,12 +491,7 @@ export default function WorkoutPage() {
         } else if (action === 'quick-log') {
             setShowQuickLogWorkoutDialog(true)
         } else if (action === 'sleep') {
-            console.log(`Quick action: ${action}`)
-            // TODO: Implement sleep tracking functionality
-            notifications.info('Sleep tracking', {
-                description: 'Sleep tracking feature coming soon!',
-                duration: 3000
-            })
+            setShowSleepDialog(true)
         } else if (action === 'running') {
             console.log(`Quick action: ${action}`)
             notifications.info('Running workouts', {
@@ -795,9 +792,6 @@ export default function WorkoutPage() {
                                                     {workoutState.goalProgress && (
                                                         <div className="text-xs text-[#A1A1AA]">
                                                             {workoutState.goalProgress.exercise.currentMinutes}m of {workoutState.goalProgress.exercise.targetMinutes}m
-                                                            {workoutState.goalProgress.exercise.sessionCount > 0 && (
-                                                                <span className="ml-2">• {workoutState.goalProgress.exercise.sessionCount} session{workoutState.goalProgress.exercise.sessionCount !== 1 ? 's' : ''}</span>
-                                                            )}
                                                         </div>
                                                     )}
                                                 </div>
@@ -1170,6 +1164,18 @@ export default function WorkoutPage() {
                 <SetGoalDialog
                     open={showSetGoalDialog}
                     onOpenChange={setShowSetGoalDialog}
+                />
+
+                {/* Sleep Dialog */}
+                <SleepDialog
+                    open={showSleepDialog}
+                    onOpenChange={setShowSleepDialog}
+                    onSleepLogged={() => {
+                        // Refresh goal progress when sleep is logged
+                        if (user && supabase) {
+                            workoutStateManager.refreshAll(true)
+                        }
+                    }}
                 />
             </div>
         )

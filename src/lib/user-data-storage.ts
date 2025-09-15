@@ -31,6 +31,26 @@ export interface UserGoals {
     updatedAt: string
 }
 
+export interface SleepSession {
+    id: string
+    startTime: number // minutes from midnight (0-720 for 12am-12pm)
+    endTime: number
+    wakeUps: number
+    type: 'main' | 'nap'
+}
+
+export interface SleepData {
+    id: string
+    userId: string
+    date: string // YYYY-MM-DD format
+    sessions: SleepSession[]
+    qualityRating: number // 1-5 rating
+    totalMinutes: number
+    totalWakeUps: number
+    createdAt: string
+    updatedAt: string
+}
+
 interface DatabaseUserProfile {
     id: string
     user_id: string
@@ -59,10 +79,22 @@ interface DatabaseUserGoals {
     updated_at: string
 }
 
+interface DatabaseSleepData {
+    id: string
+    user_id: string
+    date: string
+    sessions: string // JSON string of SleepSession[]
+    quality_rating: number
+    total_minutes: number
+    total_wake_ups: number
+    created_at: string
+    updated_at: string
+}
+
 interface SyncOperation {
     action: 'upsert' | 'insert' | 'delete'
-    table: 'user_profiles' | 'user_goals'
-    data: UserProfile | UserGoals | string | null
+    table: 'user_profiles' | 'user_goals' | 'sleep_data'
+    data: UserProfile | UserGoals | SleepData | string | null
     timestamp: number
     retryCount?: number
     maxRetries?: number
@@ -86,6 +118,11 @@ export class UserDataStorage {
     private static get SYNC_QUEUE_KEY(): string {
         const userSuffix = this.currentUser?.id ? `-${this.currentUser.id.slice(-8)}` : '-anonymous'
         return `healss-user-sync-queue${userSuffix}`
+    }
+
+    private static get SLEEP_DATA_KEY(): string {
+        const userSuffix = this.currentUser?.id ? `-${this.currentUser.id.slice(-8)}` : '-anonymous'
+        return `healss-sleep-data${userSuffix}`
     }
 
     // Real-time synchronization
@@ -390,6 +427,156 @@ export class UserDataStorage {
     }
 
     // ============================================================================
+    // SLEEP DATA MANAGEMENT
+    // ============================================================================
+
+    static async getSleepData(date?: string): Promise<SleepData | null> {
+        const targetDate = date || new Date().toISOString().split('T')[0]
+        console.log('UserDataStorage.getSleepData - Date:', targetDate, 'User:', this.currentUser?.id)
+
+        // Try Supabase first if user is authenticated
+        if (this.currentUser && this.supabase) {
+            try {
+                const { data: authUser } = await this.supabase.auth.getUser()
+                console.log('UserDataStorage.getSleepData - Supabase auth user:', authUser.user?.id)
+
+                if (!authUser.user) {
+                    console.warn('UserDataStorage.getSleepData - No authenticated user in Supabase context')
+                    return this.getSleepDataFromLocalStorage(targetDate)
+                }
+
+                const { data, error } = await this.supabase
+                    .from('sleep_data')
+                    .select('*')
+                    .eq('user_id', this.currentUser.id)
+                    .eq('date', targetDate)
+                    .not('user_id', 'is', null)
+                    .single()
+
+                console.log('UserDataStorage.getSleepData - Query result:', { data, error })
+
+                if (error) {
+                    if (error.code === 'PGRST116') {
+                        console.log('UserDataStorage.getSleepData - No sleep data found for date')
+                        return null
+                    }
+                    throw error
+                }
+
+                return this.convertDbSleepToApp(data)
+            } catch (error) {
+                console.error('Error fetching sleep data from Supabase:', error)
+            }
+        }
+
+        console.log('UserDataStorage.getSleepData - Falling back to localStorage')
+        return this.getSleepDataFromLocalStorage(targetDate)
+    }
+
+    static async saveSleepData(sleepData: Omit<SleepData, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<SleepData> {
+        if (!this.currentUser) {
+            throw new Error('User must be authenticated to save sleep data')
+        }
+
+        const localSleepData = this.getSleepDataFromLocalStorage(sleepData.date)
+        const updatedSleepData: SleepData = {
+            id: localSleepData?.id || `sleep-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            userId: this.currentUser.id,
+            createdAt: localSleepData?.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            ...sleepData
+        }
+
+        this.saveSleepDataToLocalStorage(updatedSleepData)
+
+        // Try to save to Supabase
+        if (this.supabase) {
+            try {
+                const dbSleepData = this.convertAppSleepToDb(updatedSleepData)
+
+                // Check if sleep data exists for this user and date
+                const { data: existingSleepData } = await this.supabase
+                    .from('sleep_data')
+                    .select('id')
+                    .eq('user_id', this.currentUser.id)
+                    .eq('date', sleepData.date)
+                    .not('user_id', 'is', null)
+                    .single()
+
+                let error: Error | null = null
+
+                if (existingSleepData) {
+                    // Update existing sleep data
+                    const updateResult = await this.supabase
+                        .from('sleep_data')
+                        .update({
+                            ...dbSleepData,
+                        })
+                        .eq('user_id', this.currentUser.id)
+                        .eq('date', sleepData.date)
+                        .not('user_id', 'is', null)
+                    error = updateResult.error
+                } else {
+                    // Insert new sleep data
+                    const insertResult = await this.supabase
+                        .from('sleep_data')
+                        .insert({
+                            ...dbSleepData,
+                            user_id: this.currentUser.id
+                        })
+                    error = insertResult.error
+                }
+
+                if (error) throw error
+
+                console.log('Sleep data saved to Supabase:', updatedSleepData.id)
+            } catch (error) {
+                console.error('Error saving sleep data to Supabase:', error)
+                // Add to sync queue for retry later
+                this.addToSyncQueue({
+                    action: 'upsert',
+                    table: 'sleep_data',
+                    data: updatedSleepData,
+                    timestamp: Date.now()
+                })
+            }
+        }
+
+        return updatedSleepData
+    }
+
+    static async getSleepDataRange(startDate: string, endDate: string): Promise<SleepData[]> {
+        if (!this.currentUser) return []
+
+        // Try Supabase first if user is authenticated
+        if (this.supabase) {
+            try {
+                const { data: authUser } = await this.supabase.auth.getUser()
+                if (!authUser.user) {
+                    return this.getSleepDataRangeFromLocalStorage(startDate, endDate)
+                }
+
+                const { data, error } = await this.supabase
+                    .from('sleep_data')
+                    .select('*')
+                    .eq('user_id', this.currentUser.id)
+                    .gte('date', startDate)
+                    .lte('date', endDate)
+                    .not('user_id', 'is', null)
+                    .order('date', { ascending: false })
+
+                if (error) throw error
+
+                return data.map(item => this.convertDbSleepToApp(item))
+            } catch (error) {
+                console.error('Error fetching sleep data range from Supabase:', error)
+            }
+        }
+
+        return this.getSleepDataRangeFromLocalStorage(startDate, endDate)
+    }
+
+    // ============================================================================
     // PRIVATE HELPER METHODS
     // ============================================================================
 
@@ -459,6 +646,63 @@ export class UserDataStorage {
         }
     }
 
+    private static getSleepDataFromLocalStorage(date: string): SleepData | null {
+        if (typeof window === 'undefined') return null
+
+        try {
+            const stored = localStorage.getItem(`${this.SLEEP_DATA_KEY}-${date}`)
+            if (!stored) return null
+
+            const sleepData = JSON.parse(stored) as SleepData
+
+            // Security check: ensure sleep data belongs to current user
+            if (this.currentUser && sleepData.userId && sleepData.userId !== this.currentUser.id) {
+                console.warn('Clearing localStorage sleep data that belongs to different user')
+                localStorage.removeItem(`${this.SLEEP_DATA_KEY}-${date}`)
+                return null
+            }
+
+            return sleepData
+        } catch (error) {
+            console.error('Error loading sleep data from localStorage:', error)
+            return null
+        }
+    }
+
+    private static saveSleepDataToLocalStorage(sleepData: SleepData): void {
+        if (typeof window === 'undefined') return
+
+        try {
+            localStorage.setItem(`${this.SLEEP_DATA_KEY}-${sleepData.date}`, JSON.stringify(sleepData))
+        } catch (error) {
+            console.error('Error saving sleep data to localStorage:', error)
+        }
+    }
+
+    private static getSleepDataRangeFromLocalStorage(startDate: string, endDate: string): SleepData[] {
+        if (typeof window === 'undefined') return []
+
+        try {
+            const sleepDataArray: SleepData[] = []
+            const start = new Date(startDate)
+            const end = new Date(endDate)
+
+            // Iterate through each date in the range
+            for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+                const dateString = date.toISOString().split('T')[0]
+                const sleepData = this.getSleepDataFromLocalStorage(dateString)
+                if (sleepData) {
+                    sleepDataArray.push(sleepData)
+                }
+            }
+
+            return sleepDataArray.sort((a, b) => b.date.localeCompare(a.date))
+        } catch (error) {
+            console.error('Error loading sleep data range from localStorage:', error)
+            return []
+        }
+    }
+
     // Convert between database and app formats
     private static convertDbProfileToApp(db: DatabaseUserProfile): UserProfile {
         return {
@@ -513,6 +757,30 @@ export class UserDataStorage {
             starting_weight: app.startingWeight || null,
             goal_weight: app.goalWeight || null,
             diet_type: app.dietType
+        }
+    }
+
+    private static convertDbSleepToApp(db: DatabaseSleepData): SleepData {
+        return {
+            id: db.id,
+            userId: db.user_id,
+            date: db.date,
+            sessions: JSON.parse(db.sessions),
+            qualityRating: db.quality_rating,
+            totalMinutes: db.total_minutes,
+            totalWakeUps: db.total_wake_ups,
+            createdAt: db.created_at,
+            updatedAt: db.updated_at
+        }
+    }
+
+    private static convertAppSleepToDb(app: SleepData): Omit<DatabaseSleepData, 'id' | 'user_id' | 'created_at' | 'updated_at'> {
+        return {
+            date: app.date,
+            sessions: JSON.stringify(app.sessions),
+            quality_rating: app.qualityRating,
+            total_minutes: app.totalMinutes,
+            total_wake_ups: app.totalWakeUps
         }
     }
 
@@ -590,6 +858,9 @@ export class UserDataStorage {
                 break
             case 'user_goals':
                 await this.processSyncGoals(operation)
+                break
+            case 'sleep_data':
+                await this.processSyncSleep(operation)
                 break
             default:
                 throw new Error(`Unknown sync table: ${operation.table}`)
@@ -677,6 +948,51 @@ export class UserDataStorage {
 
             default:
                 throw new Error(`Unknown sync action for user_goals: ${operation.action}`)
+        }
+    }
+
+    private static async processSyncSleep(operation: SyncOperation): Promise<void> {
+        switch (operation.action) {
+            case 'upsert':
+                if (typeof operation.data === 'object' && operation.data !== null && 'userId' in operation.data) {
+                    const sleepData = operation.data as SleepData
+                    const dbSleepData = this.convertAppSleepToDb(sleepData)
+
+                    // Check if sleep data exists for this user and date
+                    const { data: existingSleepData } = await this.supabase!
+                        .from('sleep_data')
+                        .select('id')
+                        .eq('user_id', this.currentUser!.id)
+                        .eq('date', sleepData.date)
+                        .not('user_id', 'is', null)
+                        .single()
+
+                    if (existingSleepData) {
+                        // Update existing sleep data
+                        const { error: updateError } = await this.supabase!
+                            .from('sleep_data')
+                            .update({
+                                ...dbSleepData,
+                            })
+                            .eq('user_id', this.currentUser!.id)
+                            .eq('date', sleepData.date)
+                            .not('user_id', 'is', null)
+                        if (updateError) throw updateError
+                    } else {
+                        // Insert new sleep data
+                        const { error: insertError } = await this.supabase!
+                            .from('sleep_data')
+                            .insert({
+                                ...dbSleepData,
+                                user_id: this.currentUser!.id
+                            })
+                        if (insertError) throw insertError
+                    }
+                }
+                break
+
+            default:
+                throw new Error(`Unknown sync action for sleep_data: ${operation.action}`)
         }
     }
 

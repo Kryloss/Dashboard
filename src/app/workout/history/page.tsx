@@ -6,13 +6,16 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, Search, Filter, Dumbbell, Footprints, Heart, Bike, Plus } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ArrowLeft, Search, Filter, Dumbbell, Footprints, Heart, Bike, Plus, Moon } from "lucide-react"
 import { WorkoutStorage, WorkoutActivity } from "@/lib/workout-storage"
+import { UserDataStorage, SleepData } from "@/lib/user-data-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 import { ActivityCard } from "./components/activity-card"
 import { ActivityEditModal } from "./components/activity-edit-modal"
 import { DeleteConfirmDialog } from "./components/delete-confirm-dialog"
+import { SleepCard } from "./components/sleep-card"
 
 export default function WorkoutHistoryPage() {
     const router = useRouter()
@@ -27,6 +30,11 @@ export default function WorkoutHistoryPage() {
     const [hasMore, setHasMore] = useState(true)
     const [offset, setOffset] = useState(0)
     const limit = 20
+
+    // Sleep data state
+    const [sleepData, setSleepData] = useState<SleepData[]>([])
+    const [isSleepLoading, setIsSleepLoading] = useState(true)
+    const [activeTab, setActiveTab] = useState("workouts")
 
     // Removed loadActivities callback to prevent infinite loop
 
@@ -78,6 +86,29 @@ export default function WorkoutHistoryPage() {
                 }
 
                 loadData()
+
+                // Load sleep data for the last 30 days
+                const loadSleepData = async () => {
+                    try {
+                        setIsSleepLoading(true)
+                        UserDataStorage.initialize(user, supabase)
+
+                        const endDate = new Date().toISOString().split('T')[0]
+                        const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+
+                        const sleepHistory = await UserDataStorage.getSleepDataRange(startDate, endDate)
+                        setSleepData(sleepHistory)
+                    } catch (error) {
+                        console.error('Error loading sleep data:', error)
+                        notifications.error('Load failed', {
+                            description: 'Could not load sleep history'
+                        })
+                    } finally {
+                        setIsSleepLoading(false)
+                    }
+                }
+
+                loadSleepData()
 
                 // Show history tip for first-time visitors
                 setTimeout(() => {
@@ -255,97 +286,156 @@ export default function WorkoutHistoryPage() {
                                 <ArrowLeft className="w-5 h-5" />
                             </Button>
                             <div>
-                                <h1 className="text-2xl font-bold text-[#F3F4F6]">Workout History</h1>
+                                <h1 className="text-2xl font-bold text-[#F3F4F6]">Activity History</h1>
                                 <p className="text-sm text-[#A1A1AA] mt-1">
-                                    {activities.length} workout{activities.length !== 1 ? 's' : ''} completed
+                                    {activeTab === 'workouts'
+                                        ? `${activities.length} workout${activities.length !== 1 ? 's' : ''} completed`
+                                        : `${sleepData.length} sleep session${sleepData.length !== 1 ? 's' : ''} logged`
+                                    }
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    {/* Filters */}
-                    <div className="bg-[#121318] border border-[#212227] rounded-[20px] p-6 mb-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)]">
-                        <div className="flex flex-col sm:flex-row gap-4">
-                            <div className="flex-1">
-                                <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#A1A1AA] w-4 h-4" />
-                                    <Input
-                                        placeholder="Search workouts..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="pl-10 bg-[#0E0F13] border-[#212227] text-[#F3F4F6] placeholder-[#7A7F86] rounded-[14px]"
-                                    />
+                    {/* Tabs */}
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
+                        <TabsList className="grid w-full grid-cols-2 bg-[#121318] border border-[#212227] rounded-lg">
+                            <TabsTrigger
+                                value="workouts"
+                                className="data-[state=active]:bg-[#2A8CEA] data-[state=active]:text-white text-[#A1A1AA] hover:text-[#F3F4F6]"
+                            >
+                                <Dumbbell className="w-4 h-4 mr-2" />
+                                Workouts
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="sleep"
+                                className="data-[state=active]:bg-[#2A8CEA] data-[state=active]:text-white text-[#A1A1AA] hover:text-[#F3F4F6]"
+                            >
+                                <Moon className="w-4 h-4 mr-2" />
+                                Sleep
+                            </TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="workouts" className="mt-0">
+                            {/* Workout Filters */}
+                            <div className="bg-[#121318] border border-[#212227] rounded-[20px] p-6 mb-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)]">
+                                <div className="flex flex-col sm:flex-row gap-4">
+                                    <div className="flex-1">
+                                        <div className="relative">
+                                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#A1A1AA] w-4 h-4" />
+                                            <Input
+                                                placeholder="Search workouts..."
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                className="pl-10 bg-[#0E0F13] border-[#212227] text-[#F3F4F6] placeholder-[#7A7F86] rounded-[14px]"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="min-w-[160px]">
+                                        <Select value={filterType} onValueChange={setFilterType}>
+                                            <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] rounded-[14px]">
+                                                <Filter className="w-4 h-4 mr-2" />
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-[#121318] border-[#212227]">
+                                                <SelectItem value="all">All Types</SelectItem>
+                                                <SelectItem value="strength">Strength</SelectItem>
+                                                <SelectItem value="running">Running</SelectItem>
+                                                <SelectItem value="yoga">Yoga</SelectItem>
+                                                <SelectItem value="cycling">Cycling</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 </div>
                             </div>
-                            <div className="min-w-[160px]">
-                                <Select value={filterType} onValueChange={setFilterType}>
-                                    <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] rounded-[14px]">
-                                        <Filter className="w-4 h-4 mr-2" />
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-[#121318] border-[#212227]">
-                                        <SelectItem value="all">All Types</SelectItem>
-                                        <SelectItem value="strength">Strength</SelectItem>
-                                        <SelectItem value="running">Running</SelectItem>
-                                        <SelectItem value="yoga">Yoga</SelectItem>
-                                        <SelectItem value="cycling">Cycling</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                    </div>
 
-                    {/* Activities List */}
-                    {isLoading && activities.length === 0 ? (
-                        <div className="flex items-center justify-center py-12">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2A8CEA]"></div>
-                        </div>
-                    ) : filteredActivities.length === 0 ? (
-                        <div className="text-center py-12">
-                            <div className="text-[#A1A1AA] mb-4">
-                                <p>No workout activities found.</p>
-                                {searchQuery && (
-                                    <p className="text-sm mt-2">Try adjusting your search or filter.</p>
-                                )}
-                            </div>
-                            <Button
-                                onClick={() => router.push('/workout')}
-                                className="bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-full border border-[rgba(42,140,234,0.35)] shadow-[0_8px_32px_rgba(42,140,234,0.28)] hover:shadow-[0_10px_40px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all"
-                            >
-                                <Plus className="w-4 h-4 mr-2" />
-                                Start Your First Workout
-                            </Button>
-                        </div>
-                    ) : (
-                        <ScrollArea className="h-[600px]">
-                            <div className="space-y-4 pr-4">
-                                {filteredActivities.map((activity) => (
-                                    <ActivityCard
-                                        key={activity.id}
-                                        activity={activity}
-                                        onEdit={() => setEditingActivity(activity)}
-                                        onDelete={() => setDeletingActivity(activity)}
-                                        formatDuration={formatDuration}
-                                        getWorkoutIcon={getWorkoutIcon}
-                                        getWorkoutColor={getWorkoutColor}
-                                    />
-                                ))}
-
-                                {hasMore && !searchQuery && (
-                                    <div className="flex justify-center pt-4">
-                                        <Button
-                                            onClick={loadMoreActivities}
-                                            disabled={isLoading}
-                                            variant="ghost"
-                                            className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full"
-                                        >
-                                            {isLoading ? 'Loading...' : 'Load More'}
-                                        </Button>
+                            {/* Workout Activities List */}
+                            {isLoading && activities.length === 0 ? (
+                                <div className="flex items-center justify-center py-12">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2A8CEA]"></div>
+                                </div>
+                            ) : filteredActivities.length === 0 ? (
+                                <div className="text-center py-12">
+                                    <div className="text-[#A1A1AA] mb-4">
+                                        <p>No workout activities found.</p>
+                                        {searchQuery && (
+                                            <p className="text-sm mt-2">Try adjusting your search or filter.</p>
+                                        )}
                                     </div>
-                                )}
-                            </div>
-                        </ScrollArea>
-                    )}
+                                    <Button
+                                        onClick={() => router.push('/workout')}
+                                        className="bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-full border border-[rgba(42,140,234,0.35)] shadow-[0_8px_32px_rgba(42,140,234,0.28)] hover:shadow-[0_10px_40px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all"
+                                    >
+                                        <Plus className="w-4 h-4 mr-2" />
+                                        Start Your First Workout
+                                    </Button>
+                                </div>
+                            ) : (
+                                <ScrollArea className="h-[600px]">
+                                    <div className="space-y-4 pr-4">
+                                        {filteredActivities.map((activity) => (
+                                            <ActivityCard
+                                                key={activity.id}
+                                                activity={activity}
+                                                onEdit={() => setEditingActivity(activity)}
+                                                onDelete={() => setDeletingActivity(activity)}
+                                                formatDuration={formatDuration}
+                                                getWorkoutIcon={getWorkoutIcon}
+                                                getWorkoutColor={getWorkoutColor}
+                                            />
+                                        ))}
+
+                                        {hasMore && !searchQuery && (
+                                            <div className="flex justify-center pt-4">
+                                                <Button
+                                                    onClick={loadMoreActivities}
+                                                    disabled={isLoading}
+                                                    variant="ghost"
+                                                    className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full"
+                                                >
+                                                    {isLoading ? 'Loading...' : 'Load More'}
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </ScrollArea>
+                            )}
+                        </TabsContent>
+
+                        <TabsContent value="sleep" className="mt-0">
+                            {/* Sleep Data List */}
+                            {isSleepLoading ? (
+                                <div className="flex items-center justify-center py-12">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2BD2FF]"></div>
+                                </div>
+                            ) : sleepData.length === 0 ? (
+                                <div className="text-center py-12">
+                                    <div className="text-[#A1A1AA] mb-4">
+                                        <p>No sleep data found.</p>
+                                        <p className="text-sm mt-2">Start logging your sleep to see it here!</p>
+                                    </div>
+                                    <Button
+                                        onClick={() => router.push('/workout')}
+                                        className="bg-gradient-to-r from-[#2BD2FF] to-[#2A8CEA] text-white rounded-full border border-[rgba(43,210,255,0.35)] shadow-[0_8px_32px_rgba(43,210,255,0.28)] hover:shadow-[0_10px_40px_rgba(43,210,255,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all"
+                                    >
+                                        <Moon className="w-4 h-4 mr-2" />
+                                        Log Your First Sleep
+                                    </Button>
+                                </div>
+                            ) : (
+                                <ScrollArea className="h-[600px]">
+                                    <div className="space-y-4 pr-4">
+                                        {sleepData.map((sleep) => (
+                                            <SleepCard
+                                                key={sleep.id}
+                                                sleepData={sleep}
+                                            />
+                                        ))}
+                                    </div>
+                                </ScrollArea>
+                            )}
+                        </TabsContent>
+                    </Tabs>
                 </div>
             </div>
 
