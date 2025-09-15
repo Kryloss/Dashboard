@@ -21,7 +21,7 @@ import { Plus, Flame, Dumbbell, User, Timer, Bike, Clock, Heart, FileText, Play,
 
 export default function WorkoutPage() {
     const router = useRouter()
-    const { user, supabase } = useAuth()
+    const { user, loading, supabase } = useAuth()
     const notifications = useNotifications()
     const [isHealssSubdomain, setIsHealssSubdomain] = useState(false)
     const [showWorkoutDialog, setShowWorkoutDialog] = useState(false)
@@ -131,24 +131,19 @@ export default function WorkoutPage() {
                 // Stop ongoing workout tracking when component unmounts
                 workoutStateManager.stopOngoingWorkoutTracking()
             }
-        } else if (onHealss && user === null && !signInNotificationShownRef.current) {
-            // Add a delay to ensure authentication state has loaded
-            setTimeout(() => {
-                // Double-check user is still null after delay and we haven't shown notification yet
-                if (user === null && !signInNotificationShownRef.current) {
-                    signInNotificationShownRef.current = true
-                    notifications.warning('Sign in required', {
-                        description: 'Please sign in to access workouts',
-                        duration: 4000,
-                        action: {
-                            label: 'Sign In',
-                            onClick: () => router.push('/auth/signin')
-                        }
-                    })
+        } else if (onHealss && !loading && user === null && !signInNotificationShownRef.current) {
+            // Only show notification if auth is not loading and user is null
+            signInNotificationShownRef.current = true
+            notifications.warning('Sign in required', {
+                description: 'Please sign in to access workouts',
+                duration: 4000,
+                action: {
+                    label: 'Sign In',
+                    onClick: () => router.push('/auth/signin')
                 }
-            }, 3000) // 3 second delay to allow auth state to load
+            })
         }
-    }, [user, supabase, notifications, router])
+    }, [user, loading, supabase, notifications, router])
 
     // Real-time timer effect for ongoing workouts
     useEffect(() => {
@@ -560,6 +555,18 @@ export default function WorkoutPage() {
 
     // If we're on healss.kryloss.com, show healss content
     if (isHealssSubdomain) {
+        // Show loading state while authentication is being checked
+        if (loading) {
+            return (
+                <div className="min-h-screen bg-[#0B0B0F] flex items-center justify-center">
+                    <div className="text-center">
+                        <div className="w-8 h-8 border-2 border-[#4AA7FF] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                        <p className="text-[#9CA9B7]">Loading...</p>
+                    </div>
+                </div>
+            )
+        }
+
         return (
             <div className="min-h-screen bg-[#0B0B0F] text-[#F3F4F6] relative overflow-hidden">
                 {/* Hero Gradient Orb Background */}

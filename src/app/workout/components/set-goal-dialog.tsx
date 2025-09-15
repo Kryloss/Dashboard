@@ -41,7 +41,7 @@ interface GoalsFormData {
 }
 
 export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
-    const { user, supabase } = useAuth()
+    const { user, loading, supabase } = useAuth()
     const notifications = useNotifications()
     const [activeTab, setActiveTab] = useState("account")
     const [refreshKey, setRefreshKey] = useState(0)
@@ -208,11 +208,15 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
     }
 
     const handleSaveProfile = async () => {
-        if (!user || !supabase) {
+        if (!loading && (!user || !supabase)) {
             notifications.warning('Sign in required', {
                 description: 'Please sign in to save your profile'
             })
             return
+        }
+
+        if (loading) {
+            return // Don't proceed if still loading
         }
 
         try {
@@ -258,11 +262,15 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
     }
 
     const handleSaveGoals = async () => {
-        if (!user || !supabase) {
+        if (!loading && (!user || !supabase)) {
             notifications.warning('Sign in required', {
                 description: 'Please sign in to save your goals'
             })
             return
+        }
+
+        if (loading) {
+            return // Don't proceed if still loading
         }
 
         try {

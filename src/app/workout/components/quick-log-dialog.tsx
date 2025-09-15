@@ -51,7 +51,7 @@ const workoutTypes = [
 ]
 
 export function QuickLogDialog({ open, onOpenChange, onActivityLogged }: QuickLogDialogProps) {
-    const { user } = useAuth()
+    const { user, loading } = useAuth()
     const notifications = useNotifications()
     const [selectedType, setSelectedType] = useState<string>('')
     const [workoutName, setWorkoutName] = useState('')
@@ -86,7 +86,7 @@ export function QuickLogDialog({ open, onOpenChange, onActivityLogged }: QuickLo
     const handleLogWorkout = async () => {
         if (!selectedType || (!hours && !minutes)) return
 
-        if (!user) {
+        if (!loading && !user) {
             notifications.warning('Sign in required', {
                 description: 'Please sign in to log workouts',
                 duration: 4000,
@@ -99,6 +99,10 @@ export function QuickLogDialog({ open, onOpenChange, onActivityLogged }: QuickLo
                 }
             })
             return
+        }
+
+        if (loading) {
+            return // Don't proceed if still loading
         }
 
         setIsLogging(true)

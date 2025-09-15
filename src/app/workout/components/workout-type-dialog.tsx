@@ -54,7 +54,7 @@ const getWorkoutTypes = () => [
 
 export function WorkoutTypeDialog({ open, onOpenChange, mode = 'new-workout' }: WorkoutTypeDialogProps) {
     const router = useRouter()
-    const { user, supabase } = useAuth()
+    const { user, loading, supabase } = useAuth()
     const notifications = useNotifications()
     const [selectedType, setSelectedType] = useState<string>('')
     const [showTemplates, setShowTemplates] = useState(false)
@@ -79,7 +79,7 @@ export function WorkoutTypeDialog({ open, onOpenChange, mode = 'new-workout' }: 
     const handleWorkoutSelect = async (workoutType: string, available: boolean) => {
         if (!available) return
 
-        if (!user) {
+        if (!loading && !user) {
             notifications.warning('Sign in required', {
                 description: mode === 'quick-log' ? 'Please sign in to log workouts' : 'Please sign in to start workouts',
                 duration: 4000,
@@ -93,6 +93,10 @@ export function WorkoutTypeDialog({ open, onOpenChange, mode = 'new-workout' }: 
         }
 
         if (!supabase) return
+
+        if (loading) {
+            return // Don't proceed if still loading
+        }
 
         setSelectedType(workoutType)
 
@@ -133,7 +137,7 @@ export function WorkoutTypeDialog({ open, onOpenChange, mode = 'new-workout' }: 
     }
 
     const navigateToQuickLog = async (workoutType: string, templateId?: string) => {
-        if (!user) {
+        if (!loading && !user) {
             notifications.warning('Sign in required', {
                 description: 'Please sign in to log workouts',
                 duration: 4000,
@@ -144,6 +148,10 @@ export function WorkoutTypeDialog({ open, onOpenChange, mode = 'new-workout' }: 
             })
             onOpenChange(false)
             return
+        }
+
+        if (loading) {
+            return // Don't proceed if still loading
         }
 
         try {
@@ -167,7 +175,7 @@ export function WorkoutTypeDialog({ open, onOpenChange, mode = 'new-workout' }: 
     }
 
     const createWorkoutDirectly = async (workoutType: string) => {
-        if (!user) {
+        if (!loading && !user) {
             notifications.warning('Sign in required', {
                 description: 'Please sign in to start workouts',
                 duration: 4000,
@@ -178,6 +186,10 @@ export function WorkoutTypeDialog({ open, onOpenChange, mode = 'new-workout' }: 
             })
             onOpenChange(false)
             return
+        }
+
+        if (loading) {
+            return // Don't proceed if still loading
         }
 
         try {
@@ -207,7 +219,7 @@ export function WorkoutTypeDialog({ open, onOpenChange, mode = 'new-workout' }: 
     }
 
     const handleTemplateSelect = async (template: WorkoutTemplate) => {
-        if (!user) {
+        if (!loading && !user) {
             notifications.warning('Sign in required', {
                 description: mode === 'quick-log' ? 'Please sign in to log workouts' : 'Please sign in to start workouts',
                 duration: 4000,
@@ -218,6 +230,10 @@ export function WorkoutTypeDialog({ open, onOpenChange, mode = 'new-workout' }: 
             })
             onOpenChange(false)
             return
+        }
+
+        if (loading) {
+            return // Don't proceed if still loading
         }
 
         try {
@@ -251,7 +267,7 @@ export function WorkoutTypeDialog({ open, onOpenChange, mode = 'new-workout' }: 
     }
 
     const handleStartEmpty = () => {
-        if (!user) {
+        if (!loading && !user) {
             notifications.warning('Sign in required', {
                 description: mode === 'quick-log' ? 'Please sign in to log workouts' : 'Please sign in to start workouts',
                 duration: 4000,
@@ -262,6 +278,10 @@ export function WorkoutTypeDialog({ open, onOpenChange, mode = 'new-workout' }: 
             })
             onOpenChange(false)
             return
+        }
+
+        if (loading) {
+            return // Don't proceed if still loading
         }
 
         if (mode === 'quick-log') {
@@ -278,7 +298,7 @@ export function WorkoutTypeDialog({ open, onOpenChange, mode = 'new-workout' }: 
     }
 
     const startNewWorkout = (workoutType: string) => {
-        if (!user) {
+        if (!loading && !user) {
             notifications.warning('Sign in required', {
                 description: 'Please sign in to start workouts',
                 duration: 4000,
@@ -289,6 +309,10 @@ export function WorkoutTypeDialog({ open, onOpenChange, mode = 'new-workout' }: 
             })
             onOpenChange(false)
             return
+        }
+
+        if (loading) {
+            return // Don't proceed if still loading
         }
 
         const timestamp = Date.now()

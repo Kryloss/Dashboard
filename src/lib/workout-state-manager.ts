@@ -26,7 +26,7 @@ class WorkoutStateManager {
 
     // Real-time workout tracking
     private ongoingWorkoutInterval: NodeJS.Timeout | null = null
-    private readonly ONGOING_WORKOUT_UPDATE_INTERVAL = 30000 // Update every 30 seconds for more responsive updates
+    private readonly ONGOING_WORKOUT_UPDATE_INTERVAL = 60000 // Update every 60 seconds
 
     // Subscribe to state changes
     subscribe(listener: StateListener): () => void {

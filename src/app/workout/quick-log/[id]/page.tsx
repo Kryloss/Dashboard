@@ -24,7 +24,7 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
     const [workoutType, setWorkoutType] = useState<string>('strength')
     const [templateId, setTemplateId] = useState<string>('')
     const router = useRouter()
-    const { user, supabase } = useAuth()
+    const { user, loading, supabase } = useAuth()
     const notifications = useNotifications()
     const [exercises, setExercises] = useState<Exercise[]>([])
     const [showAddExercise, setShowAddExercise] = useState(false)
@@ -214,7 +214,7 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
     }
 
     const handleLogWorkout = async () => {
-        if (!user) {
+        if (!loading && !user) {
             // Only show on user action, with rate limiting
             const lastQuickLogNotification = localStorage.getItem('last-quicklog-notification')
             const now = Date.now()
@@ -231,6 +231,10 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
                 localStorage.setItem('last-quicklog-notification', now.toString())
             }
             return
+        }
+
+        if (loading) {
+            return // Don't proceed if still loading
         }
 
         try {
