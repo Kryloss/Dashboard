@@ -91,7 +91,9 @@ export function GoalRings({
     const getCircumference = (radius: number) => 2 * Math.PI * radius
     const getDashOffset = (progress: number, circumference: number) => {
         const clampedProgress = Math.max(0, Math.min(1, progress))
-        return circumference * (1 - clampedProgress)
+        // Offset by quarter circle to start from 12 o'clock and fill clockwise
+        const quarterCircle = circumference / 4
+        return quarterCircle + (circumference * (1 - clampedProgress))
     }
 
     // Helper function to render exercise ring with session segments
