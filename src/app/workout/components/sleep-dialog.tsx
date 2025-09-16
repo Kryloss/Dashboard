@@ -732,7 +732,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                             const isSelected = selectedSession === session.id
                                             const radiusX = 140 // Place sessions on the oval timeline itself
                                             const radiusY = 100 // Place sessions on the oval timeline itself
-                                            const strokeWidth = 8 // Moderate thickness that follows the timeline without overwhelming it
+                                            const strokeWidth = 20 // Make even more prominent to ensure it overlays the timeline
 
                                             // Calculate arc path for oval
                                             const startX = 150 + radiusX * Math.cos(startAngle)
@@ -740,7 +740,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                             const endX = 150 + radiusX * Math.cos(endAngle)
                                             const endY = 150 + radiusY * Math.sin(endAngle)
 
-                                            // Generate path that follows the exact oval timeline using a single elliptical arc
+                                            // Generate path that follows the exact oval timeline using proper SVG elliptical arc
                                             const generateOvalArcPath = (startAngle: number, endAngle: number, rx: number, ry: number) => {
                                                 // Calculate the angular span
                                                 let angleDiff = endAngle - startAngle
@@ -755,9 +755,8 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                 // Determine large arc flag (1 if arc is more than 180 degrees)
                                                 const largeArcFlag = angleDiff > Math.PI ? 1 : 0
 
-                                                // Use a single elliptical arc command with the correct parameters
-                                                // The key is using the exact same rx and ry values as the oval timeline
-                                                // and ensuring the arc follows the clockwise direction (sweep-flag = 1)
+                                                // Use proper SVG elliptical arc with exact oval parameters
+                                                // A rx ry x-axis-rotation large-arc-flag sweep-flag x y
                                                 return `M ${startX} ${startY} A ${rx} ${ry} 0 ${largeArcFlag} 1 ${endX} ${endY}`
                                             }
 
