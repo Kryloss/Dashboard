@@ -119,10 +119,14 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         return hours * 60 + minutes
     }
 
-    // Update session time from manual input
+    // Update session time from manual input with route point snapping
     const updateSessionTimeFromInput = (sessionId: string, field: 'start' | 'end', timeStr: string) => {
-        const newTime = parseTimeString(timeStr)
-        if (newTime === null) return false // Invalid time format
+        const parsedTime = parseTimeString(timeStr)
+        if (parsedTime === null) return false // Invalid time format
+
+        // Snap the parsed time to the nearest route point for consistency
+        const snappedRoutePoint = timeToRoutePoint(parsedTime)
+        const newTime = snappedRoutePoint.time
 
         setSleepSessions(prev => prev.map(session => {
             if (session.id !== sessionId) return session
@@ -287,7 +291,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         // Get closest route point and use its angle for consistent behavior
         const routePoint = mouseToRoutePoint(mouseX, mouseY)
         return routePoint.angle
-    }, [])
+    }, [mouseToRoutePoint])
 
     // Convert angle to time in minutes using route points with wraparound handling
     const angleToTime = useCallback((angle: number): number => {
@@ -332,52 +336,38 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         const rect = timelineRef.current.getBoundingClientRect()
         const clickX = event.clientX - rect.left
         const clickY = event.clientY - rect.top
-        const centerX = rect.width / 2
-        const centerY = rect.height / 2
 
-        // Convert click position to time
-        const clickAngle = mouseToAngle(clickX, clickY)
-        // const clickTime = angleToTime(clickAngle) // Unused for now
+        // Use route-based click detection
+        const clickRoutePoint = mouseToRoutePoint(clickX, clickY)
+        const clickTime = clickRoutePoint.time
 
-        // Check if click is near the rounded rectangle timeline
-        const deltaX = clickX - centerX
-        const deltaY = clickY - centerY
-        const absX = Math.abs(deltaX)
-        const absY = Math.abs(deltaY)
+        // Check if click is near the timeline using route point distances
+        const route = getTimelineRoute()
+        const routeDistances = route.map(point =>
+            Math.sqrt(Math.pow(clickX - point.x, 2) + Math.pow(clickY - point.y, 2))
+        )
+        const minRouteDistance = Math.min(...routeDistances)
 
-        // Calculate distance to rounded rectangle perimeter
-        const rx = 130
-        const ry = 90
+        // Only check for sessions if click is near any route point (within 30px tolerance)
+        const isNearTimeline = minRouteDistance <= 30
 
-        let distanceToPerimeter: number
-        if (absX / rx > absY / ry) {
-            // Closer to vertical edges
-            distanceToPerimeter = absX
-        } else {
-            // Closer to horizontal edges
-            distanceToPerimeter = absY
-        }
-
-        // Only check for sessions if click is near the timeline (±25 tolerance for better usability)
-        const isNearTimeline = distanceToPerimeter >= (Math.min(rx, ry) - 25) && distanceToPerimeter <= (Math.max(rx, ry) + 25)
-
-        // Check if clicking on an existing session (within the timeline area)
+        // Check if clicking on an existing session using route-based detection
         const clickedSession = isNearTimeline ? sleepSessions.find(session => {
-            // Check if click is within the arc of this session
-            const startAngle = timeToAngle(session.startTime)
-            const endAngle = timeToAngle(session.endTime)
+            // Check if click time is within the session time range
+            const startTime = ((session.startTime % (24 * 60)) + (24 * 60)) % (24 * 60)
+            const endTime = ((session.endTime % (24 * 60)) + (24 * 60)) % (24 * 60)
+            const clickTimeNormalized = ((clickTime % (24 * 60)) + (24 * 60)) % (24 * 60)
 
-            // Handle overnight sessions (arc crosses 12 AM)
-            let isInArc = false
-            if (endAngle > startAngle) {
-                // Normal arc
-                isInArc = clickAngle >= startAngle && clickAngle <= endAngle
+            let isInSession = false
+            if (endTime >= startTime) {
+                // Normal session (same day)
+                isInSession = clickTimeNormalized >= startTime && clickTimeNormalized <= endTime
             } else {
-                // Overnight arc (crosses 12 AM)
-                isInArc = clickAngle >= startAngle || clickAngle <= endAngle
+                // Overnight session (crosses midnight)
+                isInSession = clickTimeNormalized >= startTime || clickTimeNormalized <= endTime
             }
 
-            return isInArc
+            return isInSession
         }) : null
 
         if (clickedSession) {
@@ -420,7 +410,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
     // Throttle function for performance optimization
     const throttleRef = useRef<number | null>(null)
 
-    // Handle pointer move for dragging - circular version with touch support
+    // Handle pointer move for dragging - route-based version with precise snapping
     const handlePointerMove = useCallback((event: PointerEvent) => {
         if (!isDragging || !dragType || !selectedSession || !timelineRef.current) return
 
@@ -433,12 +423,10 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
             if (!timelineRef.current) return
 
             const rect = timelineRef.current.getBoundingClientRect()
-            const centerX = rect.width / 2
-            const centerY = rect.height / 2
 
             // Get raw pointer position
-            let pointerX = event.clientX - rect.left
-            let pointerY = event.clientY - rect.top
+            const pointerX = event.clientX - rect.left
+            const pointerY = event.clientY - rect.top
 
             // Dead zone check - only apply drag if moved enough from start position
             if (dragStartPos.current) {
@@ -453,32 +441,21 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                 }
             }
 
-            // Constrain pointer to reasonable bounds around the clock
-            // This prevents erratic behavior when mouse goes far outside
-            const maxDistanceX = centerX + 160 // Allow some margin beyond the oval
-            const maxDistanceY = centerY + 120
-            const minDistanceX = centerX - 160
-            const minDistanceY = centerY - 120
+            // Find the closest route point to the pointer position - this is the key change!
+            const closestRoutePoint = mouseToRoutePoint(pointerX, pointerY)
+            const pointerTime = closestRoutePoint.time
 
-            pointerX = Math.max(minDistanceX, Math.min(maxDistanceX, pointerX))
-            pointerY = Math.max(minDistanceY, Math.min(maxDistanceY, pointerY))
+            // Validate that the drag is within reasonable timeline bounds
+            const route = getTimelineRoute()
+            const routeDistances = route.map(point =>
+                Math.sqrt(Math.pow(pointerX - point.x, 2) + Math.pow(pointerY - point.y, 2))
+            )
+            const minRouteDistance = Math.min(...routeDistances)
 
-            // For better PC experience, ensure minimum distance from center
-            // This prevents issues when cursor is too close to center
-            const deltaX = pointerX - centerX
-            const deltaY = pointerY - centerY
-            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY)
-            const minDistance = 30 // Minimum distance from center
-
-            if (distance < minDistance && distance > 0) {
-                const scale = minDistance / distance
-                pointerX = centerX + deltaX * scale
-                pointerY = centerY + deltaY * scale
+            // Only accept drags that are reasonably close to the timeline (within 50px)
+            if (minRouteDistance > 50) {
+                return
             }
-
-            // Convert pointer position to angle and then to time
-            const pointerAngle = mouseToAngle(pointerX, pointerY)
-            const pointerTime = angleToTime(pointerAngle)
 
             setSleepSessions(prev => prev.map(session => {
                 if (session.id !== selectedSession) return session
@@ -488,9 +465,9 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
 
                 switch (dragType) {
                     case 'start': {
-                        // Calculate minimum duration considering overnight sessions
+                        // Snap start time to route point
                         const newStartTime = pointerTime
-                        const minDuration = 15 // minimum 15 minutes
+                        const minDuration = 15 // minimum 15 minutes (3 route points)
 
                         // Check if this would create a valid duration
                         const testDuration = calculateSessionDuration(newStartTime, session.endTime)
@@ -501,8 +478,9 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                         break
                     }
                     case 'end': {
+                        // Snap end time to route point
                         const newEndTime = pointerTime
-                        const minDuration = 15 // minimum 15 minutes
+                        const minDuration = 15 // minimum 15 minutes (3 route points)
 
                         // Check if this would create a valid duration
                         const testDuration = calculateSessionDuration(session.startTime, newEndTime)
@@ -513,10 +491,10 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                         break
                     }
                     case 'move': {
-                        // Move entire session while preserving duration
+                        // Move entire session to route point while preserving duration
                         const newStartTime = pointerTime
 
-                        // Calculate new end time based on preserved duration
+                        // Calculate new end time based on preserved duration, snapping to route points
                         let newEndTime = newStartTime + duration
 
                         // Handle wrap-around for 24-hour period
@@ -527,8 +505,24 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                             newEndTime += 24 * 60
                         }
 
-                        newSession.startTime = newStartTime
-                        newSession.endTime = newEndTime
+                        // Snap the end time to nearest route point as well
+                        const endRoutePoint = timeToRoutePoint(newEndTime)
+                        newEndTime = endRoutePoint.time
+
+                        // Recalculate start time to maintain duration
+                        let adjustedStartTime = newEndTime - duration
+                        if (adjustedStartTime < 0) {
+                            adjustedStartTime += 24 * 60
+                        }
+                        if (adjustedStartTime >= 24 * 60) {
+                            adjustedStartTime -= 24 * 60
+                        }
+
+                        // Snap the adjusted start time to route point
+                        const startRoutePoint = timeToRoutePoint(adjustedStartTime)
+
+                        newSession.startTime = startRoutePoint.time
+                        newSession.endTime = endRoutePoint.time
                         break
                     }
                 }
@@ -536,7 +530,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                 return newSession
             }))
         })
-    }, [isDragging, dragType, selectedSession])
+    }, [isDragging, dragType, selectedSession, mouseToRoutePoint, timeToRoutePoint])
 
     // Handle pointer up
     const handlePointerUp = useCallback(() => {
