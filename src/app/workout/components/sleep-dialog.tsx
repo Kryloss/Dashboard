@@ -180,16 +180,34 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         return angle
     }
 
-    // Convert mouse position to angle relative to oval center
+    // Convert mouse position to angle relative to squared oval center
     const mouseToAngle = (mouseX: number, mouseY: number, centerX: number, centerY: number): number => {
         const deltaX = mouseX - centerX
         const deltaY = mouseY - centerY
 
-        // Normalize for oval shape (140x100 ratio = 1.4)
-        const normalizedX = deltaX
-        const normalizedY = deltaY * 1.4 // Scale Y to match oval aspect ratio
+        // For squared oval, we need to find the closest point on the perimeter
+        // and then calculate the angle from that point
+        const rx = 140 // X radius
+        const ry = 100 // Y radius
 
-        return Math.atan2(normalizedY, normalizedX)
+        // Normalize coordinates to find angle on squared oval
+        const absX = Math.abs(deltaX)
+        const absY = Math.abs(deltaY)
+
+        let angle: number
+
+        // Determine which edge of the squared oval we're closest to
+        if (absX * ry > absY * rx) {
+            // Closer to vertical edges (left/right)
+            const edgeY = (deltaX > 0 ? rx : -rx) * (deltaY / absX)
+            angle = Math.atan2(edgeY, deltaX > 0 ? rx : -rx)
+        } else {
+            // Closer to horizontal edges (top/bottom)
+            const edgeX = (deltaY > 0 ? ry : -ry) * (deltaX / absY)
+            angle = Math.atan2(deltaY > 0 ? ry : -ry, edgeX)
+        }
+
+        return angle
     }
 
     // Convert angle to time in minutes
@@ -230,15 +248,27 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         const clickAngle = mouseToAngle(clickX, clickY, centerX, centerY)
         // const clickTime = angleToTime(clickAngle) // Unused for now
 
-        // Check if click is near the oval timeline (where sessions are now positioned)
+        // Check if click is near the squared oval timeline
         const deltaX = clickX - centerX
         const deltaY = clickY - centerY
-        const normalizedX = deltaX
-        const normalizedY = deltaY * 1.4 // Account for oval aspect ratio
-        const distanceFromCenter = Math.sqrt(normalizedX * normalizedX + normalizedY * normalizedY)
+        const absX = Math.abs(deltaX)
+        const absY = Math.abs(deltaY)
 
-        // Only check for sessions if click is near the timeline (140±20 radius tolerance)
-        const isNearTimeline = distanceFromCenter >= 120 && distanceFromCenter <= 160
+        // Calculate distance to squared oval perimeter
+        const rx = 140
+        const ry = 100
+
+        let distanceToPerimeter: number
+        if (absX * ry > absY * rx) {
+            // Closer to vertical edges
+            distanceToPerimeter = absX
+        } else {
+            // Closer to horizontal edges
+            distanceToPerimeter = absY
+        }
+
+        // Only check for sessions if click is near the timeline (±20 tolerance)
+        const isNearTimeline = distanceToPerimeter >= (Math.min(rx, ry) - 20) && distanceToPerimeter <= (Math.max(rx, ry) + 20)
 
         // Check if clicking on an existing session (within the timeline area)
         const clickedSession = isNearTimeline ? sleepSessions.find(session => {
@@ -659,57 +689,92 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                         }`}
                                     onPointerDown={handleClockPointerDown}
                                 >
-                                    {/* Clock face - oval shape */}
+                                    {/* Clock face - squared oval shape */}
                                     <svg className="w-full h-full" viewBox="0 0 300 300">
-                                        {/* Outer clock ring - squared oval */}
-                                        <ellipse
-                                            cx="150"
-                                            cy="150"
-                                            rx="140"
-                                            ry="100"
+                                        {/* Outer clock ring - squared oval with sharper corners */}
+                                        <rect
+                                            x="10"
+                                            y="50"
+                                            width="280"
+                                            height="200"
+                                            rx="40"
+                                            ry="40"
                                             fill="none"
                                             stroke="#2A2B31"
                                             strokeWidth="8"
                                         />
 
-                                        {/* Hour markers */}
+                                        {/* Hour markers for squared oval */}
                                         {Array.from({ length: 24 }, (_, i) => {
                                             const angle = (i * Math.PI) / 12 - Math.PI / 2 // Start at top (12 AM)
                                             const isMainHour = i % 6 === 0 // 12 AM, 6 AM, 12 PM, 6 PM
-                                            const outerRadiusX = 140
-                                            const outerRadiusY = 100
-                                            const innerRadiusX = isMainHour ? 120 : 130
-                                            const innerRadiusY = isMainHour ? 85 : 90
 
-                                            const x1 = 150 + outerRadiusX * Math.cos(angle)
-                                            const y1 = 150 + outerRadiusY * Math.sin(angle)
-                                            const x2 = 150 + innerRadiusX * Math.cos(angle)
-                                            const y2 = 150 + innerRadiusY * Math.sin(angle)
+                                            // Calculate position on squared oval perimeter
+                                            const getSquaredOvalPoint = (angle: number, outerRadius: boolean) => {
+                                                const cos = Math.cos(angle)
+                                                const sin = Math.sin(angle)
+                                                const absX = Math.abs(cos)
+                                                const absY = Math.abs(sin)
+
+                                                let scale = 1
+                                                const rx = outerRadius ? 140 : (isMainHour ? 120 : 130)
+                                                const ry = outerRadius ? 100 : (isMainHour ? 85 : 90)
+
+                                                // For squared oval, adjust scale based on which edge we're closer to
+                                                if (absX * ry > absY * rx) {
+                                                    scale = rx / absX
+                                                } else {
+                                                    scale = ry / absY
+                                                }
+
+                                                return {
+                                                    x: 150 + cos * scale,
+                                                    y: 150 + sin * scale
+                                                }
+                                            }
+
+                                            const outer = getSquaredOvalPoint(angle, true)
+                                            const inner = getSquaredOvalPoint(angle, false)
 
                                             return (
                                                 <line
                                                     key={i}
-                                                    x1={x1}
-                                                    y1={y1}
-                                                    x2={x2}
-                                                    y2={y2}
+                                                    x1={outer.x}
+                                                    y1={outer.y}
+                                                    x2={inner.x}
+                                                    y2={inner.y}
                                                     stroke="#4A4B51"
                                                     strokeWidth={isMainHour ? "3" : "1"}
                                                 />
                                             )
                                         })}
 
-                                        {/* Time labels */}
+                                        {/* Time labels for squared oval */}
                                         {[
                                             { time: '12 AM', angle: -Math.PI / 2, hours: 0 },
                                             { time: '6 AM', angle: 0, hours: 6 },
                                             { time: '12 PM', angle: Math.PI / 2, hours: 12 },
                                             { time: '6 PM', angle: Math.PI, hours: 18 }
                                         ].map(({ time, angle }) => {
-                                            const radiusX = 110 // Slightly outside the oval on X axis
-                                            const radiusY = 80  // Shorter on Y axis for oval shape
-                                            const x = 150 + radiusX * Math.cos(angle)
-                                            const y = 150 + radiusY * Math.sin(angle)
+                                            // Calculate position for squared oval labels
+                                            const cos = Math.cos(angle)
+                                            const sin = Math.sin(angle)
+                                            const absX = Math.abs(cos)
+                                            const absY = Math.abs(sin)
+
+                                            let scale = 1
+                                            const rx = 110 // Label radius X
+                                            const ry = 80  // Label radius Y
+
+                                            // Adjust for squared oval shape
+                                            if (absX * ry > absY * rx) {
+                                                scale = rx / absX
+                                            } else {
+                                                scale = ry / absY
+                                            }
+
+                                            const x = 150 + cos * scale
+                                            const y = 150 + sin * scale
 
                                             return (
                                                 <text
@@ -734,33 +799,75 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                             const radiusY = 100 // Place sessions on the oval timeline itself
                                             const strokeWidth = 20 // Make even more prominent to ensure it overlays the timeline
 
-                                            // Calculate arc path for oval
-                                            const startX = 150 + radiusX * Math.cos(startAngle)
-                                            const startY = 150 + radiusY * Math.sin(startAngle)
-                                            const endX = 150 + radiusX * Math.cos(endAngle)
-                                            const endY = 150 + radiusY * Math.sin(endAngle)
+                                            // Calculate start and end positions for squared oval
+                                            const getSquaredOvalPosition = (angle: number, rx: number, ry: number) => {
+                                                const cos = Math.cos(angle)
+                                                const sin = Math.sin(angle)
+                                                const absX = Math.abs(cos)
+                                                const absY = Math.abs(sin)
 
-                                            // Generate path that follows the exact oval timeline using proper SVG elliptical arc
-                                            const generateOvalArcPath = (startAngle: number, endAngle: number, rx: number, ry: number) => {
+                                                let scale = 1
+                                                if (absX * ry > absY * rx) {
+                                                    scale = rx / absX
+                                                } else {
+                                                    scale = ry / absY
+                                                }
+
+                                                return {
+                                                    x: 150 + cos * scale,
+                                                    y: 150 + sin * scale
+                                                }
+                                            }
+
+                                            const startPos = getSquaredOvalPosition(startAngle, radiusX, radiusY)
+                                            const endPos = getSquaredOvalPosition(endAngle, radiusX, radiusY)
+                                            const startX = startPos.x
+                                            const startY = startPos.y
+                                            const endX = endPos.x
+                                            const endY = endPos.y
+
+                                            // Generate path that follows the squared oval timeline
+                                            const generateSquaredOvalArcPath = (startAngle: number, endAngle: number, rx: number, ry: number) => {
                                                 // Calculate the angular span
                                                 let angleDiff = endAngle - startAngle
                                                 if (angleDiff < 0) angleDiff += 2 * Math.PI // Handle overnight
 
-                                                // Calculate start and end points
-                                                const startX = 150 + rx * Math.cos(startAngle)
-                                                const startY = 150 + ry * Math.sin(startAngle)
-                                                const endX = 150 + rx * Math.cos(endAngle)
-                                                const endY = 150 + ry * Math.sin(endAngle)
+                                                // For squared oval, we'll create a path that follows the perimeter
+                                                // using multiple line segments for better accuracy
+                                                const steps = Math.max(8, Math.floor(angleDiff * 16 / Math.PI)) // More segments for longer arcs
+                                                const stepSize = angleDiff / steps
 
-                                                // Determine large arc flag (1 if arc is more than 180 degrees)
-                                                const largeArcFlag = angleDiff > Math.PI ? 1 : 0
+                                                let pathData = ''
 
-                                                // Use proper SVG elliptical arc with exact oval parameters
-                                                // A rx ry x-axis-rotation large-arc-flag sweep-flag x y
-                                                return `M ${startX} ${startY} A ${rx} ${ry} 0 ${largeArcFlag} 1 ${endX} ${endY}`
+                                                for (let i = 0; i <= steps; i++) {
+                                                    const angle = startAngle + i * stepSize
+                                                    const cos = Math.cos(angle)
+                                                    const sin = Math.sin(angle)
+                                                    const absX = Math.abs(cos)
+                                                    const absY = Math.abs(sin)
+
+                                                    // Calculate point on squared oval perimeter
+                                                    let scale = 1
+                                                    if (absX * ry > absY * rx) {
+                                                        scale = rx / absX
+                                                    } else {
+                                                        scale = ry / absY
+                                                    }
+
+                                                    const x = 150 + cos * scale
+                                                    const y = 150 + sin * scale
+
+                                                    if (i === 0) {
+                                                        pathData = `M ${x} ${y}`
+                                                    } else {
+                                                        pathData += ` L ${x} ${y}`
+                                                    }
+                                                }
+
+                                                return pathData
                                             }
 
-                                            const pathData = generateOvalArcPath(startAngle, endAngle, radiusX, radiusY)
+                                            const pathData = generateSquaredOvalArcPath(startAngle, endAngle, radiusX, radiusY)
 
                                             return (
                                                 <g key={session.id}>
@@ -820,10 +927,25 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                         if (angleDiff < 0) angleDiff += 2 * Math.PI // Handle overnight
 
                                                         const midAngle = startAngle + (angleDiff / 2)
-                                                        const labelRadiusX = 120 // Inside the oval timeline since sessions are now on the border
-                                                        const labelRadiusY = 85  // Inside the oval timeline
-                                                        const labelX = 150 + labelRadiusX * Math.cos(midAngle)
-                                                        const labelY = 150 + labelRadiusY * Math.sin(midAngle)
+
+                                                        // Calculate label position for squared oval
+                                                        const cos = Math.cos(midAngle)
+                                                        const sin = Math.sin(midAngle)
+                                                        const absX = Math.abs(cos)
+                                                        const absY = Math.abs(sin)
+
+                                                        let scale = 1
+                                                        const labelRadiusX = 120 // Inside the squared oval timeline
+                                                        const labelRadiusY = 85  // Inside the squared oval timeline
+
+                                                        if (absX * labelRadiusY > absY * labelRadiusX) {
+                                                            scale = labelRadiusX / absX
+                                                        } else {
+                                                            scale = labelRadiusY / absY
+                                                        }
+
+                                                        const labelX = 150 + cos * scale
+                                                        const labelY = 150 + sin * scale
 
                                                         return (
                                                             <text
