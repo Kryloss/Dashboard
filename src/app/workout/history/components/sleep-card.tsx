@@ -1,31 +1,72 @@
 "use client"
 
 import { Moon, Clock, Star, Smile, Meh, Frown } from "lucide-react"
-import { SleepData } from "@/lib/user-data-storage"
+import { SleepData, SleepSession as BaseSleepSession } from "@/lib/user-data-storage"
+
+// Extended interface to handle legacy data
+interface CompatibleSleepSession extends Omit<BaseSleepSession, 'startTime' | 'endTime'> {
+    startTime: string | number
+    endTime: string | number
+}
+
+interface CompatibleSleepData extends Omit<SleepData, 'sessions'> {
+    sessions: CompatibleSleepSession[]
+}
 
 interface SleepCardProps {
-    sleepData: SleepData
+    sleepData: CompatibleSleepData
 }
 
 export function SleepCard({ sleepData }: SleepCardProps) {
     // Sleep quality icons
-    const qualityIcons = [Frown, Meh, Smile, Smile, Star]
-    const qualityLabels = ['Poor', 'Fair', 'Good', 'Great', 'Excellent']
-    const qualityColors = ['text-red-400', 'text-orange-400', 'text-yellow-400', 'text-green-400', 'text-blue-400']
+    const qualityIcons = [Frown, Meh, Smile, Star]
+    const qualityLabels = ['Poor', 'Fair', 'Good', 'Excellent']
+    const qualityColors = ['text-red-400', 'text-orange-400', 'text-yellow-400', 'text-green-400']
 
-    // Convert time string to minutes
-    const timeToMinutes = (timeStr: string) => {
-        const [hours, minutes] = timeStr.split(':').map(Number)
-        return hours * 60 + minutes
+    // Convert time to minutes (handles both string "HH:MM" and legacy number formats)
+    const timeToMinutes = (time: string | number) => {
+        if (typeof time === 'number') {
+            // Legacy format: minutes from midnight
+            return time
+        }
+        if (typeof time === 'string' && time.includes(':')) {
+            // New format: "HH:MM"
+            const [hours, minutes] = time.split(':').map(Number)
+            if (isNaN(hours) || isNaN(minutes)) return 0
+            return hours * 60 + minutes
+        }
+        return 0
     }
 
-    // Format time from HH:MM to display format
-    const formatTime = (timeStr: string) => {
-        const [hours, minutes] = timeStr.split(':').map(Number)
-        const period = hours < 12 ? 'AM' : 'PM'
-        const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours
+    // Format time to display format (handles both string and number inputs)
+    const formatTime = (time: string | number) => {
+        try {
+            let hours: number, minutes: number
 
-        return `${displayHour}:${minutes.toString().padStart(2, '0')} ${period}`
+            if (typeof time === 'number') {
+                // Legacy format: minutes from midnight
+                let totalMinutes = time
+                if (totalMinutes < 0) totalMinutes += 24 * 60 // Handle negative times (previous day)
+                hours = Math.floor(totalMinutes / 60) % 24
+                minutes = totalMinutes % 60
+            } else if (typeof time === 'string' && time.includes(':')) {
+                // New format: "HH:MM"
+                [hours, minutes] = time.split(':').map(Number)
+                if (isNaN(hours) || isNaN(minutes)) {
+                    return "Invalid time"
+                }
+            } else {
+                return "Invalid time"
+            }
+
+            const period = hours < 12 ? 'AM' : 'PM'
+            const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours
+
+            return `${displayHour}:${minutes.toString().padStart(2, '0')} ${period}`
+        } catch (error) {
+            console.error('Error formatting time:', error, time)
+            return "Invalid time"
+        }
     }
 
     // Format date
@@ -56,21 +97,44 @@ export function SleepCard({ sleepData }: SleepCardProps) {
         return `${mins}m`
     }
 
-    // Calculate duration in minutes for a session
-    const calculateSessionDuration = (startTime: string, endTime: string) => {
-        const startMinutes = timeToMinutes(startTime)
-        const endMinutes = timeToMinutes(endTime)
-        let duration = endMinutes - startMinutes
-        if (duration < 0) duration += 24 * 60 // Handle overnight sleep
-        return duration
+    // Calculate duration in minutes for a session (handles both string and number formats)
+    const calculateSessionDuration = (startTime: string | number, endTime: string | number) => {
+        try {
+            const startMinutes = timeToMinutes(startTime)
+            const endMinutes = timeToMinutes(endTime)
+            let duration = endMinutes - startMinutes
+            if (duration < 0) duration += 24 * 60 // Handle overnight sleep
+            return duration
+        } catch (error) {
+            console.error('Error calculating session duration:', error, { startTime, endTime })
+            return 0
+        }
     }
 
     // Calculate main sleep session (usually the longest one)
-    const mainSession = sleepData.sessions.reduce((longest, current) => {
-        const currentDuration = calculateSessionDuration(current.startTime, current.endTime)
-        const longestDuration = calculateSessionDuration(longest.startTime, longest.endTime)
-        return currentDuration > longestDuration ? current : longest
-    }, sleepData.sessions[0])
+    const mainSession = sleepData.sessions && sleepData.sessions.length > 0
+        ? sleepData.sessions.reduce((longest, current) => {
+            try {
+                const currentDuration = calculateSessionDuration(current.startTime, current.endTime)
+                const longestDuration = calculateSessionDuration(longest.startTime, longest.endTime)
+                return currentDuration > longestDuration ? current : longest
+            } catch (error) {
+                console.error('Error comparing sessions:', error)
+                return longest
+            }
+        }, sleepData.sessions[0])
+        : null
+
+    // If no valid session found, don't render the component
+    if (!mainSession || !sleepData.sessions || sleepData.sessions.length === 0) {
+        return (
+            <div className="bg-[#121318] border border-[#212227] rounded-[20px] p-4">
+                <div className="text-center text-[#A1A1AA]">
+                    <p>Invalid sleep data</p>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="bg-[#121318] border border-[#212227] rounded-[20px] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)] hover:border-[#2A2B31] hover:-translate-y-[1px] hover:shadow-[0_0_0_1px_rgba(43,210,255,0.35),_0_8px_40px_rgba(43,210,255,0.20)] transition-all duration-200 ease-out">

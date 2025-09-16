@@ -34,7 +34,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
 
     // Sleep quality icons
     const qualityIcons = [Frown, Meh, Smile, Star]
-    const qualityLabels = ['Poor', 'Fair', 'Good', 'Great']
+    const qualityLabels = ['Poor', 'Fair', 'Good', 'Excellent']
     const qualityColors = ['text-red-400', 'text-orange-400', 'text-yellow-400', 'text-green-400']
 
     // Load user's sleep goal to set default session
@@ -72,6 +72,8 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
 
     useEffect(() => {
         if (open) {
+            // Always ensure we have a main sleep session
+            setSleepSessions([]) // Clear existing sessions first
             loadDefaultSleepSession()
             setSleepQuality(3)
         }
@@ -125,8 +127,10 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         return false
     }
 
-    // Add new nap session
+    // Add new nap session (limit to 3 total sessions including main)
     const addNap = () => {
+        if (sleepSessions.length >= 3) return // Limit to 3 total sessions
+
         const newNap: SleepSession = {
             id: `nap-${Date.now()}`,
             startTime: '14:00',
@@ -137,9 +141,11 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         setSleepSessions([...sleepSessions, newNap])
     }
 
-    // Remove session
+    // Remove session (prevent removing main sleep session)
     const removeSession = (id: string) => {
-        setSleepSessions(sleepSessions.filter(session => session.id !== id))
+        setSleepSessions(sleepSessions.filter(session =>
+            session.id !== id && session.type !== 'main'
+        ))
     }
 
     // Update session time
@@ -234,10 +240,10 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
             <DialogContent className="sm:max-w-2xl max-w-[95vw] max-h-[90vh] overflow-hidden p-0">
                 <DialogHeader className="px-4 pt-4 pb-2">
                     <DialogTitle className="flex items-center space-x-2 text-base font-semibold text-[#F3F4F6]">
-                        <div className="w-6 h-6 bg-gradient-to-br from-[#3B82F6] to-[#2563EB] rounded-lg flex items-center justify-center">
+                        <div className="w-6 h-6 bg-gradient-to-br from-[#2BD2FF] to-[#2A8CEA] rounded-lg flex items-center justify-center">
                             <Moon className="w-3 h-3 text-white" />
                         </div>
-                        <span>Nap</span>
+                        <span>Log sleep</span>
                     </DialogTitle>
                 </DialogHeader>
 
@@ -246,13 +252,13 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
 
                         {/* Sleep Sessions */}
                         <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                                <Label className="text-sm font-medium text-[#F3F4F6]">Sleep Times</Label>
+                            <div className="flex items-center justify-end">
                                 <Button
                                     onClick={addNap}
                                     size="sm"
                                     variant="outline"
-                                    className="h-8 w-8 p-0 border-[#212227] text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)]"
+                                    disabled={sleepSessions.length >= 3}
+                                    className="h-8 w-8 p-0 border-[#212227] text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <Plus className="w-4 h-4" />
                                 </Button>
@@ -366,7 +372,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                 disabled={isLoading || hasOverlaps()}
                                 className="flex-1 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white border border-[rgba(59,130,246,0.35)] shadow-[0_4px_16px_rgba(59,130,246,0.28)] hover:shadow-[0_6px_24px_rgba(59,130,246,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                             >
-                                {isLoading ? 'Saving...' : 'Nap'}
+                                {isLoading ? 'Saving...' : 'Log sleep'}
                             </Button>
                         </div>
                     </div>
