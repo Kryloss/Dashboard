@@ -213,81 +213,66 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                     className="relative w-full max-w-md mx-auto select-none"
                                     style={{ aspectRatio: '320/240' }}
                                 >
-                                    {/* Clock face - rounded rectangular shape */}
+                                    {/* Oval Clock face - flattened circle */}
                                     <svg className="w-full h-full" viewBox="0 0 320 240">
-                                        {/* Simple clock border */}
-                                        <rect
-                                            x="20"
-                                            y="20"
-                                            width="280"
-                                            height="200"
-                                            rx="30"
-                                            ry="30"
+                                        {/* Oval clock border */}
+                                        <ellipse
+                                            cx="160"
+                                            cy="120"
+                                            rx="140"
+                                            ry="100"
                                             fill="none"
                                             stroke="#374151"
                                             strokeWidth="2"
                                         />
 
-                                        {/* Minimal hour markers */}
-                                        {Array.from({ length: 12 }, (_, i) => {
-                                            const angle = (i * Math.PI) / 6 - Math.PI / 2 // Every 2 hours, start at top
-                                            const isMainHour = i % 3 === 0 // 12 AM, 6 AM, 12 PM, 6 PM
+                                        {/* 24 hour dots around perimeter */}
+                                        {Array.from({ length: 24 }, (_, i) => {
+                                            const angle = (i * Math.PI) / 12 - Math.PI / 2 // 24 hours around circle, start at top (12 AM)
 
                                             const cos = Math.cos(angle)
                                             const sin = Math.sin(angle)
                                             const centerX = 160
                                             const centerY = 120
+                                            const rx = 135 // Slightly inside the border
+                                            const ry = 95
 
-                                            // Simple outer point calculation
-                                            const outerRadius = 125
-                                            const innerRadius = isMainHour ? 105 : 115
-
-                                            const outerX = centerX + cos * outerRadius
-                                            const outerY = centerY + sin * outerRadius
-                                            const innerX = centerX + cos * innerRadius
-                                            const innerY = centerY + sin * innerRadius
+                                            // Calculate position on oval perimeter
+                                            const x = centerX + cos * rx
+                                            const y = centerY + sin * ry
 
                                             return (
-                                                <line
+                                                <circle
                                                     key={i}
-                                                    x1={innerX}
-                                                    y1={innerY}
-                                                    x2={outerX}
-                                                    y2={outerY}
-                                                    stroke="#4B5563"
-                                                    strokeWidth={isMainHour ? "2" : "1"}
-                                                    opacity={isMainHour ? "0.8" : "0.4"}
+                                                    cx={x}
+                                                    cy={y}
+                                                    r="2"
+                                                    fill="#4B5563"
+                                                    opacity="0.6"
                                                 />
                                             )
                                         })}
 
-                                        {/* Center dot */}
-                                        <circle
-                                            cx="160"
-                                            cy="120"
-                                            r="2"
-                                            fill="#6B7280"
-                                        />
-
-                                        {/* Minimal time labels */}
+                                        {/* Major hour labels (6, 12, 18, 24) */}
                                         {[
-                                            { time: '12', angle: -Math.PI / 2 },
-                                            { time: '6', angle: 0 },
-                                            { time: '12', angle: Math.PI / 2 },
-                                            { time: '6', angle: Math.PI }
-                                        ].map(({ time, angle }, index) => {
+                                            { time: '24', angle: -Math.PI / 2, hour: 0 }, // 12 AM at top
+                                            { time: '6', angle: 0, hour: 6 }, // 6 AM at right
+                                            { time: '12', angle: Math.PI / 2, hour: 12 }, // 12 PM at bottom
+                                            { time: '18', angle: Math.PI, hour: 18 } // 6 PM at left
+                                        ].map(({ time, angle }) => {
                                             const cos = Math.cos(angle)
                                             const sin = Math.sin(angle)
                                             const centerX = 160
                                             const centerY = 120
-                                            const labelDistance = 140
+                                            const labelRx = 155 // Outside the dots
+                                            const labelRy = 115
 
-                                            const x = centerX + cos * labelDistance
-                                            const y = centerY + sin * labelDistance
+                                            const x = centerX + cos * labelRx
+                                            const y = centerY + sin * labelRy
 
                                             return (
                                                 <text
-                                                    key={index}
+                                                    key={time}
                                                     x={x}
                                                     y={y}
                                                     textAnchor="middle"
