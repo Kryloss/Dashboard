@@ -1010,52 +1010,16 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                     }
                                                 }
 
-                                                // Create smooth SVG path with cubic Bezier curves for better interpolation
+                                                // Create path that follows the exact rounded rectangle perimeter
                                                 if (points.length === 0) return ''
                                                 if (points.length === 1) return `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`
 
                                                 let pathData = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`
 
-                                                if (points.length === 2) {
-                                                    // Simple line for very short sessions
-                                                    pathData += ` L ${points[1].x.toFixed(2)} ${points[1].y.toFixed(2)}`
-                                                } else {
-                                                    // Use cubic Bezier curves for ultra-smooth interpolation
-                                                    for (let i = 1; i < points.length; i++) {
-                                                        const prev = points[i - 1]
-                                                        const current = points[i]
-
-                                                        if (i === 1) {
-                                                            // First curve segment
-                                                            if (points.length > 2) {
-                                                                const next = points[i + 1]
-                                                                const cp1x = prev.x + (current.x - prev.x) * 0.25
-                                                                const cp1y = prev.y + (current.y - prev.y) * 0.25
-                                                                const cp2x = current.x - (next.x - current.x) * 0.25
-                                                                const cp2y = current.y - (next.y - current.y) * 0.25
-                                                                pathData += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)} ${cp2x.toFixed(2)} ${cp2y.toFixed(2)} ${current.x.toFixed(2)} ${current.y.toFixed(2)}`
-                                                            } else {
-                                                                pathData += ` L ${current.x.toFixed(2)} ${current.y.toFixed(2)}`
-                                                            }
-                                                        } else if (i === points.length - 1) {
-                                                            // Last curve segment
-                                                            const prevPrev = points[i - 2]
-                                                            const cp1x = prev.x + (current.x - prevPrev.x) * 0.25
-                                                            const cp1y = prev.y + (current.y - prevPrev.y) * 0.25
-                                                            const cp2x = current.x - (current.x - prev.x) * 0.25
-                                                            const cp2y = current.y - (current.y - prev.y) * 0.25
-                                                            pathData += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)} ${cp2x.toFixed(2)} ${cp2y.toFixed(2)} ${current.x.toFixed(2)} ${current.y.toFixed(2)}`
-                                                        } else {
-                                                            // Middle curve segments
-                                                            const next = points[i + 1]
-                                                            const prevPrev = points[i - 2]
-                                                            const cp1x = prev.x + (current.x - prevPrev.x) * 0.25
-                                                            const cp1y = prev.y + (current.y - prevPrev.y) * 0.25
-                                                            const cp2x = current.x - (next.x - current.x) * 0.25
-                                                            const cp2y = current.y - (next.y - current.y) * 0.25
-                                                            pathData += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)} ${cp2x.toFixed(2)} ${cp2y.toFixed(2)} ${current.x.toFixed(2)} ${current.y.toFixed(2)}`
-                                                        }
-                                                    }
+                                                // Connect route points directly with line segments
+                                                // This ensures the path follows the exact rounded rectangle perimeter
+                                                for (let i = 1; i < points.length; i++) {
+                                                    pathData += ` L ${points[i].x.toFixed(2)} ${points[i].y.toFixed(2)}`
                                                 }
 
                                                 return pathData
