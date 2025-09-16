@@ -843,8 +843,8 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                             <div
                                                 key={session.id}
                                                 className={`p-3 rounded-lg border transition-all ${isSelected
-                                                        ? 'bg-[#0E0F13] border-[#2A8CEA]'
-                                                        : 'bg-[#121318] border-[#212227] hover:border-[#2A2B31]'
+                                                    ? 'bg-[#0E0F13] border-[#2A8CEA]'
+                                                    : 'bg-[#121318] border-[#212227] hover:border-[#2A2B31]'
                                                     }`}
                                             >
                                                 <div className="space-y-3">
@@ -954,13 +954,13 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                             key={rating}
                                             onClick={() => setSleepQuality(rating)}
                                             className={`flex flex-col items-center space-y-2 p-3 rounded-lg transition-all ${sleepQuality === rating
-                                                    ? 'bg-[#2A8CEA]/20 border border-[#2A8CEA]/50'
-                                                    : 'hover:bg-[rgba(255,255,255,0.04)]'
+                                                ? 'bg-[#2A8CEA]/20 border border-[#2A8CEA]/50'
+                                                : 'hover:bg-[rgba(255,255,255,0.04)]'
                                                 }`}
                                         >
                                             <IconComponent className={`w-6 h-6 ${sleepQuality === rating
-                                                    ? qualityColors[index]
-                                                    : 'text-[#A1A1AA]'
+                                                ? qualityColors[index]
+                                                : 'text-[#A1A1AA]'
                                                 }`} />
                                             <span className="text-xs text-[#A1A1AA]">{qualityLabels[index]}</span>
                                         </button>
