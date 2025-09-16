@@ -180,32 +180,55 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         return angle
     }
 
-    // Convert mouse position to angle relative to rounded rectangle center
+    // Convert mouse position to angle relative to enhanced rounded rectangle
     const mouseToAngle = (mouseX: number, mouseY: number, centerX: number, centerY: number): number => {
         const deltaX = mouseX - centerX
         const deltaY = mouseY - centerY
 
-        // For rounded rectangle, find the closest point on the perimeter
+        // Enhanced rounded rectangle interaction
         const rx = 130 // X radius for interaction (matches timeline)
         const ry = 90  // Y radius for interaction (matches timeline)
+        const cornerRadius = 30
 
-        // Normalize coordinates to find angle on rounded rectangle
+        // Use enhanced calculation for smoother corner interaction
         const absX = Math.abs(deltaX)
         const absY = Math.abs(deltaY)
+        const effectiveRx = rx - cornerRadius
+        const effectiveRy = ry - cornerRadius
 
         let angle: number
 
-        // Determine which edge of the rounded rectangle we're closest to
-        if (absX / rx > absY / ry) {
-            // Closer to vertical edges (left/right)
-            const scale = rx / absX
-            const edgeY = deltaY * scale
-            angle = Math.atan2(edgeY, deltaX > 0 ? rx : -rx)
+        // Enhanced edge detection with corner handling
+        if (absX / effectiveRx > absY / effectiveRy) {
+            // Closer to vertical edges
+            const edgeY = deltaY * effectiveRx / absX
+
+            if (Math.abs(edgeY) > effectiveRy) {
+                // In corner region - use corner center for angle calculation
+                const cornerCenterY = deltaY > 0 ? effectiveRy : -effectiveRy
+                const cornerCenterX = deltaX > 0 ? effectiveRx : -effectiveRx
+                const cornerDeltaX = deltaX - cornerCenterX
+                const cornerDeltaY = deltaY - cornerCenterY
+                angle = Math.atan2(cornerDeltaY, cornerDeltaX)
+            } else {
+                // On straight vertical edge
+                angle = Math.atan2(edgeY, deltaX > 0 ? rx : -rx)
+            }
         } else {
-            // Closer to horizontal edges (top/bottom)
-            const scale = ry / absY
-            const edgeX = deltaX * scale
-            angle = Math.atan2(deltaY > 0 ? ry : -ry, edgeX)
+            // Closer to horizontal edges
+            const edgeX = deltaX * effectiveRy / absY
+
+            if (Math.abs(edgeX) > effectiveRx) {
+                // In corner region - use corner center for angle calculation
+                const cornerCenterX = deltaX > 0 ? effectiveRx : -effectiveRx
+                const cornerCenterY = deltaY > 0 ? effectiveRy : -effectiveRy
+                const cornerDeltaX = deltaX - cornerCenterX
+                const cornerDeltaY = deltaY - cornerCenterY
+                angle = Math.atan2(cornerDeltaY, cornerDeltaX)
+            } else {
+                // On straight horizontal edge
+                angle = Math.atan2(deltaY > 0 ? ry : -ry, edgeX)
+            }
         }
 
         return angle
@@ -711,7 +734,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                             const angle = (i * Math.PI) / 12 - Math.PI / 2 // Start at top (12 AM)
                                             const isMainHour = i % 6 === 0 // 12 AM, 6 AM, 12 PM, 6 PM
 
-                                            // Calculate position on rounded rectangle perimeter
+                                            // Calculate position on smooth rounded rectangle perimeter
                                             const getRoundedRectPoint = (angle: number, outerRadius: boolean) => {
                                                 const cos = Math.cos(angle)
                                                 const sin = Math.sin(angle)
@@ -721,22 +744,58 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                 const centerY = 120
                                                 const rx = outerRadius ? 130 : (isMainHour ? 110 : 120)
                                                 const ry = outerRadius ? 90 : (isMainHour ? 75 : 82)
+                                                const cornerRadius = 30 // Match the SVG corner radius
 
-                                                // For rounded rectangle, find intersection with the shape
+                                                // Enhanced rounded rectangle calculation
                                                 const absX = Math.abs(cos)
                                                 const absY = Math.abs(sin)
 
-                                                let scale = 1
-                                                if (absX / rx > absY / ry) {
-                                                    scale = rx / absX
+                                                // Calculate effective radii considering rounded corners
+                                                const effectiveRx = rx - cornerRadius
+                                                const effectiveRy = ry - cornerRadius
+
+                                                let x, y
+
+                                                // Determine which region we're in and apply appropriate calculation
+                                                if (absX / effectiveRx > absY / effectiveRy) {
+                                                    // Near vertical edges - apply corner smoothing
+                                                    const edgeX = cos > 0 ? effectiveRx : -effectiveRx
+                                                    const edgeY = sin * effectiveRx / absX
+
+                                                    // Apply corner radius smoothing
+                                                    if (Math.abs(edgeY) > effectiveRy) {
+                                                        // In corner region
+                                                        const cornerCenterY = sin > 0 ? effectiveRy : -effectiveRy
+                                                        const cornerCenterX = cos > 0 ? effectiveRx : -effectiveRx
+                                                        const cornerAngle = Math.atan2(sin * effectiveRy - cornerCenterY, cos * effectiveRx - cornerCenterX)
+                                                        x = centerX + cornerCenterX + cornerRadius * Math.cos(cornerAngle)
+                                                        y = centerY + cornerCenterY + cornerRadius * Math.sin(cornerAngle)
+                                                    } else {
+                                                        // On straight edge
+                                                        x = centerX + edgeX + (cos > 0 ? cornerRadius : -cornerRadius)
+                                                        y = centerY + edgeY
+                                                    }
                                                 } else {
-                                                    scale = ry / absY
+                                                    // Near horizontal edges - apply corner smoothing
+                                                    const edgeY = sin > 0 ? effectiveRy : -effectiveRy
+                                                    const edgeX = cos * effectiveRy / absY
+
+                                                    // Apply corner radius smoothing
+                                                    if (Math.abs(edgeX) > effectiveRx) {
+                                                        // In corner region
+                                                        const cornerCenterX = cos > 0 ? effectiveRx : -effectiveRx
+                                                        const cornerCenterY = sin > 0 ? effectiveRy : -effectiveRy
+                                                        const cornerAngle = Math.atan2(sin * effectiveRy - cornerCenterY, cos * effectiveRx - cornerCenterX)
+                                                        x = centerX + cornerCenterX + cornerRadius * Math.cos(cornerAngle)
+                                                        y = centerY + cornerCenterY + cornerRadius * Math.sin(cornerAngle)
+                                                    } else {
+                                                        // On straight edge
+                                                        x = centerX + edgeX
+                                                        y = centerY + edgeY + (sin > 0 ? cornerRadius : -cornerRadius)
+                                                    }
                                                 }
 
-                                                return {
-                                                    x: centerX + cos * scale,
-                                                    y: centerY + sin * scale
-                                                }
+                                                return { x, y }
                                             }
 
                                             const outer = getRoundedRectPoint(angle, true)
@@ -762,28 +821,57 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                             { time: '12 PM', angle: Math.PI / 2, hours: 12 },
                                             { time: '6 PM', angle: Math.PI, hours: 18 }
                                         ].map(({ time, angle }) => {
-                                            // Calculate position for rounded rectangle labels
+                                            // Use enhanced rounded rectangle calculation for labels
                                             const cos = Math.cos(angle)
                                             const sin = Math.sin(angle)
-
-                                            // Adjusted for new viewBox dimensions
                                             const centerX = 160
                                             const centerY = 120
-                                            const labelRx = 95  // Label radius X
-                                            const labelRy = 65  // Label radius Y
+                                            const labelRx = 95
+                                            const labelRy = 65
+                                            const cornerRadius = 20 // Smaller corner radius for labels
 
                                             const absX = Math.abs(cos)
                                             const absY = Math.abs(sin)
+                                            const effectiveRx = labelRx - cornerRadius
+                                            const effectiveRy = labelRy - cornerRadius
 
-                                            let scale = 1
-                                            if (absX / labelRx > absY / labelRy) {
-                                                scale = labelRx / absX
+                                            let x, y
+
+                                            if (absX / effectiveRx > absY / effectiveRy) {
+                                                // Near vertical edges
+                                                const edgeX = cos > 0 ? effectiveRx : -effectiveRx
+                                                const edgeY = sin * effectiveRx / absX
+
+                                                if (Math.abs(edgeY) > effectiveRy) {
+                                                    // Corner region
+                                                    const cornerCenterY = sin > 0 ? effectiveRy : -effectiveRy
+                                                    const cornerCenterX = cos > 0 ? effectiveRx : -effectiveRx
+                                                    const cornerAngle = Math.atan2(sin * effectiveRy - cornerCenterY, cos * effectiveRx - cornerCenterX)
+                                                    x = centerX + cornerCenterX + cornerRadius * Math.cos(cornerAngle)
+                                                    y = centerY + cornerCenterY + cornerRadius * Math.sin(cornerAngle)
+                                                } else {
+                                                    // Straight edge
+                                                    x = centerX + edgeX + (cos > 0 ? cornerRadius : -cornerRadius)
+                                                    y = centerY + edgeY
+                                                }
                                             } else {
-                                                scale = labelRy / absY
-                                            }
+                                                // Near horizontal edges
+                                                const edgeY = sin > 0 ? effectiveRy : -effectiveRy
+                                                const edgeX = cos * effectiveRy / absY
 
-                                            const x = centerX + cos * scale
-                                            const y = centerY + sin * scale
+                                                if (Math.abs(edgeX) > effectiveRx) {
+                                                    // Corner region
+                                                    const cornerCenterX = cos > 0 ? effectiveRx : -effectiveRx
+                                                    const cornerCenterY = sin > 0 ? effectiveRy : -effectiveRy
+                                                    const cornerAngle = Math.atan2(sin * effectiveRy - cornerCenterY, cos * effectiveRx - cornerCenterX)
+                                                    x = centerX + cornerCenterX + cornerRadius * Math.cos(cornerAngle)
+                                                    y = centerY + cornerCenterY + cornerRadius * Math.sin(cornerAngle)
+                                                } else {
+                                                    // Straight edge
+                                                    x = centerX + edgeX
+                                                    y = centerY + edgeY + (sin > 0 ? cornerRadius : -cornerRadius)
+                                                }
+                                            }
 
                                             return (
                                                 <text
@@ -808,28 +896,58 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                             const radiusY = 90  // Place sessions on the rounded rect timeline
                                             const strokeWidth = 16 // Appropriate thickness for the new size
 
-                                            // Calculate start and end positions for rounded rectangle
+                                            // Enhanced rounded rectangle positioning for sessions
                                             const getRoundedRectPosition = (angle: number, rx: number, ry: number) => {
                                                 const cos = Math.cos(angle)
                                                 const sin = Math.sin(angle)
-                                                const absX = Math.abs(cos)
-                                                const absY = Math.abs(sin)
-
-                                                // Adjusted for new viewBox center
                                                 const centerX = 160
                                                 const centerY = 120
+                                                const cornerRadius = 30 // Match SVG corner radius
 
-                                                let scale = 1
-                                                if (absX / rx > absY / ry) {
-                                                    scale = rx / absX
+                                                const absX = Math.abs(cos)
+                                                const absY = Math.abs(sin)
+                                                const effectiveRx = rx - cornerRadius
+                                                const effectiveRy = ry - cornerRadius
+
+                                                let x, y
+
+                                                if (absX / effectiveRx > absY / effectiveRy) {
+                                                    // Near vertical edges
+                                                    const edgeX = cos > 0 ? effectiveRx : -effectiveRx
+                                                    const edgeY = sin * effectiveRx / absX
+
+                                                    if (Math.abs(edgeY) > effectiveRy) {
+                                                        // In corner region - smooth transition
+                                                        const cornerCenterY = sin > 0 ? effectiveRy : -effectiveRy
+                                                        const cornerCenterX = cos > 0 ? effectiveRx : -effectiveRx
+                                                        const cornerAngle = Math.atan2(sin * effectiveRy - cornerCenterY, cos * effectiveRx - cornerCenterX)
+                                                        x = centerX + cornerCenterX + cornerRadius * Math.cos(cornerAngle)
+                                                        y = centerY + cornerCenterY + cornerRadius * Math.sin(cornerAngle)
+                                                    } else {
+                                                        // On straight vertical edge
+                                                        x = centerX + edgeX + (cos > 0 ? cornerRadius : -cornerRadius)
+                                                        y = centerY + edgeY
+                                                    }
                                                 } else {
-                                                    scale = ry / absY
+                                                    // Near horizontal edges
+                                                    const edgeY = sin > 0 ? effectiveRy : -effectiveRy
+                                                    const edgeX = cos * effectiveRy / absY
+
+                                                    if (Math.abs(edgeX) > effectiveRx) {
+                                                        // In corner region - smooth transition
+                                                        const cornerCenterX = cos > 0 ? effectiveRx : -effectiveRx
+                                                        const cornerCenterY = sin > 0 ? effectiveRy : -effectiveRy
+                                                        const cornerAngle = Math.atan2(sin * effectiveRy - cornerCenterY, cos * effectiveRx - cornerCenterX)
+                                                        x = centerX + cornerCenterX + cornerRadius * Math.cos(cornerAngle)
+                                                        y = centerY + cornerCenterY + cornerRadius * Math.sin(cornerAngle)
+                                                    } else {
+                                                        // On straight horizontal edge
+                                                        x = centerX + edgeX
+                                                        y = centerY + edgeY + (sin > 0 ? cornerRadius : -cornerRadius)
+                                                    }
                                                 }
 
-                                                return {
-                                                    x: centerX + cos * scale,
-                                                    y: centerY + sin * scale
-                                                }
+                                                return { x, y }
                                             }
 
                                             const startPos = getRoundedRectPosition(startAngle, radiusX, radiusY)
@@ -839,19 +957,20 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                             const endX = endPos.x
                                             const endY = endPos.y
 
-                                            // Generate path that follows the rounded rectangle timeline
+                                            // Generate smooth path that follows the enhanced rounded rectangle timeline
                                             const generateRoundedRectArcPath = (startAngle: number, endAngle: number, rx: number, ry: number) => {
                                                 // Calculate the angular span
                                                 let angleDiff = endAngle - startAngle
                                                 if (angleDiff < 0) angleDiff += 2 * Math.PI // Handle overnight
 
-                                                // For rounded rectangle, create smooth path with appropriate segments
-                                                const steps = Math.max(8, Math.floor(angleDiff * 20 / Math.PI)) // More segments for smoother curve
+                                                // More segments for ultra-smooth curves, especially around corners
+                                                const steps = Math.max(16, Math.floor(angleDiff * 32 / Math.PI))
                                                 const stepSize = angleDiff / steps
 
                                                 let pathData = ''
                                                 const centerX = 160
                                                 const centerY = 120
+                                                const cornerRadius = 30
 
                                                 for (let i = 0; i <= steps; i++) {
                                                     const angle = startAngle + i * stepSize
@@ -859,22 +978,52 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                     const sin = Math.sin(angle)
                                                     const absX = Math.abs(cos)
                                                     const absY = Math.abs(sin)
+                                                    const effectiveRx = rx - cornerRadius
+                                                    const effectiveRy = ry - cornerRadius
 
-                                                    // Calculate point on rounded rectangle perimeter
-                                                    let scale = 1
-                                                    if (absX / rx > absY / ry) {
-                                                        scale = rx / absX
+                                                    let x, y
+
+                                                    // Enhanced corner handling for perfect curves
+                                                    if (absX / effectiveRx > absY / effectiveRy) {
+                                                        // Near vertical edges
+                                                        const edgeX = cos > 0 ? effectiveRx : -effectiveRx
+                                                        const edgeY = sin * effectiveRx / absX
+
+                                                        if (Math.abs(edgeY) > effectiveRy) {
+                                                            // In corner region - use circular arc
+                                                            const cornerCenterY = sin > 0 ? effectiveRy : -effectiveRy
+                                                            const cornerCenterX = cos > 0 ? effectiveRx : -effectiveRx
+                                                            const cornerAngle = Math.atan2(sin * effectiveRy - cornerCenterY, cos * effectiveRx - cornerCenterX)
+                                                            x = centerX + cornerCenterX + cornerRadius * Math.cos(cornerAngle)
+                                                            y = centerY + cornerCenterY + cornerRadius * Math.sin(cornerAngle)
+                                                        } else {
+                                                            // On straight edge
+                                                            x = centerX + edgeX + (cos > 0 ? cornerRadius : -cornerRadius)
+                                                            y = centerY + edgeY
+                                                        }
                                                     } else {
-                                                        scale = ry / absY
+                                                        // Near horizontal edges
+                                                        const edgeY = sin > 0 ? effectiveRy : -effectiveRy
+                                                        const edgeX = cos * effectiveRy / absY
+
+                                                        if (Math.abs(edgeX) > effectiveRx) {
+                                                            // In corner region - use circular arc
+                                                            const cornerCenterX = cos > 0 ? effectiveRx : -effectiveRx
+                                                            const cornerCenterY = sin > 0 ? effectiveRy : -effectiveRy
+                                                            const cornerAngle = Math.atan2(sin * effectiveRy - cornerCenterY, cos * effectiveRx - cornerCenterX)
+                                                            x = centerX + cornerCenterX + cornerRadius * Math.cos(cornerAngle)
+                                                            y = centerY + cornerCenterY + cornerRadius * Math.sin(cornerAngle)
+                                                        } else {
+                                                            // On straight edge
+                                                            x = centerX + edgeX
+                                                            y = centerY + edgeY + (sin > 0 ? cornerRadius : -cornerRadius)
+                                                        }
                                                     }
 
-                                                    const x = centerX + cos * scale
-                                                    const y = centerY + sin * scale
-
                                                     if (i === 0) {
-                                                        pathData = `M ${x} ${y}`
+                                                        pathData = `M ${x.toFixed(2)} ${y.toFixed(2)}`
                                                     } else {
-                                                        pathData += ` L ${x} ${y}`
+                                                        pathData += ` L ${x.toFixed(2)} ${y.toFixed(2)}`
                                                     }
                                                 }
 
@@ -942,27 +1091,57 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
 
                                                         const midAngle = startAngle + (angleDiff / 2)
 
-                                                        // Calculate label position for rounded rectangle
+                                                        // Enhanced label positioning using same rounded rectangle logic
                                                         const cos = Math.cos(midAngle)
                                                         const sin = Math.sin(midAngle)
-                                                        const absX = Math.abs(cos)
-                                                        const absY = Math.abs(sin)
-
-                                                        // Adjusted for new viewBox center and size
                                                         const centerX = 160
                                                         const centerY = 120
-                                                        const labelRadiusX = 105 // Inside the rounded rectangle timeline
-                                                        const labelRadiusY = 70  // Inside the rounded rectangle timeline
+                                                        const labelRadiusX = 105
+                                                        const labelRadiusY = 70
+                                                        const cornerRadius = 25 // Slightly smaller for labels
 
-                                                        let scale = 1
-                                                        if (absX / labelRadiusX > absY / labelRadiusY) {
-                                                            scale = labelRadiusX / absX
+                                                        const absX = Math.abs(cos)
+                                                        const absY = Math.abs(sin)
+                                                        const effectiveRx = labelRadiusX - cornerRadius
+                                                        const effectiveRy = labelRadiusY - cornerRadius
+
+                                                        let labelX, labelY
+
+                                                        if (absX / effectiveRx > absY / effectiveRy) {
+                                                            // Near vertical edges
+                                                            const edgeX = cos > 0 ? effectiveRx : -effectiveRx
+                                                            const edgeY = sin * effectiveRx / absX
+
+                                                            if (Math.abs(edgeY) > effectiveRy) {
+                                                                // Corner region
+                                                                const cornerCenterY = sin > 0 ? effectiveRy : -effectiveRy
+                                                                const cornerCenterX = cos > 0 ? effectiveRx : -effectiveRx
+                                                                const cornerAngle = Math.atan2(sin * effectiveRy - cornerCenterY, cos * effectiveRx - cornerCenterX)
+                                                                labelX = centerX + cornerCenterX + cornerRadius * Math.cos(cornerAngle)
+                                                                labelY = centerY + cornerCenterY + cornerRadius * Math.sin(cornerAngle)
+                                                            } else {
+                                                                // Straight edge
+                                                                labelX = centerX + edgeX + (cos > 0 ? cornerRadius : -cornerRadius)
+                                                                labelY = centerY + edgeY
+                                                            }
                                                         } else {
-                                                            scale = labelRadiusY / absY
-                                                        }
+                                                            // Near horizontal edges
+                                                            const edgeY = sin > 0 ? effectiveRy : -effectiveRy
+                                                            const edgeX = cos * effectiveRy / absY
 
-                                                        const labelX = centerX + cos * scale
-                                                        const labelY = centerY + sin * scale
+                                                            if (Math.abs(edgeX) > effectiveRx) {
+                                                                // Corner region
+                                                                const cornerCenterX = cos > 0 ? effectiveRx : -effectiveRx
+                                                                const cornerCenterY = sin > 0 ? effectiveRy : -effectiveRy
+                                                                const cornerAngle = Math.atan2(sin * effectiveRy - cornerCenterY, cos * effectiveRx - cornerCenterX)
+                                                                labelX = centerX + cornerCenterX + cornerRadius * Math.cos(cornerAngle)
+                                                                labelY = centerY + cornerCenterY + cornerRadius * Math.sin(cornerAngle)
+                                                            } else {
+                                                                // Straight edge
+                                                                labelX = centerX + edgeX
+                                                                labelY = centerY + edgeY + (sin > 0 ? cornerRadius : -cornerRadius)
+                                                            }
+                                                        }
 
                                                         return (
                                                             <text
