@@ -170,11 +170,16 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         return angle
     }
 
-    // Convert mouse position to angle relative to circle center
+    // Convert mouse position to angle relative to oval center
     const mouseToAngle = (mouseX: number, mouseY: number, centerX: number, centerY: number): number => {
         const deltaX = mouseX - centerX
         const deltaY = mouseY - centerY
-        return Math.atan2(deltaY, deltaX)
+
+        // Normalize for oval shape (140x100 ratio = 1.4)
+        const normalizedX = deltaX
+        const normalizedY = deltaY * 1.4 // Scale Y to match oval aspect ratio
+
+        return Math.atan2(normalizedY, normalizedX)
     }
 
     // Convert angle to time in minutes
@@ -576,12 +581,12 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                 >
                                     {/* Clock face - oval shape */}
                                     <svg className="w-full h-full" viewBox="0 0 300 300">
-                                        {/* Outer clock ring */}
+                                        {/* Outer clock ring - squared oval */}
                                         <ellipse
                                             cx="150"
                                             cy="150"
                                             rx="140"
-                                            ry="140"
+                                            ry="100"
                                             fill="none"
                                             stroke="#2A2B31"
                                             strokeWidth="8"
@@ -591,13 +596,15 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                         {Array.from({ length: 24 }, (_, i) => {
                                             const angle = (i * Math.PI) / 12 - Math.PI / 2 // Start at top (12 AM)
                                             const isMainHour = i % 6 === 0 // 12 AM, 6 AM, 12 PM, 6 PM
-                                            const outerRadius = 140
-                                            const innerRadius = isMainHour ? 120 : 130
+                                            const outerRadiusX = 140
+                                            const outerRadiusY = 100
+                                            const innerRadiusX = isMainHour ? 120 : 130
+                                            const innerRadiusY = isMainHour ? 85 : 90
 
-                                            const x1 = 150 + outerRadius * Math.cos(angle)
-                                            const y1 = 150 + outerRadius * Math.sin(angle)
-                                            const x2 = 150 + innerRadius * Math.cos(angle)
-                                            const y2 = 150 + innerRadius * Math.sin(angle)
+                                            const x1 = 150 + outerRadiusX * Math.cos(angle)
+                                            const y1 = 150 + outerRadiusY * Math.sin(angle)
+                                            const x2 = 150 + innerRadiusX * Math.cos(angle)
+                                            const y2 = 150 + innerRadiusY * Math.sin(angle)
 
                                             return (
                                                 <line
@@ -619,9 +626,10 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                             { time: '12 PM', angle: Math.PI / 2, hours: 12 },
                                             { time: '6 PM', angle: Math.PI, hours: 18 }
                                         ].map(({ time, angle }) => {
-                                            const radius = 105
-                                            const x = 150 + radius * Math.cos(angle)
-                                            const y = 150 + radius * Math.sin(angle)
+                                            const radiusX = 110 // Slightly outside the oval on X axis
+                                            const radiusY = 80  // Shorter on Y axis for oval shape
+                                            const x = 150 + radiusX * Math.cos(angle)
+                                            const y = 150 + radiusY * Math.sin(angle)
 
                                             return (
                                                 <text
@@ -642,21 +650,22 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                             const startAngle = timeToAngle(session.startTime)
                                             const endAngle = timeToAngle(session.endTime)
                                             const isSelected = selectedSession === session.id
-                                            const radius = 80
+                                            const radiusX = 80 // Oval X radius for sessions
+                                            const radiusY = 60 // Oval Y radius for sessions
                                             const strokeWidth = 16
 
-                                            // Calculate arc path
-                                            const startX = 150 + radius * Math.cos(startAngle)
-                                            const startY = 150 + radius * Math.sin(startAngle)
-                                            const endX = 150 + radius * Math.cos(endAngle)
-                                            const endY = 150 + radius * Math.sin(endAngle)
+                                            // Calculate arc path for oval
+                                            const startX = 150 + radiusX * Math.cos(startAngle)
+                                            const startY = 150 + radiusY * Math.sin(startAngle)
+                                            const endX = 150 + radiusX * Math.cos(endAngle)
+                                            const endY = 150 + radiusY * Math.sin(endAngle)
 
                                             // Determine if this is a large arc (more than 180 degrees)
                                             let angleDiff = endAngle - startAngle
                                             if (angleDiff < 0) angleDiff += 2 * Math.PI // Handle overnight
                                             const largeArcFlag = angleDiff > Math.PI ? 1 : 0
 
-                                            const pathData = `M ${startX} ${startY} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${endX} ${endY}`
+                                            const pathData = `M ${startX} ${startY} A ${radiusX} ${radiusY} 0 ${largeArcFlag} 1 ${endX} ${endY}`
 
                                             return (
                                                 <g key={session.id}>
@@ -709,9 +718,10 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                     {/* Session time label */}
                                                     {(() => {
                                                         const midAngle = startAngle + (angleDiff / 2)
-                                                        const labelRadius = 60
-                                                        const labelX = 150 + labelRadius * Math.cos(midAngle)
-                                                        const labelY = 150 + labelRadius * Math.sin(midAngle)
+                                                        const labelRadiusX = 60 // Inside the session arc for oval
+                                                        const labelRadiusY = 45 // Shorter Y radius for oval shape
+                                                        const labelX = 150 + labelRadiusX * Math.cos(midAngle)
+                                                        const labelY = 150 + labelRadiusY * Math.sin(midAngle)
 
                                                         return (
                                                             <text
