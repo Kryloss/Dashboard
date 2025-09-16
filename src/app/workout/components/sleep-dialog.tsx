@@ -169,6 +169,88 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         }
     }
 
+    // Pre-calculated route points for the rounded rectangle timeline
+    const getTimelineRoute = () => {
+        const centerX = 160
+        const centerY = 120
+        const rx = 130
+        const ry = 90
+        const cornerRadius = 30
+        const points: { angle: number; x: number; y: number; time: number }[] = []
+
+        // Generate 48 points (every 30 minutes) around the timeline
+        for (let i = 0; i < 48; i++) {
+            const time = i * 30 // 30-minute intervals
+            const hours = time / 60
+            const angle = (hours * Math.PI / 12) - (Math.PI / 2) // Start at top
+
+            const cos = Math.cos(angle)
+            const sin = Math.sin(angle)
+            const absX = Math.abs(cos)
+            const absY = Math.abs(sin)
+            const effectiveRx = rx - cornerRadius
+            const effectiveRy = ry - cornerRadius
+
+            let x, y
+
+            if (absX / effectiveRx > absY / effectiveRy) {
+                // Near vertical edges
+                const edgeY = sin * effectiveRx / absX
+                if (Math.abs(edgeY) > effectiveRy) {
+                    // Corner region
+                    const cornerCenterY = sin > 0 ? effectiveRy : -effectiveRy
+                    const cornerCenterX = cos > 0 ? effectiveRx : -effectiveRx
+                    const cornerAngle = Math.atan2(sin * effectiveRy - cornerCenterY, cos * effectiveRx - cornerCenterX)
+                    x = centerX + cornerCenterX + cornerRadius * Math.cos(cornerAngle)
+                    y = centerY + cornerCenterY + cornerRadius * Math.sin(cornerAngle)
+                } else {
+                    // Straight edge
+                    x = centerX + (cos > 0 ? effectiveRx + cornerRadius : -effectiveRx - cornerRadius)
+                    y = centerY + edgeY
+                }
+            } else {
+                // Near horizontal edges
+                const edgeX = cos * effectiveRy / absY
+                if (Math.abs(edgeX) > effectiveRx) {
+                    // Corner region
+                    const cornerCenterX = cos > 0 ? effectiveRx : -effectiveRx
+                    const cornerCenterY = sin > 0 ? effectiveRy : -effectiveRy
+                    const cornerAngle = Math.atan2(sin * effectiveRy - cornerCenterY, cos * effectiveRx - cornerCenterX)
+                    x = centerX + cornerCenterX + cornerRadius * Math.cos(cornerAngle)
+                    y = centerY + cornerCenterY + cornerRadius * Math.sin(cornerAngle)
+                } else {
+                    // Straight edge
+                    x = centerX + edgeX
+                    y = centerY + (sin > 0 ? effectiveRy + cornerRadius : -effectiveRy - cornerRadius)
+                }
+            }
+
+            points.push({ angle, x, y, time })
+        }
+
+        return points
+    }
+
+    // Convert time (in minutes) to route point
+    const timeToRoutePoint = (minutes: number) => {
+        const route = getTimelineRoute()
+        const normalizedTime = ((minutes % (24 * 60)) + (24 * 60)) % (24 * 60) // Handle negative times
+
+        // Find closest route point
+        let closestPoint = route[0]
+        let minDiff = Math.abs(normalizedTime - closestPoint.time)
+
+        for (const point of route) {
+            const diff = Math.abs(normalizedTime - point.time)
+            if (diff < minDiff) {
+                minDiff = diff
+                closestPoint = point
+            }
+        }
+
+        return closestPoint
+    }
+
     // Convert time (in minutes) to angle in radians (12 AM at top = -π/2)
     const timeToAngle = (minutes: number): number => {
         // Convert minutes to hours (0-24)
@@ -180,73 +262,49 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         return angle
     }
 
-    // Convert mouse position to angle relative to enhanced rounded rectangle
-    const mouseToAngle = (mouseX: number, mouseY: number, centerX: number, centerY: number): number => {
-        const deltaX = mouseX - centerX
-        const deltaY = mouseY - centerY
+    // Convert mouse position to closest route point
+    const mouseToRoutePoint = (mouseX: number, mouseY: number) => {
+        const route = getTimelineRoute()
+        let closestPoint = route[0]
+        let minDistance = Infinity
 
-        // Enhanced rounded rectangle interaction
-        const rx = 130 // X radius for interaction (matches timeline)
-        const ry = 90  // Y radius for interaction (matches timeline)
-        const cornerRadius = 30
-
-        // Use enhanced calculation for smoother corner interaction
-        const absX = Math.abs(deltaX)
-        const absY = Math.abs(deltaY)
-        const effectiveRx = rx - cornerRadius
-        const effectiveRy = ry - cornerRadius
-
-        let angle: number
-
-        // Enhanced edge detection with corner handling
-        if (absX / effectiveRx > absY / effectiveRy) {
-            // Closer to vertical edges
-            const edgeY = deltaY * effectiveRx / absX
-
-            if (Math.abs(edgeY) > effectiveRy) {
-                // In corner region - use corner center for angle calculation
-                const cornerCenterY = deltaY > 0 ? effectiveRy : -effectiveRy
-                const cornerCenterX = deltaX > 0 ? effectiveRx : -effectiveRx
-                const cornerDeltaX = deltaX - cornerCenterX
-                const cornerDeltaY = deltaY - cornerCenterY
-                angle = Math.atan2(cornerDeltaY, cornerDeltaX)
-            } else {
-                // On straight vertical edge
-                angle = Math.atan2(edgeY, deltaX > 0 ? rx : -rx)
-            }
-        } else {
-            // Closer to horizontal edges
-            const edgeX = deltaX * effectiveRy / absY
-
-            if (Math.abs(edgeX) > effectiveRx) {
-                // In corner region - use corner center for angle calculation
-                const cornerCenterX = deltaX > 0 ? effectiveRx : -effectiveRx
-                const cornerCenterY = deltaY > 0 ? effectiveRy : -effectiveRy
-                const cornerDeltaX = deltaX - cornerCenterX
-                const cornerDeltaY = deltaY - cornerCenterY
-                angle = Math.atan2(cornerDeltaY, cornerDeltaX)
-            } else {
-                // On straight horizontal edge
-                angle = Math.atan2(deltaY > 0 ? ry : -ry, edgeX)
+        // Find the closest route point to mouse position
+        for (const point of route) {
+            const distance = Math.sqrt(
+                Math.pow(mouseX - point.x, 2) + Math.pow(mouseY - point.y, 2)
+            )
+            if (distance < minDistance) {
+                minDistance = distance
+                closestPoint = point
             }
         }
 
-        return angle
+        return closestPoint
     }
 
-    // Convert angle to time in minutes
+    // Convert mouse position to angle relative to enhanced rounded rectangle
+    const mouseToAngle = (mouseX: number, mouseY: number): number => {
+        // Get closest route point and use its angle for consistent behavior
+        const routePoint = mouseToRoutePoint(mouseX, mouseY)
+        return routePoint.angle
+    }
+
+    // Convert angle to time in minutes using route points
     const angleToTime = (angle: number): number => {
-        // Normalize angle to 0-2π range
-        let normalizedAngle = angle + (Math.PI / 2) // Offset so 12 AM is at 0
-        if (normalizedAngle < 0) normalizedAngle += 2 * Math.PI
-        if (normalizedAngle >= 2 * Math.PI) normalizedAngle -= 2 * Math.PI
+        const route = getTimelineRoute()
+        let closestPoint = route[0]
+        let minDiff = Math.abs(angle - closestPoint.angle)
 
-        // Convert to hours (0-24)
-        const hours = (normalizedAngle / Math.PI) * 12 // Full circle = 24 hours
+        // Find the route point with the closest angle
+        for (const point of route) {
+            const diff = Math.abs(angle - point.angle)
+            if (diff < minDiff) {
+                minDiff = diff
+                closestPoint = point
+            }
+        }
 
-        // Convert to minutes and snap to 5-minute intervals for better PC control
-        const minutes = hours * 60
-        return Math.round(minutes / 5) * 5
+        return closestPoint.time
     }
 
     // Convert time to x,y coordinates on oval (commented out as unused)
@@ -269,7 +327,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         const centerY = rect.height / 2
 
         // Convert click position to time
-        const clickAngle = mouseToAngle(clickX, clickY, centerX, centerY)
+        const clickAngle = mouseToAngle(clickX, clickY)
         // const clickTime = angleToTime(clickAngle) // Unused for now
 
         // Check if click is near the rounded rectangle timeline
@@ -410,7 +468,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
             }
 
             // Convert pointer position to angle and then to time
-            const pointerAngle = mouseToAngle(pointerX, pointerY, centerX, centerY)
+            const pointerAngle = mouseToAngle(pointerX, pointerY)
             const pointerTime = angleToTime(pointerAngle)
 
             setSleepSessions(prev => prev.map(session => {
@@ -889,148 +947,84 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
 
                                         {/* Sleep session arcs */}
                                         {sleepSessions.map((session) => {
-                                            const startAngle = timeToAngle(session.startTime)
-                                            const endAngle = timeToAngle(session.endTime)
                                             const isSelected = selectedSession === session.id
-                                            const radiusX = 130 // Place sessions on the rounded rect timeline
-                                            const radiusY = 90  // Place sessions on the rounded rect timeline
                                             const strokeWidth = 16 // Appropriate thickness for the new size
 
-                                            // Enhanced rounded rectangle positioning for sessions
-                                            const getRoundedRectPosition = (angle: number, rx: number, ry: number) => {
-                                                const cos = Math.cos(angle)
-                                                const sin = Math.sin(angle)
-                                                const centerX = 160
-                                                const centerY = 120
-                                                const cornerRadius = 30 // Match SVG corner radius
+                                            // Get positions using route points
+                                            const startRoutePoint = timeToRoutePoint(session.startTime)
+                                            const endRoutePoint = timeToRoutePoint(session.endTime)
+                                            const startX = startRoutePoint.x
+                                            const startY = startRoutePoint.y
+                                            const endX = endRoutePoint.x
+                                            const endY = endRoutePoint.y
 
-                                                const absX = Math.abs(cos)
-                                                const absY = Math.abs(sin)
-                                                const effectiveRx = rx - cornerRadius
-                                                const effectiveRy = ry - cornerRadius
+                                            // Generate path using pre-calculated route points
+                                            const generateRouteBasedPath = (startTime: number, endTime: number) => {
+                                                const route = getTimelineRoute()
 
-                                                let x, y
+                                                // Find start and end indices in route
+                                                const startNormalized = ((startTime % (24 * 60)) + (24 * 60)) % (24 * 60)
+                                                const endNormalized = ((endTime % (24 * 60)) + (24 * 60)) % (24 * 60)
 
-                                                if (absX / effectiveRx > absY / effectiveRy) {
-                                                    // Near vertical edges
-                                                    const edgeX = cos > 0 ? effectiveRx : -effectiveRx
-                                                    const edgeY = sin * effectiveRx / absX
+                                                let startIndex = 0
+                                                let endIndex = 0
+                                                let minStartDiff = Infinity
+                                                let minEndDiff = Infinity
 
-                                                    if (Math.abs(edgeY) > effectiveRy) {
-                                                        // In corner region - smooth transition
-                                                        const cornerCenterY = sin > 0 ? effectiveRy : -effectiveRy
-                                                        const cornerCenterX = cos > 0 ? effectiveRx : -effectiveRx
-                                                        const cornerAngle = Math.atan2(sin * effectiveRy - cornerCenterY, cos * effectiveRx - cornerCenterX)
-                                                        x = centerX + cornerCenterX + cornerRadius * Math.cos(cornerAngle)
-                                                        y = centerY + cornerCenterY + cornerRadius * Math.sin(cornerAngle)
-                                                    } else {
-                                                        // On straight vertical edge
-                                                        x = centerX + edgeX + (cos > 0 ? cornerRadius : -cornerRadius)
-                                                        y = centerY + edgeY
+                                                // Find closest route points for start and end times
+                                                for (let i = 0; i < route.length; i++) {
+                                                    const startDiff = Math.abs(route[i].time - startNormalized)
+                                                    const endDiff = Math.abs(route[i].time - endNormalized)
+
+                                                    if (startDiff < minStartDiff) {
+                                                        minStartDiff = startDiff
+                                                        startIndex = i
                                                     }
-                                                } else {
-                                                    // Near horizontal edges
-                                                    const edgeY = sin > 0 ? effectiveRy : -effectiveRy
-                                                    const edgeX = cos * effectiveRy / absY
 
-                                                    if (Math.abs(edgeX) > effectiveRx) {
-                                                        // In corner region - smooth transition
-                                                        const cornerCenterX = cos > 0 ? effectiveRx : -effectiveRx
-                                                        const cornerCenterY = sin > 0 ? effectiveRy : -effectiveRy
-                                                        const cornerAngle = Math.atan2(sin * effectiveRy - cornerCenterY, cos * effectiveRx - cornerCenterX)
-                                                        x = centerX + cornerCenterX + cornerRadius * Math.cos(cornerAngle)
-                                                        y = centerY + cornerCenterY + cornerRadius * Math.sin(cornerAngle)
-                                                    } else {
-                                                        // On straight horizontal edge
-                                                        x = centerX + edgeX
-                                                        y = centerY + edgeY + (sin > 0 ? cornerRadius : -cornerRadius)
+                                                    if (endDiff < minEndDiff) {
+                                                        minEndDiff = endDiff
+                                                        endIndex = i
                                                     }
                                                 }
 
-                                                return { x, y }
-                                            }
-
-                                            const startPos = getRoundedRectPosition(startAngle, radiusX, radiusY)
-                                            const endPos = getRoundedRectPosition(endAngle, radiusX, radiusY)
-                                            const startX = startPos.x
-                                            const startY = startPos.y
-                                            const endX = endPos.x
-                                            const endY = endPos.y
-
-                                            // Generate smooth path that follows the enhanced rounded rectangle timeline
-                                            const generateRoundedRectArcPath = (startAngle: number, endAngle: number, rx: number, ry: number) => {
-                                                // Calculate the angular span
-                                                let angleDiff = endAngle - startAngle
-                                                if (angleDiff < 0) angleDiff += 2 * Math.PI // Handle overnight
-
-                                                // More segments for ultra-smooth curves, especially around corners
-                                                const steps = Math.max(16, Math.floor(angleDiff * 32 / Math.PI))
-                                                const stepSize = angleDiff / steps
-
+                                                // Generate path following route points
                                                 let pathData = ''
-                                                const centerX = 160
-                                                const centerY = 120
-                                                const cornerRadius = 30
+                                                let currentIndex = startIndex
+                                                const points: {x: number, y: number}[] = []
 
-                                                for (let i = 0; i <= steps; i++) {
-                                                    const angle = startAngle + i * stepSize
-                                                    const cos = Math.cos(angle)
-                                                    const sin = Math.sin(angle)
-                                                    const absX = Math.abs(cos)
-                                                    const absY = Math.abs(sin)
-                                                    const effectiveRx = rx - cornerRadius
-                                                    const effectiveRy = ry - cornerRadius
-
-                                                    let x, y
-
-                                                    // Enhanced corner handling for perfect curves
-                                                    if (absX / effectiveRx > absY / effectiveRy) {
-                                                        // Near vertical edges
-                                                        const edgeX = cos > 0 ? effectiveRx : -effectiveRx
-                                                        const edgeY = sin * effectiveRx / absX
-
-                                                        if (Math.abs(edgeY) > effectiveRy) {
-                                                            // In corner region - use circular arc
-                                                            const cornerCenterY = sin > 0 ? effectiveRy : -effectiveRy
-                                                            const cornerCenterX = cos > 0 ? effectiveRx : -effectiveRx
-                                                            const cornerAngle = Math.atan2(sin * effectiveRy - cornerCenterY, cos * effectiveRx - cornerCenterX)
-                                                            x = centerX + cornerCenterX + cornerRadius * Math.cos(cornerAngle)
-                                                            y = centerY + cornerCenterY + cornerRadius * Math.sin(cornerAngle)
-                                                        } else {
-                                                            // On straight edge
-                                                            x = centerX + edgeX + (cos > 0 ? cornerRadius : -cornerRadius)
-                                                            y = centerY + edgeY
-                                                        }
-                                                    } else {
-                                                        // Near horizontal edges
-                                                        const edgeY = sin > 0 ? effectiveRy : -effectiveRy
-                                                        const edgeX = cos * effectiveRy / absY
-
-                                                        if (Math.abs(edgeX) > effectiveRx) {
-                                                            // In corner region - use circular arc
-                                                            const cornerCenterX = cos > 0 ? effectiveRx : -effectiveRx
-                                                            const cornerCenterY = sin > 0 ? effectiveRy : -effectiveRy
-                                                            const cornerAngle = Math.atan2(sin * effectiveRy - cornerCenterY, cos * effectiveRx - cornerCenterX)
-                                                            x = centerX + cornerCenterX + cornerRadius * Math.cos(cornerAngle)
-                                                            y = centerY + cornerCenterY + cornerRadius * Math.sin(cornerAngle)
-                                                        } else {
-                                                            // On straight edge
-                                                            x = centerX + edgeX
-                                                            y = centerY + edgeY + (sin > 0 ? cornerRadius : -cornerRadius)
-                                                        }
+                                                // Handle overnight sessions
+                                                if (endNormalized < startNormalized) {
+                                                    // Go from start to end of day
+                                                    while (currentIndex < route.length) {
+                                                        points.push({ x: route[currentIndex].x, y: route[currentIndex].y })
+                                                        currentIndex++
                                                     }
+                                                    // Continue from beginning of day to end
+                                                    currentIndex = 0
+                                                    while (currentIndex <= endIndex) {
+                                                        points.push({ x: route[currentIndex].x, y: route[currentIndex].y })
+                                                        currentIndex++
+                                                    }
+                                                } else {
+                                                    // Normal session - go from start to end
+                                                    while (currentIndex <= endIndex) {
+                                                        points.push({ x: route[currentIndex].x, y: route[currentIndex].y })
+                                                        currentIndex++
+                                                    }
+                                                }
 
-                                                    if (i === 0) {
-                                                        pathData = `M ${x.toFixed(2)} ${y.toFixed(2)}`
-                                                    } else {
-                                                        pathData += ` L ${x.toFixed(2)} ${y.toFixed(2)}`
+                                                // Create SVG path from points
+                                                if (points.length > 0) {
+                                                    pathData = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`
+                                                    for (let i = 1; i < points.length; i++) {
+                                                        pathData += ` L ${points[i].x.toFixed(2)} ${points[i].y.toFixed(2)}`
                                                     }
                                                 }
 
                                                 return pathData
                                             }
 
-                                            const pathData = generateRoundedRectArcPath(startAngle, endAngle, radiusX, radiusY)
+                                            const pathData = generateRouteBasedPath(session.startTime, session.endTime)
 
                                             return (
                                                 <g key={session.id}>
@@ -1085,63 +1079,29 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
 
                                                     {/* Session time label */}
                                                     {(() => {
-                                                        // Calculate angle difference for overnight sessions
-                                                        let angleDiff = endAngle - startAngle
-                                                        if (angleDiff < 0) angleDiff += 2 * Math.PI // Handle overnight
+                                                        // Calculate middle time for label positioning
+                                                        const startNormalized = ((session.startTime % (24 * 60)) + (24 * 60)) % (24 * 60)
+                                                        const endNormalized = ((session.endTime % (24 * 60)) + (24 * 60)) % (24 * 60)
 
-                                                        const midAngle = startAngle + (angleDiff / 2)
+                                                        let midTime: number
+                                                        if (endNormalized < startNormalized) {
+                                                            // Overnight session
+                                                            const duration = (24 * 60) - startNormalized + endNormalized
+                                                            const halfDuration = duration / 2
+                                                            midTime = (startNormalized + halfDuration) % (24 * 60)
+                                                        } else {
+                                                            // Normal session
+                                                            midTime = (startNormalized + endNormalized) / 2
+                                                        }
 
-                                                        // Enhanced label positioning using same rounded rectangle logic
-                                                        const cos = Math.cos(midAngle)
-                                                        const sin = Math.sin(midAngle)
+                                                        // Get label position from route point (scaled inward for labels)
+                                                        const midRoutePoint = timeToRoutePoint(midTime)
                                                         const centerX = 160
                                                         const centerY = 120
-                                                        const labelRadiusX = 105
-                                                        const labelRadiusY = 70
-                                                        const cornerRadius = 25 // Slightly smaller for labels
+                                                        const scale = 0.7 // Scale inward for label positioning
 
-                                                        const absX = Math.abs(cos)
-                                                        const absY = Math.abs(sin)
-                                                        const effectiveRx = labelRadiusX - cornerRadius
-                                                        const effectiveRy = labelRadiusY - cornerRadius
-
-                                                        let labelX, labelY
-
-                                                        if (absX / effectiveRx > absY / effectiveRy) {
-                                                            // Near vertical edges
-                                                            const edgeX = cos > 0 ? effectiveRx : -effectiveRx
-                                                            const edgeY = sin * effectiveRx / absX
-
-                                                            if (Math.abs(edgeY) > effectiveRy) {
-                                                                // Corner region
-                                                                const cornerCenterY = sin > 0 ? effectiveRy : -effectiveRy
-                                                                const cornerCenterX = cos > 0 ? effectiveRx : -effectiveRx
-                                                                const cornerAngle = Math.atan2(sin * effectiveRy - cornerCenterY, cos * effectiveRx - cornerCenterX)
-                                                                labelX = centerX + cornerCenterX + cornerRadius * Math.cos(cornerAngle)
-                                                                labelY = centerY + cornerCenterY + cornerRadius * Math.sin(cornerAngle)
-                                                            } else {
-                                                                // Straight edge
-                                                                labelX = centerX + edgeX + (cos > 0 ? cornerRadius : -cornerRadius)
-                                                                labelY = centerY + edgeY
-                                                            }
-                                                        } else {
-                                                            // Near horizontal edges
-                                                            const edgeY = sin > 0 ? effectiveRy : -effectiveRy
-                                                            const edgeX = cos * effectiveRy / absY
-
-                                                            if (Math.abs(edgeX) > effectiveRx) {
-                                                                // Corner region
-                                                                const cornerCenterX = cos > 0 ? effectiveRx : -effectiveRx
-                                                                const cornerCenterY = sin > 0 ? effectiveRy : -effectiveRy
-                                                                const cornerAngle = Math.atan2(sin * effectiveRy - cornerCenterY, cos * effectiveRx - cornerCenterX)
-                                                                labelX = centerX + cornerCenterX + cornerRadius * Math.cos(cornerAngle)
-                                                                labelY = centerY + cornerCenterY + cornerRadius * Math.sin(cornerAngle)
-                                                            } else {
-                                                                // Straight edge
-                                                                labelX = centerX + edgeX
-                                                                labelY = centerY + edgeY + (sin > 0 ? cornerRadius : -cornerRadius)
-                                                            }
-                                                        }
+                                                        const labelX = centerX + (midRoutePoint.x - centerX) * scale
+                                                        const labelY = centerY + (midRoutePoint.y - centerY) * scale
 
                                                         return (
                                                             <text
