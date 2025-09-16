@@ -209,44 +209,99 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                     className="relative w-full max-w-md mx-auto select-none"
                                     style={{ aspectRatio: '320/240' }}
                                 >
-                                    {/* Oval Clock face with day/night zones */}
+                                    {/* Oval Clock face with smooth day/night gradients */}
                                     <svg className="w-full h-full" viewBox="0 0 320 240">
-                                        {/* Gradient definitions for day/night zones */}
+                                        {/* Advanced gradient definitions for smooth day/night transitions */}
                                         <defs>
-                                            <linearGradient id="dayNightGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                                <stop offset="0%" style={{stopColor:"#1E3A8A", stopOpacity:0.1}} />
-                                                <stop offset="25%" style={{stopColor:"#1E3A8A", stopOpacity:0.1}} />
-                                                <stop offset="50%" style={{stopColor:"#FEF3C7", stopOpacity:0.1}} />
-                                                <stop offset="75%" style={{stopColor:"#FEF3C7", stopOpacity:0.1}} />
-                                                <stop offset="100%" style={{stopColor:"#1E3A8A", stopOpacity:0.1}} />
+                                            {/* Radial gradient for overall ambiance */}
+                                            <radialGradient id="clockAmbiance" cx="50%" cy="50%" r="50%">
+                                                <stop offset="0%" style={{stopColor:"#1F2937", stopOpacity:0.1}} />
+                                                <stop offset="100%" style={{stopColor:"#0F172A", stopOpacity:0.2}} />
+                                            </radialGradient>
+
+                                            {/* Circular gradient following the clock shape */}
+                                            <linearGradient id="timeGradient" x1="0%" y1="50%" x2="100%" y2="50%">
+                                                <stop offset="0%" style={{stopColor:"#1E40AF", stopOpacity:0.15}} />
+                                                <stop offset="12.5%" style={{stopColor:"#3B82F6", stopOpacity:0.12}} />
+                                                <stop offset="25%" style={{stopColor:"#60A5FA", stopOpacity:0.08}} />
+                                                <stop offset="37.5%" style={{stopColor:"#FBBF24", stopOpacity:0.08}} />
+                                                <stop offset="50%" style={{stopColor:"#F59E0B", stopOpacity:0.12}} />
+                                                <stop offset="62.5%" style={{stopColor:"#FBBF24", stopOpacity:0.08}} />
+                                                <stop offset="75%" style={{stopColor:"#60A5FA", stopOpacity:0.08}} />
+                                                <stop offset="87.5%" style={{stopColor:"#3B82F6", stopOpacity:0.12}} />
+                                                <stop offset="100%" style={{stopColor:"#1E40AF", stopOpacity:0.15}} />
+                                            </linearGradient>
+
+                                            {/* Dot color gradients */}
+                                            <linearGradient id="dotGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                <stop offset="0%" style={{stopColor:"#3B82F6"}} />
+                                                <stop offset="25%" style={{stopColor:"#60A5FA"}} />
+                                                <stop offset="50%" style={{stopColor:"#F59E0B"}} />
+                                                <stop offset="75%" style={{stopColor:"#60A5FA"}} />
+                                                <stop offset="100%" style={{stopColor:"#3B82F6"}} />
                                             </linearGradient>
                                         </defs>
 
-                                        {/* Night zone background (left side) */}
+                                        {/* Base ambiance background */}
                                         <ellipse
                                             cx="160"
                                             cy="120"
                                             rx="138"
                                             ry="98"
-                                            fill="url(#dayNightGradient)"
+                                            fill="url(#clockAmbiance)"
                                         />
 
-                                        {/* Oval clock border */}
+                                        {/* Time-based gradient overlay */}
+                                        <ellipse
+                                            cx="160"
+                                            cy="120"
+                                            rx="136"
+                                            ry="96"
+                                            fill="url(#timeGradient)"
+                                        />
+
+                                        {/* Oval clock border with subtle gradient */}
                                         <ellipse
                                             cx="160"
                                             cy="120"
                                             rx="140"
                                             ry="100"
                                             fill="none"
-                                            stroke="#374151"
+                                            stroke="#4B5563"
                                             strokeWidth="2"
+                                            opacity="0.8"
                                         />
 
-                                        {/* 24 hour dots around perimeter with day/night colors */}
+                                        {/* 24 hour dots with smooth color transitions */}
                                         {Array.from({ length: 24 }, (_, i) => {
                                             const angle = (i * Math.PI) / 12 - Math.PI / 2 // 24 hours around circle, start at top (12 AM)
                                             const hour = i
-                                            const isNightTime = hour >= 18 || hour <= 6 // 6 PM to 6 AM is night
+
+                                            // Create smooth color transition based on time of day
+                                            const getHourColor = (hour: number) => {
+                                                // Normalize hour to 0-1 for smooth transitions
+                                                const normalizedHour = hour / 24
+
+                                                if (hour >= 0 && hour < 6) {
+                                                    // Deep night (midnight to 6 AM): Blue tones
+                                                    const intensity = 1 - (hour / 6) * 0.3
+                                                    return `hsl(220, 85%, ${45 + intensity * 20}%)`
+                                                } else if (hour >= 6 && hour < 12) {
+                                                    // Morning to noon: Blue to amber transition
+                                                    const progress = (hour - 6) / 6
+                                                    const hue = 220 + (progress * 120) // Blue to amber
+                                                    return `hsl(${hue}, ${85 - progress * 30}%, ${60 + progress * 15}%)`
+                                                } else if (hour >= 12 && hour < 18) {
+                                                    // Afternoon: Amber tones
+                                                    const intensity = 1 - ((hour - 12) / 6) * 0.2
+                                                    return `hsl(45, ${85 + intensity * 10}%, ${65 + intensity * 10}%)`
+                                                } else {
+                                                    // Evening to night: Amber to blue transition
+                                                    const progress = (hour - 18) / 6
+                                                    const hue = 45 - (progress * 85) // Amber to blue
+                                                    return `hsl(${hue + (progress * 175)}, 85%, ${70 - progress * 25}%)`
+                                                }
+                                            }
 
                                             const cos = Math.cos(angle)
                                             const sin = Math.sin(angle)
@@ -264,14 +319,17 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                     key={i}
                                                     cx={x}
                                                     cy={y}
-                                                    r="2"
-                                                    fill={isNightTime ? "#3B82F6" : "#F59E0B"}
-                                                    opacity="0.8"
+                                                    r="2.5"
+                                                    fill={getHourColor(hour)}
+                                                    opacity="0.9"
+                                                    style={{
+                                                        filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.3))'
+                                                    }}
                                                 />
                                             )
                                         })}
 
-                                        {/* Major hour labels with day/night colors */}
+                                        {/* Major hour labels with smooth gradient colors */}
                                         {[
                                             { time: '24', angle: -Math.PI / 2, hour: 0 }, // 12 AM at top
                                             { time: '6', angle: 0, hour: 6 }, // 6 AM at right
@@ -284,7 +342,23 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                             const centerY = 120
                                             const labelRx = 155 // Outside the dots
                                             const labelRy = 115
-                                            const isNightTime = hour >= 18 || hour <= 6
+
+                                            // Same color logic as dots for consistency
+                                            const getLabelColor = (hour: number) => {
+                                                if (hour >= 0 && hour < 6) {
+                                                    return `hsl(220, 70%, 70%)` // Night blue
+                                                } else if (hour >= 6 && hour < 12) {
+                                                    const progress = (hour - 6) / 6
+                                                    const hue = 220 + (progress * 120)
+                                                    return `hsl(${hue}, 70%, 75%)`
+                                                } else if (hour >= 12 && hour < 18) {
+                                                    return `hsl(45, 85%, 75%)` // Day amber
+                                                } else {
+                                                    const progress = (hour - 18) / 6
+                                                    const hue = 45 - (progress * 85)
+                                                    return `hsl(${hue + (progress * 175)}, 70%, 70%)`
+                                                }
+                                            }
 
                                             const x = centerX + cos * labelRx
                                             const y = centerY + sin * labelRy
@@ -296,7 +370,11 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                     y={y}
                                                     textAnchor="middle"
                                                     dominantBaseline="middle"
-                                                    className={`text-sm font-medium ${isNightTime ? 'fill-[#93C5FD]' : 'fill-[#FCD34D]'}`}
+                                                    className="text-sm font-medium"
+                                                    fill={getLabelColor(hour)}
+                                                    style={{
+                                                        filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.4))'
+                                                    }}
                                                 >
                                                     {time}
                                                 </text>
