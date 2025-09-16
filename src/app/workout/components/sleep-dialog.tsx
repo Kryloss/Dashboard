@@ -729,7 +729,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                 const numSteps = Math.ceil(angleDiff / stepAngle)
                                                 const actualStepAngle = angleDiff / numSteps
 
-                                                let pathParts = [`M ${150 + rx * Math.cos(startAngle)} ${150 + ry * Math.sin(startAngle)}`]
+                                                const pathParts = [`M ${150 + rx * Math.cos(startAngle)} ${150 + ry * Math.sin(startAngle)}`]
 
                                                 // Create line segments that exactly follow the oval perimeter
                                                 for (let i = 1; i <= numSteps; i++) {
