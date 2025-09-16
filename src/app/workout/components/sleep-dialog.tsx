@@ -719,12 +719,33 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                             const endX = 150 + radiusX * Math.cos(endAngle)
                                             const endY = 150 + radiusY * Math.sin(endAngle)
 
-                                            // Determine if this is a large arc (more than 180 degrees)
-                                            let angleDiff = endAngle - startAngle
-                                            if (angleDiff < 0) angleDiff += 2 * Math.PI // Handle overnight
-                                            const largeArcFlag = angleDiff > Math.PI ? 1 : 0
+                                            // Generate path that strictly follows the oval timeline by creating multiple small arcs
+                                            const generateOvalArcPath = (startAngle: number, endAngle: number, rx: number, ry: number) => {
+                                                let pathParts = [`M ${150 + rx * Math.cos(startAngle)} ${150 + ry * Math.sin(startAngle)}`]
 
-                                            const pathData = `M ${startX} ${startY} A ${radiusX} ${radiusY} 0 ${largeArcFlag} 1 ${endX} ${endY}`
+                                                // Calculate the angular span
+                                                let angleDiff = endAngle - startAngle
+                                                if (angleDiff < 0) angleDiff += 2 * Math.PI // Handle overnight
+
+                                                // For long arcs, break into smaller segments to ensure exact oval following
+                                                const maxSegmentAngle = Math.PI / 4 // 45 degrees max per segment
+                                                const numSegments = Math.ceil(angleDiff / maxSegmentAngle)
+                                                const segmentAngle = angleDiff / numSegments
+
+                                                for (let i = 1; i <= numSegments; i++) {
+                                                    const currentAngle = startAngle + (segmentAngle * i)
+                                                    const x = 150 + rx * Math.cos(currentAngle)
+                                                    const y = 150 + ry * Math.sin(currentAngle)
+
+                                                    // Each segment is a small arc that strictly follows the ellipse
+                                                    const segmentLargeArc = segmentAngle > Math.PI ? 1 : 0
+                                                    pathParts.push(`A ${rx} ${ry} 0 ${segmentLargeArc} 1 ${x} ${y}`)
+                                                }
+
+                                                return pathParts.join(' ')
+                                            }
+
+                                            const pathData = generateOvalArcPath(startAngle, endAngle, radiusX, radiusY)
 
                                             return (
                                                 <g key={session.id}>
