@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Moon, Star, Smile, Meh, Frown } from "lucide-react"
+import { Moon, Sun, Star, Smile, Meh, Frown } from "lucide-react"
 
 interface SleepDialogProps {
     open: boolean
@@ -202,10 +202,6 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
 
                             {/* Oval Clock Interface */}
                             <div className="relative bg-[#121318] border border-[#212227] rounded-lg p-8">
-                                {/* Instructions */}
-                                <div className="text-sm text-[#9CA3AF] mb-6 text-center">
-                                    Sleep Timeline
-                                </div>
 
                                 {/* Clock container */}
                                 <div
@@ -213,8 +209,28 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                     className="relative w-full max-w-md mx-auto select-none"
                                     style={{ aspectRatio: '320/240' }}
                                 >
-                                    {/* Oval Clock face - flattened circle */}
+                                    {/* Oval Clock face with day/night zones */}
                                     <svg className="w-full h-full" viewBox="0 0 320 240">
+                                        {/* Gradient definitions for day/night zones */}
+                                        <defs>
+                                            <linearGradient id="dayNightGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                <stop offset="0%" style={{stopColor:"#1E3A8A", stopOpacity:0.1}} />
+                                                <stop offset="25%" style={{stopColor:"#1E3A8A", stopOpacity:0.1}} />
+                                                <stop offset="50%" style={{stopColor:"#FEF3C7", stopOpacity:0.1}} />
+                                                <stop offset="75%" style={{stopColor:"#FEF3C7", stopOpacity:0.1}} />
+                                                <stop offset="100%" style={{stopColor:"#1E3A8A", stopOpacity:0.1}} />
+                                            </linearGradient>
+                                        </defs>
+
+                                        {/* Night zone background (left side) */}
+                                        <ellipse
+                                            cx="160"
+                                            cy="120"
+                                            rx="138"
+                                            ry="98"
+                                            fill="url(#dayNightGradient)"
+                                        />
+
                                         {/* Oval clock border */}
                                         <ellipse
                                             cx="160"
@@ -226,9 +242,11 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                             strokeWidth="2"
                                         />
 
-                                        {/* 24 hour dots around perimeter */}
+                                        {/* 24 hour dots around perimeter with day/night colors */}
                                         {Array.from({ length: 24 }, (_, i) => {
                                             const angle = (i * Math.PI) / 12 - Math.PI / 2 // 24 hours around circle, start at top (12 AM)
+                                            const hour = i
+                                            const isNightTime = hour >= 18 || hour <= 6 // 6 PM to 6 AM is night
 
                                             const cos = Math.cos(angle)
                                             const sin = Math.sin(angle)
@@ -247,25 +265,26 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                     cx={x}
                                                     cy={y}
                                                     r="2"
-                                                    fill="#4B5563"
-                                                    opacity="0.6"
+                                                    fill={isNightTime ? "#3B82F6" : "#F59E0B"}
+                                                    opacity="0.8"
                                                 />
                                             )
                                         })}
 
-                                        {/* Major hour labels (6, 12, 18, 24) */}
+                                        {/* Major hour labels with day/night colors */}
                                         {[
                                             { time: '24', angle: -Math.PI / 2, hour: 0 }, // 12 AM at top
                                             { time: '6', angle: 0, hour: 6 }, // 6 AM at right
                                             { time: '12', angle: Math.PI / 2, hour: 12 }, // 12 PM at bottom
                                             { time: '18', angle: Math.PI, hour: 18 } // 6 PM at left
-                                        ].map(({ time, angle }) => {
+                                        ].map(({ time, angle, hour }) => {
                                             const cos = Math.cos(angle)
                                             const sin = Math.sin(angle)
                                             const centerX = 160
                                             const centerY = 120
                                             const labelRx = 155 // Outside the dots
                                             const labelRy = 115
+                                            const isNightTime = hour >= 18 || hour <= 6
 
                                             const x = centerX + cos * labelRx
                                             const y = centerY + sin * labelRy
@@ -277,7 +296,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                     y={y}
                                                     textAnchor="middle"
                                                     dominantBaseline="middle"
-                                                    className="text-sm font-medium fill-[#9CA3AF]"
+                                                    className={`text-sm font-medium ${isNightTime ? 'fill-[#93C5FD]' : 'fill-[#FCD34D]'}`}
                                                 >
                                                     {time}
                                                 </text>
@@ -285,6 +304,16 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                         })}
 
                                     </svg>
+
+                                    {/* Moon and Sun icons outside the clock */}
+                                    <div className="absolute top-2 left-4 flex items-center space-x-2">
+                                        <Moon className="w-5 h-5 text-blue-400" />
+                                        <span className="text-xs text-blue-400 font-medium">Night</span>
+                                    </div>
+                                    <div className="absolute top-2 right-4 flex items-center space-x-2">
+                                        <Sun className="w-5 h-5 text-amber-400" />
+                                        <span className="text-xs text-amber-400 font-medium">Day</span>
+                                    </div>
                                 </div>
                             </div>
 
