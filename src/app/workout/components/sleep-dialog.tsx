@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Moon, Star, Smile, Meh, Frown, Plus, X } from "lucide-react"
+import { Moon, Smile, Meh, Frown, Plus, X } from "lucide-react"
 
 interface SleepDialogProps {
     open: boolean
@@ -33,7 +33,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
     const [sleepSessions, setSleepSessions] = useState<SleepSession[]>([])
 
     // Sleep quality icons
-    const qualityIcons = [Frown, Meh, Smile, Star]
+    const qualityIcons = [Frown, Meh, Smile, Smile]
     const qualityLabels = ['Poor', 'Fair', 'Good', 'Excellent']
     const qualityColors = ['text-red-400', 'text-orange-400', 'text-yellow-400', 'text-green-400']
 
@@ -252,18 +252,6 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
 
                         {/* Sleep Sessions */}
                         <div className="space-y-3">
-                            <div className="flex items-center justify-end">
-                                <Button
-                                    onClick={addNap}
-                                    size="sm"
-                                    variant="outline"
-                                    disabled={sleepSessions.length >= 3}
-                                    className="h-8 w-8 p-0 border-[#212227] text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <Plus className="w-4 h-4" />
-                                </Button>
-                            </div>
-
                             <div className="space-y-2">
                                 {sleepSessions.map((session) => (
                                     <div key={session.id} className="bg-[#0E0F13] border border-[#212227] rounded-lg p-3">
@@ -315,18 +303,29 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
 
                         {/* Sleep Quality Rating */}
                         <div className="space-y-3">
-                            <Label className="text-sm font-medium text-[#F3F4F6]">How did you sleep?</Label>
-
                             <div className="flex items-center justify-between">
+                                <Label className="text-sm font-medium text-[#F3F4F6]">How did you sleep?</Label>
+                                <Button
+                                    onClick={addNap}
+                                    size="sm"
+                                    variant="outline"
+                                    disabled={sleepSessions.length >= 3}
+                                    className="h-8 w-8 p-0 border-[#212227] text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                </Button>
+                            </div>
+
+                            <div className="flex items-center justify-center gap-4">
                                 {qualityIcons.map((IconComponent, index) => {
                                     const rating = index + 1
                                     return (
                                         <button
                                             key={rating}
                                             onClick={() => setSleepQuality(rating)}
-                                            className={`flex flex-col items-center space-y-2 p-3 rounded-lg transition-all ${sleepQuality === rating
+                                            className={`flex flex-col items-center space-y-2 p-3 rounded-lg transition-all w-16 h-16 ${sleepQuality === rating
                                                 ? 'bg-[#2A8CEA]/20 border border-[#2A8CEA]/50'
-                                                : 'hover:bg-[rgba(255,255,255,0.04)]'
+                                                : 'bg-[#121318] border border-[#212227] hover:bg-[rgba(255,255,255,0.04)]'
                                                 }`}
                                         >
                                             <IconComponent className={`w-6 h-6 ${sleepQuality === rating

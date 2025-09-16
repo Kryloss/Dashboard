@@ -1,6 +1,6 @@
 "use client"
 
-import { Moon, Clock, Star, Smile, Meh, Frown } from "lucide-react"
+import { Moon, Clock, Smile, Meh, Frown } from "lucide-react"
 import { SleepData, SleepSession as BaseSleepSession } from "@/lib/user-data-storage"
 
 // Extended interface to handle legacy data
@@ -19,7 +19,7 @@ interface SleepCardProps {
 
 export function SleepCard({ sleepData }: SleepCardProps) {
     // Sleep quality icons
-    const qualityIcons = [Frown, Meh, Smile, Star]
+    const qualityIcons = [Frown, Meh, Smile, Smile]
     const qualityLabels = ['Poor', 'Fair', 'Good', 'Excellent']
     const qualityColors = ['text-red-400', 'text-orange-400', 'text-yellow-400', 'text-green-400']
 
