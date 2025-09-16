@@ -180,30 +180,31 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         return angle
     }
 
-    // Convert mouse position to angle relative to squared oval center
+    // Convert mouse position to angle relative to rounded rectangle center
     const mouseToAngle = (mouseX: number, mouseY: number, centerX: number, centerY: number): number => {
         const deltaX = mouseX - centerX
         const deltaY = mouseY - centerY
 
-        // For squared oval, we need to find the closest point on the perimeter
-        // and then calculate the angle from that point
-        const rx = 140 // X radius
-        const ry = 100 // Y radius
+        // For rounded rectangle, find the closest point on the perimeter
+        const rx = 130 // X radius for interaction (matches timeline)
+        const ry = 90  // Y radius for interaction (matches timeline)
 
-        // Normalize coordinates to find angle on squared oval
+        // Normalize coordinates to find angle on rounded rectangle
         const absX = Math.abs(deltaX)
         const absY = Math.abs(deltaY)
 
         let angle: number
 
-        // Determine which edge of the squared oval we're closest to
-        if (absX * ry > absY * rx) {
+        // Determine which edge of the rounded rectangle we're closest to
+        if (absX / rx > absY / ry) {
             // Closer to vertical edges (left/right)
-            const edgeY = (deltaX > 0 ? rx : -rx) * (deltaY / absX)
+            const scale = rx / absX
+            const edgeY = deltaY * scale
             angle = Math.atan2(edgeY, deltaX > 0 ? rx : -rx)
         } else {
             // Closer to horizontal edges (top/bottom)
-            const edgeX = (deltaY > 0 ? ry : -ry) * (deltaX / absY)
+            const scale = ry / absY
+            const edgeX = deltaX * scale
             angle = Math.atan2(deltaY > 0 ? ry : -ry, edgeX)
         }
 
@@ -248,18 +249,18 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         const clickAngle = mouseToAngle(clickX, clickY, centerX, centerY)
         // const clickTime = angleToTime(clickAngle) // Unused for now
 
-        // Check if click is near the squared oval timeline
+        // Check if click is near the rounded rectangle timeline
         const deltaX = clickX - centerX
         const deltaY = clickY - centerY
         const absX = Math.abs(deltaX)
         const absY = Math.abs(deltaY)
 
-        // Calculate distance to squared oval perimeter
-        const rx = 140
-        const ry = 100
+        // Calculate distance to rounded rectangle perimeter
+        const rx = 130
+        const ry = 90
 
         let distanceToPerimeter: number
-        if (absX * ry > absY * rx) {
+        if (absX / rx > absY / ry) {
             // Closer to vertical edges
             distanceToPerimeter = absX
         } else {
@@ -267,8 +268,8 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
             distanceToPerimeter = absY
         }
 
-        // Only check for sessions if click is near the timeline (±20 tolerance)
-        const isNearTimeline = distanceToPerimeter >= (Math.min(rx, ry) - 20) && distanceToPerimeter <= (Math.max(rx, ry) + 20)
+        // Only check for sessions if click is near the timeline (±25 tolerance for better usability)
+        const isNearTimeline = distanceToPerimeter >= (Math.min(rx, ry) - 25) && distanceToPerimeter <= (Math.max(rx, ry) + 25)
 
         // Check if clicking on an existing session (within the timeline area)
         const clickedSession = isNearTimeline ? sleepSessions.find(session => {
@@ -685,56 +686,61 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                 {/* Clock container */}
                                 <div
                                     ref={timelineRef}
-                                    className={`relative w-full aspect-square max-w-md mx-auto select-none touch-manipulation ${isDragging ? 'cursor-grabbing' : 'cursor-pointer'
+                                    className={`relative w-full max-w-md mx-auto select-none touch-manipulation ${isDragging ? 'cursor-grabbing' : 'cursor-pointer'
                                         }`}
+                                    style={{ aspectRatio: '320/240' }}
                                     onPointerDown={handleClockPointerDown}
                                 >
-                                    {/* Clock face - squared oval shape */}
-                                    <svg className="w-full h-full" viewBox="0 0 300 300">
-                                        {/* Outer clock ring - squared oval with sharper corners */}
+                                    {/* Clock face - rounded rectangular shape */}
+                                    <svg className="w-full h-full" viewBox="0 0 320 240">
+                                        {/* Outer clock ring - rounded rectangle */}
                                         <rect
-                                            x="10"
-                                            y="50"
+                                            x="20"
+                                            y="20"
                                             width="280"
                                             height="200"
-                                            rx="40"
-                                            ry="40"
+                                            rx="30"
+                                            ry="30"
                                             fill="none"
                                             stroke="#2A2B31"
-                                            strokeWidth="8"
+                                            strokeWidth="6"
                                         />
 
-                                        {/* Hour markers for squared oval */}
+                                        {/* Hour markers for rounded rectangle */}
                                         {Array.from({ length: 24 }, (_, i) => {
                                             const angle = (i * Math.PI) / 12 - Math.PI / 2 // Start at top (12 AM)
                                             const isMainHour = i % 6 === 0 // 12 AM, 6 AM, 12 PM, 6 PM
 
-                                            // Calculate position on squared oval perimeter
-                                            const getSquaredOvalPoint = (angle: number, outerRadius: boolean) => {
+                                            // Calculate position on rounded rectangle perimeter
+                                            const getRoundedRectPoint = (angle: number, outerRadius: boolean) => {
                                                 const cos = Math.cos(angle)
                                                 const sin = Math.sin(angle)
+
+                                                // Adjusted for new viewBox (320x240) with center at (160, 120)
+                                                const centerX = 160
+                                                const centerY = 120
+                                                const rx = outerRadius ? 130 : (isMainHour ? 110 : 120)
+                                                const ry = outerRadius ? 90 : (isMainHour ? 75 : 82)
+
+                                                // For rounded rectangle, find intersection with the shape
                                                 const absX = Math.abs(cos)
                                                 const absY = Math.abs(sin)
 
                                                 let scale = 1
-                                                const rx = outerRadius ? 140 : (isMainHour ? 120 : 130)
-                                                const ry = outerRadius ? 100 : (isMainHour ? 85 : 90)
-
-                                                // For squared oval, adjust scale based on which edge we're closer to
-                                                if (absX * ry > absY * rx) {
+                                                if (absX / rx > absY / ry) {
                                                     scale = rx / absX
                                                 } else {
                                                     scale = ry / absY
                                                 }
 
                                                 return {
-                                                    x: 150 + cos * scale,
-                                                    y: 150 + sin * scale
+                                                    x: centerX + cos * scale,
+                                                    y: centerY + sin * scale
                                                 }
                                             }
 
-                                            const outer = getSquaredOvalPoint(angle, true)
-                                            const inner = getSquaredOvalPoint(angle, false)
+                                            const outer = getRoundedRectPoint(angle, true)
+                                            const inner = getRoundedRectPoint(angle, false)
 
                                             return (
                                                 <line
@@ -744,37 +750,40 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                     x2={inner.x}
                                                     y2={inner.y}
                                                     stroke="#4A4B51"
-                                                    strokeWidth={isMainHour ? "3" : "1"}
+                                                    strokeWidth={isMainHour ? "2" : "1"}
                                                 />
                                             )
                                         })}
 
-                                        {/* Time labels for squared oval */}
+                                        {/* Time labels for rounded rectangle */}
                                         {[
                                             { time: '12 AM', angle: -Math.PI / 2, hours: 0 },
                                             { time: '6 AM', angle: 0, hours: 6 },
                                             { time: '12 PM', angle: Math.PI / 2, hours: 12 },
                                             { time: '6 PM', angle: Math.PI, hours: 18 }
                                         ].map(({ time, angle }) => {
-                                            // Calculate position for squared oval labels
+                                            // Calculate position for rounded rectangle labels
                                             const cos = Math.cos(angle)
                                             const sin = Math.sin(angle)
+
+                                            // Adjusted for new viewBox dimensions
+                                            const centerX = 160
+                                            const centerY = 120
+                                            const labelRx = 95  // Label radius X
+                                            const labelRy = 65  // Label radius Y
+
                                             const absX = Math.abs(cos)
                                             const absY = Math.abs(sin)
 
                                             let scale = 1
-                                            const rx = 110 // Label radius X
-                                            const ry = 80  // Label radius Y
-
-                                            // Adjust for squared oval shape
-                                            if (absX * ry > absY * rx) {
-                                                scale = rx / absX
+                                            if (absX / labelRx > absY / labelRy) {
+                                                scale = labelRx / absX
                                             } else {
-                                                scale = ry / absY
+                                                scale = labelRy / absY
                                             }
 
-                                            const x = 150 + cos * scale
-                                            const y = 150 + sin * scale
+                                            const x = centerX + cos * scale
+                                            const y = centerY + sin * scale
 
                                             return (
                                                 <text
@@ -795,49 +804,54 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                             const startAngle = timeToAngle(session.startTime)
                                             const endAngle = timeToAngle(session.endTime)
                                             const isSelected = selectedSession === session.id
-                                            const radiusX = 140 // Place sessions on the oval timeline itself
-                                            const radiusY = 100 // Place sessions on the oval timeline itself
-                                            const strokeWidth = 20 // Make even more prominent to ensure it overlays the timeline
+                                            const radiusX = 130 // Place sessions on the rounded rect timeline
+                                            const radiusY = 90  // Place sessions on the rounded rect timeline
+                                            const strokeWidth = 16 // Appropriate thickness for the new size
 
-                                            // Calculate start and end positions for squared oval
-                                            const getSquaredOvalPosition = (angle: number, rx: number, ry: number) => {
+                                            // Calculate start and end positions for rounded rectangle
+                                            const getRoundedRectPosition = (angle: number, rx: number, ry: number) => {
                                                 const cos = Math.cos(angle)
                                                 const sin = Math.sin(angle)
                                                 const absX = Math.abs(cos)
                                                 const absY = Math.abs(sin)
 
+                                                // Adjusted for new viewBox center
+                                                const centerX = 160
+                                                const centerY = 120
+
                                                 let scale = 1
-                                                if (absX * ry > absY * rx) {
+                                                if (absX / rx > absY / ry) {
                                                     scale = rx / absX
                                                 } else {
                                                     scale = ry / absY
                                                 }
 
                                                 return {
-                                                    x: 150 + cos * scale,
-                                                    y: 150 + sin * scale
+                                                    x: centerX + cos * scale,
+                                                    y: centerY + sin * scale
                                                 }
                                             }
 
-                                            const startPos = getSquaredOvalPosition(startAngle, radiusX, radiusY)
-                                            const endPos = getSquaredOvalPosition(endAngle, radiusX, radiusY)
+                                            const startPos = getRoundedRectPosition(startAngle, radiusX, radiusY)
+                                            const endPos = getRoundedRectPosition(endAngle, radiusX, radiusY)
                                             const startX = startPos.x
                                             const startY = startPos.y
                                             const endX = endPos.x
                                             const endY = endPos.y
 
-                                            // Generate path that follows the squared oval timeline
-                                            const generateSquaredOvalArcPath = (startAngle: number, endAngle: number, rx: number, ry: number) => {
+                                            // Generate path that follows the rounded rectangle timeline
+                                            const generateRoundedRectArcPath = (startAngle: number, endAngle: number, rx: number, ry: number) => {
                                                 // Calculate the angular span
                                                 let angleDiff = endAngle - startAngle
                                                 if (angleDiff < 0) angleDiff += 2 * Math.PI // Handle overnight
 
-                                                // For squared oval, we'll create a path that follows the perimeter
-                                                // using multiple line segments for better accuracy
-                                                const steps = Math.max(8, Math.floor(angleDiff * 16 / Math.PI)) // More segments for longer arcs
+                                                // For rounded rectangle, create smooth path with appropriate segments
+                                                const steps = Math.max(8, Math.floor(angleDiff * 20 / Math.PI)) // More segments for smoother curve
                                                 const stepSize = angleDiff / steps
 
                                                 let pathData = ''
+                                                const centerX = 160
+                                                const centerY = 120
 
                                                 for (let i = 0; i <= steps; i++) {
                                                     const angle = startAngle + i * stepSize
@@ -846,16 +860,16 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                     const absX = Math.abs(cos)
                                                     const absY = Math.abs(sin)
 
-                                                    // Calculate point on squared oval perimeter
+                                                    // Calculate point on rounded rectangle perimeter
                                                     let scale = 1
-                                                    if (absX * ry > absY * rx) {
+                                                    if (absX / rx > absY / ry) {
                                                         scale = rx / absX
                                                     } else {
                                                         scale = ry / absY
                                                     }
 
-                                                    const x = 150 + cos * scale
-                                                    const y = 150 + sin * scale
+                                                    const x = centerX + cos * scale
+                                                    const y = centerY + sin * scale
 
                                                     if (i === 0) {
                                                         pathData = `M ${x} ${y}`
@@ -867,7 +881,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                 return pathData
                                             }
 
-                                            const pathData = generateSquaredOvalArcPath(startAngle, endAngle, radiusX, radiusY)
+                                            const pathData = generateRoundedRectArcPath(startAngle, endAngle, radiusX, radiusY)
 
                                             return (
                                                 <g key={session.id}>
@@ -928,24 +942,27 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
 
                                                         const midAngle = startAngle + (angleDiff / 2)
 
-                                                        // Calculate label position for squared oval
+                                                        // Calculate label position for rounded rectangle
                                                         const cos = Math.cos(midAngle)
                                                         const sin = Math.sin(midAngle)
                                                         const absX = Math.abs(cos)
                                                         const absY = Math.abs(sin)
 
-                                                        let scale = 1
-                                                        const labelRadiusX = 120 // Inside the squared oval timeline
-                                                        const labelRadiusY = 85  // Inside the squared oval timeline
+                                                        // Adjusted for new viewBox center and size
+                                                        const centerX = 160
+                                                        const centerY = 120
+                                                        const labelRadiusX = 105 // Inside the rounded rectangle timeline
+                                                        const labelRadiusY = 70  // Inside the rounded rectangle timeline
 
-                                                        if (absX * labelRadiusY > absY * labelRadiusX) {
+                                                        let scale = 1
+                                                        if (absX / labelRadiusX > absY / labelRadiusY) {
                                                             scale = labelRadiusX / absX
                                                         } else {
                                                             scale = labelRadiusY / absY
                                                         }
 
-                                                        const labelX = 150 + cos * scale
-                                                        const labelY = 150 + sin * scale
+                                                        const labelX = centerX + cos * scale
+                                                        const labelY = centerY + sin * scale
 
                                                         return (
                                                             <text
