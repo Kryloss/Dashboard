@@ -732,7 +732,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                             const isSelected = selectedSession === session.id
                                             const radiusX = 140 // Place sessions on the oval timeline itself
                                             const radiusY = 100 // Place sessions on the oval timeline itself
-                                            const strokeWidth = 20 // Make even more prominent to ensure it overlays the timeline
+                                            const strokeWidth = 8 // Moderate thickness that follows the timeline without overwhelming it
 
                                             // Calculate arc path for oval
                                             const startX = 150 + radiusX * Math.cos(startAngle)
@@ -740,7 +740,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                             const endX = 150 + radiusX * Math.cos(endAngle)
                                             const endY = 150 + radiusY * Math.sin(endAngle)
 
-                                            // Generate path that follows the exact oval timeline using multiple arc segments
+                                            // Generate path that follows the exact oval timeline using a single elliptical arc
                                             const generateOvalArcPath = (startAngle: number, endAngle: number, rx: number, ry: number) => {
                                                 // Calculate the angular span
                                                 let angleDiff = endAngle - startAngle
@@ -752,25 +752,13 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                 const endX = 150 + rx * Math.cos(endAngle)
                                                 const endY = 150 + ry * Math.sin(endAngle)
 
-                                                // For proper oval arc rendering, we need to break the arc into smaller segments
-                                                // This ensures the path follows the exact oval perimeter rather than taking shortcuts
-                                                const numSegments = Math.max(8, Math.ceil(angleDiff / (Math.PI / 12))) // At least 8 segments, more for longer arcs
-                                                const segmentAngle = angleDiff / numSegments
+                                                // Determine large arc flag (1 if arc is more than 180 degrees)
+                                                const largeArcFlag = angleDiff > Math.PI ? 1 : 0
 
-                                                let pathData = `M ${startX} ${startY}`
-
-                                                // Generate multiple small arc segments that follow the oval
-                                                for (let i = 1; i <= numSegments; i++) {
-                                                    const currentAngle = startAngle + (i * segmentAngle)
-                                                    const currentX = 150 + rx * Math.cos(currentAngle)
-                                                    const currentY = 150 + ry * Math.sin(currentAngle)
-
-                                                    // Use small arc segments (each segment is less than 180 degrees)
-                                                    // This ensures each segment follows the oval curve properly
-                                                    pathData += ` L ${currentX} ${currentY}`
-                                                }
-
-                                                return pathData
+                                                // Use a single elliptical arc command with the correct parameters
+                                                // The key is using the exact same rx and ry values as the oval timeline
+                                                // and ensuring the arc follows the clockwise direction (sweep-flag = 1)
+                                                return `M ${startX} ${startY} A ${rx} ${ry} 0 ${largeArcFlag} 1 ${endX} ${endY}`
                                             }
 
                                             const pathData = generateOvalArcPath(startAngle, endAngle, radiusX, radiusY)
