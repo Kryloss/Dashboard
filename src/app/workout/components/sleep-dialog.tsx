@@ -36,6 +36,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
     const [dragType, setDragType] = useState<'start' | 'end' | 'move' | null>(null)
     // const [dragOffset, setDragOffset] = useState(0) // Unused in circular interface
     const timelineRef = useRef<HTMLDivElement>(null)
+    const dragStartPos = useRef<{ x: number; y: number } | null>(null)
 
     // Sleep quality icons
     const qualityIcons = [Frown, Meh, Smile, Smile, Star]
@@ -192,9 +193,9 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         // Convert to hours (0-24)
         const hours = (normalizedAngle / Math.PI) * 12 // Full circle = 24 hours
 
-        // Convert to minutes and snap to 15-minute intervals
+        // Convert to minutes and snap to 5-minute intervals for better PC control
         const minutes = hours * 60
-        return Math.round(minutes / 15) * 15
+        return Math.round(minutes / 5) * 5
     }
 
     // Convert time to x,y coordinates on oval (commented out as unused)
@@ -220,8 +221,18 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         const clickAngle = mouseToAngle(clickX, clickY, centerX, centerY)
         // const clickTime = angleToTime(clickAngle) // Unused for now
 
-        // Check if clicking on an existing session (within 30 minutes tolerance)
-        const clickedSession = sleepSessions.find(session => {
+        // Check if click is near the oval timeline (where sessions are now positioned)
+        const deltaX = clickX - centerX
+        const deltaY = clickY - centerY
+        const normalizedX = deltaX
+        const normalizedY = deltaY * 1.4 // Account for oval aspect ratio
+        const distanceFromCenter = Math.sqrt(normalizedX * normalizedX + normalizedY * normalizedY)
+
+        // Only check for sessions if click is near the timeline (140±20 radius tolerance)
+        const isNearTimeline = distanceFromCenter >= 120 && distanceFromCenter <= 160
+
+        // Check if clicking on an existing session (within the timeline area)
+        const clickedSession = isNearTimeline ? sleepSessions.find(session => {
             // Check if click is within the arc of this session
             const startAngle = timeToAngle(session.startTime)
             const endAngle = timeToAngle(session.endTime)
@@ -237,7 +248,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
             }
 
             return isInArc
-        })
+        }) : null
 
         if (clickedSession) {
             setSelectedSession(clickedSession.id)
@@ -254,6 +265,13 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
 
         const session = sleepSessions.find(s => s.id === sessionId)
         if (!session) return
+
+        // Record initial drag position for dead zone detection
+        const rect = timelineRef.current.getBoundingClientRect()
+        dragStartPos.current = {
+            x: event.clientX - rect.left,
+            y: event.clientY - rect.top
+        }
 
         setIsDragging(true)
         setDragType(dragMode)
@@ -285,10 +303,48 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
             if (!timelineRef.current) return
 
             const rect = timelineRef.current.getBoundingClientRect()
-            const pointerX = event.clientX - rect.left
-            const pointerY = event.clientY - rect.top
             const centerX = rect.width / 2
             const centerY = rect.height / 2
+
+            // Get raw pointer position
+            let pointerX = event.clientX - rect.left
+            let pointerY = event.clientY - rect.top
+
+            // Dead zone check - only apply drag if moved enough from start position
+            if (dragStartPos.current) {
+                const moveDistance = Math.sqrt(
+                    Math.pow(pointerX - dragStartPos.current.x, 2) +
+                    Math.pow(pointerY - dragStartPos.current.y, 2)
+                )
+
+                // Require minimum 8px movement before applying drag (prevents micro-movements)
+                if (moveDistance < 8) {
+                    return
+                }
+            }
+
+            // Constrain pointer to reasonable bounds around the clock
+            // This prevents erratic behavior when mouse goes far outside
+            const maxDistanceX = centerX + 160 // Allow some margin beyond the oval
+            const maxDistanceY = centerY + 120
+            const minDistanceX = centerX - 160
+            const minDistanceY = centerY - 120
+
+            pointerX = Math.max(minDistanceX, Math.min(maxDistanceX, pointerX))
+            pointerY = Math.max(minDistanceY, Math.min(maxDistanceY, pointerY))
+
+            // For better PC experience, ensure minimum distance from center
+            // This prevents issues when cursor is too close to center
+            const deltaX = pointerX - centerX
+            const deltaY = pointerY - centerY
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY)
+            const minDistance = 30 // Minimum distance from center
+
+            if (distance < minDistance && distance > 0) {
+                const scale = minDistance / distance
+                pointerX = centerX + deltaX * scale
+                pointerY = centerY + deltaY * scale
+            }
 
             // Convert pointer position to angle and then to time
             const pointerAngle = mouseToAngle(pointerX, pointerY, centerX, centerY)
@@ -417,6 +473,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
 
         setIsDragging(false)
         setDragType(null)
+        dragStartPos.current = null // Reset drag start position
         // setDragOffset(0) // Not needed in circular interface
     }, [selectedSession])
 
@@ -576,7 +633,9 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                 {/* Clock container */}
                                 <div
                                     ref={timelineRef}
-                                    className="relative w-full aspect-square max-w-md mx-auto cursor-pointer select-none touch-manipulation"
+                                    className={`relative w-full aspect-square max-w-md mx-auto select-none touch-manipulation ${
+                                        isDragging ? 'cursor-grabbing' : 'cursor-pointer'
+                                    }`}
                                     onPointerDown={handleClockPointerDown}
                                 >
                                     {/* Clock face - oval shape */}
@@ -650,9 +709,9 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                             const startAngle = timeToAngle(session.startTime)
                                             const endAngle = timeToAngle(session.endTime)
                                             const isSelected = selectedSession === session.id
-                                            const radiusX = 80 // Oval X radius for sessions
-                                            const radiusY = 60 // Oval Y radius for sessions
-                                            const strokeWidth = 16
+                                            const radiusX = 140 // Place sessions on the oval timeline itself
+                                            const radiusY = 100 // Place sessions on the oval timeline itself
+                                            const strokeWidth = 16 // Prominent on timeline
 
                                             // Calculate arc path for oval
                                             const startX = 150 + radiusX * Math.cos(startAngle)
@@ -693,9 +752,11 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                     <circle
                                                         cx={startX}
                                                         cy={startY}
-                                                        r="8"
+                                                        r="10"
                                                         fill={session.type === 'main' ? '#2BD2FF' : '#9BE15D'}
-                                                        className="cursor-pointer opacity-70 hover:opacity-100 transition-opacity"
+                                                        stroke="#121318"
+                                                        strokeWidth="2"
+                                                        className="cursor-pointer opacity-80 hover:opacity-100 transition-opacity"
                                                         onPointerDown={(e) => {
                                                             e.stopPropagation()
                                                             handleSessionPointerDown(e, session.id, 'start')
@@ -706,9 +767,11 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                     <circle
                                                         cx={endX}
                                                         cy={endY}
-                                                        r="8"
+                                                        r="10"
                                                         fill={session.type === 'main' ? '#2BD2FF' : '#9BE15D'}
-                                                        className="cursor-pointer opacity-70 hover:opacity-100 transition-opacity"
+                                                        stroke="#121318"
+                                                        strokeWidth="2"
+                                                        className="cursor-pointer opacity-80 hover:opacity-100 transition-opacity"
                                                         onPointerDown={(e) => {
                                                             e.stopPropagation()
                                                             handleSessionPointerDown(e, session.id, 'end')
@@ -718,8 +781,8 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                     {/* Session time label */}
                                                     {(() => {
                                                         const midAngle = startAngle + (angleDiff / 2)
-                                                        const labelRadiusX = 60 // Inside the session arc for oval
-                                                        const labelRadiusY = 45 // Shorter Y radius for oval shape
+                                                        const labelRadiusX = 120 // Inside the oval timeline since sessions are now on the border
+                                                        const labelRadiusY = 85  // Inside the oval timeline
                                                         const labelX = 150 + labelRadiusX * Math.cos(midAngle)
                                                         const labelY = 150 + labelRadiusY * Math.sin(midAngle)
 
