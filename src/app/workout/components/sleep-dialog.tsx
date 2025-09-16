@@ -7,6 +7,7 @@ import { UserDataStorage } from "@/lib/user-data-storage"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Moon, Plus, X, Star, Smile, Meh, Frown } from "lucide-react"
 
@@ -94,6 +95,60 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         return `${displayHour}:${mins.toString().padStart(2, '0')} ${period}`
     }
 
+    // Parse time string (e.g., "9:30 PM") to minutes
+    const parseTimeString = (timeStr: string): number | null => {
+        const timeRegex = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i
+        const match = timeStr.trim().match(timeRegex)
+
+        if (!match) return null
+
+        let hours = parseInt(match[1])
+        const minutes = parseInt(match[2])
+        const period = match[3].toUpperCase()
+
+        if (hours < 1 || hours > 12 || minutes < 0 || minutes > 59) return null
+
+        // Convert to 24-hour format
+        if (period === 'AM') {
+            if (hours === 12) hours = 0
+        } else {
+            if (hours !== 12) hours += 12
+        }
+
+        return hours * 60 + minutes
+    }
+
+    // Update session time from manual input
+    const updateSessionTimeFromInput = (sessionId: string, field: 'start' | 'end', timeStr: string) => {
+        const newTime = parseTimeString(timeStr)
+        if (newTime === null) return false // Invalid time format
+
+        setSleepSessions(prev => prev.map(session => {
+            if (session.id !== sessionId) return session
+
+            if (field === 'start') {
+                // For overnight sessions, allow start time to be after end time
+                // Only check for minimum duration
+                const duration = session.endTime >= newTime
+                    ? session.endTime - newTime  // Same day
+                    : (24 * 60) - newTime + session.endTime // Overnight
+
+                if (duration < 15) return session // Minimum 15 minutes
+                return { ...session, startTime: newTime }
+            } else {
+                // For end time, check duration considering overnight possibility
+                const duration = newTime >= session.startTime
+                    ? newTime - session.startTime  // Same day
+                    : (24 * 60) - session.startTime + newTime // Overnight
+
+                if (duration < 15) return session // Minimum 15 minutes
+                return { ...session, endTime: newTime }
+            }
+        }))
+
+        return true
+    }
+
     // Calculate duration in hours and minutes
     const calculateDuration = (start: number, end: number) => {
         let duration = end - start
@@ -104,16 +159,22 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         return { hours, minutes, totalMinutes: duration }
     }
 
-    // Convert pixel position to time (in minutes)
+    // Convert pixel position to time (in minutes) - 24 hour range
     const pixelToTime = (pixel: number, timelineWidth: number): number => {
         const ratio = pixel / timelineWidth
-        return Math.round((ratio * 720) / 15) * 15 // 720 minutes (12 hours), snap to 15-min intervals
+        // 24 hours from 6 PM (-360 minutes) to 6 PM next day (1080 minutes)
+        const totalRange = 1440 // 24 hours in minutes
+        const startOffset = -360 // Start at 6 PM previous day
+        return Math.round((startOffset + (ratio * totalRange)) / 15) * 15 // Snap to 15-min intervals
     }
 
-    // Convert time to pixel position
+    // Convert time to pixel position - 24 hour range
     const timeToPixel = (time: number, timelineWidth: number): number => {
-        const adjustedTime = time < 0 ? time + 720 : time // Handle negative times
-        return (Math.max(0, Math.min(720, adjustedTime)) / 720) * timelineWidth
+        const startOffset = -360 // Start at 6 PM previous day
+        const totalRange = 1440 // 24 hours in minutes
+        const adjustedTime = time - startOffset // Offset to 0-based range
+        const ratio = Math.max(0, Math.min(totalRange, adjustedTime)) / totalRange
+        return ratio * timelineWidth
     }
 
     // Handle timeline click/tap - only select sessions, no creation
@@ -199,7 +260,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                         const newStartTime = pixelToTime(pointerX, timelineWidth)
                         const maxStart = session.endTime - 15 // Minimum 15 minutes
                         const proposedStart = Math.max(
-                            session.type === 'main' ? -240 : 0, // 8 PM for main sleep
+                            -360, // 6 PM for any session (24h range start)
                             Math.min(newStartTime, maxStart)
                         )
 
@@ -209,15 +270,15 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                     case 'end': {
                         const newEndTime = pixelToTime(pointerX, timelineWidth)
                         const minEnd = session.startTime + 15 // Minimum 15 minutes
-                        const proposedEnd = Math.max(minEnd, Math.min(newEndTime, 720))
+                        const proposedEnd = Math.max(minEnd, Math.min(newEndTime, 1080)) // 6 PM next day
 
                         newSession.endTime = proposedEnd
                         break
                     }
                     case 'move': {
                         const newStartTime = pixelToTime(pointerX - dragOffset, timelineWidth)
-                        const maxStart = 720 - duration
-                        const minStart = session.type === 'main' ? -240 : 0
+                        const maxStart = 1080 - duration // 6 PM next day minus duration
+                        const minStart = -360 // 6 PM previous day
                         const clampedStart = Math.max(minStart, Math.min(newStartTime, maxStart))
                         const clampedEnd = clampedStart + duration
 
@@ -441,14 +502,14 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                     <div className="px-6 pb-6 space-y-6">
                         {/* Timeline and Sleep Sessions */}
                         <div className="space-y-6">
-                            <Label className="text-sm font-medium text-[#F3F4F6]">Sleep Timeline (12 AM - 12 PM)</Label>
+                            <Label className="text-sm font-medium text-[#F3F4F6]">Sleep Timeline (6 PM - 6 PM next day)</Label>
 
                             {/* Main Timeline */}
                             <div className="relative bg-[#121318] border border-[#212227] rounded-lg p-6">
                                 {/* Timeline endpoints */}
                                 <div className="flex justify-between text-sm font-medium text-[#F3F4F6] mb-4">
-                                    <span>12 AM</span>
-                                    <span>12 PM</span>
+                                    <span>6 PM</span>
+                                    <span>6 PM</span>
                                 </div>
 
                                 {/* Interactive Timeline */}
@@ -466,21 +527,21 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                     >
                                         {/* Timeline base */}
                                         <div className="relative w-full h-3 bg-[#2A2B31] rounded-full">
-                                            {/* Hour markers */}
-                                            {Array.from({ length: 13 }, (_, i) => (
+                                            {/* Hour markers - 24 hour timeline */}
+                                            {Array.from({ length: 25 }, (_, i) => (
                                                 <div
                                                     key={i}
                                                     className="absolute w-px h-8 bg-[#4A4B51] top-1/2 transform -translate-y-1/2"
-                                                    style={{ left: `${(i / 12) * 100}%` }}
+                                                    style={{ left: `${(i / 24) * 100}%` }}
                                                 />
                                             ))}
 
-                                            {/* Time labels */}
-                                            <div className="absolute -top-6 left-0 text-xs text-[#7A7F86]">12 AM</div>
-                                            <div className="absolute -top-6 left-1/4 text-xs text-[#7A7F86]">3 AM</div>
+                                            {/* Time labels - 24 hour timeline */}
+                                            <div className="absolute -top-6 left-0 text-xs text-[#7A7F86]">6 PM</div>
+                                            <div className="absolute -top-6 left-1/4 text-xs text-[#7A7F86]">12 AM</div>
                                             <div className="absolute -top-6 left-1/2 text-xs text-[#7A7F86]">6 AM</div>
-                                            <div className="absolute -top-6 left-3/4 text-xs text-[#7A7F86]">9 AM</div>
-                                            <div className="absolute -top-6 right-0 text-xs text-[#7A7F86]">12 PM</div>
+                                            <div className="absolute -top-6 left-3/4 text-xs text-[#7A7F86]">12 PM</div>
+                                            <div className="absolute -top-6 right-0 text-xs text-[#7A7F86]">6 PM</div>
                                         </div>
 
                                         {/* Sleep Session Bars */}
@@ -518,10 +579,17 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                         onPointerDown={(e) => handleSessionPointerDown(e, session.id, 'start')}
                                                     />
 
-                                                    {/* Session label */}
-                                                    {width > 60 && (
+                                                    {/* Session label with time */}
+                                                    {width > 80 && (
                                                         <div className="absolute inset-0 flex items-center justify-center text-white text-xs font-medium pointer-events-none">
-                                                            {session.type === 'main' ? 'Sleep' : 'Nap'}
+                                                            <div className="text-center">
+                                                                <div className="font-semibold">
+                                                                    {formatTime(session.startTime)} - {formatTime(session.endTime)}
+                                                                </div>
+                                                                <div className="text-[10px] opacity-80">
+                                                                    {session.type === 'main' ? 'Sleep' : 'Nap'}
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     )}
 
@@ -552,13 +620,14 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                                 : 'bg-[#121318] border-[#212227] hover:border-[#2A2B31]'
                                                         }`}
                                                     >
-                                                        <div className="flex items-center justify-between">
+                                                        <div className="space-y-3">
+                                                            {/* Session header */}
                                                             <div className="flex items-center space-x-3">
                                                                 <div className={`w-3 h-3 rounded-full ${
                                                                     session.type === 'main' ? 'bg-[#2BD2FF]' : 'bg-[#9BE15D]'
                                                                 }`} />
                                                                 <span className="text-sm font-medium text-[#F3F4F6]">
-                                                                    {session.type === 'main' ? 'Main Sleep' : 'Nap'} • {formatTime(session.startTime)} - {formatTime(session.endTime)}
+                                                                    {session.type === 'main' ? 'Main Sleep' : 'Nap'}
                                                                 </span>
                                                                 <span className="text-xs text-[#A1A1AA]">
                                                                     {duration.hours}h {duration.minutes}m
@@ -570,6 +639,39 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                                 )}
                                                             </div>
 
+                                                            {/* Editable time inputs */}
+                                                            <div className="flex items-center space-x-4">
+                                                                <div className="flex items-center space-x-2">
+                                                                    <label className="text-xs text-[#A1A1AA]">Start:</label>
+                                                                    <Input
+                                                                        value={formatTime(session.startTime)}
+                                                                        onChange={(e) => {
+                                                                            const success = updateSessionTimeFromInput(session.id, 'start', e.target.value)
+                                                                            if (!success) {
+                                                                                // Could add error feedback here
+                                                                            }
+                                                                        }}
+                                                                        className="w-20 h-7 text-xs bg-[#0E0F13] border-[#212227] text-[#F3F4F6]"
+                                                                        placeholder="9:00 PM"
+                                                                    />
+                                                                </div>
+                                                                <div className="flex items-center space-x-2">
+                                                                    <label className="text-xs text-[#A1A1AA]">End:</label>
+                                                                    <Input
+                                                                        value={formatTime(session.endTime)}
+                                                                        onChange={(e) => {
+                                                                            const success = updateSessionTimeFromInput(session.id, 'end', e.target.value)
+                                                                            if (!success) {
+                                                                                // Could add error feedback here
+                                                                            }
+                                                                        }}
+                                                                        className="w-20 h-7 text-xs bg-[#0E0F13] border-[#212227] text-[#F3F4F6]"
+                                                                        placeholder="7:00 AM"
+                                                                    />
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Action buttons */}
                                                             <div className="flex items-center space-x-2">
                                                                 <Button
                                                                     onClick={() => addWakeUp(session.id)}
