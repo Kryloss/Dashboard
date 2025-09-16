@@ -525,7 +525,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
             const sessionStart = session.startTime < 0 ? session.startTime + 24 * 60 : session.startTime
             const sessionEnd = session.endTime
             return (defaultStart >= sessionStart && defaultStart <= sessionEnd) ||
-                   (defaultEnd >= sessionStart && defaultEnd <= sessionEnd)
+                (defaultEnd >= sessionStart && defaultEnd <= sessionEnd)
         })
 
         if (hasConflict) {
@@ -633,9 +633,8 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                 {/* Clock container */}
                                 <div
                                     ref={timelineRef}
-                                    className={`relative w-full aspect-square max-w-md mx-auto select-none touch-manipulation ${
-                                        isDragging ? 'cursor-grabbing' : 'cursor-pointer'
-                                    }`}
+                                    className={`relative w-full aspect-square max-w-md mx-auto select-none touch-manipulation ${isDragging ? 'cursor-grabbing' : 'cursor-pointer'
+                                        }`}
                                     onPointerDown={handleClockPointerDown}
                                 >
                                     {/* Clock face - oval shape */}
@@ -754,9 +753,8 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                         stroke={session.type === 'main' ? '#2BD2FF' : '#9BE15D'}
                                                         strokeWidth={strokeWidth}
                                                         strokeLinecap="round"
-                                                        className={`transition-all duration-200 ${
-                                                            isSelected ? 'drop-shadow-lg' : ''
-                                                        }`}
+                                                        className={`transition-all duration-200 ${isSelected ? 'drop-shadow-lg' : ''
+                                                            }`}
                                                         style={{
                                                             filter: isSelected ? 'drop-shadow(0 0 8px rgba(43, 210, 255, 0.5))' : '',
                                                             strokeOpacity: isSelected ? 1 : 0.8
@@ -799,6 +797,10 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
 
                                                     {/* Session time label */}
                                                     {(() => {
+                                                        // Calculate angle difference for overnight sessions
+                                                        let angleDiff = endAngle - startAngle
+                                                        if (angleDiff < 0) angleDiff += 2 * Math.PI // Handle overnight
+
                                                         const midAngle = startAngle + (angleDiff / 2)
                                                         const labelRadiusX = 120 // Inside the oval timeline since sessions are now on the border
                                                         const labelRadiusY = 85  // Inside the oval timeline
@@ -838,88 +840,86 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                         const isSelected = selectedSession === session.id
 
                                         return (
-                                                    <div
-                                                        key={session.id}
-                                                        className={`p-3 rounded-lg border transition-all ${
-                                                            isSelected
-                                                                ? 'bg-[#0E0F13] border-[#2A8CEA]'
-                                                                : 'bg-[#121318] border-[#212227] hover:border-[#2A2B31]'
-                                                        }`}
-                                                    >
-                                                        <div className="space-y-3">
-                                                            {/* Session header */}
-                                                            <div className="flex items-center space-x-3">
-                                                                <div className={`w-3 h-3 rounded-full ${
-                                                                    session.type === 'main' ? 'bg-[#2BD2FF]' : 'bg-[#9BE15D]'
-                                                                }`} />
-                                                                <span className="text-sm font-medium text-[#F3F4F6]">
-                                                                    {session.type === 'main' ? 'Main Sleep' : 'Nap'}
-                                                                </span>
-                                                                <span className="text-xs text-[#A1A1AA]">
-                                                                    {duration.hours}h {duration.minutes}m
-                                                                </span>
-                                                                {session.wakeUps > 0 && (
-                                                                    <span className="text-xs text-[#A1A1AA]">
-                                                                        • {session.wakeUps} wake-ups
-                                                                    </span>
-                                                                )}
-                                                            </div>
+                                            <div
+                                                key={session.id}
+                                                className={`p-3 rounded-lg border transition-all ${isSelected
+                                                        ? 'bg-[#0E0F13] border-[#2A8CEA]'
+                                                        : 'bg-[#121318] border-[#212227] hover:border-[#2A2B31]'
+                                                    }`}
+                                            >
+                                                <div className="space-y-3">
+                                                    {/* Session header */}
+                                                    <div className="flex items-center space-x-3">
+                                                        <div className={`w-3 h-3 rounded-full ${session.type === 'main' ? 'bg-[#2BD2FF]' : 'bg-[#9BE15D]'
+                                                            }`} />
+                                                        <span className="text-sm font-medium text-[#F3F4F6]">
+                                                            {session.type === 'main' ? 'Main Sleep' : 'Nap'}
+                                                        </span>
+                                                        <span className="text-xs text-[#A1A1AA]">
+                                                            {duration.hours}h {duration.minutes}m
+                                                        </span>
+                                                        {session.wakeUps > 0 && (
+                                                            <span className="text-xs text-[#A1A1AA]">
+                                                                • {session.wakeUps} wake-ups
+                                                            </span>
+                                                        )}
+                                                    </div>
 
-                                                            {/* Editable time inputs */}
-                                                            <div className="flex items-center space-x-4">
-                                                                <div className="flex items-center space-x-2">
-                                                                    <label className="text-xs text-[#A1A1AA]">Start:</label>
-                                                                    <Input
-                                                                        value={formatTime(session.startTime)}
-                                                                        onChange={(e) => {
-                                                                            const success = updateSessionTimeFromInput(session.id, 'start', e.target.value)
-                                                                            if (!success) {
-                                                                                // Could add error feedback here
-                                                                            }
-                                                                        }}
-                                                                        className="w-20 h-7 text-xs bg-[#0E0F13] border-[#212227] text-[#F3F4F6]"
-                                                                        placeholder="9:00 PM"
-                                                                    />
-                                                                </div>
-                                                                <div className="flex items-center space-x-2">
-                                                                    <label className="text-xs text-[#A1A1AA]">End:</label>
-                                                                    <Input
-                                                                        value={formatTime(session.endTime)}
-                                                                        onChange={(e) => {
-                                                                            const success = updateSessionTimeFromInput(session.id, 'end', e.target.value)
-                                                                            if (!success) {
-                                                                                // Could add error feedback here
-                                                                            }
-                                                                        }}
-                                                                        className="w-20 h-7 text-xs bg-[#0E0F13] border-[#212227] text-[#F3F4F6]"
-                                                                        placeholder="7:00 AM"
-                                                                    />
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Action buttons */}
-                                                            <div className="flex items-center space-x-2">
-                                                                <Button
-                                                                    onClick={() => addWakeUp(session.id)}
-                                                                    variant="ghost"
-                                                                    className="text-xs h-auto px-2 py-1 text-[#A1A1AA] hover:text-[#F3F4F6]"
-                                                                >
-                                                                    + Wake-up
-                                                                </Button>
-                                                                {session.type === 'nap' && (
-                                                                    <Button
-                                                                        onClick={() => removeSession(session.id)}
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        className="w-6 h-6 text-[#A1A1AA] hover:text-red-400 hover:bg-red-500/10"
-                                                                    >
-                                                                        <X className="w-3 h-3" />
-                                                                    </Button>
-                                                                )}
-                                                            </div>
+                                                    {/* Editable time inputs */}
+                                                    <div className="flex items-center space-x-4">
+                                                        <div className="flex items-center space-x-2">
+                                                            <label className="text-xs text-[#A1A1AA]">Start:</label>
+                                                            <Input
+                                                                value={formatTime(session.startTime)}
+                                                                onChange={(e) => {
+                                                                    const success = updateSessionTimeFromInput(session.id, 'start', e.target.value)
+                                                                    if (!success) {
+                                                                        // Could add error feedback here
+                                                                    }
+                                                                }}
+                                                                className="w-20 h-7 text-xs bg-[#0E0F13] border-[#212227] text-[#F3F4F6]"
+                                                                placeholder="9:00 PM"
+                                                            />
+                                                        </div>
+                                                        <div className="flex items-center space-x-2">
+                                                            <label className="text-xs text-[#A1A1AA]">End:</label>
+                                                            <Input
+                                                                value={formatTime(session.endTime)}
+                                                                onChange={(e) => {
+                                                                    const success = updateSessionTimeFromInput(session.id, 'end', e.target.value)
+                                                                    if (!success) {
+                                                                        // Could add error feedback here
+                                                                    }
+                                                                }}
+                                                                className="w-20 h-7 text-xs bg-[#0E0F13] border-[#212227] text-[#F3F4F6]"
+                                                                placeholder="7:00 AM"
+                                                            />
                                                         </div>
                                                     </div>
-                                                )
+
+                                                    {/* Action buttons */}
+                                                    <div className="flex items-center space-x-2">
+                                                        <Button
+                                                            onClick={() => addWakeUp(session.id)}
+                                                            variant="ghost"
+                                                            className="text-xs h-auto px-2 py-1 text-[#A1A1AA] hover:text-[#F3F4F6]"
+                                                        >
+                                                            + Wake-up
+                                                        </Button>
+                                                        {session.type === 'nap' && (
+                                                            <Button
+                                                                onClick={() => removeSession(session.id)}
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="w-6 h-6 text-[#A1A1AA] hover:text-red-400 hover:bg-red-500/10"
+                                                            >
+                                                                <X className="w-3 h-3" />
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )
                                     })}
                                 </div>
                             )}
@@ -953,17 +953,15 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                         <button
                                             key={rating}
                                             onClick={() => setSleepQuality(rating)}
-                                            className={`flex flex-col items-center space-y-2 p-3 rounded-lg transition-all ${
-                                                sleepQuality === rating
+                                            className={`flex flex-col items-center space-y-2 p-3 rounded-lg transition-all ${sleepQuality === rating
                                                     ? 'bg-[#2A8CEA]/20 border border-[#2A8CEA]/50'
                                                     : 'hover:bg-[rgba(255,255,255,0.04)]'
-                                            }`}
+                                                }`}
                                         >
-                                            <IconComponent className={`w-6 h-6 ${
-                                                sleepQuality === rating
+                                            <IconComponent className={`w-6 h-6 ${sleepQuality === rating
                                                     ? qualityColors[index]
                                                     : 'text-[#A1A1AA]'
-                                            }`} />
+                                                }`} />
                                             <span className="text-xs text-[#A1A1AA]">{qualityLabels[index]}</span>
                                         </button>
                                     )
