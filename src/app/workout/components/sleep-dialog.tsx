@@ -203,11 +203,8 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                             {/* Oval Clock Interface */}
                             <div className="relative bg-[#121318] border border-[#212227] rounded-lg p-8">
                                 {/* Instructions */}
-                                <div className="text-sm text-[#D1D5DB] mb-6 text-center font-medium">
-                                    24-Hour Sleep Timeline
-                                </div>
-                                <div className="text-xs text-[#9CA3AF] mb-4 text-center">
-                                    Midnight at top • Noon at bottom • Hour lines radiate from center
+                                <div className="text-sm text-[#9CA3AF] mb-6 text-center">
+                                    Sleep Timeline
                                 </div>
 
                                 {/* Clock container */}
@@ -218,17 +215,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                 >
                                     {/* Clock face - rounded rectangular shape */}
                                     <svg className="w-full h-full" viewBox="0 0 320 240">
-                                        {/* Outer clock ring - rounded rectangle with gradient */}
-                                        <defs>
-                                            <linearGradient id="clockGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                                <stop offset="0%" style={{stopColor:"#374151", stopOpacity:1}} />
-                                                <stop offset="50%" style={{stopColor:"#2A2B31", stopOpacity:1}} />
-                                                <stop offset="100%" style={{stopColor:"#1F2937", stopOpacity:1}} />
-                                            </linearGradient>
-                                            <filter id="clockShadow">
-                                                <feDropShadow dx="0" dy="2" stdDeviation="4" floodOpacity="0.3"/>
-                                            </filter>
-                                        </defs>
+                                        {/* Simple clock border */}
                                         <rect
                                             x="20"
                                             y="20"
@@ -237,78 +224,26 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                             rx="30"
                                             ry="30"
                                             fill="none"
-                                            stroke="url(#clockGradient)"
-                                            strokeWidth="6"
-                                            filter="url(#clockShadow)"
+                                            stroke="#374151"
+                                            strokeWidth="2"
                                         />
 
-                                        {/* Hour lines extending from center to edges */}
-                                        {Array.from({ length: 24 }, (_, i) => {
-                                            const angle = (i * Math.PI) / 12 - Math.PI / 2 // Start at top (12 AM)
-                                            const isMainHour = i % 6 === 0 // 12 AM, 6 AM, 12 PM, 6 PM
-                                            const isHalfHour = i % 3 === 0 // Every 3 hours for better readability
+                                        {/* Minimal hour markers */}
+                                        {Array.from({ length: 12 }, (_, i) => {
+                                            const angle = (i * Math.PI) / 6 - Math.PI / 2 // Every 2 hours, start at top
+                                            const isMainHour = i % 3 === 0 // 12 AM, 6 AM, 12 PM, 6 PM
 
                                             const cos = Math.cos(angle)
                                             const sin = Math.sin(angle)
-
-                                            // Clock center
                                             const centerX = 160
                                             const centerY = 120
 
-                                            // Calculate outer edge point on rounded rectangle perimeter
-                                            const getEdgePoint = (angle: number) => {
-                                                const cos = Math.cos(angle)
-                                                const sin = Math.sin(angle)
-                                                const rx = 130
-                                                const ry = 90
-                                                const cornerRadius = 30
+                                            // Simple outer point calculation
+                                            const outerRadius = 125
+                                            const innerRadius = isMainHour ? 105 : 115
 
-                                                const absX = Math.abs(cos)
-                                                const absY = Math.abs(sin)
-                                                const effectiveRx = rx - cornerRadius
-                                                const effectiveRy = ry - cornerRadius
-
-                                                let x, y
-
-                                                if (absX / effectiveRx > absY / effectiveRy) {
-                                                    // Near vertical edges
-                                                    const edgeY = sin * effectiveRx / absX
-                                                    if (Math.abs(edgeY) > effectiveRy) {
-                                                        // Corner region
-                                                        const cornerCenterY = sin > 0 ? effectiveRy : -effectiveRy
-                                                        const cornerCenterX = cos > 0 ? effectiveRx : -effectiveRx
-                                                        const cornerAngle = Math.atan2(sin * effectiveRy - cornerCenterY, cos * effectiveRx - cornerCenterX)
-                                                        x = centerX + cornerCenterX + cornerRadius * Math.cos(cornerAngle)
-                                                        y = centerY + cornerCenterY + cornerRadius * Math.sin(cornerAngle)
-                                                    } else {
-                                                        // Straight edge
-                                                        x = centerX + (cos > 0 ? effectiveRx + cornerRadius : -effectiveRx - cornerRadius)
-                                                        y = centerY + edgeY
-                                                    }
-                                                } else {
-                                                    // Near horizontal edges
-                                                    const edgeX = cos * effectiveRy / absY
-                                                    if (Math.abs(edgeX) > effectiveRx) {
-                                                        // Corner region
-                                                        const cornerCenterX = cos > 0 ? effectiveRx : -effectiveRx
-                                                        const cornerCenterY = sin > 0 ? effectiveRy : -effectiveRy
-                                                        const cornerAngle = Math.atan2(sin * effectiveRy - cornerCenterY, cos * effectiveRx - cornerCenterX)
-                                                        x = centerX + cornerCenterX + cornerRadius * Math.cos(cornerAngle)
-                                                        y = centerY + cornerCenterY + cornerRadius * Math.sin(cornerAngle)
-                                                    } else {
-                                                        // Straight edge
-                                                        x = centerX + edgeX
-                                                        y = centerY + (sin > 0 ? effectiveRy + cornerRadius : -effectiveRy - cornerRadius)
-                                                    }
-                                                }
-
-                                                return { x, y }
-                                            }
-
-                                            const edgePoint = getEdgePoint(angle)
-
-                                            // Calculate inner starting point (closer to center for better visibility)
-                                            const innerRadius = isMainHour ? 20 : 30 // Main hours start closer to center
+                                            const outerX = centerX + cos * outerRadius
+                                            const outerY = centerY + sin * outerRadius
                                             const innerX = centerX + cos * innerRadius
                                             const innerY = centerY + sin * innerRadius
 
@@ -317,73 +252,50 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                     key={i}
                                                     x1={innerX}
                                                     y1={innerY}
-                                                    x2={edgePoint.x}
-                                                    y2={edgePoint.y}
-                                                    stroke={isMainHour ? "#6B7280" : isHalfHour ? "#4B5563" : "#374151"}
-                                                    strokeWidth={isMainHour ? "2.5" : isHalfHour ? "1.5" : "0.8"}
-                                                    opacity={isMainHour ? "1" : isHalfHour ? "0.8" : "0.5"}
+                                                    x2={outerX}
+                                                    y2={outerY}
+                                                    stroke="#4B5563"
+                                                    strokeWidth={isMainHour ? "2" : "1"}
+                                                    opacity={isMainHour ? "0.8" : "0.4"}
                                                 />
                                             )
                                         })}
 
-                                        {/* Center dot for visual reference */}
+                                        {/* Center dot */}
                                         <circle
                                             cx="160"
                                             cy="120"
-                                            r="4"
-                                            fill="#9CA3AF"
-                                            opacity="0.8"
+                                            r="2"
+                                            fill="#6B7280"
                                         />
 
-                                        {/* Enhanced time labels with better positioning */}
+                                        {/* Minimal time labels */}
                                         {[
-                                            { time: '12 AM', angle: -Math.PI / 2, hours: 0, position: 'top' },
-                                            { time: '3 AM', angle: -Math.PI / 4, hours: 3, position: 'top-right' },
-                                            { time: '6 AM', angle: 0, hours: 6, position: 'right' },
-                                            { time: '9 AM', angle: Math.PI / 4, hours: 9, position: 'bottom-right' },
-                                            { time: '12 PM', angle: Math.PI / 2, hours: 12, position: 'bottom' },
-                                            { time: '3 PM', angle: 3 * Math.PI / 4, hours: 15, position: 'bottom-left' },
-                                            { time: '6 PM', angle: Math.PI, hours: 18, position: 'left' },
-                                            { time: '9 PM', angle: 5 * Math.PI / 4, hours: 21, position: 'top-left' }
-                                        ].map(({ time, angle, position }) => {
+                                            { time: '12', angle: -Math.PI / 2 },
+                                            { time: '6', angle: 0 },
+                                            { time: '12', angle: Math.PI / 2 },
+                                            { time: '6', angle: Math.PI }
+                                        ].map(({ time, angle }, index) => {
                                             const cos = Math.cos(angle)
                                             const sin = Math.sin(angle)
                                             const centerX = 160
                                             const centerY = 120
+                                            const labelDistance = 140
 
-                                            // Position labels outside the clock face for better readability
-                                            const labelDistance = 150
                                             const x = centerX + cos * labelDistance
                                             const y = centerY + sin * labelDistance
 
-                                            // Determine if this is a major time marker
-                                            const isMajor = [0, 6, 12, 18].includes(parseInt(time.split(' ')[0]))
-
                                             return (
-                                                <g key={time}>
-                                                    {/* Label background for better contrast */}
-                                                    <rect
-                                                        x={x - 18}
-                                                        y={y - 8}
-                                                        width="36"
-                                                        height="16"
-                                                        rx="8"
-                                                        fill="#1F2937"
-                                                        fillOpacity={isMajor ? "0.9" : "0.7"}
-                                                        stroke={isMajor ? "#6B7280" : "#4B5563"}
-                                                        strokeWidth="1"
-                                                        strokeOpacity="0.5"
-                                                    />
-                                                    <text
-                                                        x={x}
-                                                        y={y}
-                                                        textAnchor="middle"
-                                                        dominantBaseline="middle"
-                                                        className={`text-xs font-medium ${isMajor ? 'fill-[#F9FAFB]' : 'fill-[#D1D5DB]'}`}
-                                                    >
-                                                        {time}
-                                                    </text>
-                                                </g>
+                                                <text
+                                                    key={index}
+                                                    x={x}
+                                                    y={y}
+                                                    textAnchor="middle"
+                                                    dominantBaseline="middle"
+                                                    className="text-sm font-medium fill-[#9CA3AF]"
+                                                >
+                                                    {time}
+                                                </text>
                                             )
                                         })}
 
