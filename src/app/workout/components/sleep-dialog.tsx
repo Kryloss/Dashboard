@@ -160,6 +160,15 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         return { hours, minutes, totalMinutes: duration }
     }
 
+    // Calculate duration properly for overnight sessions
+    const calculateSessionDuration = (start: number, end: number) => {
+        if (end >= start) {
+            return end - start // Same day
+        } else {
+            return (24 * 60) - start + end // Overnight session
+        }
+    }
+
     // Convert time (in minutes) to angle in radians (12 AM at top = -π/2)
     const timeToAngle = (minutes: number): number => {
         // Convert minutes to hours (0-24)
@@ -349,15 +358,6 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
             // Convert pointer position to angle and then to time
             const pointerAngle = mouseToAngle(pointerX, pointerY, centerX, centerY)
             const pointerTime = angleToTime(pointerAngle)
-
-            // Calculate duration properly for overnight sessions
-            const calculateSessionDuration = (start: number, end: number) => {
-                if (end >= start) {
-                    return end - start // Same day
-                } else {
-                    return (24 * 60) - start + end // Overnight session
-                }
-            }
 
             setSleepSessions(prev => prev.map(session => {
                 if (session.id !== selectedSession) return session
