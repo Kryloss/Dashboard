@@ -719,27 +719,25 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                             const endX = 150 + radiusX * Math.cos(endAngle)
                                             const endY = 150 + radiusY * Math.sin(endAngle)
 
-                                            // Generate path that strictly follows the oval timeline by creating multiple small arcs
+                                            // Generate path that follows the exact oval timeline using small line segments
                                             const generateOvalArcPath = (startAngle: number, endAngle: number, rx: number, ry: number) => {
-                                                let pathParts = [`M ${150 + rx * Math.cos(startAngle)} ${150 + ry * Math.sin(startAngle)}`]
-
                                                 // Calculate the angular span
                                                 let angleDiff = endAngle - startAngle
                                                 if (angleDiff < 0) angleDiff += 2 * Math.PI // Handle overnight
 
-                                                // For long arcs, break into smaller segments to ensure exact oval following
-                                                const maxSegmentAngle = Math.PI / 4 // 45 degrees max per segment
-                                                const numSegments = Math.ceil(angleDiff / maxSegmentAngle)
-                                                const segmentAngle = angleDiff / numSegments
+                                                // Create many small line segments to trace the exact oval outline
+                                                const stepAngle = Math.PI / 72 // 2.5 degrees per step for very smooth curve
+                                                const numSteps = Math.ceil(angleDiff / stepAngle)
+                                                const actualStepAngle = angleDiff / numSteps
 
-                                                for (let i = 1; i <= numSegments; i++) {
-                                                    const currentAngle = startAngle + (segmentAngle * i)
+                                                let pathParts = [`M ${150 + rx * Math.cos(startAngle)} ${150 + ry * Math.sin(startAngle)}`]
+
+                                                // Create line segments that exactly follow the oval perimeter
+                                                for (let i = 1; i <= numSteps; i++) {
+                                                    const currentAngle = startAngle + (actualStepAngle * i)
                                                     const x = 150 + rx * Math.cos(currentAngle)
                                                     const y = 150 + ry * Math.sin(currentAngle)
-
-                                                    // Each segment is a small arc that strictly follows the ellipse
-                                                    const segmentLargeArc = segmentAngle > Math.PI ? 1 : 0
-                                                    pathParts.push(`A ${rx} ${ry} 0 ${segmentLargeArc} 1 ${x} ${y}`)
+                                                    pathParts.push(`L ${x} ${y}`)
                                                 }
 
                                                 return pathParts.join(' ')
