@@ -34,7 +34,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
     const [selectedSession, setSelectedSession] = useState<string | null>(null)
     const [isDragging, setIsDragging] = useState(false)
     const [dragType, setDragType] = useState<'start' | 'end' | 'move' | null>(null)
-    const [dragOffset, setDragOffset] = useState(0)
+    // const [dragOffset, setDragOffset] = useState(0) // Unused in circular interface
     const timelineRef = useRef<HTMLDivElement>(null)
 
     // Sleep quality icons
@@ -159,44 +159,84 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         return { hours, minutes, totalMinutes: duration }
     }
 
-    // Convert pixel position to time (in minutes) - 24 hour range
-    const pixelToTime = (pixel: number, timelineWidth: number): number => {
-        const ratio = pixel / timelineWidth
-        // 24 hours from 6 PM (-360 minutes) to 6 PM next day (1080 minutes)
-        const totalRange = 1440 // 24 hours in minutes
-        const startOffset = -360 // Start at 6 PM previous day
-        return Math.round((startOffset + (ratio * totalRange)) / 15) * 15 // Snap to 15-min intervals
+    // Convert time (in minutes) to angle in radians (12 AM at top = -π/2)
+    const timeToAngle = (minutes: number): number => {
+        // Convert minutes to hours (0-24)
+        const hours = minutes / 60
+        // 12 AM = 0 hours = top of circle = -π/2 radians
+        // Each hour = π/6 radians (360°/24 hours = 15° = π/12, but we want full circle in 12 hours)
+        // Actually, we want 24 hours around full circle, so each hour = 2π/24 = π/12
+        const angle = (hours * Math.PI / 12) - (Math.PI / 2) // Start at top (-π/2)
+        return angle
     }
 
-    // Convert time to pixel position - 24 hour range
-    const timeToPixel = (time: number, timelineWidth: number): number => {
-        const startOffset = -360 // Start at 6 PM previous day
-        const totalRange = 1440 // 24 hours in minutes
-        const adjustedTime = time - startOffset // Offset to 0-based range
-        const ratio = Math.max(0, Math.min(totalRange, adjustedTime)) / totalRange
-        return ratio * timelineWidth
+    // Convert mouse position to angle relative to circle center
+    const mouseToAngle = (mouseX: number, mouseY: number, centerX: number, centerY: number): number => {
+        const deltaX = mouseX - centerX
+        const deltaY = mouseY - centerY
+        return Math.atan2(deltaY, deltaX)
     }
 
-    // Handle timeline click/tap - only select sessions, no creation
-    const handleTimelinePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    // Convert angle to time in minutes
+    const angleToTime = (angle: number): number => {
+        // Normalize angle to 0-2π range
+        let normalizedAngle = angle + (Math.PI / 2) // Offset so 12 AM is at 0
+        if (normalizedAngle < 0) normalizedAngle += 2 * Math.PI
+        if (normalizedAngle >= 2 * Math.PI) normalizedAngle -= 2 * Math.PI
+
+        // Convert to hours (0-24)
+        const hours = (normalizedAngle / Math.PI) * 12 // Full circle = 24 hours
+
+        // Convert to minutes and snap to 15-minute intervals
+        const minutes = hours * 60
+        return Math.round(minutes / 15) * 15
+    }
+
+    // Convert time to x,y coordinates on oval (commented out as unused)
+    // const timeToCoordinates = (minutes: number, centerX: number, centerY: number, radiusX: number, radiusY: number): {x: number, y: number} => {
+    //     const angle = timeToAngle(minutes)
+    //     return {
+    //         x: centerX + radiusX * Math.cos(angle),
+    //         y: centerY + radiusY * Math.sin(angle)
+    //     }
+    // }
+
+    // Handle clock click/tap - only select sessions, no creation
+    const handleClockPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
         if (!timelineRef.current || isDragging) return
 
         const rect = timelineRef.current.getBoundingClientRect()
         const clickX = event.clientX - rect.left
-        const timelineWidth = rect.width
+        const clickY = event.clientY - rect.top
+        const centerX = rect.width / 2
+        const centerY = rect.height / 2
 
-        // Check if clicking on an existing session
+        // Convert click position to time
+        const clickAngle = mouseToAngle(clickX, clickY, centerX, centerY)
+        // const clickTime = angleToTime(clickAngle) // Unused for now
+
+        // Check if clicking on an existing session (within 30 minutes tolerance)
         const clickedSession = sleepSessions.find(session => {
-            const startPos = timeToPixel(session.startTime, timelineWidth)
-            const endPos = timeToPixel(session.endTime, timelineWidth)
-            return clickX >= startPos && clickX <= endPos
+            // Check if click is within the arc of this session
+            const startAngle = timeToAngle(session.startTime)
+            const endAngle = timeToAngle(session.endTime)
+
+            // Handle overnight sessions (arc crosses 12 AM)
+            let isInArc = false
+            if (endAngle > startAngle) {
+                // Normal arc
+                isInArc = clickAngle >= startAngle && clickAngle <= endAngle
+            } else {
+                // Overnight arc (crosses 12 AM)
+                isInArc = clickAngle >= startAngle || clickAngle <= endAngle
+            }
+
+            return isInArc
         })
 
         if (clickedSession) {
-            // Select the session for editing
             setSelectedSession(clickedSession.id)
         } else {
-            // Deselect if clicking on empty timeline
             setSelectedSession(null)
         }
     }
@@ -207,7 +247,6 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         event.preventDefault()
         if (!timelineRef.current) return
 
-        const rect = timelineRef.current.getBoundingClientRect()
         const session = sleepSessions.find(s => s.id === sessionId)
         if (!session) return
 
@@ -215,13 +254,8 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         setDragType(dragMode)
         setSelectedSession(sessionId)
 
-        const pointerX = event.clientX - rect.left
-        if (dragMode === 'move') {
-            const sessionStart = timeToPixel(session.startTime, rect.width)
-            setDragOffset(pointerX - sessionStart)
-        } else {
-            setDragOffset(0)
-        }
+        // In circular interface, we don't need to track drag offset
+        // Drag handling is done purely through angle calculations
 
         // Capture pointer for better mobile experience
         if (event.currentTarget.setPointerCapture) {
@@ -233,7 +267,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
     // Throttle function for performance optimization
     const throttleRef = useRef<number | null>(null)
 
-    // Handle pointer move for dragging - optimized version with touch support
+    // Handle pointer move for dragging - circular version with touch support
     const handlePointerMove = useCallback((event: PointerEvent) => {
         if (!isDragging || !dragType || !selectedSession || !timelineRef.current) return
 
@@ -246,8 +280,14 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
             if (!timelineRef.current) return
 
             const rect = timelineRef.current.getBoundingClientRect()
-            const pointerX = event.clientX - rect.left // Don't clamp - allow negative values
-            const timelineWidth = rect.width
+            const pointerX = event.clientX - rect.left
+            const pointerY = event.clientY - rect.top
+            const centerX = rect.width / 2
+            const centerY = rect.height / 2
+
+            // Convert pointer position to angle and then to time
+            const pointerAngle = mouseToAngle(pointerX, pointerY, centerX, centerY)
+            const pointerTime = angleToTime(pointerAngle)
 
             setSleepSessions(prev => prev.map(session => {
                 if (session.id !== selectedSession) return session
@@ -257,33 +297,50 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
 
                 switch (dragType) {
                     case 'start': {
-                        const newStartTime = pixelToTime(pointerX, timelineWidth)
-                        const maxStart = session.endTime - 15 // Minimum 15 minutes
-                        const proposedStart = Math.max(
-                            -360, // 6 PM for any session (24h range start)
-                            Math.min(newStartTime, maxStart)
-                        )
+                        // Calculate minimum duration considering overnight sessions
+                        const newStartTime = pointerTime
+                        const minDuration = 15 // minimum 15 minutes
 
-                        newSession.startTime = proposedStart
+                        // Check if this would create a valid duration
+                        const testDuration = session.endTime >= newStartTime
+                            ? session.endTime - newStartTime  // Same day
+                            : (24 * 60) - newStartTime + session.endTime // Overnight
+
+                        if (testDuration >= minDuration) {
+                            newSession.startTime = newStartTime
+                        }
                         break
                     }
                     case 'end': {
-                        const newEndTime = pixelToTime(pointerX, timelineWidth)
-                        const minEnd = session.startTime + 15 // Minimum 15 minutes
-                        const proposedEnd = Math.max(minEnd, Math.min(newEndTime, 1080)) // 6 PM next day
+                        const newEndTime = pointerTime
+                        const minDuration = 15 // minimum 15 minutes
 
-                        newSession.endTime = proposedEnd
+                        // Check if this would create a valid duration
+                        const testDuration = newEndTime >= session.startTime
+                            ? newEndTime - session.startTime  // Same day
+                            : (24 * 60) - session.startTime + newEndTime // Overnight
+
+                        if (testDuration >= minDuration) {
+                            newSession.endTime = newEndTime
+                        }
                         break
                     }
                     case 'move': {
-                        const newStartTime = pixelToTime(pointerX - dragOffset, timelineWidth)
-                        const maxStart = 1080 - duration // 6 PM next day minus duration
-                        const minStart = -360 // 6 PM previous day
-                        const clampedStart = Math.max(minStart, Math.min(newStartTime, maxStart))
-                        const clampedEnd = clampedStart + duration
+                        // Move entire session while preserving duration
+                        const newStartTime = pointerTime
 
-                        newSession.startTime = clampedStart
-                        newSession.endTime = clampedEnd
+                        // Calculate new end time based on duration
+                        let newEndTime = newStartTime + duration
+
+                        // Handle wrap-around for 24-hour period
+                        if (newEndTime >= 24 * 60) {
+                            newEndTime -= 24 * 60
+                        } else if (newEndTime < 0) {
+                            newEndTime += 24 * 60
+                        }
+
+                        newSession.startTime = newStartTime
+                        newSession.endTime = newEndTime
                         break
                     }
                 }
@@ -291,7 +348,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                 return newSession
             }))
         })
-    }, [isDragging, dragType, selectedSession, dragOffset])
+    }, [isDragging, dragType, selectedSession])
 
     // Handle pointer up
     const handlePointerUp = useCallback(() => {
@@ -355,7 +412,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
 
         setIsDragging(false)
         setDragType(null)
-        setDragOffset(0)
+        // setDragOffset(0) // Not needed in circular interface
     }, [selectedSession])
 
     // Add pointer event listeners for better mobile/touch support
@@ -502,116 +559,193 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                     <div className="px-6 pb-6 space-y-6">
                         {/* Timeline and Sleep Sessions */}
                         <div className="space-y-6">
-                            <Label className="text-sm font-medium text-[#F3F4F6]">Sleep Timeline (6 PM - 6 PM next day)</Label>
+                            <Label className="text-sm font-medium text-[#F3F4F6]">Sleep Clock (24 Hour)</Label>
 
-                            {/* Main Timeline */}
-                            <div className="relative bg-[#121318] border border-[#212227] rounded-lg p-6">
-                                {/* Timeline endpoints */}
-                                <div className="flex justify-between text-sm font-medium text-[#F3F4F6] mb-4">
-                                    <span>6 PM</span>
-                                    <span>6 PM</span>
+                            {/* Oval Clock Interface */}
+                            <div className="relative bg-[#121318] border border-[#212227] rounded-lg p-8">
+                                {/* Instructions */}
+                                <div className="text-xs text-[#A1A1AA] mb-6 text-center">
+                                    Click and drag around the clock to set sleep times • AM at top, PM at bottom
                                 </div>
 
-                                {/* Interactive Timeline */}
-                                <div className="relative w-full mb-8">
-                                    {/* Instructions */}
-                                    <div className="text-xs text-[#A1A1AA] mb-3 text-center">
-                                        Click sleep bars to select • Drag bars to move • Drag edges to resize
-                                    </div>
+                                {/* Clock container */}
+                                <div
+                                    ref={timelineRef}
+                                    className="relative w-full aspect-square max-w-md mx-auto cursor-pointer select-none touch-manipulation"
+                                    onPointerDown={handleClockPointerDown}
+                                >
+                                    {/* Clock face - oval shape */}
+                                    <svg className="w-full h-full" viewBox="0 0 300 300">
+                                        {/* Outer clock ring */}
+                                        <ellipse
+                                            cx="150"
+                                            cy="150"
+                                            rx="140"
+                                            ry="140"
+                                            fill="none"
+                                            stroke="#2A2B31"
+                                            strokeWidth="8"
+                                        />
 
-                                    {/* Timeline container */}
-                                    <div
-                                        ref={timelineRef}
-                                        className="relative w-full h-12 flex items-center cursor-pointer select-none touch-manipulation"
-                                        onPointerDown={handleTimelinePointerDown}
-                                    >
-                                        {/* Timeline base */}
-                                        <div className="relative w-full h-3 bg-[#2A2B31] rounded-full">
-                                            {/* Hour markers - 24 hour timeline */}
-                                            {Array.from({ length: 25 }, (_, i) => (
-                                                <div
-                                                    key={i}
-                                                    className="absolute w-px h-8 bg-[#4A4B51] top-1/2 transform -translate-y-1/2"
-                                                    style={{ left: `${(i / 24) * 100}%` }}
-                                                />
-                                            ))}
+                                        {/* Hour markers */}
+                                        {Array.from({ length: 24 }, (_, i) => {
+                                            const angle = (i * Math.PI) / 12 - Math.PI / 2 // Start at top (12 AM)
+                                            const isMainHour = i % 6 === 0 // 12 AM, 6 AM, 12 PM, 6 PM
+                                            const outerRadius = 140
+                                            const innerRadius = isMainHour ? 120 : 130
 
-                                            {/* Time labels - 24 hour timeline */}
-                                            <div className="absolute -top-6 left-0 text-xs text-[#7A7F86]">6 PM</div>
-                                            <div className="absolute -top-6 left-1/4 text-xs text-[#7A7F86]">12 AM</div>
-                                            <div className="absolute -top-6 left-1/2 text-xs text-[#7A7F86]">6 AM</div>
-                                            <div className="absolute -top-6 left-3/4 text-xs text-[#7A7F86]">12 PM</div>
-                                            <div className="absolute -top-6 right-0 text-xs text-[#7A7F86]">6 PM</div>
-                                        </div>
-
-                                        {/* Sleep Session Bars */}
-                                        {sleepSessions.map((session) => {
-                                            if (!timelineRef.current) return null
-
-                                            const timelineWidth = timelineRef.current.offsetWidth
-                                            const startPos = timeToPixel(session.startTime, timelineWidth)
-                                            const endPos = timeToPixel(session.endTime, timelineWidth)
-                                            const width = Math.max(endPos - startPos, 40) // Minimum 40px width for better touch targets
-                                            const isSelected = selectedSession === session.id
+                                            const x1 = 150 + outerRadius * Math.cos(angle)
+                                            const y1 = 150 + outerRadius * Math.sin(angle)
+                                            const x2 = 150 + innerRadius * Math.cos(angle)
+                                            const y2 = 150 + innerRadius * Math.sin(angle)
 
                                             return (
-                                                <div
-                                                    key={session.id}
-                                                    className={`absolute top-1/2 transform -translate-y-1/2 h-6 rounded-lg border-2 transition-all duration-200 touch-manipulation ${
-                                                        session.type === 'main'
-                                                            ? 'bg-gradient-to-r from-[#2BD2FF] to-[#2A8CEA] border-[#2BD2FF]'
-                                                            : 'bg-gradient-to-r from-[#9BE15D] to-[#7BC142] border-[#9BE15D]'
-                                                    } ${
-                                                        isSelected
-                                                            ? 'ring-2 ring-white ring-opacity-50 shadow-lg scale-105'
-                                                            : 'hover:scale-102 hover:shadow-md'
-                                                    }`}
-                                                    style={{
-                                                        left: `${startPos}px`,
-                                                        width: `${width}px`,
-                                                        zIndex: isDragging && isSelected ? 1000 : (isSelected ? 100 : (session.type === 'main' ? 20 : 10)),
-                                                    }}
-                                                    onPointerDown={(e) => handleSessionPointerDown(e, session.id, 'move')}
-                                                >
-                                                    {/* Start resize handle */}
-                                                    <div
-                                                        className="absolute left-0 top-0 w-4 h-full cursor-col-resize opacity-30 hover:opacity-100 active:opacity-100 bg-white bg-opacity-30 rounded-l-lg transition-opacity touch-manipulation md:opacity-0 md:hover:opacity-100"
-                                                        onPointerDown={(e) => handleSessionPointerDown(e, session.id, 'start')}
-                                                    />
-
-                                                    {/* Session label with time */}
-                                                    {width > 80 && (
-                                                        <div className="absolute inset-0 flex items-center justify-center text-white text-xs font-medium pointer-events-none">
-                                                            <div className="text-center">
-                                                                <div className="font-semibold">
-                                                                    {formatTime(session.startTime)} - {formatTime(session.endTime)}
-                                                                </div>
-                                                                <div className="text-[10px] opacity-80">
-                                                                    {session.type === 'main' ? 'Sleep' : 'Nap'}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    {/* End resize handle */}
-                                                    <div
-                                                        className="absolute right-0 top-0 w-4 h-full cursor-col-resize opacity-30 hover:opacity-100 active:opacity-100 bg-white bg-opacity-30 rounded-r-lg transition-opacity touch-manipulation md:opacity-0 md:hover:opacity-100"
-                                                        onPointerDown={(e) => handleSessionPointerDown(e, session.id, 'end')}
-                                                    />
-                                                </div>
+                                                <line
+                                                    key={i}
+                                                    x1={x1}
+                                                    y1={y1}
+                                                    x2={x2}
+                                                    y2={y2}
+                                                    stroke="#4A4B51"
+                                                    strokeWidth={isMainHour ? "3" : "1"}
+                                                />
                                             )
                                         })}
-                                    </div>
 
-                                    {/* All sessions details */}
-                                    {sleepSessions.length > 0 && (
-                                        <div className="mt-4 space-y-2">
-                                            <div className="text-sm font-medium text-[#F3F4F6] mb-2">Sleep Sessions</div>
-                                            {sleepSessions.map((session) => {
-                                                const duration = calculateDuration(session.startTime, session.endTime)
-                                                const isSelected = selectedSession === session.id
+                                        {/* Time labels */}
+                                        {[
+                                            { time: '12 AM', angle: -Math.PI / 2, hours: 0 },
+                                            { time: '6 AM', angle: 0, hours: 6 },
+                                            { time: '12 PM', angle: Math.PI / 2, hours: 12 },
+                                            { time: '6 PM', angle: Math.PI, hours: 18 }
+                                        ].map(({ time, angle }) => {
+                                            const radius = 105
+                                            const x = 150 + radius * Math.cos(angle)
+                                            const y = 150 + radius * Math.sin(angle)
 
-                                                return (
+                                            return (
+                                                <text
+                                                    key={time}
+                                                    x={x}
+                                                    y={y}
+                                                    textAnchor="middle"
+                                                    dominantBaseline="middle"
+                                                    className="text-sm font-medium fill-[#F3F4F6]"
+                                                >
+                                                    {time}
+                                                </text>
+                                            )
+                                        })}
+
+                                        {/* Sleep session arcs */}
+                                        {sleepSessions.map((session) => {
+                                            const startAngle = timeToAngle(session.startTime)
+                                            const endAngle = timeToAngle(session.endTime)
+                                            const isSelected = selectedSession === session.id
+                                            const radius = 80
+                                            const strokeWidth = 16
+
+                                            // Calculate arc path
+                                            const startX = 150 + radius * Math.cos(startAngle)
+                                            const startY = 150 + radius * Math.sin(startAngle)
+                                            const endX = 150 + radius * Math.cos(endAngle)
+                                            const endY = 150 + radius * Math.sin(endAngle)
+
+                                            // Determine if this is a large arc (more than 180 degrees)
+                                            let angleDiff = endAngle - startAngle
+                                            if (angleDiff < 0) angleDiff += 2 * Math.PI // Handle overnight
+                                            const largeArcFlag = angleDiff > Math.PI ? 1 : 0
+
+                                            const pathData = `M ${startX} ${startY} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${endX} ${endY}`
+
+                                            return (
+                                                <g key={session.id}>
+                                                    {/* Session arc */}
+                                                    <path
+                                                        d={pathData}
+                                                        fill="none"
+                                                        stroke={session.type === 'main' ? '#2BD2FF' : '#9BE15D'}
+                                                        strokeWidth={strokeWidth}
+                                                        strokeLinecap="round"
+                                                        className={`transition-all duration-200 ${
+                                                            isSelected ? 'drop-shadow-lg' : ''
+                                                        }`}
+                                                        style={{
+                                                            filter: isSelected ? 'drop-shadow(0 0 8px rgba(43, 210, 255, 0.5))' : '',
+                                                            strokeOpacity: isSelected ? 1 : 0.8
+                                                        }}
+                                                        onPointerDown={(e) => {
+                                                            e.stopPropagation()
+                                                            handleSessionPointerDown(e, session.id, 'move')
+                                                        }}
+                                                    />
+
+                                                    {/* Start handle */}
+                                                    <circle
+                                                        cx={startX}
+                                                        cy={startY}
+                                                        r="8"
+                                                        fill={session.type === 'main' ? '#2BD2FF' : '#9BE15D'}
+                                                        className="cursor-pointer opacity-70 hover:opacity-100 transition-opacity"
+                                                        onPointerDown={(e) => {
+                                                            e.stopPropagation()
+                                                            handleSessionPointerDown(e, session.id, 'start')
+                                                        }}
+                                                    />
+
+                                                    {/* End handle */}
+                                                    <circle
+                                                        cx={endX}
+                                                        cy={endY}
+                                                        r="8"
+                                                        fill={session.type === 'main' ? '#2BD2FF' : '#9BE15D'}
+                                                        className="cursor-pointer opacity-70 hover:opacity-100 transition-opacity"
+                                                        onPointerDown={(e) => {
+                                                            e.stopPropagation()
+                                                            handleSessionPointerDown(e, session.id, 'end')
+                                                        }}
+                                                    />
+
+                                                    {/* Session time label */}
+                                                    {(() => {
+                                                        const midAngle = startAngle + (angleDiff / 2)
+                                                        const labelRadius = 60
+                                                        const labelX = 150 + labelRadius * Math.cos(midAngle)
+                                                        const labelY = 150 + labelRadius * Math.sin(midAngle)
+
+                                                        return (
+                                                            <text
+                                                                x={labelX}
+                                                                y={labelY}
+                                                                textAnchor="middle"
+                                                                dominantBaseline="middle"
+                                                                className="text-xs font-medium fill-white pointer-events-none"
+                                                            >
+                                                                <tspan x={labelX} dy="-0.3em">
+                                                                    {formatTime(session.startTime)} - {formatTime(session.endTime)}
+                                                                </tspan>
+                                                                <tspan x={labelX} dy="1.2em" className="text-[10px] opacity-80">
+                                                                    {session.type === 'main' ? 'Sleep' : 'Nap'}
+                                                                </tspan>
+                                                            </text>
+                                                        )
+                                                    })()}
+                                                </g>
+                                            )
+                                        })}
+                                    </svg>
+                                </div>
+                            </div>
+
+                            {/* All sessions details */}
+                            {sleepSessions.length > 0 && (
+                                <div className="mt-4 space-y-2">
+                                    <div className="text-sm font-medium text-[#F3F4F6] mb-2">Sleep Sessions</div>
+                                    {sleepSessions.map((session) => {
+                                        const duration = calculateDuration(session.startTime, session.endTime)
+                                        const isSelected = selectedSession === session.id
+
+                                        return (
                                                     <div
                                                         key={session.id}
                                                         className={`p-3 rounded-lg border transition-all ${
@@ -694,29 +828,26 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                         </div>
                                                     </div>
                                                 )
-                                            })}
-                                        </div>
-                                    )}
+                                    })}
                                 </div>
+                            )}
 
-
-                                {/* Add Nap Button */}
-                                {sleepSessions.length < 5 && (
-                                    <div className="text-center mb-6">
-                                        <Button
-                                            onClick={addNapSession}
-                                            variant="outline"
-                                            className="border-[#212227] text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)]"
-                                        >
-                                            <Plus className="w-4 h-4 mr-2" />
-                                            Add Nap
-                                        </Button>
-                                        <div className="text-xs text-[#7A7F86] mt-2">
-                                            Create a new nap session
-                                        </div>
+                            {/* Add Nap Button */}
+                            {sleepSessions.length < 5 && (
+                                <div className="text-center mb-6">
+                                    <Button
+                                        onClick={addNapSession}
+                                        variant="outline"
+                                        className="border-[#212227] text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)]"
+                                    >
+                                        <Plus className="w-4 h-4 mr-2" />
+                                        Add Nap
+                                    </Button>
+                                    <div className="text-xs text-[#7A7F86] mt-2">
+                                        Create a new nap session
                                     </div>
-                                )}
-                            </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Sleep Quality Rating */}
