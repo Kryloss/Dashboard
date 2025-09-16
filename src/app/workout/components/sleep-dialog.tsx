@@ -350,10 +350,19 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
             const pointerAngle = mouseToAngle(pointerX, pointerY, centerX, centerY)
             const pointerTime = angleToTime(pointerAngle)
 
+            // Calculate duration properly for overnight sessions
+            const calculateSessionDuration = (start: number, end: number) => {
+                if (end >= start) {
+                    return end - start // Same day
+                } else {
+                    return (24 * 60) - start + end // Overnight session
+                }
+            }
+
             setSleepSessions(prev => prev.map(session => {
                 if (session.id !== selectedSession) return session
 
-                const duration = session.endTime - session.startTime
+                const duration = calculateSessionDuration(session.startTime, session.endTime)
                 const newSession = { ...session }
 
                 switch (dragType) {
@@ -363,9 +372,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                         const minDuration = 15 // minimum 15 minutes
 
                         // Check if this would create a valid duration
-                        const testDuration = session.endTime >= newStartTime
-                            ? session.endTime - newStartTime  // Same day
-                            : (24 * 60) - newStartTime + session.endTime // Overnight
+                        const testDuration = calculateSessionDuration(newStartTime, session.endTime)
 
                         if (testDuration >= minDuration) {
                             newSession.startTime = newStartTime
@@ -377,9 +384,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                         const minDuration = 15 // minimum 15 minutes
 
                         // Check if this would create a valid duration
-                        const testDuration = newEndTime >= session.startTime
-                            ? newEndTime - session.startTime  // Same day
-                            : (24 * 60) - session.startTime + newEndTime // Overnight
+                        const testDuration = calculateSessionDuration(session.startTime, newEndTime)
 
                         if (testDuration >= minDuration) {
                             newSession.endTime = newEndTime
@@ -390,13 +395,14 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                         // Move entire session while preserving duration
                         const newStartTime = pointerTime
 
-                        // Calculate new end time based on duration
+                        // Calculate new end time based on preserved duration
                         let newEndTime = newStartTime + duration
 
                         // Handle wrap-around for 24-hour period
                         if (newEndTime >= 24 * 60) {
                             newEndTime -= 24 * 60
-                        } else if (newEndTime < 0) {
+                        }
+                        if (newEndTime < 0) {
                             newEndTime += 24 * 60
                         }
 
@@ -428,7 +434,23 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                 // Check if the dragged session overlaps with others
                 const hasOverlap = prev.some(session => {
                     if (session.id === selectedSession) return false
-                    return !(draggedSession.endTime <= session.startTime || draggedSession.startTime >= session.endTime)
+
+                    // Check for overlap considering overnight sessions
+                    const sessionOverlapsTime = (s1Start: number, s1End: number, s2Start: number, s2End: number) => {
+                        // Handle same-day sessions
+                        if (s1End >= s1Start && s2End >= s2Start) {
+                            return !(s1End <= s2Start || s1Start >= s2End)
+                        }
+
+                        // Handle overnight sessions - more complex overlap logic needed
+                        // For now, be conservative and assume potential overlap
+                        return true
+                    }
+
+                    return sessionOverlapsTime(
+                        draggedSession.startTime, draggedSession.endTime,
+                        session.startTime, session.endTime
+                    )
                 })
 
                 if (hasOverlap) {
@@ -437,7 +459,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                         .filter(s => s.id !== selectedSession)
                         .sort((a, b) => a.startTime - b.startTime)
 
-                    const duration = draggedSession.endTime - draggedSession.startTime
+                    const duration = calculateSessionDuration(draggedSession.startTime, draggedSession.endTime)
                     let safeStart = draggedSession.startTime
 
                     // Try to find a gap
