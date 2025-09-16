@@ -178,9 +178,9 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         const cornerRadius = 30
         const points: { angle: number; x: number; y: number; time: number }[] = []
 
-        // Generate 48 points (every 30 minutes) around the timeline
-        for (let i = 0; i < 48; i++) {
-            const time = i * 30 // 30-minute intervals
+        // Generate 288 points (every 5 minutes) around the timeline for ultra-high precision
+        for (let i = 0; i < 288; i++) {
+            const time = i * 5 // 5-minute intervals
             const hours = time / 60
             const angle = (hours * Math.PI / 12) - (Math.PI / 2) // Start at top
 
@@ -283,21 +283,30 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
     }
 
     // Convert mouse position to angle relative to enhanced rounded rectangle
-    const mouseToAngle = (mouseX: number, mouseY: number): number => {
+    const mouseToAngle = useCallback((mouseX: number, mouseY: number): number => {
         // Get closest route point and use its angle for consistent behavior
         const routePoint = mouseToRoutePoint(mouseX, mouseY)
         return routePoint.angle
-    }
+    }, [])
 
-    // Convert angle to time in minutes using route points
-    const angleToTime = (angle: number): number => {
+    // Convert angle to time in minutes using route points with wraparound handling
+    const angleToTime = useCallback((angle: number): number => {
         const route = getTimelineRoute()
         let closestPoint = route[0]
-        let minDiff = Math.abs(angle - closestPoint.angle)
+        let minDiff = Infinity
 
-        // Find the route point with the closest angle
+        // Find the route point with the closest angle, handling angle wraparound
         for (const point of route) {
-            const diff = Math.abs(angle - point.angle)
+            // Calculate direct difference
+            let diff = Math.abs(angle - point.angle)
+
+            // Check wraparound differences (angles can wrap around 2π)
+            const wrapDiff1 = Math.abs(angle - point.angle + 2 * Math.PI)
+            const wrapDiff2 = Math.abs(angle - point.angle - 2 * Math.PI)
+
+            // Use the smallest difference
+            diff = Math.min(diff, wrapDiff1, wrapDiff2)
+
             if (diff < minDiff) {
                 minDiff = diff
                 closestPoint = point
@@ -305,7 +314,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         }
 
         return closestPoint.time
-    }
+    }, [])
 
     // Convert time to x,y coordinates on oval (commented out as unused)
     // const timeToCoordinates = (minutes: number, centerX: number, centerY: number, radiusX: number, radiusY: number): {x: number, y: number} => {
@@ -958,11 +967,11 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                             const endX = endRoutePoint.x
                                             const endY = endRoutePoint.y
 
-                                            // Generate path using pre-calculated route points
+                                            // Generate smooth path using high-precision route interpolation
                                             const generateRouteBasedPath = (startTime: number, endTime: number) => {
                                                 const route = getTimelineRoute()
 
-                                                // Find start and end indices in route
+                                                // Find start and end indices in route with high precision
                                                 const startNormalized = ((startTime % (24 * 60)) + (24 * 60)) % (24 * 60)
                                                 const endNormalized = ((endTime % (24 * 60)) + (24 * 60)) % (24 * 60)
 
@@ -987,37 +996,71 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                     }
                                                 }
 
-                                                // Generate path following route points
-                                                let pathData = ''
-                                                let currentIndex = startIndex
+                                                // Generate smooth curved path with interpolation between route points
                                                 const points: {x: number, y: number}[] = []
 
                                                 // Handle overnight sessions
                                                 if (endNormalized < startNormalized) {
                                                     // Go from start to end of day
-                                                    while (currentIndex < route.length) {
-                                                        points.push({ x: route[currentIndex].x, y: route[currentIndex].y })
-                                                        currentIndex++
+                                                    for (let i = startIndex; i < route.length; i++) {
+                                                        points.push({ x: route[i].x, y: route[i].y })
                                                     }
                                                     // Continue from beginning of day to end
-                                                    currentIndex = 0
-                                                    while (currentIndex <= endIndex) {
-                                                        points.push({ x: route[currentIndex].x, y: route[currentIndex].y })
-                                                        currentIndex++
+                                                    for (let i = 0; i <= endIndex; i++) {
+                                                        points.push({ x: route[i].x, y: route[i].y })
                                                     }
                                                 } else {
                                                     // Normal session - go from start to end
-                                                    while (currentIndex <= endIndex) {
-                                                        points.push({ x: route[currentIndex].x, y: route[currentIndex].y })
-                                                        currentIndex++
+                                                    for (let i = startIndex; i <= endIndex; i++) {
+                                                        points.push({ x: route[i].x, y: route[i].y })
                                                     }
                                                 }
 
-                                                // Create SVG path from points
-                                                if (points.length > 0) {
-                                                    pathData = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`
+                                                // Create smooth SVG path with cubic Bezier curves for better interpolation
+                                                if (points.length === 0) return ''
+                                                if (points.length === 1) return `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`
+
+                                                let pathData = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`
+
+                                                if (points.length === 2) {
+                                                    // Simple line for very short sessions
+                                                    pathData += ` L ${points[1].x.toFixed(2)} ${points[1].y.toFixed(2)}`
+                                                } else {
+                                                    // Use cubic Bezier curves for ultra-smooth interpolation
                                                     for (let i = 1; i < points.length; i++) {
-                                                        pathData += ` L ${points[i].x.toFixed(2)} ${points[i].y.toFixed(2)}`
+                                                        const prev = points[i - 1]
+                                                        const current = points[i]
+
+                                                        if (i === 1) {
+                                                            // First curve segment
+                                                            if (points.length > 2) {
+                                                                const next = points[i + 1]
+                                                                const cp1x = prev.x + (current.x - prev.x) * 0.25
+                                                                const cp1y = prev.y + (current.y - prev.y) * 0.25
+                                                                const cp2x = current.x - (next.x - current.x) * 0.25
+                                                                const cp2y = current.y - (next.y - current.y) * 0.25
+                                                                pathData += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)} ${cp2x.toFixed(2)} ${cp2y.toFixed(2)} ${current.x.toFixed(2)} ${current.y.toFixed(2)}`
+                                                            } else {
+                                                                pathData += ` L ${current.x.toFixed(2)} ${current.y.toFixed(2)}`
+                                                            }
+                                                        } else if (i === points.length - 1) {
+                                                            // Last curve segment
+                                                            const prevPrev = points[i - 2]
+                                                            const cp1x = prev.x + (current.x - prevPrev.x) * 0.25
+                                                            const cp1y = prev.y + (current.y - prevPrev.y) * 0.25
+                                                            const cp2x = current.x - (current.x - prev.x) * 0.25
+                                                            const cp2y = current.y - (current.y - prev.y) * 0.25
+                                                            pathData += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)} ${cp2x.toFixed(2)} ${cp2y.toFixed(2)} ${current.x.toFixed(2)} ${current.y.toFixed(2)}`
+                                                        } else {
+                                                            // Middle curve segments
+                                                            const next = points[i + 1]
+                                                            const prevPrev = points[i - 2]
+                                                            const cp1x = prev.x + (current.x - prevPrev.x) * 0.25
+                                                            const cp1y = prev.y + (current.y - prevPrev.y) * 0.25
+                                                            const cp2x = current.x - (next.x - current.x) * 0.25
+                                                            const cp2y = current.y - (next.y - current.y) * 0.25
+                                                            pathData += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)} ${cp2x.toFixed(2)} ${cp2y.toFixed(2)} ${current.x.toFixed(2)} ${current.y.toFixed(2)}`
+                                                        }
                                                     }
                                                 }
 
