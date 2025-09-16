@@ -13,17 +13,19 @@ export function SleepCard({ sleepData }: SleepCardProps) {
     const qualityLabels = ['Poor', 'Fair', 'Good', 'Great', 'Excellent']
     const qualityColors = ['text-red-400', 'text-orange-400', 'text-yellow-400', 'text-green-400', 'text-blue-400']
 
-    // Format time from minutes to display format
-    const formatTime = (minutes: number) => {
-        let totalMinutes = minutes
-        if (totalMinutes < 0) totalMinutes += 24 * 60 // Handle negative times (previous day)
+    // Convert time string to minutes
+    const timeToMinutes = (timeStr: string) => {
+        const [hours, minutes] = timeStr.split(':').map(Number)
+        return hours * 60 + minutes
+    }
 
-        const hours = Math.floor(totalMinutes / 60) % 24
-        const mins = totalMinutes % 60
+    // Format time from HH:MM to display format
+    const formatTime = (timeStr: string) => {
+        const [hours, minutes] = timeStr.split(':').map(Number)
         const period = hours < 12 ? 'AM' : 'PM'
         const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours
 
-        return `${displayHour}:${mins.toString().padStart(2, '0')} ${period}`
+        return `${displayHour}:${minutes.toString().padStart(2, '0')} ${period}`
     }
 
     // Format date
@@ -54,10 +56,19 @@ export function SleepCard({ sleepData }: SleepCardProps) {
         return `${mins}m`
     }
 
+    // Calculate duration in minutes for a session
+    const calculateSessionDuration = (startTime: string, endTime: string) => {
+        const startMinutes = timeToMinutes(startTime)
+        const endMinutes = timeToMinutes(endTime)
+        let duration = endMinutes - startMinutes
+        if (duration < 0) duration += 24 * 60 // Handle overnight sleep
+        return duration
+    }
+
     // Calculate main sleep session (usually the longest one)
     const mainSession = sleepData.sessions.reduce((longest, current) => {
-        const currentDuration = current.endTime - current.startTime
-        const longestDuration = longest.endTime - longest.startTime
+        const currentDuration = calculateSessionDuration(current.startTime, current.endTime)
+        const longestDuration = calculateSessionDuration(longest.startTime, longest.endTime)
         return currentDuration > longestDuration ? current : longest
     }, sleepData.sessions[0])
 
@@ -130,7 +141,7 @@ export function SleepCard({ sleepData }: SleepCardProps) {
                                         : 'bg-[#9BE15D]/10 text-[#9BE15D] border border-[#9BE15D]/20'
                                 }`}
                             >
-                                {session.type === 'main' ? 'Main' : `Nap ${index}`}: {formatDuration((session.endTime - session.startTime) || 0)}
+                                {session.type === 'main' ? 'Main' : `Nap ${index}`}: {formatDuration(calculateSessionDuration(session.startTime, session.endTime))}
                             </div>
                         ))}
                     </div>

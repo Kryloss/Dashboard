@@ -33,8 +33,8 @@ export interface UserGoals {
 
 export interface SleepSession {
     id: string
-    startTime: number // minutes from midnight (0-720 for 12am-12pm)
-    endTime: number
+    startTime: string // time in HH:MM format (24-hour)
+    endTime: string // time in HH:MM format (24-hour)
     wakeUps: number
     type: 'main' | 'nap'
 }
