@@ -141,7 +141,7 @@ export class GoalProgressCalculator {
                 })),
                 // Additional debugging for date comparison
                 dateComparison: {
-                    requestedDate,
+                    requestedDate: date,
                     todayDate: this.getTodayDateString(),
                     yesterdayDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0],
                     tomorrowDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]
