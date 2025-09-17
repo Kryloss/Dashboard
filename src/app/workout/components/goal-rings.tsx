@@ -116,11 +116,42 @@ export function GoalRings({
 
     return (
         <div className={cn("relative", className)} style={{ padding: `${config.glowPadding}px` }}>
+            {/* Glow effects */}
+            {recoveryProgress >= 1 && (
+                <div
+                    className="absolute inset-0 rounded-full opacity-60"
+                    style={{
+                        background: `radial-gradient(circle, rgba(43,210,255,0.3) 0%, rgba(42,140,234,0.2) 30%, transparent 70%)`,
+                        filter: 'blur(20px)',
+                        transform: 'scale(1.1)'
+                    }}
+                />
+            )}
+            {nutritionProgress >= 1 && (
+                <div
+                    className="absolute inset-0 rounded-full opacity-60"
+                    style={{
+                        background: `radial-gradient(circle, rgba(155,225,93,0.3) 0%, rgba(0,230,118,0.2) 30%, transparent 70%)`,
+                        filter: 'blur(20px)',
+                        transform: 'scale(1.1)'
+                    }}
+                />
+            )}
+            {exerciseProgress >= 1 && (
+                <div
+                    className="absolute inset-0 rounded-full opacity-60"
+                    style={{
+                        background: `radial-gradient(circle, rgba(255,45,85,0.3) 0%, rgba(255,55,95,0.2) 30%, transparent 70%)`,
+                        filter: 'blur(20px)',
+                        transform: 'scale(1.1)'
+                    }}
+                />
+            )}
             <svg
                 ref={svgRef}
                 width={config.canvas}
                 height={config.canvas}
-                className="drop-shadow-sm opacity-95"
+                className="drop-shadow-sm opacity-95 relative z-10"
                 style={{
                     filter: 'drop-shadow(0 1px 0 rgba(255,255,255,0.05))'
                 }}
@@ -164,9 +195,6 @@ export function GoalRings({
                     strokeDashoffset={getDashOffset(recoveryProgress, outerCircumference)}
                     transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
                     className="progress-ring"
-                    style={recoveryProgress >= 1 ? {
-                        filter: 'drop-shadow(0 0 12px rgba(43,210,255,0.6)) drop-shadow(0 0 24px rgba(42,140,234,0.4))'
-                    } : undefined}
                 />
 
                 {/* Nutrition Ring (Middle) */}
@@ -191,9 +219,6 @@ export function GoalRings({
                     strokeDashoffset={getDashOffset(nutritionProgress, middleCircumference)}
                     transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
                     className="progress-ring"
-                    style={nutritionProgress >= 1 ? {
-                        filter: 'drop-shadow(0 0 12px rgba(155,225,93,0.6)) drop-shadow(0 0 24px rgba(0,230,118,0.4))'
-                    } : undefined}
                 />
 
                 {/* Exercise Ring (Inner) */}
@@ -218,9 +243,6 @@ export function GoalRings({
                     strokeDashoffset={getDashOffset(exerciseProgress, innerCircumference)}
                     transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
                     className="progress-ring"
-                    style={exerciseProgress >= 1 ? {
-                        filter: 'drop-shadow(0 0 12px rgba(255,45,85,0.6)) drop-shadow(0 0 24px rgba(255,55,95,0.4))'
-                    } : undefined}
                 />
             </svg>
 
