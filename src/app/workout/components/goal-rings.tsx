@@ -115,18 +115,28 @@ export function GoalRings({
     }, [animated, recoveryProgress, nutritionProgress, exerciseProgress])
 
     return (
-        <div className={cn("relative", className)} style={{ padding: `${config.glowPadding}px` }}>
-            <svg
-                ref={svgRef}
-                width={config.canvas}
-                height={config.canvas}
-                className="drop-shadow-sm opacity-95 relative z-10"
-                style={{
-                    filter: 'drop-shadow(0 1px 0 rgba(255,255,255,0.05))'
-                }}
-                role="img"
-                aria-label={`Recovery ${Math.round(recoveryProgress * 100)}%, Nutrition ${Math.round(nutritionProgress * 100)}%, Exercise ${Math.round(exerciseProgress * 100)}% complete`}
-            >
+        <div className={cn(
+            "relative overflow-visible",
+            "rounded-full",
+            "bg-transparent",
+            className
+        )} style={{
+            padding: `${config.glowPadding}px`,
+            contain: 'layout style'
+        }}>
+            <div className="relative overflow-visible rounded-full">
+                <svg
+                    ref={svgRef}
+                    width={config.canvas}
+                    height={config.canvas}
+                    className="drop-shadow-sm opacity-95 overflow-visible"
+                    style={{
+                        filter: 'drop-shadow(0 1px 0 rgba(255,255,255,0.05))',
+                        overflow: 'visible'
+                    }}
+                    role="img"
+                    aria-label={`Recovery ${Math.round(recoveryProgress * 100)}%, Nutrition ${Math.round(nutritionProgress * 100)}%, Exercise ${Math.round(exerciseProgress * 100)}% complete`}
+                >
                 <defs>
                     <linearGradient id="recoveryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                         <stop offset="0%" stopColor={ringColors.recovery.start} />
@@ -142,22 +152,22 @@ export function GoalRings({
                     </linearGradient>
 
                     {/* Neon glow filters */}
-                    <filter id="recoveryGlow" x="-50%" y="-50%" width="200%" height="200%">
-                        <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                    <filter id="recoveryGlow" x="-100%" y="-100%" width="300%" height="300%" filterUnits="userSpaceOnUse">
+                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
                         <feMerge>
                             <feMergeNode in="coloredBlur"/>
                             <feMergeNode in="SourceGraphic"/>
                         </feMerge>
                     </filter>
-                    <filter id="nutritionGlow" x="-50%" y="-50%" width="200%" height="200%">
-                        <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                    <filter id="nutritionGlow" x="-100%" y="-100%" width="300%" height="300%" filterUnits="userSpaceOnUse">
+                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
                         <feMerge>
                             <feMergeNode in="coloredBlur"/>
                             <feMergeNode in="SourceGraphic"/>
                         </feMerge>
                     </filter>
-                    <filter id="exerciseGlow" x="-50%" y="-50%" width="200%" height="200%">
-                        <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                    <filter id="exerciseGlow" x="-100%" y="-100%" width="300%" height="300%" filterUnits="userSpaceOnUse">
+                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
                         <feMerge>
                             <feMergeNode in="coloredBlur"/>
                             <feMergeNode in="SourceGraphic"/>
@@ -239,10 +249,10 @@ export function GoalRings({
                     className="progress-ring"
                     filter={exerciseProgress >= 1 ? "url(#exerciseGlow)" : undefined}
                 />
-            </svg>
+                </svg>
 
-            {/* Center Content */}
-            <div className="absolute inset-0 flex items-center justify-center">
+                {/* Center Content */}
+                <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
                     {streak !== undefined ? (
                         <>
@@ -271,6 +281,7 @@ export function GoalRings({
                             )}
                         </>
                     ) : null}
+                </div>
                 </div>
             </div>
         </div>
