@@ -625,11 +625,6 @@ export class WorkoutStorage {
 
                 console.log('Workout activity saved to Supabase:', newActivity.name)
 
-                // Trigger localStorage event for cross-tab communication
-                localStorage.setItem('workout-completed', `${Date.now()}-${newActivity.id}`)
-                // Clear it immediately (we just need to trigger the storage event)
-                localStorage.removeItem('workout-completed')
-
             } catch (error) {
                 console.error('Error saving workout activity to Supabase:', error)
                 // Add to sync queue
@@ -645,23 +640,13 @@ export class WorkoutStorage {
         // Always save to localStorage for offline access and quick retrieval
         this.saveActivityToLocalStorage(newActivity)
 
-        // Always trigger cross-tab communication for workout completion
+        // Trigger a custom event for same-tab detection
         try {
-            const eventData = `${Date.now()}-${newActivity.id}`
-            localStorage.setItem('workout-completed', eventData)
-            console.log('🚀 Workout completion event triggered:', eventData)
-
-            // Also trigger a custom event for same-tab detection
             window.dispatchEvent(new CustomEvent('workoutCompleted', {
                 detail: { activityId: newActivity.id, timestamp: Date.now() }
             }))
-
-            // Use setTimeout to ensure the event has time to propagate
-            setTimeout(() => {
-                localStorage.removeItem('workout-completed')
-            }, 100)
         } catch (error) {
-            console.warn('Could not trigger cross-tab workout completion event:', error)
+            console.warn('Could not trigger workout completion event:', error)
         }
 
         return newActivity

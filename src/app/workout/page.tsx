@@ -76,29 +76,16 @@ export default function WorkoutPage() {
                     if (workout?.isRunning) {
                         const backgroundElapsedTime = WorkoutStorage.getBackgroundElapsedTime()
                         setLiveWorkoutTime(backgroundElapsedTime)
-
-                        // Start real-time ring updates for ongoing workout
-                        console.log('🚀 Starting real-time ring updates for ongoing workout (initial load)', {
-                            workoutId: workout.workoutId,
-                            type: workout.type,
-                            isRunning: workout.isRunning,
-                            elapsedTime: workout.elapsedTime,
-                            backgroundElapsedTime
-                        })
                         workoutStateManager.startOngoingWorkoutTracking()
                     } else if (workout) {
                         setLiveWorkoutTime(workout.elapsedTime)
-                        console.log('⏸️ Workout is paused, stopping tracking', {
-                            workoutId: workout.workoutId,
-                            isRunning: workout.isRunning
-                        })
-                        // Stop real-time ring updates if workout is paused
                         workoutStateManager.stopOngoingWorkoutTracking()
                     } else {
-                        console.log('❌ No ongoing workout found, stopping tracking')
-                        // No ongoing workout, stop tracking
                         workoutStateManager.stopOngoingWorkoutTracking()
                     }
+
+                    // Start activity history polling for goal ring updates
+                    workoutStateManager.startActivityPolling()
 
                     // Refresh workout state (rings and activities)
                     await workoutStateManager.refreshAll(true)
@@ -154,8 +141,9 @@ export default function WorkoutPage() {
             return () => {
                 clearInterval(interval)
                 unsubscribe()
-                // Stop ongoing workout tracking when component unmounts
+                // Stop tracking when component unmounts
                 workoutStateManager.stopOngoingWorkoutTracking()
+                workoutStateManager.stopActivityPolling()
             }
         } else if (onHealss && !loading && user === null && !signInNotificationShownRef.current) {
             // Only show notification if auth is not loading and user is null
@@ -190,55 +178,30 @@ export default function WorkoutPage() {
         }
     }, [ongoingWorkout?.isRunning])
 
-    // Listen for workout completion events
+    // Listen for workout completion events (for notifications only)
     useEffect(() => {
         const handleWorkoutCompleted = (e: CustomEvent) => {
-            console.log('🎯 Workout completion detected:', e.detail)
-            if (user && supabase) {
-                workoutStateManager.handleWorkoutCompleted(
-                    e.detail?.source || 'unknown',
-                    e.detail
-                )
-
-                // Show success notification for quick-log completion
-                if (e.detail?.source === 'quick-log' || e.detail?.source === 'quick-log-dialog') {
-                    notifications.success('Workout logged!', {
-                        description: 'Goal progress updated',
-                        duration: 3000
-                    })
-                }
-            }
-        }
-
-        const handleStorageChange = (e: StorageEvent) => {
-            if (e.key === 'workout-completed' && e.newValue && user && supabase) {
-                try {
-                    const data = JSON.parse(e.newValue)
-                    workoutStateManager.handleWorkoutCompleted(data.source || 'storage', data)
-                } catch (error) {
-                    console.error('Error parsing workout completion data:', error)
-                }
+            // Show success notification for quick-log completion
+            if (e.detail?.source === 'quick-log' || e.detail?.source === 'quick-log-dialog') {
+                notifications.success('Workout logged!', {
+                    description: 'Goal progress updated',
+                    duration: 3000
+                })
             }
         }
 
         const handleVisibilityChange = () => {
             if (!document.hidden && user && supabase) {
-                // Only refresh if it's been more than 30 seconds since last update
-                const lastUpdate = workoutStateManager.getState().lastUpdate
-                const now = Date.now()
-                if (now - lastUpdate > 30000) {
-                    workoutStateManager.refreshAll(true)
-                }
+                // Refresh when user returns to tab
+                workoutStateManager.refreshAll(true)
             }
         }
 
         window.addEventListener('workoutCompleted', handleWorkoutCompleted as EventListener)
-        window.addEventListener('storage', handleStorageChange)
         document.addEventListener('visibilitychange', handleVisibilityChange)
 
         return () => {
             window.removeEventListener('workoutCompleted', handleWorkoutCompleted as EventListener)
-            window.removeEventListener('storage', handleStorageChange)
             document.removeEventListener('visibilitychange', handleVisibilityChange)
         }
     }, [user, supabase, notifications])

@@ -28,6 +28,10 @@ class WorkoutStateManager {
     private ongoingWorkoutInterval: NodeJS.Timeout | null = null
     private readonly ONGOING_WORKOUT_UPDATE_INTERVAL = 30000 // Update every 30 seconds for better responsiveness
 
+    // Activity history polling
+    private activityPollingInterval: NodeJS.Timeout | null = null
+    private readonly ACTIVITY_POLLING_INTERVAL = 10000 // Check activity history every 10 seconds
+
     // Subscribe to state changes
     subscribe(listener: StateListener): () => void {
         this.listeners.add(listener)
@@ -118,20 +122,11 @@ class WorkoutStateManager {
         })
     }
 
-    // Handle workout completion
-    async handleWorkoutCompleted(_source: string, _workoutData?: unknown): Promise<void> {
+    // Handle workout completion (simplified)
+    async handleWorkoutCompleted(): Promise<void> {
         // Stop ongoing workout tracking since workout is completed
         this.stopOngoingWorkoutTracking()
-
-        // Force cache invalidation and immediate refresh
-        GoalProgressCalculator.invalidateCache()
-        await this.refreshAll(true)
-
-        // Additional delayed refresh to catch any async database updates
-        setTimeout(async () => {
-            GoalProgressCalculator.invalidateCache()
-            await this.refreshAll(true)
-        }, 1000)
+        // Note: Activity polling will pick up the new logged workout
     }
 
     // Handle workout deletion
@@ -176,6 +171,46 @@ class WorkoutStateManager {
         }
     }
 
+    // Start activity history polling
+    startActivityPolling(): void {
+        this.stopActivityPolling()
+        this.activityPollingInterval = setInterval(async () => {
+            await this.checkActivityHistory()
+        }, this.ACTIVITY_POLLING_INTERVAL)
+
+        // Run initial check
+        this.checkActivityHistory()
+    }
+
+    // Stop activity history polling
+    stopActivityPolling(): void {
+        if (this.activityPollingInterval) {
+            clearInterval(this.activityPollingInterval)
+            this.activityPollingInterval = null
+        }
+    }
+
+    // Check for new activities and update goal progress
+    private async checkActivityHistory(): Promise<void> {
+        try {
+            const recentActivities = await WorkoutStorage.getRecentActivities(5)
+            const lastUpdateTime = this.state.lastUpdate
+
+            // Check if there are any new activities since last update
+            const hasNewActivities = recentActivities.some(activity => {
+                const activityTime = new Date(activity.completedAt).getTime()
+                return activityTime > lastUpdateTime
+            })
+
+            if (hasNewActivities) {
+                GoalProgressCalculator.invalidateCache()
+                await this.refreshAll(true)
+            }
+        } catch (error) {
+            console.error('Error checking activity history:', error)
+        }
+    }
+
     // Force refresh for debugging
     async forceRefreshOngoingWorkout(): Promise<void> {
         try {
@@ -208,6 +243,6 @@ export const workoutStateManager = new WorkoutStateManager()
 // Convenience functions for common operations
 export const refreshWorkoutRings = () => workoutStateManager.refreshAll(true)
 export const subscribeToWorkoutState = (listener: StateListener) => workoutStateManager.subscribe(listener)
-export const handleWorkoutCompletion = (source: string, data?: unknown) => workoutStateManager.handleWorkoutCompleted(source, data)
+export const handleWorkoutCompletion = () => workoutStateManager.handleWorkoutCompleted()
 export const forceRefreshOngoingWorkout = () => workoutStateManager.forceRefreshOngoingWorkout()
 export const debugWorkoutState = () => workoutStateManager.debugState()
