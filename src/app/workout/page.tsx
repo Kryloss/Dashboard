@@ -263,6 +263,23 @@ export default function WorkoutPage() {
         }
     }
 
+    const getSummaryPercentages = () => {
+        if (!workoutState.goalProgress) {
+            return {
+                recovery: 0,
+                nutrition: 0,
+                exercise: 0
+            }
+        }
+
+        // Allow percentages above 100% for summary display
+        return {
+            recovery: (workoutState.goalProgress.recovery.currentHours / workoutState.goalProgress.recovery.targetHours) * 100,
+            nutrition: (workoutState.goalProgress.nutrition.currentCalories / workoutState.goalProgress.nutrition.targetCalories) * 100,
+            exercise: (workoutState.goalProgress.exercise.currentMinutes / workoutState.goalProgress.exercise.targetMinutes) * 100
+        }
+    }
+
     // Mock data for demonstration (non-goal related)
     const mockData = {
         streak: 7, // 7 day streak
@@ -714,7 +731,7 @@ export default function WorkoutPage() {
                                                     )}
                                                 </div>
                                                 <div className="text-[#2BD2FF] text-sm font-semibold">
-                                                    {workoutState.goalProgress ? `${Math.round(getGoalRingData().recovery * 100)}%` : `${Math.round(getGoalRingData().recovery * 100)}%`}
+                                                    {Math.round(getSummaryPercentages().recovery)}%
                                                 </div>
                                             </div>
                                         </div>
@@ -737,7 +754,7 @@ export default function WorkoutPage() {
                                                     )}
                                                 </div>
                                                 <div className="text-[#9BE15D] text-sm font-semibold">
-                                                    {workoutState.goalProgress ? `${Math.round(getGoalRingData().nutrition * 100)}%` : `${Math.round(getGoalRingData().nutrition * 100)}%`}
+                                                    {Math.round(getSummaryPercentages().nutrition)}%
                                                 </div>
                                             </div>
                                         </div>
@@ -759,7 +776,7 @@ export default function WorkoutPage() {
                                                     )}
                                                 </div>
                                                 <div className="text-[#FF2D55] text-sm font-semibold">
-                                                    {workoutState.goalProgress ? `${Math.round(getGoalRingData().exercise * 100)}%` : `${Math.round(getGoalRingData().exercise * 100)}%`}
+                                                    {Math.round(getSummaryPercentages().exercise)}%
                                                 </div>
                                             </div>
                                         </div>
