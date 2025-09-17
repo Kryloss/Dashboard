@@ -138,7 +138,14 @@ export class GoalProgressCalculator {
                     type: a.workoutType,
                     completedAt: a.completedAt,
                     duration: Math.round(a.durationSeconds / 60)
-                }))
+                })),
+                // Additional debugging for date comparison
+                dateComparison: {
+                    requestedDate,
+                    todayDate: this.getTodayDateString(),
+                    yesterdayDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                    tomorrowDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+                }
             })
 
             if (dateActivities.length === 0) {
@@ -192,32 +199,43 @@ export class GoalProgressCalculator {
             let totalMinutes = workoutSummary?.totalMinutes || 0
             let sessionCount = workoutSummary?.sessionCount || 0
 
-            // Fallback to old method if summary approach fails
-            if (!workoutSummary) {
-                console.log('📋 Falling back to individual activity calculation...')
-                const allActivities = await WorkoutStorage.getWorkoutActivities(50, 0)
+            // Always check for individual activities as a backup to ensure we don't miss logged workouts
+            console.log('📋 Checking individual activities as backup...')
+            const allActivities = await WorkoutStorage.getWorkoutActivities(50, 0)
 
-                // Filter for today's workouts using the old method
-                const todayWorkouts = allActivities.filter(activity =>
-                    this.isWorkoutToday(activity.completedAt)
-                )
+            // Filter for today's workouts using the old method
+            const todayWorkouts = allActivities.filter(activity =>
+                this.isWorkoutToday(activity.completedAt)
+            )
 
-                console.log('🎯 Fallback - Today\'s workouts found:', {
-                    count: todayWorkouts.length,
-                    workouts: todayWorkouts.map(w => ({
-                        id: w.id,
-                        name: w.name,
-                        type: w.workoutType,
-                        minutes: Math.round(w.durationSeconds / 60),
-                        completedAt: w.completedAt
-                    }))
-                })
+            console.log('🎯 Individual activities check - Today\'s workouts found:', {
+                count: todayWorkouts.length,
+                workouts: todayWorkouts.map(w => ({
+                    id: w.id,
+                    name: w.name,
+                    type: w.workoutType,
+                    minutes: Math.round(w.durationSeconds / 60),
+                    completedAt: w.completedAt
+                }))
+            })
 
-                // Calculate totals from individual activities
-                totalMinutes = todayWorkouts.reduce((sum, workout) => {
+            // Use individual activities if they provide more data than the summary
+            if (todayWorkouts.length > 0) {
+                const individualTotalMinutes = todayWorkouts.reduce((sum, workout) => {
                     return sum + Math.round(workout.durationSeconds / 60)
                 }, 0)
-                sessionCount = todayWorkouts.length
+
+                // Use individual activities data if it's more comprehensive
+                if (individualTotalMinutes > totalMinutes || todayWorkouts.length > sessionCount) {
+                    console.log('📊 Using individual activities data (more comprehensive):', {
+                        individualTotalMinutes,
+                        summaryTotalMinutes: totalMinutes,
+                        individualCount: todayWorkouts.length,
+                        summaryCount: sessionCount
+                    })
+                    totalMinutes = individualTotalMinutes
+                    sessionCount = todayWorkouts.length
+                }
             }
 
             // Include ongoing workout time if requested (but avoid double-counting)
@@ -275,12 +293,42 @@ export class GoalProgressCalculator {
                 usedSummaryApproach: !!workoutSummary
             })
 
-            // Create session data for ring segments
-            const sessions = workoutSummary?.activities.map(activity => ({
-                duration: activity.duration,
-                type: activity.type,
-                completedAt: activity.completedAt
-            })) || []
+            // Create session data for ring segments - include both logged workouts and ongoing workouts
+            const sessions: Array<{
+                duration: number
+                type: string
+                completedAt: string
+            }> = []
+
+            // Add logged workout activities
+            if (workoutSummary?.activities) {
+                workoutSummary.activities.forEach(activity => {
+                    sessions.push({
+                        duration: activity.duration,
+                        type: activity.type,
+                        completedAt: activity.completedAt
+                    })
+                })
+            }
+
+            // Also add individual activities if they weren't captured in the summary
+            if (todayWorkouts.length > 0) {
+                todayWorkouts.forEach(workout => {
+                    // Check if this workout is already in sessions (avoid duplicates)
+                    const alreadyIncluded = sessions.some(session =>
+                        session.completedAt === workout.completedAt &&
+                        Math.abs(new Date(session.completedAt).getTime() - new Date(workout.completedAt).getTime()) < 1000
+                    )
+
+                    if (!alreadyIncluded) {
+                        sessions.push({
+                            duration: Math.round(workout.durationSeconds / 60),
+                            type: workout.workoutType,
+                            completedAt: workout.completedAt
+                        })
+                    }
+                })
+            }
 
             // Add ongoing workout session if included and not already counted
             if (includeOngoingWorkout) {
@@ -288,12 +336,11 @@ export class GoalProgressCalculator {
                 if (ongoingWorkout && ongoingWorkout.isRunning) {
                     // Check if we should include it (not already counted as duplicate)
                     const ongoingStartTime = new Date(ongoingWorkout.startTime)
-                    const activitiesToCheck = workoutSummary?.activities || []
 
-                    const isDuplicate = activitiesToCheck.find(activity => {
-                        const activityTime = new Date(activity.completedAt)
-                        const timeDiff = Math.abs(activityTime.getTime() - ongoingStartTime.getTime())
-                        return timeDiff < 5 * 60 * 1000
+                    const isDuplicate = sessions.find(session => {
+                        const sessionTime = new Date(session.completedAt)
+                        const timeDiff = Math.abs(sessionTime.getTime() - ongoingStartTime.getTime())
+                        return timeDiff < 5 * 60 * 1000 // 5 minutes
                     })
 
                     if (!isDuplicate) {
@@ -740,7 +787,7 @@ if (typeof window !== 'undefined') {
             return { todayDate, progress, summary }
         } catch (error) {
             console.error('❌ Quick debug failed:', error)
-            return { error: error.message }
+            return { error: error instanceof Error ? error.message : String(error) }
         }
     }
 }
