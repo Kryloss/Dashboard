@@ -16,6 +16,8 @@ import { ActivityCard } from "./components/activity-card"
 import { ActivityEditModal } from "./components/activity-edit-modal"
 import { DeleteConfirmDialog } from "./components/delete-confirm-dialog"
 import { SleepCard } from "./components/sleep-card"
+import { SleepEditModal } from "./components/sleep-edit-modal"
+import { SleepDeleteConfirmDialog } from "./components/sleep-delete-confirm-dialog"
 
 export default function WorkoutHistoryPage() {
     const router = useRouter()
@@ -27,6 +29,8 @@ export default function WorkoutHistoryPage() {
     const [filterType, setFilterType] = useState<string>("all")
     const [editingActivity, setEditingActivity] = useState<WorkoutActivity | null>(null)
     const [deletingActivity, setDeletingActivity] = useState<WorkoutActivity | null>(null)
+    const [editingSleep, setEditingSleep] = useState<SleepData | null>(null)
+    const [deletingSleep, setDeletingSleep] = useState<SleepData | null>(null)
     const [hasMore, setHasMore] = useState(true)
     const [offset, setOffset] = useState(0)
     const limit = 20
@@ -211,6 +215,56 @@ export default function WorkoutHistoryPage() {
             setActivities(prev => prev.map(a =>
                 a.id === updatedActivity.id ? updatedActivity : a
             ))
+        }
+    }
+
+    // Sleep handlers
+    const handleDeleteSleep = async () => {
+        if (!deletingSleep) return
+
+        try {
+            await UserDataStorage.deleteSleepData(deletingSleep.id)
+            setSleepData(prev => prev.filter(s => s.id !== deletingSleep.id))
+
+            notifications.success('Sleep session deleted', {
+                description: 'Sleep data removed from history',
+                duration: 3000
+            })
+        } catch (error) {
+            console.error('Error deleting sleep data:', error)
+            notifications.error('Delete failed', {
+                description: 'Failed to delete sleep session. Please try again.',
+                duration: 4000
+            })
+        } finally {
+            setDeletingSleep(null)
+        }
+    }
+
+    const handleUpdateSleep = async (updatedSleepData: SleepData) => {
+        // Optimistic update - update UI immediately
+        const optimisticUpdate = {
+            ...updatedSleepData,
+            updatedAt: new Date().toISOString()
+        }
+
+        setSleepData(prev => prev.map(s =>
+            s.id === updatedSleepData.id ? optimisticUpdate : s
+        ))
+
+        try {
+            await UserDataStorage.updateSleepData(updatedSleepData.id, updatedSleepData)
+
+            notifications.success('Sleep session updated', {
+                description: 'Changes saved successfully',
+                duration: 3000
+            })
+        } catch (error) {
+            console.error('Error updating sleep data:', error)
+            notifications.error('Update failed', {
+                description: 'Failed to update sleep session. Please try again.',
+                duration: 4000
+            })
         }
     }
 
@@ -429,6 +483,8 @@ export default function WorkoutHistoryPage() {
                                             <SleepCard
                                                 key={sleep.id}
                                                 sleepData={sleep}
+                                                onEdit={() => setEditingSleep(sleep)}
+                                                onDelete={() => setDeletingSleep(sleep)}
                                             />
                                         ))}
                                     </div>
@@ -454,6 +510,24 @@ export default function WorkoutHistoryPage() {
                     activity={deletingActivity}
                     onConfirm={handleDeleteActivity}
                     onCancel={() => setDeletingActivity(null)}
+                />
+            )}
+
+            {/* Sleep Edit Modal */}
+            {editingSleep && (
+                <SleepEditModal
+                    sleepData={editingSleep}
+                    onClose={() => setEditingSleep(null)}
+                    onSave={handleUpdateSleep}
+                />
+            )}
+
+            {/* Sleep Delete Confirmation Dialog */}
+            {deletingSleep && (
+                <SleepDeleteConfirmDialog
+                    sleepData={deletingSleep}
+                    onConfirm={handleDeleteSleep}
+                    onCancel={() => setDeletingSleep(null)}
                 />
             )}
         </div>

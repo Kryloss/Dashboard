@@ -1,6 +1,7 @@
 "use client"
 
-import { Moon, Clock, Smile, Meh, Frown } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Moon, Clock, Smile, Meh, Frown, Edit3, Trash2 } from "lucide-react"
 import { SleepData, SleepSession as BaseSleepSession } from "@/lib/user-data-storage"
 
 // Extended interface to handle legacy data
@@ -15,9 +16,11 @@ interface CompatibleSleepData extends Omit<SleepData, 'sessions'> {
 
 interface SleepCardProps {
     sleepData: CompatibleSleepData
+    onEdit: () => void
+    onDelete: () => void
 }
 
-export function SleepCard({ sleepData }: SleepCardProps) {
+export function SleepCard({ sleepData, onEdit, onDelete }: SleepCardProps) {
     // Sleep quality icons
     const qualityIcons = [Frown, Meh, Smile, Smile]
     const qualityLabels = ['Poor', 'Fair', 'Good', 'Excellent']
@@ -137,7 +140,7 @@ export function SleepCard({ sleepData }: SleepCardProps) {
     }
 
     return (
-        <div className="bg-[#121318] border border-[#212227] rounded-[20px] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)] hover:border-[#2A2B31] hover:-translate-y-[1px] hover:shadow-[0_0_0_1px_rgba(43,210,255,0.35),_0_8px_40px_rgba(43,210,255,0.20)] transition-all duration-200 ease-out">
+        <div className="group bg-[#121318] border border-[#212227] rounded-[20px] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)] hover:border-[#2A2B31] hover:-translate-y-[1px] hover:shadow-[0_0_0_1px_rgba(43,210,255,0.35),_0_8px_40px_rgba(43,210,255,0.20)] transition-all duration-200 ease-out">
             <div className="flex items-start justify-between">
                 <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
@@ -189,6 +192,26 @@ export function SleepCard({ sleepData }: SleepCardProps) {
                     <span className="text-xs text-[#A1A1AA] text-center">
                         {qualityLabels[sleepData.qualityRating - 1]}
                     </span>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity ml-4">
+                    <Button
+                        onClick={onEdit}
+                        variant="ghost"
+                        size="icon"
+                        className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full w-8 h-8"
+                    >
+                        <Edit3 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                        onClick={onDelete}
+                        variant="ghost"
+                        size="icon"
+                        className="text-[#A1A1AA] hover:text-red-400 hover:bg-red-500/10 rounded-full w-8 h-8"
+                    >
+                        <Trash2 className="w-4 h-4" />
+                    </Button>
                 </div>
             </div>
 
