@@ -682,7 +682,7 @@ export default function WorkoutPage() {
                                 <div className="flex flex-col items-center lg:items-start">
                                     <div className="flex justify-center lg:justify-start relative">
                                         <GoalRings
-                                            size="xl"
+                                            size="lg"
                                             recoveryProgress={getGoalRingData().recovery}
                                             nutritionProgress={getGoalRingData().nutrition}
                                             exerciseProgress={getGoalRingData().exercise}

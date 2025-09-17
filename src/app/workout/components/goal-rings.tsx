@@ -57,7 +57,7 @@ const sizeConfig = {
         thicknessMiddle: 18,
         thicknessInner: 16,
         gap: 12,
-        glowPadding: 60
+        glowPadding: 80
     }
 }
 
