@@ -68,6 +68,18 @@ export class GoalProgressCalculator {
             // Get activities with optimized query (reduced limit for performance)
             const allActivities = await WorkoutStorage.getWorkoutActivities(50, 0)
 
+            console.log('🔍 GoalProgress Debug - Exercise calculation:', {
+                totalActivities: allActivities.length,
+                todayDateString: this.getTodayDateString(),
+                todayBounds: this.getTodayBounds(),
+                activities: allActivities.map(a => ({
+                    id: a.id,
+                    completedAt: a.completedAt,
+                    durationSeconds: a.durationSeconds,
+                    isToday: this.isWorkoutToday(a.completedAt)
+                }))
+            })
+
             // Filter for today's workouts
             const todayWorkouts = allActivities.filter(activity =>
                 this.isWorkoutToday(activity.completedAt)
@@ -174,6 +186,17 @@ export class GoalProgressCalculator {
             const todayDate = this.getTodayDateString()
             const sleepData = await UserDataStorage.getSleepData(todayDate)
 
+            console.log('🔍 GoalProgress Debug - Recovery calculation:', {
+                todayDate,
+                targetHours,
+                sleepData: sleepData ? {
+                    id: sleepData.id,
+                    date: sleepData.date,
+                    totalMinutes: sleepData.totalMinutes,
+                    sessions: sleepData.sessions.length
+                } : null
+            })
+
             if (sleepData && sleepData.totalMinutes > 0) {
                 // We have actual sleep data for today
                 const actualHours = sleepData.totalMinutes / 60
@@ -262,11 +285,14 @@ export class GoalProgressCalculator {
         try {
             // Return cached data if valid and not forcing refresh, but not if we need ongoing workout data
             if (!forceRefresh && !includeOngoingWorkout && this.isCacheValid()) {
+                console.log('🔍 GoalProgress Debug - Using cached data:', this.cache!.data)
                 return this.cache!.data
             }
 
             // Get user goals
             const userGoals = await UserDataStorage.getUserGoals()
+            console.log('🔍 GoalProgress Debug - User goals:', userGoals)
+
             if (!userGoals) {
                 console.warn('No user goals found for progress calculation')
                 return null
