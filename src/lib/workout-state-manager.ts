@@ -123,9 +123,15 @@ class WorkoutStateManager {
         // Stop ongoing workout tracking since workout is completed
         this.stopOngoingWorkoutTracking()
 
-        // Force immediate refresh and delayed refresh for async updates
+        // Force cache invalidation and immediate refresh
+        GoalProgressCalculator.invalidateCache()
         await this.refreshAll(true)
-        setTimeout(() => this.refreshAll(true), 500)
+
+        // Additional delayed refresh to catch any async database updates
+        setTimeout(async () => {
+            GoalProgressCalculator.invalidateCache()
+            await this.refreshAll(true)
+        }, 1000)
     }
 
     // Handle workout deletion

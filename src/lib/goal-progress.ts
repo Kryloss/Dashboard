@@ -55,20 +55,7 @@ export class GoalProgressCalculator {
     // Get today's date in user's local timezone
     static getTodayDateString(): string {
         const today = new Date()
-
-        // Use the same date calculation method as UserDataStorage
-        // This ensures consistency between data saving and retrieval
-        const todayString = today.toISOString().split('T')[0]
-
-        console.log('🔍 Debug - Today date calculation:', {
-            rawDate: today,
-            isoString: today.toISOString(),
-            splitResult: todayString,
-            localeDateString: today.toLocaleDateString('en-CA'),
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            timezoneOffset: today.getTimezoneOffset()
-        })
-        return todayString // YYYY-MM-DD format consistent with UserDataStorage
+        return today.toISOString().split('T')[0] // YYYY-MM-DD format
     }
 
     // Get start and end of today in user's local timezone
@@ -82,9 +69,9 @@ export class GoalProgressCalculator {
 
     // Check if a workout was completed today
     static isWorkoutToday(completedAt: string): boolean {
-        const workoutDate = new Date(completedAt)
-        const { startOfDay, endOfDay } = this.getTodayBounds()
-        return workoutDate >= startOfDay && workoutDate <= endOfDay
+        const workoutDate = new Date(completedAt).toISOString().split('T')[0]
+        const todayDate = this.getTodayDateString()
+        return workoutDate === todayDate
     }
 
 
@@ -93,9 +80,12 @@ export class GoalProgressCalculator {
         try {
             // Get all activities and filter for today
             const allActivities = await WorkoutStorage.getWorkoutActivities(50, 0)
-            const todayWorkouts = allActivities.filter(activity =>
-                this.isWorkoutToday(activity.completedAt)
-            )
+            const todayDate = this.getTodayDateString()
+            const todayWorkouts = allActivities.filter(activity => {
+                const workoutDate = new Date(activity.completedAt).toISOString().split('T')[0]
+                return workoutDate === todayDate
+            })
+
 
             let totalMinutes = todayWorkouts.reduce((sum, workout) => {
                 return sum + Math.round(workout.durationSeconds / 60)
