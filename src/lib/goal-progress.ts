@@ -42,7 +42,20 @@ export class GoalProgressCalculator {
     // Get today's date in user's local timezone
     static getTodayDateString(): string {
         const today = new Date()
-        return today.toLocaleDateString('en-CA') // YYYY-MM-DD format
+
+        // Use the same date calculation method as UserDataStorage
+        // This ensures consistency between data saving and retrieval
+        const todayString = today.toISOString().split('T')[0]
+
+        console.log('🔍 Debug - Today date calculation:', {
+            rawDate: today,
+            isoString: today.toISOString(),
+            splitResult: todayString,
+            localeDateString: today.toLocaleDateString('en-CA'),
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            timezoneOffset: today.getTimezoneOffset()
+        })
+        return todayString // YYYY-MM-DD format consistent with UserDataStorage
     }
 
     // Get start and end of today in user's local timezone
@@ -193,8 +206,24 @@ export class GoalProgressCalculator {
                     id: sleepData.id,
                     date: sleepData.date,
                     totalMinutes: sleepData.totalMinutes,
-                    sessions: sleepData.sessions.length
-                } : null
+                    sessions: sleepData.sessions.length,
+                    actualHours: sleepData.totalMinutes / 60
+                } : 'NO_SLEEP_DATA_FOUND'
+            })
+
+            // Additional debug: Check if sleep data exists for nearby dates
+            const tomorrow = new Date()
+            tomorrow.setDate(tomorrow.getDate() + 1)
+            const tomorrowString = tomorrow.toISOString().split('T')[0]
+
+            const yesterday = new Date()
+            yesterday.setDate(yesterday.getDate() - 1)
+            const yesterdayString = yesterday.toISOString().split('T')[0]
+
+            console.log('🔍 GoalProgress Debug - Date availability check:', {
+                today: todayDate,
+                tomorrow: tomorrowString,
+                yesterday: yesterdayString
             })
 
             if (sleepData && sleepData.totalMinutes > 0) {
@@ -289,6 +318,8 @@ export class GoalProgressCalculator {
                 return this.cache!.data
             }
 
+            console.log('🔄 GoalProgress Debug - Starting fresh calculation', { forceRefresh, includeOngoingWorkout })
+
             // Get user goals
             const userGoals = await UserDataStorage.getUserGoals()
             console.log('🔍 GoalProgress Debug - User goals:', userGoals)
@@ -368,7 +399,10 @@ export class GoalProgressCalculator {
 
     // Debug function to log current progress
     static async debugProgress(): Promise<void> {
-        const progress = await this.calculateDailyProgress()
+        // Force cache invalidation for fresh data
+        this.invalidateCache()
+
+        const progress = await this.calculateDailyProgress(true) // Force refresh
         if (progress) {
             console.log('🎯 Daily Goal Progress Debug:')
             console.log('Exercise:', {
@@ -392,5 +426,44 @@ export class GoalProgressCalculator {
         } else {
             console.log('❌ No progress data available')
         }
+    }
+
+    // Debug function to check localStorage data directly
+    static debugLocalStorageData(): void {
+        if (typeof window === 'undefined') {
+            console.log('❌ Not in browser context')
+            return
+        }
+
+        const todayDate = this.getTodayDateString()
+        console.log('🔍 Debug localStorage data for date:', todayDate)
+
+        // Check sleep data
+        const sleepKey = `UserDataStorage-sleep_data-${todayDate}`
+        const sleepData = localStorage.getItem(sleepKey)
+        console.log('Sleep data key:', sleepKey)
+        console.log('Sleep data value:', sleepData ? JSON.parse(sleepData) : 'NOT_FOUND')
+
+        // Check all sleep data keys
+        const allKeys = Object.keys(localStorage)
+        const sleepKeys = allKeys.filter(key => key.includes('sleep_data'))
+        console.log('All sleep data keys in localStorage:', sleepKeys)
+
+        // Check workout activities
+        const workoutKey = 'WorkoutStorage-activities'
+        const workoutData = localStorage.getItem(workoutKey)
+        console.log('Workout activities:', workoutData ? JSON.parse(workoutData) : 'NOT_FOUND')
+    }
+}
+
+// Make debug functions available globally for browser console debugging
+if (typeof window !== 'undefined') {
+    (window as any).debugGoalProgress = () => GoalProgressCalculator.debugProgress()
+    (window as any).debugLocalStorage = () => GoalProgressCalculator.debugLocalStorageData()
+    (window as any).forceRefreshRings = async () => {
+        GoalProgressCalculator.invalidateCache()
+        const progress = await GoalProgressCalculator.calculateDailyProgress(true)
+        console.log('🔄 Force refreshed goal progress:', progress)
+        return progress
     }
 }
