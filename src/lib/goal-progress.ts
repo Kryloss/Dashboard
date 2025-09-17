@@ -633,6 +633,7 @@ if (typeof window !== 'undefined') {
         testExerciseCalculation?: () => Promise<{ userGoals: unknown; activities: unknown }>
         testWorkoutSummary?: () => Promise<DailyWorkoutSummary | null>
         testLocalStorageActivities?: () => Promise<{ rawData: unknown; activities: unknown }>
+        quickDebugRings?: () => Promise<unknown>
     }
 
     globalWindow.debugGoalProgress = () => GoalProgressCalculator.debugProgress()
@@ -702,5 +703,44 @@ if (typeof window !== 'undefined') {
         console.log('WorkoutStorage.getWorkoutActivities result:', activities)
 
         return { rawData: rawData ? JSON.parse(rawData) : null, activities }
+    }
+
+    globalWindow.quickDebugRings = async () => {
+        console.log('🔥 QUICK DEBUG - Testing ring data immediately...')
+
+        try {
+            // 1. Check what date we're looking for
+            const todayDate = GoalProgressCalculator.getTodayDateString()
+            console.log('1. Today date:', todayDate)
+
+            // 2. Force cache invalidation
+            GoalProgressCalculator.invalidateCache()
+
+            // 3. Get goal progress (should trigger all debug logs)
+            const progress = await GoalProgressCalculator.calculateDailyProgress(true, false)
+            console.log('2. Goal progress result:', progress)
+
+            // 4. Check workout summary
+            const summary = await GoalProgressCalculator.getDailyWorkoutSummary(todayDate)
+            console.log('3. Workout summary:', summary)
+
+            // 5. Summary of findings
+            console.log('🎯 SUMMARY:', {
+                todayDate,
+                hasProgress: !!progress,
+                exerciseMinutes: progress?.exercise.currentMinutes || 0,
+                exerciseProgress: progress?.exercise.progress || 0,
+                workoutSummary: summary ? {
+                    totalMinutes: summary.totalMinutes,
+                    sessionCount: summary.sessionCount,
+                    activitiesCount: summary.activities.length
+                } : 'NO_SUMMARY'
+            })
+
+            return { todayDate, progress, summary }
+        } catch (error) {
+            console.error('❌ Quick debug failed:', error)
+            return { error: error.message }
+        }
     }
 }
