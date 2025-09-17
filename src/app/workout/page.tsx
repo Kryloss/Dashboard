@@ -282,9 +282,9 @@ export default function WorkoutPage() {
 
     const getWeeklyWorkoutStats = () => {
         // Get this week's workout data
-        const thisWeekWorkouts = workoutState.activities || []
+        const thisWeekWorkouts = workoutState.recentActivities || []
         const thisWeekSessions = thisWeekWorkouts.length
-        const thisWeekMinutes = thisWeekWorkouts.reduce((total, workout) => total + (workout.duration || 0), 0)
+        const thisWeekMinutes = thisWeekWorkouts.reduce((total, workout) => total + Math.round((workout.durationSeconds || 0) / 60), 0)
 
         // Format workout time as hours and minutes
         const formatWorkoutTime = (totalMinutes: number) => {
@@ -1047,7 +1047,7 @@ export default function WorkoutPage() {
                                         </div>
                                     ) : (
                                         <>
-                                            {workoutState.recentActivities.map((activity) => {
+                                            {workoutState.recentActivities.slice(0, 3).map((activity) => {
                                                 const getWorkoutIcon = (type: string) => {
                                                     switch (type) {
                                                         case 'strength': return <Dumbbell className="w-4 h-4" />
