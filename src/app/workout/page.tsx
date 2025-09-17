@@ -316,20 +316,24 @@ export default function WorkoutPage() {
                 value: hasWorkoutData ? formatWorkoutTime(thisWeekMinutes) : "No workouts yet",
                 change: hasWorkoutData && hasComparisonData ? {
                     value: `${Math.abs(timeChangePercent)}%`,
-                    direction: timeChange >= 0 ? 'up' as const : 'down' as const
+                    direction: timeChange >= 0 ? 'up' as const : 'down' as const,
+                    period: "vs last week"
                 } : hasWorkoutData && !hasComparisonData ? {
                     value: "No progress data yet",
-                    direction: 'neutral' as const
+                    direction: 'neutral' as const,
+                    period: ""
                 } : undefined
             },
             sessions: {
                 value: hasWorkoutData ? thisWeekSessions.toString() : "0",
                 change: hasWorkoutData && hasComparisonData ? {
                     value: Math.abs(sessionChange).toString(),
-                    direction: sessionChange >= 0 ? 'up' as const : 'down' as const
+                    direction: sessionChange >= 0 ? 'up' as const : 'down' as const,
+                    period: "vs last week"
                 } : hasWorkoutData && !hasComparisonData ? {
                     value: "No progress data yet",
-                    direction: 'neutral' as const
+                    direction: 'neutral' as const,
+                    period: ""
                 } : undefined
             }
         }
@@ -393,7 +397,7 @@ export default function WorkoutPage() {
                     icon: <Moon className="w-4 h-4" />,
                     label: "Sleep Time",
                     value: "7.2h avg",
-                    change: { value: "No progress data yet", direction: "neutral" as const }
+                    change: { value: "No progress data yet", direction: "neutral" as const, period: "" }
                 },
                 {
                     icon: <Clock className="w-4 h-4" />,
@@ -1167,6 +1171,7 @@ export default function WorkoutPage() {
                                             label={stat.label}
                                             value={stat.value}
                                             change={stat.change}
+                                            period={stat.change?.period}
                                         />
                                     ))}
                                 </div>

@@ -166,14 +166,9 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         setSleepSessions([...sleepSessions, newNap])
     }
 
-    // Remove session (prevent removing main sleep session)
+    // Remove session (now allows removing main sleep session)
     const removeSession = (id: string) => {
-        setSleepSessions(sleepSessions.filter(session => {
-            // Don't remove the main sleep session
-            if (session.type === 'main') return true
-            // Remove only the nap session with matching ID
-            return session.id !== id
-        }))
+        setSleepSessions(sleepSessions.filter(session => session.id !== id))
     }
 
     // Update session time
@@ -274,7 +269,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                             </div>
                             <span>Log sleep</span>
                         </div>
-                        <div className="text-sm font-medium text-[#F3F4F6]">
+                        <div className="text-sm font-medium text-[#F3F4F6] mr-8">
                             {(() => {
                                 const total = sleepSessions.reduce((sum, session) => {
                                     const duration = calculateDuration(session.startTime, session.endTime)
@@ -300,40 +295,42 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                             <span className="text-sm font-medium text-[#F3F4F6] capitalize">
                                                 {session.type}
                                             </span>
-                                            {session.type === 'nap' && (
-                                                <Button
-                                                    onClick={() => removeSession(session.id)}
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    className="h-6 w-6 p-0 text-[#A1A1AA] hover:text-red-400"
-                                                >
-                                                    <X className="w-3 h-3" />
-                                                </Button>
-                                            )}
+                                            <Button
+                                                onClick={() => removeSession(session.id)}
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-6 w-6 p-0 text-[#A1A1AA] hover:text-red-400"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </Button>
                                         </div>
                                         <div className="grid grid-cols-2 gap-3">
                                             <div>
-                                                <Label className="text-xs text-[#A1A1AA] mb-1 flex items-center space-x-1">
-                                                    <Clock className="w-3 h-3 text-[#2A8CEA]" />
-                                                    <span>From</span>
+                                                <Label className="text-xs text-[#A1A1AA] mb-1">
+                                                    From
                                                 </Label>
                                                 <Input
                                                     type="time"
                                                     value={session.startTime}
                                                     onChange={(e) => updateSessionTime(session.id, 'startTime', e.target.value)}
-                                                    className="bg-[#161B22] border-[#212227] text-[#F3F4F6] text-sm h-8"
+                                                    className="bg-[#161B22] border-[#212227] text-[#F3F4F6] text-sm h-8 [&::-webkit-calendar-picker-indicator]:filter-none [&::-webkit-calendar-picker-indicator]:opacity-70"
+                                                    style={{
+                                                        colorScheme: 'dark'
+                                                    }}
                                                 />
                                             </div>
                                             <div>
-                                                <Label className="text-xs text-[#A1A1AA] mb-1 flex items-center space-x-1">
-                                                    <Clock className="w-3 h-3 text-[#2A8CEA]" />
-                                                    <span>To</span>
+                                                <Label className="text-xs text-[#A1A1AA] mb-1">
+                                                    To
                                                 </Label>
                                                 <Input
                                                     type="time"
                                                     value={session.endTime}
                                                     onChange={(e) => updateSessionTime(session.id, 'endTime', e.target.value)}
-                                                    className="bg-[#161B22] border-[#212227] text-[#F3F4F6] text-sm h-8"
+                                                    className="bg-[#161B22] border-[#212227] text-[#F3F4F6] text-sm h-8 [&::-webkit-calendar-picker-indicator]:filter-none [&::-webkit-calendar-picker-indicator]:opacity-70"
+                                                    style={{
+                                                        colorScheme: 'dark'
+                                                    }}
                                                 />
                                             </div>
                                         </div>
