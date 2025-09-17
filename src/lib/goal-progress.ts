@@ -167,12 +167,12 @@ export class GoalProgressCalculator {
         }
     }
 
-    // Calculate recovery progress using actual sleep data
+    // Calculate recovery progress using actual sleep data (resets daily like exercise)
     static async calculateRecoveryProgress(userGoals: UserGoals): Promise<DailyGoalProgress['recovery']> {
         const targetHours = userGoals.sleepHours
 
         try {
-            // Get today's sleep data
+            // Get today's sleep data only
             const todayDate = this.getTodayDateString()
             const sleepData = await UserDataStorage.getSleepData(todayDate)
 
@@ -189,61 +189,22 @@ export class GoalProgressCalculator {
                 }
             }
 
-            // Check yesterday's sleep data (if it's early in the day)
-            const now = new Date()
-            const hoursIntoDay = now.getHours() + (now.getMinutes() / 60)
-
-            if (hoursIntoDay < 12) { // Before noon, check yesterday's sleep
-                const yesterday = new Date()
-                yesterday.setDate(yesterday.getDate() - 1)
-                const yesterdayDate = yesterday.toLocaleDateString('en-CA')
-
-                const yesterdaySleep = await UserDataStorage.getSleepData(yesterdayDate)
-                if (yesterdaySleep && yesterdaySleep.totalMinutes > 0) {
-                    const actualHours = yesterdaySleep.totalMinutes / 60
-                    const progress = Math.min(actualHours / targetHours, 1.0)
-
-                    return {
-                        progress,
-                        currentHours: actualHours,
-                        targetHours,
-                        placeholder: false
-                    }
-                }
-            }
-
-            // No sleep data available, fall back to placeholder logic
-            let timeBasedProgress = 0
-
-            if (hoursIntoDay >= 6 && hoursIntoDay < 12) {
-                // Morning: assume got some sleep last night
-                timeBasedProgress = 0.7 // 70% as if slept 7 hours out of 8
-            } else if (hoursIntoDay >= 12) {
-                // Afternoon/evening: gradually increase recovery
-                timeBasedProgress = Math.min(0.7 + ((hoursIntoDay - 12) / 12) * 0.3, 1.0)
-            } else {
-                // Very early morning: low recovery
-                timeBasedProgress = 0.2
-            }
-
-            const currentHours = targetHours * timeBasedProgress
-
+            // No sleep data for today - start at 0 (like exercise ring)
             return {
-                progress: timeBasedProgress,
-                currentHours,
+                progress: 0,
+                currentHours: 0,
                 targetHours,
-                placeholder: true
+                placeholder: false
             }
         } catch (error) {
             console.error('Error calculating recovery progress:', error)
 
-            // Return safe placeholder on error
-            const timeBasedProgress = 0.5
+            // Return 0 on error (like exercise ring)
             return {
-                progress: timeBasedProgress,
-                currentHours: targetHours * timeBasedProgress,
+                progress: 0,
+                currentHours: 0,
                 targetHours,
-                placeholder: true
+                placeholder: false
             }
         }
     }
