@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Moon, Smile, Meh, Frown, Plus, X } from "lucide-react"
+import { Moon, Smile, Meh, Frown, Plus, X, Clock } from "lucide-react"
 
 interface SleepDialogProps {
     open: boolean
@@ -168,9 +168,12 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
 
     // Remove session (prevent removing main sleep session)
     const removeSession = (id: string) => {
-        setSleepSessions(sleepSessions.filter(session =>
-            session.id !== id && session.type !== 'main'
-        ))
+        setSleepSessions(sleepSessions.filter(session => {
+            // Don't remove the main sleep session
+            if (session.type === 'main') return true
+            // Remove only the nap session with matching ID
+            return session.id !== id
+        }))
     }
 
     // Update session time
@@ -264,11 +267,24 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-2xl max-w-[95vw] max-h-[90vh] overflow-hidden p-0">
                 <DialogHeader className="px-4 pt-4 pb-2">
-                    <DialogTitle className="flex items-center space-x-2 text-base font-semibold text-[#F3F4F6]">
-                        <div className="w-6 h-6 bg-gradient-to-br from-[#2BD2FF] to-[#2A8CEA] rounded-lg flex items-center justify-center">
-                            <Moon className="w-3 h-3 text-white" />
+                    <DialogTitle className="flex items-center justify-between text-base font-semibold text-[#F3F4F6]">
+                        <div className="flex items-center space-x-2">
+                            <div className="w-6 h-6 bg-gradient-to-br from-[#2BD2FF] to-[#2A8CEA] rounded-lg flex items-center justify-center">
+                                <Moon className="w-3 h-3 text-white" />
+                            </div>
+                            <span>Log sleep</span>
                         </div>
-                        <span>Log sleep</span>
+                        <div className="text-sm font-medium text-[#F3F4F6]">
+                            {(() => {
+                                const total = sleepSessions.reduce((sum, session) => {
+                                    const duration = calculateDuration(session.startTime, session.endTime)
+                                    return sum + duration.totalMinutes
+                                }, 0)
+                                const hours = Math.floor(total / 60)
+                                const minutes = total % 60
+                                return `${hours}h ${minutes}m`
+                            })()}
+                        </div>
                     </DialogTitle>
                 </DialogHeader>
 
@@ -282,7 +298,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                     <div key={session.id} className="bg-[#0E0F13] border border-[#212227] rounded-lg p-3">
                                         <div className="flex items-center justify-between mb-2">
                                             <span className="text-sm font-medium text-[#F3F4F6] capitalize">
-                                                {session.type} Sleep
+                                                {session.type}
                                             </span>
                                             {session.type === 'nap' && (
                                                 <Button
@@ -297,7 +313,10 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                         </div>
                                         <div className="grid grid-cols-2 gap-3">
                                             <div>
-                                                <Label className="text-xs text-[#A1A1AA] mb-1 block">From</Label>
+                                                <Label className="text-xs text-[#A1A1AA] mb-1 flex items-center space-x-1">
+                                                    <Clock className="w-3 h-3 text-[#2A8CEA]" />
+                                                    <span>From</span>
+                                                </Label>
                                                 <Input
                                                     type="time"
                                                     value={session.startTime}
@@ -306,7 +325,10 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                                 />
                                             </div>
                                             <div>
-                                                <Label className="text-xs text-[#A1A1AA] mb-1 block">To</Label>
+                                                <Label className="text-xs text-[#A1A1AA] mb-1 flex items-center space-x-1">
+                                                    <Clock className="w-3 h-3 text-[#2A8CEA]" />
+                                                    <span>To</span>
+                                                </Label>
                                                 <Input
                                                     type="time"
                                                     value={session.endTime}
@@ -341,19 +363,19 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                 </Button>
                             </div>
 
-                            <div className="flex items-center justify-center gap-4">
+                            <div className="flex items-center justify-center gap-6">
                                 {qualityIcons.map((IconComponent, index) => {
                                     const rating = index + 1
                                     return (
                                         <button
                                             key={rating}
                                             onClick={() => setSleepQuality(rating)}
-                                            className={`flex flex-col items-center space-y-2 p-3 rounded-lg transition-all w-16 h-16 ${sleepQuality === rating
+                                            className={`flex flex-col items-center space-y-2 p-4 rounded-lg transition-all w-20 h-20 ${sleepQuality === rating
                                                 ? 'bg-[#2A8CEA]/20 border border-[#2A8CEA]/50'
-                                                : 'bg-[#121318] border border-[#212227] hover:bg-[rgba(255,255,255,0.04)]'
+                                                : 'hover:bg-[rgba(255,255,255,0.04)]'
                                                 }`}
                                         >
-                                            <IconComponent className={`w-6 h-6 ${sleepQuality === rating
+                                            <IconComponent className={`w-8 h-8 ${sleepQuality === rating
                                                 ? qualityColors[index]
                                                 : 'text-[#A1A1AA]'
                                                 }`} />
@@ -364,23 +386,6 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                             </div>
                         </div>
 
-                        {/* Total Sleep Summary */}
-                        <div className="bg-[#0E0F13] border border-[#212227] rounded-lg p-3">
-                            <div className="text-center">
-                                <div className="text-2xl font-bold text-[#F3F4F6] mb-1">
-                                    {(() => {
-                                        const total = sleepSessions.reduce((sum, session) => {
-                                            const duration = calculateDuration(session.startTime, session.endTime)
-                                            return sum + duration.totalMinutes
-                                        }, 0)
-                                        const hours = Math.floor(total / 60)
-                                        const minutes = total % 60
-                                        return `${hours}h ${minutes}m`
-                                    })()}
-                                </div>
-                                <div className="text-sm text-[#A1A1AA]">Total Sleep Time</div>
-                            </div>
-                        </div>
 
                         {/* Action Buttons */}
                         <div className="flex space-x-3">

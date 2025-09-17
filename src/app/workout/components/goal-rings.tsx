@@ -24,28 +24,32 @@ const sizeConfig = {
         thicknessOuter: 10,
         thicknessMiddle: 9,
         thicknessInner: 8,
-        gap: 6
+        gap: 6,
+        glowPadding: 20
     },
     sm: {
         canvas: 200,
         thicknessOuter: 12,
         thicknessMiddle: 11,
         thicknessInner: 10,
-        gap: 7
+        gap: 7,
+        glowPadding: 24
     },
     md: {
         canvas: 260,
         thicknessOuter: 14,
         thicknessMiddle: 12,
         thicknessInner: 11,
-        gap: 8
+        gap: 8,
+        glowPadding: 30
     },
     lg: {
         canvas: 320,
         thicknessOuter: 16,
         thicknessMiddle: 14,
         thicknessInner: 12,
-        gap: 10
+        gap: 10,
+        glowPadding: 36
     }
 }
 
@@ -103,7 +107,7 @@ export function GoalRings({
     }, [animated, recoveryProgress, nutritionProgress, exerciseProgress])
 
     return (
-        <div className={cn("relative", className)}>
+        <div className={cn("relative", className)} style={{ padding: `${config.glowPadding}px` }}>
             <svg
                 ref={svgRef}
                 width={config.canvas}
