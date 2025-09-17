@@ -70,14 +70,39 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         }
     }, [user, supabase])
 
-    useEffect(() => {
-        if (open) {
-            // Always ensure we have a main sleep session
-            setSleepSessions([]) // Clear existing sessions first
+    // Load existing sleep data for today
+    const loadExistingSleepData = useCallback(async () => {
+        if (!user || !supabase) return
+
+        try {
+            UserDataStorage.initialize(user, supabase)
+            const todayDate = new Date().toISOString().split('T')[0]
+            const existingSleepData = await UserDataStorage.getSleepData(todayDate)
+
+            if (existingSleepData && existingSleepData.sessions.length > 0) {
+                // Load existing data for today
+                setSleepSessions(existingSleepData.sessions)
+                setSleepQuality(existingSleepData.qualityRating)
+            } else {
+                // No existing data, load default session
+                setSleepSessions([])
+                loadDefaultSleepSession()
+                setSleepQuality(3)
+            }
+        } catch (error) {
+            console.error('Error loading existing sleep data:', error)
+            // Fallback to default session
+            setSleepSessions([])
             loadDefaultSleepSession()
             setSleepQuality(3)
         }
-    }, [open, loadDefaultSleepSession])
+    }, [user, supabase, loadDefaultSleepSession])
+
+    useEffect(() => {
+        if (open) {
+            loadExistingSleepData()
+        }
+    }, [open, loadExistingSleepData])
 
     // Convert time string to minutes
     const timeToMinutes = (timeStr: string) => {
