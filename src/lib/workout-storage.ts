@@ -122,6 +122,11 @@ export class WorkoutStorage {
         return `healss-workout-templates${userSuffix}`
     }
 
+    private static get ACTIVITIES_KEY(): string {
+        const userSuffix = this.currentUser?.id ? `-${this.currentUser.id.slice(-8)}` : '-anonymous'
+        return `healss-workout-activities${userSuffix}`
+    }
+
     private static get SYNC_QUEUE_KEY(): string {
         const userSuffix = this.currentUser?.id ? `-${this.currentUser.id.slice(-8)}` : '-anonymous'
         return `healss-sync-queue${userSuffix}`
@@ -637,6 +642,9 @@ export class WorkoutStorage {
             }
         }
 
+        // Always save to localStorage for offline access and quick retrieval
+        this.saveActivityToLocalStorage(newActivity)
+
         // Always trigger cross-tab communication for workout completion
         try {
             const eventData = `${Date.now()}-${newActivity.id}`
@@ -693,8 +701,21 @@ export class WorkoutStorage {
             }
         }
 
-        // Fallback to empty array if no Supabase connection
-        return []
+        // Fallback to localStorage
+        console.log('WorkoutStorage.getWorkoutActivities - Falling back to localStorage')
+        const localActivities = this.getActivitiesFromLocalStorage()
+
+        // Apply filtering and pagination to localStorage data
+        let filteredActivities = localActivities
+        if (type) {
+            filteredActivities = localActivities.filter(activity => activity.workoutType === type)
+        }
+
+        // Sort by completed_at descending
+        filteredActivities.sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
+
+        // Apply pagination
+        return filteredActivities.slice(offset, offset + limit)
     }
 
     static async getRecentActivities(limit: number = 3): Promise<WorkoutActivity[]> {
@@ -737,6 +758,22 @@ export class WorkoutStorage {
                 })
             }
         }
+
+        // Update in localStorage
+        try {
+            const activities = this.getActivitiesFromLocalStorage()
+            const activityIndex = activities.findIndex(a => a.id === activityId)
+            if (activityIndex !== -1) {
+                const updatedActivity = {
+                    ...activities[activityIndex],
+                    ...updates,
+                    updatedAt: new Date().toISOString()
+                }
+                this.saveActivityToLocalStorage(updatedActivity)
+            }
+        } catch (error) {
+            console.error('Error updating activity in localStorage:', error)
+        }
     }
 
     static async deleteWorkoutActivity(activityId: string): Promise<void> {
@@ -766,6 +803,9 @@ export class WorkoutStorage {
                 })
             }
         }
+
+        // Delete from localStorage
+        this.deleteActivityFromLocalStorage(activityId)
     }
 
     static async getWorkoutActivityStats(): Promise<{
@@ -935,6 +975,51 @@ export class WorkoutStorage {
             localStorage.setItem(this.TEMPLATES_KEY, JSON.stringify(updated))
         } catch (error) {
             console.error('Error deleting template from localStorage:', error)
+        }
+    }
+
+    private static getActivitiesFromLocalStorage(): WorkoutActivity[] {
+        if (typeof window === 'undefined') return []
+
+        try {
+            const stored = localStorage.getItem(this.ACTIVITIES_KEY)
+            if (!stored) return []
+
+            const activities = JSON.parse(stored) as WorkoutActivity[]
+
+            // Security check: filter activities for current user
+            if (this.currentUser) {
+                return activities.filter(activity => !activity.userId || activity.userId === this.currentUser!.id)
+            }
+
+            return activities
+        } catch (error) {
+            console.error('Error loading activities from localStorage:', error)
+            return []
+        }
+    }
+
+    private static saveActivityToLocalStorage(activity: WorkoutActivity): void {
+        if (typeof window === 'undefined') return
+
+        try {
+            const existing = this.getActivitiesFromLocalStorage()
+            const updated = [activity, ...existing.filter(a => a.id !== activity.id)]
+            localStorage.setItem(this.ACTIVITIES_KEY, JSON.stringify(updated))
+        } catch (error) {
+            console.error('Error saving activity to localStorage:', error)
+        }
+    }
+
+    private static deleteActivityFromLocalStorage(activityId: string): void {
+        if (typeof window === 'undefined') return
+
+        try {
+            const existing = this.getActivitiesFromLocalStorage()
+            const updated = existing.filter(a => a.id !== activityId)
+            localStorage.setItem(this.ACTIVITIES_KEY, JSON.stringify(updated))
+        } catch (error) {
+            console.error('Error deleting activity from localStorage:', error)
         }
     }
 
