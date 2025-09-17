@@ -116,43 +116,6 @@ export function GoalRings({
 
     return (
         <div className={cn("relative", className)} style={{ padding: `${config.glowPadding}px` }}>
-            {/* Neon glow effects */}
-            {recoveryProgress >= 1 && (
-                <div className="absolute inset-0 rounded-full pointer-events-none">
-                    <div
-                        className="absolute inset-0 rounded-full animate-pulse"
-                        style={{
-                            background: `radial-gradient(circle, rgba(43,210,255,0.8) 0%, rgba(42,140,234,0.4) 40%, transparent 70%)`,
-                            filter: 'blur(8px)',
-                            boxShadow: `0 0 20px rgba(43,210,255,0.6), 0 0 40px rgba(42,140,234,0.3), inset 0 0 20px rgba(43,210,255,0.1)`
-                        }}
-                    />
-                </div>
-            )}
-            {nutritionProgress >= 1 && (
-                <div className="absolute inset-0 rounded-full pointer-events-none">
-                    <div
-                        className="absolute inset-0 rounded-full animate-pulse"
-                        style={{
-                            background: `radial-gradient(circle, rgba(155,225,93,0.8) 0%, rgba(0,230,118,0.4) 40%, transparent 70%)`,
-                            filter: 'blur(8px)',
-                            boxShadow: `0 0 20px rgba(155,225,93,0.6), 0 0 40px rgba(0,230,118,0.3), inset 0 0 20px rgba(155,225,93,0.1)`
-                        }}
-                    />
-                </div>
-            )}
-            {exerciseProgress >= 1 && (
-                <div className="absolute inset-0 rounded-full pointer-events-none">
-                    <div
-                        className="absolute inset-0 rounded-full animate-pulse"
-                        style={{
-                            background: `radial-gradient(circle, rgba(255,45,85,0.8) 0%, rgba(255,55,95,0.4) 40%, transparent 70%)`,
-                            filter: 'blur(8px)',
-                            boxShadow: `0 0 20px rgba(255,45,85,0.6), 0 0 40px rgba(255,55,95,0.3), inset 0 0 20px rgba(255,45,85,0.1)`
-                        }}
-                    />
-                </div>
-            )}
             <svg
                 ref={svgRef}
                 width={config.canvas}
@@ -177,6 +140,29 @@ export function GoalRings({
                         <stop offset="0%" stopColor={ringColors.exercise.start} />
                         <stop offset="100%" stopColor={ringColors.exercise.end} />
                     </linearGradient>
+
+                    {/* Neon glow filters */}
+                    <filter id="recoveryGlow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                        <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                    <filter id="nutritionGlow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                        <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                    <filter id="exerciseGlow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                        <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
                 </defs>
 
                 {/* Recovery Ring (Outer) */}
@@ -201,6 +187,7 @@ export function GoalRings({
                     strokeDashoffset={getDashOffset(recoveryProgress, outerCircumference)}
                     transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
                     className="progress-ring"
+                    filter={recoveryProgress >= 1 ? "url(#recoveryGlow)" : undefined}
                 />
 
                 {/* Nutrition Ring (Middle) */}
@@ -225,6 +212,7 @@ export function GoalRings({
                     strokeDashoffset={getDashOffset(nutritionProgress, middleCircumference)}
                     transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
                     className="progress-ring"
+                    filter={nutritionProgress >= 1 ? "url(#nutritionGlow)" : undefined}
                 />
 
                 {/* Exercise Ring (Inner) */}
@@ -249,6 +237,7 @@ export function GoalRings({
                     strokeDashoffset={getDashOffset(exerciseProgress, innerCircumference)}
                     transform={`rotate(-90 ${config.canvas / 2} ${config.canvas / 2})`}
                     className="progress-ring"
+                    filter={exerciseProgress >= 1 ? "url(#exerciseGlow)" : undefined}
                 />
             </svg>
 
