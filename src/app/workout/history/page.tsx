@@ -316,7 +316,7 @@ export default function WorkoutHistoryPage() {
                             </TabsTrigger>
                         </TabsList>
 
-                        <TabsContent value="workouts" className="mt-0">
+                        <TabsContent value="workouts" className="mt-6">
                             {/* Workout Filters */}
                             <div className="bg-[#121318] border border-[#212227] rounded-[20px] p-6 mb-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)]">
                                 <div className="flex flex-col sm:flex-row gap-4">
@@ -402,7 +402,7 @@ export default function WorkoutHistoryPage() {
                             )}
                         </TabsContent>
 
-                        <TabsContent value="sleep" className="mt-0">
+                        <TabsContent value="sleep" className="mt-6">
                             {/* Sleep Data List */}
                             {isSleepLoading ? (
                                 <div className="flex items-center justify-center py-12">
