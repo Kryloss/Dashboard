@@ -458,9 +458,15 @@ export class GoalProgressCalculator {
 
 // Make debug functions available globally for browser console debugging
 if (typeof window !== 'undefined') {
-    (window as any).debugGoalProgress = () => GoalProgressCalculator.debugProgress()
-    (window as any).debugLocalStorage = () => GoalProgressCalculator.debugLocalStorageData()
-    (window as any).forceRefreshRings = async () => {
+    const globalWindow = window as typeof window & {
+        debugGoalProgress?: () => Promise<void>
+        debugLocalStorage?: () => void
+        forceRefreshRings?: () => Promise<DailyGoalProgress | null>
+    }
+
+    globalWindow.debugGoalProgress = () => GoalProgressCalculator.debugProgress()
+    globalWindow.debugLocalStorage = () => GoalProgressCalculator.debugLocalStorageData()
+    globalWindow.forceRefreshRings = async () => {
         GoalProgressCalculator.invalidateCache()
         const progress = await GoalProgressCalculator.calculateDailyProgress(true)
         console.log('🔄 Force refreshed goal progress:', progress)
