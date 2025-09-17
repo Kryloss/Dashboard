@@ -67,24 +67,20 @@ class WorkoutStateManager {
     }
 
     private async performRefresh(includeOngoingWorkout = false): Promise<void> {
-        console.log('🔄 WorkoutStateManager: Starting refresh...', { includeOngoingWorkout })
-
-        // Don't set loading to true if we already have data - keep previous data visible
+        // Don't set loading if we already have data
         const hasExistingData = this.state.goalProgress !== null || this.state.recentActivities.length > 0
         if (!hasExistingData) {
             this.setState({ isLoading: true })
         }
 
         try {
-            // Invalidate cache to ensure fresh data (but not for ongoing workout updates)
+            // Invalidate cache for fresh data
             if (!includeOngoingWorkout) {
                 GoalProgressCalculator.invalidateCache()
             }
 
-            // Get fresh goal progress
+            // Get fresh goal progress and activities
             const goalProgress = await GoalProgressCalculator.calculateDailyProgress(true, includeOngoingWorkout)
-
-            // Get recent activities (don't need to refresh for ongoing workout updates)
             let recentActivities = this.state.recentActivities
             if (!includeOngoingWorkout) {
                 recentActivities = await WorkoutStorage.getRecentActivities(5)
@@ -97,19 +93,8 @@ class WorkoutStateManager {
                 lastUpdate: Date.now()
             })
 
-            console.log('✅ WorkoutStateManager: Refresh completed', {
-                includeOngoingWorkout,
-                goalProgress: goalProgress ? {
-                    exercise: Math.round(goalProgress.exercise.progress * 100),
-                    nutrition: Math.round(goalProgress.nutrition.progress * 100),
-                    recovery: Math.round(goalProgress.recovery.progress * 100)
-                } : null,
-                activitiesCount: recentActivities.length
-            })
-
         } catch (error) {
-            console.error('❌ WorkoutStateManager: Refresh failed', error)
-            // Only set loading to false if we were actually loading
+            console.error('WorkoutStateManager refresh failed:', error)
             if (!hasExistingData) {
                 this.setState({ isLoading: false })
             }
@@ -134,132 +119,78 @@ class WorkoutStateManager {
     }
 
     // Handle workout completion
-    async handleWorkoutCompleted(source: string, workoutData?: unknown): Promise<void> {
-        console.log('🎯 WorkoutStateManager: Workout completed', { source, workoutData })
-
+    async handleWorkoutCompleted(_source: string, _workoutData?: unknown): Promise<void> {
         // Stop ongoing workout tracking since workout is completed
         this.stopOngoingWorkoutTracking()
 
-        // Force immediate refresh with detailed logging
-        console.log('🔄 WorkoutStateManager: Starting immediate refresh after workout completion')
+        // Force immediate refresh and delayed refresh for async updates
         await this.refreshAll(true)
-
-        // Schedule a single delayed refresh to catch any async updates
-        setTimeout(async () => {
-            console.log('🔄 WorkoutStateManager: Starting delayed refresh after workout completion')
-            await this.refreshAll(true)
-        }, 500)
+        setTimeout(() => this.refreshAll(true), 500)
     }
 
     // Handle workout deletion
     async handleWorkoutDeleted(): Promise<void> {
-        console.log('🗑️ WorkoutStateManager: Workout deleted')
         await this.refreshAll(true)
     }
 
     // Handle workout update
     async handleWorkoutUpdated(): Promise<void> {
-        console.log('📝 WorkoutStateManager: Workout updated')
         await this.refreshAll(true)
     }
 
     // Start real-time tracking for ongoing workouts
     startOngoingWorkoutTracking(): void {
-        // Clear any existing interval
         this.stopOngoingWorkoutTracking()
-
-        console.log('🔄 WorkoutStateManager: Starting ongoing workout tracking')
-
-        // Run immediate check first
         this.checkAndUpdateOngoingWorkout()
-
-        this.ongoingWorkoutInterval = setInterval(async () => {
-            await this.checkAndUpdateOngoingWorkout()
+        this.ongoingWorkoutInterval = setInterval(() => {
+            this.checkAndUpdateOngoingWorkout()
         }, this.ONGOING_WORKOUT_UPDATE_INTERVAL)
     }
 
-    // Extract the ongoing workout check logic into a separate method
+    // Check and update ongoing workout
     private async checkAndUpdateOngoingWorkout(): Promise<void> {
         try {
-            // Check if there's an ongoing workout
             const ongoingWorkout = await WorkoutStorage.getOngoingWorkout()
-
             if (ongoingWorkout && ongoingWorkout.isRunning) {
-                const realTimeElapsed = WorkoutStorage.getBackgroundElapsedTime()
-                console.log('⏱️ WorkoutStateManager: Updating rings for ongoing workout', {
-                    elapsedSeconds: realTimeElapsed,
-                    elapsedMinutes: Math.round(realTimeElapsed / 60),
-                    workoutType: ongoingWorkout.type,
-                    startTime: ongoingWorkout.startTime,
-                    storedElapsedTime: ongoingWorkout.elapsedTime
-                })
-
-                // Force invalidate cache to ensure fresh calculation
                 GoalProgressCalculator.invalidateCache()
-
-                // Refresh with ongoing workout data
-                await this.refreshAll(true, true) // force refresh and include ongoing workout
+                await this.refreshAll(true, true)
             } else {
-                // No ongoing workout, stop tracking
-                console.log('🛑 WorkoutStateManager: No ongoing workout, stopping tracking')
                 this.stopOngoingWorkoutTracking()
             }
         } catch (error) {
-            console.error('❌ WorkoutStateManager: Error in ongoing workout tracking:', error)
+            console.error('Error in ongoing workout tracking:', error)
         }
     }
 
     // Stop real-time tracking for ongoing workouts
     stopOngoingWorkoutTracking(): void {
         if (this.ongoingWorkoutInterval) {
-            console.log('🛑 WorkoutStateManager: Stopping ongoing workout tracking')
             clearInterval(this.ongoingWorkoutInterval)
             this.ongoingWorkoutInterval = null
         }
     }
 
-    // Force immediate refresh for ongoing workouts (for debugging/manual refresh)
+    // Force refresh for debugging
     async forceRefreshOngoingWorkout(): Promise<void> {
-        console.log('🔄 WorkoutStateManager: Force refreshing ongoing workout')
-
         try {
             const ongoingWorkout = await WorkoutStorage.getOngoingWorkout()
-            console.log('🔍 Force refresh - Raw ongoing workout data:', ongoingWorkout)
-
             if (ongoingWorkout && ongoingWorkout.isRunning) {
-                const realTimeElapsed = WorkoutStorage.getBackgroundElapsedTime()
-                console.log('⏱️ Force refresh - Ongoing workout details:', {
-                    elapsedSeconds: realTimeElapsed,
-                    elapsedMinutes: Math.round(realTimeElapsed / 60),
-                    workoutType: ongoingWorkout.type,
-                    startTime: ongoingWorkout.startTime,
-                    storedElapsedTime: ongoingWorkout.elapsedTime,
-                    isRunning: ongoingWorkout.isRunning
-                })
-
-                // Force invalidate cache and refresh
                 GoalProgressCalculator.invalidateCache()
                 await this.refreshAll(true, true)
-
-                // Also trigger the ongoing workout check
                 await this.checkAndUpdateOngoingWorkout()
-            } else {
-                console.log('🛑 Force refresh - No ongoing workout found or not running:', {
-                    hasWorkout: !!ongoingWorkout,
-                    isRunning: ongoingWorkout?.isRunning || false
-                })
             }
         } catch (error) {
-            console.error('❌ Force refresh failed:', error)
+            console.error('Force refresh failed:', error)
         }
     }
 
     // Debug current state
     debugState(): void {
-        console.log('🔍 WorkoutStateManager Debug:', {
-            state: this.state,
+        console.log('WorkoutStateManager:', {
+            isLoading: this.state.isLoading,
+            hasGoalProgress: !!this.state.goalProgress,
+            activitiesCount: this.state.recentActivities.length,
             listenersCount: this.listeners.size,
-            hasUpdatePromise: !!this.updatePromise,
             hasOngoingInterval: !!this.ongoingWorkoutInterval
         })
     }
