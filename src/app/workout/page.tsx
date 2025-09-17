@@ -280,6 +280,54 @@ export default function WorkoutPage() {
         }
     }
 
+    const getWeeklyWorkoutStats = () => {
+        // Get this week's workout data
+        const thisWeekWorkouts = workoutState.activities || []
+        const thisWeekSessions = thisWeekWorkouts.length
+        const thisWeekMinutes = thisWeekWorkouts.reduce((total, workout) => total + (workout.duration || 0), 0)
+
+        // Format workout time as hours and minutes
+        const formatWorkoutTime = (totalMinutes: number) => {
+            if (totalMinutes === 0) return "0m"
+            const hours = Math.floor(totalMinutes / 60)
+            const minutes = totalMinutes % 60
+            if (hours > 0) {
+                return `${hours}h ${minutes}m`
+            }
+            return `${minutes}m`
+        }
+
+        // Mock last week's data for comparison (in real app, this would come from storage)
+        const lastWeekSessions = 9 // Mock previous week sessions
+        const lastWeekMinutes = 200 // Mock previous week minutes
+
+        // Calculate changes
+        const sessionChange = thisWeekSessions - lastWeekSessions
+        const timeChange = thisWeekMinutes - lastWeekMinutes
+        const timeChangePercent = lastWeekMinutes > 0 ? Math.round((timeChange / lastWeekMinutes) * 100) : 0
+
+        // Determine if we have enough data for comparisons
+        const hasWorkoutData = thisWeekSessions > 0 || thisWeekMinutes > 0
+        const hasComparisonData = lastWeekSessions > 0 || lastWeekMinutes > 0
+
+        return {
+            workoutTime: {
+                value: hasWorkoutData ? formatWorkoutTime(thisWeekMinutes) : "No workouts yet",
+                change: hasWorkoutData && hasComparisonData ? {
+                    value: `${Math.abs(timeChangePercent)}%`,
+                    direction: timeChange >= 0 ? 'up' as const : 'down' as const
+                } : undefined
+            },
+            sessions: {
+                value: hasWorkoutData ? thisWeekSessions.toString() : "0",
+                change: hasWorkoutData && hasComparisonData ? {
+                    value: Math.abs(sessionChange).toString(),
+                    direction: sessionChange >= 0 ? 'up' as const : 'down' as const
+                } : undefined
+            }
+        }
+    }
+
     // Mock data for demonstration (non-goal related)
     const mockData = {
         streak: 7, // 7 day streak
@@ -331,26 +379,29 @@ export default function WorkoutPage() {
             { date: "2 days ago", name: "Morning Run", duration: "32 min", progress: 0.8 },
             { date: "3 days ago", name: "Yoga Flow", duration: "28 min", progress: 0.7 }
         ],
-        weeklyStats: [
-            {
-                icon: <Flame className="w-4 h-4" />,
-                label: "Total Calories",
-                value: "8,340",
-                change: { value: "12%", direction: "up" as const }
-            },
-            {
-                icon: <Clock className="w-4 h-4" />,
-                label: "Workout Time",
-                value: "4h 23m",
-                change: { value: "8%", direction: "up" as const }
-            },
-            {
-                icon: <Dumbbell className="w-4 h-4" />,
-                label: "Sessions",
-                value: "12",
-                change: { value: "3", direction: "up" as const }
-            }
-        ]
+        weeklyStats: (() => {
+            const weeklyStats = getWeeklyWorkoutStats()
+            return [
+                {
+                    icon: <Flame className="w-4 h-4" />,
+                    label: "Total Calories",
+                    value: "8,340",
+                    change: { value: "12%", direction: "up" as const }
+                },
+                {
+                    icon: <Clock className="w-4 h-4" />,
+                    label: "Workout Time",
+                    value: weeklyStats.workoutTime.value || "No data",
+                    change: weeklyStats.workoutTime.change
+                },
+                {
+                    icon: <Dumbbell className="w-4 h-4" />,
+                    label: "Sessions",
+                    value: weeklyStats.sessions.value || "0",
+                    change: weeklyStats.sessions.change
+                }
+            ]
+        })()
     }
 
     const handleStartWorkout = (id: number) => {
