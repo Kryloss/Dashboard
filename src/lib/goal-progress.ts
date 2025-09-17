@@ -122,7 +122,17 @@ export class GoalProgressCalculator {
                 requestedDate: date,
                 totalActivities: allActivities.length,
                 dateActivities: dateActivities.length,
-                activities: dateActivities.map(a => ({
+                allActivitiesDetails: allActivities.map(a => ({
+                    id: a.id,
+                    name: a.name,
+                    type: a.workoutType,
+                    completedAt: a.completedAt,
+                    completedAtDate: new Date(a.completedAt).toISOString().split('T')[0],
+                    duration: Math.round(a.durationSeconds / 60),
+                    userId: a.userId,
+                    matchesDate: new Date(a.completedAt).toISOString().split('T')[0] === date
+                })),
+                filteredActivities: dateActivities.map(a => ({
                     id: a.id,
                     name: a.name,
                     type: a.workoutType,
@@ -622,6 +632,7 @@ if (typeof window !== 'undefined') {
         forceRefreshRings?: () => Promise<DailyGoalProgress | null>
         testExerciseCalculation?: () => Promise<{ userGoals: unknown; activities: unknown }>
         testWorkoutSummary?: () => Promise<DailyWorkoutSummary | null>
+        testLocalStorageActivities?: () => Promise<{ rawData: unknown; activities: unknown }>
     }
 
     globalWindow.debugGoalProgress = () => GoalProgressCalculator.debugProgress()
@@ -666,5 +677,30 @@ if (typeof window !== 'undefined') {
         console.log('Workout summary:', summary)
 
         return summary
+    }
+
+    globalWindow.testLocalStorageActivities = async () => {
+        const { WorkoutStorage } = await import('./workout-storage')
+
+        console.log('🧪 Testing localStorage activities retrieval...')
+
+        // Test direct localStorage access
+        const currentUser = JSON.parse(localStorage.getItem('supabase.auth.token') || '{}')?.user
+        const userSuffix = currentUser?.id ? `-${currentUser.id.slice(-8)}` : '-anonymous'
+        const activitiesKey = `healss-workout-activities${userSuffix}`
+        const rawData = localStorage.getItem(activitiesKey)
+
+        console.log('Raw localStorage data:', {
+            key: activitiesKey,
+            hasData: !!rawData,
+            dataLength: rawData ? JSON.parse(rawData).length : 0,
+            data: rawData ? JSON.parse(rawData) : null
+        })
+
+        // Test WorkoutStorage method
+        const activities = await WorkoutStorage.getWorkoutActivities(50, 0)
+        console.log('WorkoutStorage.getWorkoutActivities result:', activities)
+
+        return { rawData: rawData ? JSON.parse(rawData) : null, activities }
     }
 }

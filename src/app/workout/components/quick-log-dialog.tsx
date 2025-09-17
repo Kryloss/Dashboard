@@ -124,7 +124,9 @@ export function QuickLogDialog({ open, onOpenChange, onActivityLogged }: QuickLo
                 completedAt
             }
 
+            console.log('🚀 Quick log - Saving activity:', activity)
             await WorkoutStorage.saveWorkoutActivity(activity)
+            console.log('✅ Quick log - Activity saved successfully')
 
             // Success notification
             notifications.success('Activity logged', {

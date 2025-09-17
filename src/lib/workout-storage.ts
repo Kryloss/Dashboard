@@ -705,6 +705,19 @@ export class WorkoutStorage {
         console.log('WorkoutStorage.getWorkoutActivities - Falling back to localStorage')
         const localActivities = this.getActivitiesFromLocalStorage()
 
+        console.log('🗂️ localStorage activities debug:', {
+            totalLocalActivities: localActivities.length,
+            activities: localActivities.map(a => ({
+                id: a.id,
+                name: a.name,
+                type: a.workoutType,
+                completedAt: a.completedAt,
+                duration: Math.round(a.durationSeconds / 60),
+                userId: a.userId,
+                hasUserId: !!a.userId
+            }))
+        })
+
         // Apply filtering and pagination to localStorage data
         let filteredActivities = localActivities
         if (type) {
