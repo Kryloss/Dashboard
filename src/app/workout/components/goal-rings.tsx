@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react"
 import { cn } from "@/lib/utils"
 
 interface GoalRingsProps {
-    size?: 'xs' | 'sm' | 'md' | 'lg'
+    size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
     recoveryProgress: number    // 0-1 (sleep time + breaks)
     nutritionProgress: number   // 0-1 (calories + macros)
     exerciseProgress: number    // 0-1 (activities + plan extras)
@@ -25,7 +25,7 @@ const sizeConfig = {
         thicknessMiddle: 9,
         thicknessInner: 8,
         gap: 6,
-        glowPadding: 20
+        glowPadding: 32
     },
     sm: {
         canvas: 200,
@@ -33,7 +33,7 @@ const sizeConfig = {
         thicknessMiddle: 11,
         thicknessInner: 10,
         gap: 7,
-        glowPadding: 24
+        glowPadding: 36
     },
     md: {
         canvas: 260,
@@ -41,7 +41,7 @@ const sizeConfig = {
         thicknessMiddle: 12,
         thicknessInner: 11,
         gap: 8,
-        glowPadding: 30
+        glowPadding: 42
     },
     lg: {
         canvas: 320,
@@ -49,7 +49,15 @@ const sizeConfig = {
         thicknessMiddle: 14,
         thicknessInner: 12,
         gap: 10,
-        glowPadding: 36
+        glowPadding: 48
+    },
+    xl: {
+        canvas: 400,
+        thicknessOuter: 20,
+        thicknessMiddle: 18,
+        thicknessInner: 16,
+        gap: 12,
+        glowPadding: 60
     }
 }
 
