@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Moon, Smile, Meh, Frown, Plus, X, Clock } from "lucide-react"
+import { Moon, Smile, Meh, Frown, Plus, X } from "lucide-react"
 
 interface SleepDialogProps {
     open: boolean
