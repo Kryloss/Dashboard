@@ -194,9 +194,7 @@ export default function WorkoutPage() {
     useEffect(() => {
         const handleWorkoutCompleted = (e: CustomEvent) => {
             console.log('🎯 Workout completion detected:', e.detail)
-            console.log('🎯 Event listener active - user:', !!user, 'supabase:', !!supabase)
             if (user && supabase) {
-                console.log('🎯 Calling workoutStateManager.handleWorkoutCompleted')
                 workoutStateManager.handleWorkoutCompleted(
                     e.detail?.source || 'unknown',
                     e.detail
@@ -209,8 +207,6 @@ export default function WorkoutPage() {
                         duration: 3000
                     })
                 }
-            } else {
-                console.log('🎯 Event listener blocked - missing user or supabase')
             }
         }
 
@@ -236,13 +232,11 @@ export default function WorkoutPage() {
             }
         }
 
-        console.log('🎯 Setting up workout completion event listeners')
         window.addEventListener('workoutCompleted', handleWorkoutCompleted as EventListener)
         window.addEventListener('storage', handleStorageChange)
         document.addEventListener('visibilitychange', handleVisibilityChange)
 
         return () => {
-            console.log('🎯 Cleaning up workout completion event listeners')
             window.removeEventListener('workoutCompleted', handleWorkoutCompleted as EventListener)
             window.removeEventListener('storage', handleStorageChange)
             document.removeEventListener('visibilitychange', handleVisibilityChange)
@@ -718,16 +712,6 @@ export default function WorkoutPage() {
                                     className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full"
                                 >
                                     <User className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                    onClick={() => {
-                                        console.log('🔄 Manual refresh triggered')
-                                        workoutStateManager.refreshAll(true)
-                                    }}
-                                    variant="ghost"
-                                    className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full"
-                                >
-                                    🔄
                                 </Button>
                             </div>
 
