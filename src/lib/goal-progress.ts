@@ -148,6 +148,19 @@ export class GoalProgressCalculator {
                 }
             })
 
+            // Additional check: if we're looking for today's activities but found none, log a warning
+            if (date === this.getTodayDateString() && dateActivities.length === 0 && allActivities.length > 0) {
+                console.warn('⚠️ GoalProgress Debug - No activities found for today, but activities exist for other dates:', {
+                    todayDate: this.getTodayDateString(),
+                    totalActivities: allActivities.length,
+                    recentActivities: allActivities.slice(0, 3).map(a => ({
+                        name: a.name,
+                        completedAt: a.completedAt,
+                        completedAtDate: new Date(a.completedAt).toISOString().split('T')[0]
+                    }))
+                })
+            }
+
             if (dateActivities.length === 0) {
                 return null
             }
@@ -553,7 +566,15 @@ export class GoalProgressCalculator {
             }
 
             // Calculate each ring's progress
+            console.log('🔄 GoalProgress Debug - Calculating exercise progress...')
             const exercise = await this.calculateExerciseProgress(userGoals, includeOngoingWorkout)
+            console.log('✅ GoalProgress Debug - Exercise progress calculated:', {
+                progress: exercise.progress,
+                currentMinutes: exercise.currentMinutes,
+                targetMinutes: exercise.targetMinutes,
+                sessionCount: exercise.sessionCount
+            })
+
             const nutrition = this.calculateNutritionProgress(userGoals)
             const recovery = await this.calculateRecoveryProgress(userGoals)
 
@@ -685,6 +706,28 @@ export class GoalProgressCalculator {
         const legacyData = localStorage.getItem(legacyKey)
         console.log('Legacy workout activities:', legacyData ? JSON.parse(legacyData) : 'NOT_FOUND')
     }
+
+    // Debug function to check all activities
+    static async debugAllActivities() {
+        console.log('🔍 Debugging all activities...')
+        try {
+            const { WorkoutStorage } = await import('./workout-storage')
+            const activities = await WorkoutStorage.getWorkoutActivities(50, 0)
+            console.log('📋 All activities:', activities.map(a => ({
+                id: a.id,
+                name: a.name,
+                type: a.workoutType,
+                completedAt: a.completedAt,
+                completedAtDate: new Date(a.completedAt).toISOString().split('T')[0],
+                duration: Math.round(a.durationSeconds / 60),
+                userId: a.userId
+            })))
+            return activities
+        } catch (error) {
+            console.error('❌ Debug activities failed:', error)
+            return { error: error instanceof Error ? error.message : String(error) }
+        }
+    }
 }
 
 // Make debug functions available globally for browser console debugging
@@ -697,6 +740,7 @@ if (typeof window !== 'undefined') {
         testWorkoutSummary?: () => Promise<DailyWorkoutSummary | null>
         testLocalStorageActivities?: () => Promise<{ rawData: unknown; activities: unknown }>
         quickDebugRings?: () => Promise<unknown>
+        debugAllActivities?: () => Promise<unknown>
     }
 
     globalWindow.debugGoalProgress = () => GoalProgressCalculator.debugProgress()
@@ -707,6 +751,7 @@ if (typeof window !== 'undefined') {
         console.log('🔄 Force refreshed goal progress:', progress)
         return progress
     }
+    globalWindow.debugAllActivities = () => GoalProgressCalculator.debugAllActivities()
 
     globalWindow.testExerciseCalculation = async () => {
         const { UserDataStorage } = await import('./user-data-storage')

@@ -140,12 +140,14 @@ class WorkoutStateManager {
         // Stop ongoing workout tracking since workout is completed
         this.stopOngoingWorkoutTracking()
 
-        // Force immediate refresh
+        // Force immediate refresh with detailed logging
+        console.log('🔄 WorkoutStateManager: Starting immediate refresh after workout completion')
         await this.refreshAll(true)
 
         // Schedule a single delayed refresh to catch any async updates
-        setTimeout(() => {
-            this.refreshAll(true)
+        setTimeout(async () => {
+            console.log('🔄 WorkoutStateManager: Starting delayed refresh after workout completion')
+            await this.refreshAll(true)
         }, 500)
     }
 
