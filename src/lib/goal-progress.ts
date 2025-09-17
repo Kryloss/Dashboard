@@ -528,12 +528,28 @@ export class GoalProgressCalculator {
             console.log('🔄 GoalProgress Debug - Starting fresh calculation', { forceRefresh, includeOngoingWorkout })
 
             // Get user goals
-            const userGoals = await UserDataStorage.getUserGoals()
+            let userGoals = await UserDataStorage.getUserGoals()
             console.log('🔍 GoalProgress Debug - User goals:', userGoals)
 
+            // If no goals exist, create default goals automatically
             if (!userGoals) {
-                console.warn('No user goals found for progress calculation')
-                return null
+                console.log('🔍 GoalProgress Debug - No goals found, creating default goals')
+                try {
+                    userGoals = await UserDataStorage.saveUserGoals({
+                        dailyExerciseMinutes: 30,
+                        weeklyExerciseSessions: 3,
+                        dailyCalories: 2000,
+                        activityLevel: 'moderate',
+                        sleepHours: 8.0,
+                        recoveryMinutes: 60,
+                        dietType: 'maintenance'
+                    })
+                    console.log('✅ GoalProgress Debug - Default goals created:', userGoals)
+                } catch (error) {
+                    console.error('❌ GoalProgress Debug - Failed to create default goals:', error)
+                    // Return null if we can't create default goals
+                    return null
+                }
             }
 
             // Calculate each ring's progress

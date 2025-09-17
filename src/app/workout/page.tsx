@@ -284,12 +284,12 @@ export default function WorkoutPage() {
 
     // Goal progress calculations
     const getGoalRingData = () => {
-        // If we have no data yet, show placeholder
+        // If we have no data yet, show minimal progress to indicate rings are working
         if (!workoutState.goalProgress) {
             return {
-                recovery: 0,
-                nutrition: 0,
-                exercise: 0
+                recovery: 0.002, // Minimal progress to show rings are active
+                nutrition: 0.002,
+                exercise: 0.002
             }
         }
 
@@ -726,6 +726,23 @@ export default function WorkoutPage() {
                                             streak={mockData.streak}
                                             className={workoutState.isLoading ? 'opacity-90' : ''}
                                         />
+                                        {/* Show "Set Goals" prompt when no goals are set */}
+                                        {!workoutState.goalProgress && !workoutState.isLoading && (
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                <div className="text-center">
+                                                    <div className="text-xs font-medium text-[#A1A1AA] mb-2">
+                                                        Set your goals to track progress
+                                                    </div>
+                                                    <Button
+                                                        onClick={() => setShowSetGoalDialog(true)}
+                                                        size="sm"
+                                                        className="bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-lg border border-[rgba(42,140,234,0.35)] shadow-[0_4px_16px_rgba(42,140,234,0.28)] hover:shadow-[0_6px_24px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all text-xs font-medium px-3 py-1"
+                                                    >
+                                                        Set Goals
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -734,7 +751,10 @@ export default function WorkoutPage() {
 
                                     <div className="grid grid-cols-1 gap-2">
                                         {/* Recovery Summary */}
-                                        <div className="p-3 bg-[#121318] border border-[#212227] rounded-[12px] hover:border-[#2A2B31] transition-colors cursor-pointer">
+                                        <div 
+                                            className="p-3 bg-[#121318] border border-[#212227] rounded-[12px] hover:border-[#2A2B31] transition-colors cursor-pointer"
+                                            onClick={() => !workoutState.goalProgress && setShowSetGoalDialog(true)}
+                                        >
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center space-x-3">
                                                     <div className="w-6 h-6 bg-gradient-to-br from-[#2BD2FF] to-[#2A8CEA] rounded-[8px] flex items-center justify-center">
@@ -751,13 +771,16 @@ export default function WorkoutPage() {
                                                     )}
                                                 </div>
                                                 <div className="text-[#2BD2FF] text-sm font-semibold">
-                                                    {workoutState.goalProgress ? `${Math.round(getGoalRingData().recovery * 100)}%` : '—'}
+                                                    {workoutState.goalProgress ? `${Math.round(getGoalRingData().recovery * 100)}%` : 'Set Goals'}
                                                 </div>
                                             </div>
                                         </div>
 
                                         {/* Nutrition Summary */}
-                                        <div className="p-3 bg-[#121318] border border-[#212227] rounded-[12px] hover:border-[#2A2B31] transition-colors cursor-pointer">
+                                        <div 
+                                            className="p-3 bg-[#121318] border border-[#212227] rounded-[12px] hover:border-[#2A2B31] transition-colors cursor-pointer"
+                                            onClick={() => !workoutState.goalProgress && setShowSetGoalDialog(true)}
+                                        >
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center space-x-3">
                                                     <div className="w-6 h-6 bg-gradient-to-br from-[#9BE15D] to-[#00E676] rounded-[8px] flex items-center justify-center">
@@ -774,13 +797,16 @@ export default function WorkoutPage() {
                                                     )}
                                                 </div>
                                                 <div className="text-[#9BE15D] text-sm font-semibold">
-                                                    {workoutState.goalProgress ? `${Math.round(getGoalRingData().nutrition * 100)}%` : '—'}
+                                                    {workoutState.goalProgress ? `${Math.round(getGoalRingData().nutrition * 100)}%` : 'Set Goals'}
                                                 </div>
                                             </div>
                                         </div>
 
                                         {/* Exercise Summary */}
-                                        <div className="p-3 bg-[#121318] border border-[#212227] rounded-[12px] hover:border-[#2A2B31] transition-colors cursor-pointer">
+                                        <div 
+                                            className="p-3 bg-[#121318] border border-[#212227] rounded-[12px] hover:border-[#2A2B31] transition-colors cursor-pointer"
+                                            onClick={() => !workoutState.goalProgress && setShowSetGoalDialog(true)}
+                                        >
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center space-x-3">
                                                     <div className="w-6 h-6 bg-gradient-to-br from-[#FF2D55] to-[#FF375F] rounded-[8px] flex items-center justify-center">
@@ -796,7 +822,7 @@ export default function WorkoutPage() {
                                                     )}
                                                 </div>
                                                 <div className="text-[#FF2D55] text-sm font-semibold">
-                                                    {workoutState.goalProgress ? `${Math.round(getGoalRingData().exercise * 100)}%` : '—'}
+                                                    {workoutState.goalProgress ? `${Math.round(getGoalRingData().exercise * 100)}%` : 'Set Goals'}
                                                 </div>
                                             </div>
                                         </div>
