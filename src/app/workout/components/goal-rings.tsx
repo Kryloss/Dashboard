@@ -49,7 +49,7 @@ const sizeConfig = {
         thicknessMiddle: 14,
         thicknessInner: 12,
         gap: 10,
-        glowPadding: 48
+        glowPadding: 32
     },
     xl: {
         canvas: 400,
@@ -116,36 +116,42 @@ export function GoalRings({
 
     return (
         <div className={cn("relative", className)} style={{ padding: `${config.glowPadding}px` }}>
-            {/* Glow effects */}
+            {/* Neon glow effects */}
             {recoveryProgress >= 1 && (
-                <div
-                    className="absolute inset-0 rounded-full opacity-60"
-                    style={{
-                        background: `radial-gradient(circle, rgba(43,210,255,0.3) 0%, rgba(42,140,234,0.2) 30%, transparent 70%)`,
-                        filter: 'blur(20px)',
-                        transform: 'scale(1.1)'
-                    }}
-                />
+                <div className="absolute inset-0 rounded-full pointer-events-none">
+                    <div
+                        className="absolute inset-0 rounded-full animate-pulse"
+                        style={{
+                            background: `radial-gradient(circle, rgba(43,210,255,0.8) 0%, rgba(42,140,234,0.4) 40%, transparent 70%)`,
+                            filter: 'blur(8px)',
+                            boxShadow: `0 0 20px rgba(43,210,255,0.6), 0 0 40px rgba(42,140,234,0.3), inset 0 0 20px rgba(43,210,255,0.1)`
+                        }}
+                    />
+                </div>
             )}
             {nutritionProgress >= 1 && (
-                <div
-                    className="absolute inset-0 rounded-full opacity-60"
-                    style={{
-                        background: `radial-gradient(circle, rgba(155,225,93,0.3) 0%, rgba(0,230,118,0.2) 30%, transparent 70%)`,
-                        filter: 'blur(20px)',
-                        transform: 'scale(1.1)'
-                    }}
-                />
+                <div className="absolute inset-0 rounded-full pointer-events-none">
+                    <div
+                        className="absolute inset-0 rounded-full animate-pulse"
+                        style={{
+                            background: `radial-gradient(circle, rgba(155,225,93,0.8) 0%, rgba(0,230,118,0.4) 40%, transparent 70%)`,
+                            filter: 'blur(8px)',
+                            boxShadow: `0 0 20px rgba(155,225,93,0.6), 0 0 40px rgba(0,230,118,0.3), inset 0 0 20px rgba(155,225,93,0.1)`
+                        }}
+                    />
+                </div>
             )}
             {exerciseProgress >= 1 && (
-                <div
-                    className="absolute inset-0 rounded-full opacity-60"
-                    style={{
-                        background: `radial-gradient(circle, rgba(255,45,85,0.3) 0%, rgba(255,55,95,0.2) 30%, transparent 70%)`,
-                        filter: 'blur(20px)',
-                        transform: 'scale(1.1)'
-                    }}
-                />
+                <div className="absolute inset-0 rounded-full pointer-events-none">
+                    <div
+                        className="absolute inset-0 rounded-full animate-pulse"
+                        style={{
+                            background: `radial-gradient(circle, rgba(255,45,85,0.8) 0%, rgba(255,55,95,0.4) 40%, transparent 70%)`,
+                            filter: 'blur(8px)',
+                            boxShadow: `0 0 20px rgba(255,45,85,0.6), 0 0 40px rgba(255,55,95,0.3), inset 0 0 20px rgba(255,45,85,0.1)`
+                        }}
+                    />
+                </div>
             )}
             <svg
                 ref={svgRef}

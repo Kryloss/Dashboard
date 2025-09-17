@@ -55,7 +55,8 @@
       "Bash(del \"C:\\Users\\mrRep\\Desktop\\Dashboard\\src\\lib\\supabase\\session-utils.ts\")",
       "Bash(del \"C:\\Users\\mrRep\\Desktop\\Dashboard\\src\\lib\\session-fix.ts\")",
       "Bash(git clean:*)",
-      "Bash(del \"C:\\Users\\mrRep\\Desktop\\Dashboard\\src\\components\\progress-photos-tab.tsx\")"
+      "Bash(del \"C:\\Users\\mrRep\\Desktop\\Dashboard\\src\\components\\progress-photos-tab.tsx\")",
+      "mcp__shadcn__get_item_examples_from_registries"
     ],
     "deny": [],
     "ask": [],

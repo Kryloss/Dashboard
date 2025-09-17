@@ -755,9 +755,6 @@ export default function WorkoutPage() {
                                                     {workoutState.goalProgress && (
                                                         <div className="text-xs text-[#A1A1AA]">
                                                             {workoutState.goalProgress.exercise.currentMinutes}m of {workoutState.goalProgress.exercise.targetMinutes}m
-                                                            {workoutState.goalProgress.exercise.sessionCount > 0 && (
-                                                                <span className="ml-1">• {workoutState.goalProgress.exercise.sessionCount} session{workoutState.goalProgress.exercise.sessionCount !== 1 ? 's' : ''}</span>
-                                                            )}
                                                         </div>
                                                     )}
                                                 </div>
