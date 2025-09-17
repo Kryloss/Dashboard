@@ -298,8 +298,9 @@ export default function WorkoutPage() {
         }
 
         // Mock last week's data for comparison (in real app, this would come from storage)
-        const lastWeekSessions = 9 // Mock previous week sessions
-        const lastWeekMinutes = 200 // Mock previous week minutes
+        // Set to 0 to simulate no previous data scenario
+        const lastWeekSessions = 0 // Mock previous week sessions
+        const lastWeekMinutes = 0 // Mock previous week minutes
 
         // Calculate changes
         const sessionChange = thisWeekSessions - lastWeekSessions
@@ -316,6 +317,9 @@ export default function WorkoutPage() {
                 change: hasWorkoutData && hasComparisonData ? {
                     value: `${Math.abs(timeChangePercent)}%`,
                     direction: timeChange >= 0 ? 'up' as const : 'down' as const
+                } : hasWorkoutData && !hasComparisonData ? {
+                    value: "No progress data yet",
+                    direction: 'neutral' as const
                 } : undefined
             },
             sessions: {
@@ -323,6 +327,9 @@ export default function WorkoutPage() {
                 change: hasWorkoutData && hasComparisonData ? {
                     value: Math.abs(sessionChange).toString(),
                     direction: sessionChange >= 0 ? 'up' as const : 'down' as const
+                } : hasWorkoutData && !hasComparisonData ? {
+                    value: "No progress data yet",
+                    direction: 'neutral' as const
                 } : undefined
             }
         }
@@ -383,10 +390,10 @@ export default function WorkoutPage() {
             const weeklyStats = getWeeklyWorkoutStats()
             return [
                 {
-                    icon: <Flame className="w-4 h-4" />,
-                    label: "Total Calories",
-                    value: "8,340",
-                    change: { value: "12%", direction: "up" as const }
+                    icon: <Moon className="w-4 h-4" />,
+                    label: "Sleep Time",
+                    value: "7.2h avg",
+                    change: { value: "No progress data yet", direction: "neutral" as const }
                 },
                 {
                     icon: <Clock className="w-4 h-4" />,
