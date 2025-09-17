@@ -72,7 +72,24 @@ export class GoalProgressCalculator {
         const workoutDate = new Date(completedAt)
         const { startOfDay, endOfDay } = this.getTodayBounds()
 
-        return workoutDate >= startOfDay && workoutDate <= endOfDay
+        const isToday = workoutDate >= startOfDay && workoutDate <= endOfDay
+
+        // Debug logging for date comparison (only for activities that are close to today)
+        const timeDiffFromNow = Math.abs(Date.now() - workoutDate.getTime())
+        const isWithin24Hours = timeDiffFromNow < 24 * 60 * 60 * 1000
+
+        if (isWithin24Hours || isToday) {
+            console.log('🔍 Debug isWorkoutToday:', {
+                completedAt,
+                workoutDate: workoutDate.toISOString(),
+                startOfDay: startOfDay.toISOString(),
+                endOfDay: endOfDay.toISOString(),
+                isToday,
+                timeDiffFromNow: Math.round(timeDiffFromNow / (60 * 60 * 1000)) + ' hours'
+            })
+        }
+
+        return isToday
     }
 
     // Calculate exercise progress from today's completed workouts
@@ -87,8 +104,11 @@ export class GoalProgressCalculator {
                 todayBounds: this.getTodayBounds(),
                 activities: allActivities.map(a => ({
                     id: a.id,
+                    name: a.name,
+                    workoutType: a.workoutType,
                     completedAt: a.completedAt,
                     durationSeconds: a.durationSeconds,
+                    durationMinutes: Math.round(a.durationSeconds / 60),
                     isToday: this.isWorkoutToday(a.completedAt)
                 }))
             })
@@ -98,6 +118,17 @@ export class GoalProgressCalculator {
                 this.isWorkoutToday(activity.completedAt)
             )
 
+            console.log('🎯 GoalProgress Debug - Today\'s workouts found:', {
+                count: todayWorkouts.length,
+                workouts: todayWorkouts.map(w => ({
+                    id: w.id,
+                    name: w.name,
+                    type: w.workoutType,
+                    minutes: Math.round(w.durationSeconds / 60),
+                    completedAt: w.completedAt
+                }))
+            })
+
             // Calculate total minutes and sessions from completed workouts
             let totalMinutes = todayWorkouts.reduce((sum, workout) => {
                 return sum + Math.round(workout.durationSeconds / 60)
@@ -105,27 +136,57 @@ export class GoalProgressCalculator {
 
             let sessionCount = todayWorkouts.length
 
-            // Include ongoing workout time if requested
+            // Include ongoing workout time if requested (but avoid double-counting)
             if (includeOngoingWorkout) {
                 const ongoingWorkout = await WorkoutStorage.getOngoingWorkout()
                 if (ongoingWorkout && ongoingWorkout.isRunning) {
-                    // Use real-time elapsed time for accurate live progress
-                    const realTimeElapsedSeconds = WorkoutStorage.getBackgroundElapsedTime()
-                    const ongoingMinutes = Math.round(realTimeElapsedSeconds / 60)
-                    console.log('🏃 GoalProgress: Including ongoing workout', {
-                        workoutType: ongoingWorkout.type,
-                        elapsedSeconds: realTimeElapsedSeconds,
-                        elapsedMinutes: ongoingMinutes,
-                        totalMinutesBefore: totalMinutes,
-                        totalMinutesAfter: totalMinutes + ongoingMinutes
+                    // Check if this ongoing workout might already be logged as a completed activity
+                    const ongoingStartTime = new Date(ongoingWorkout.startTime)
+                    const potentialDuplicate = todayWorkouts.find(activity => {
+                        const activityTime = new Date(activity.completedAt)
+                        // Consider it a duplicate if completed within 5 minutes of ongoing workout start
+                        const timeDiff = Math.abs(activityTime.getTime() - ongoingStartTime.getTime())
+                        return timeDiff < 5 * 60 * 1000 // 5 minutes
                     })
-                    totalMinutes += ongoingMinutes
-                    sessionCount += 1 // Count ongoing workout as an active session
+
+                    if (potentialDuplicate) {
+                        console.log('⚠️ GoalProgress: Ongoing workout might be duplicate of completed activity', {
+                            ongoingWorkout: ongoingWorkout.id,
+                            ongoingStartTime: ongoingWorkout.startTime,
+                            potentialDuplicate: {
+                                id: potentialDuplicate.id,
+                                completedAt: potentialDuplicate.completedAt,
+                                duration: potentialDuplicate.durationSeconds
+                            }
+                        })
+                        // Skip adding ongoing workout to avoid double-counting
+                    } else {
+                        // Use real-time elapsed time for accurate live progress
+                        const realTimeElapsedSeconds = WorkoutStorage.getBackgroundElapsedTime()
+                        const ongoingMinutes = Math.round(realTimeElapsedSeconds / 60)
+                        console.log('🏃 GoalProgress: Including ongoing workout', {
+                            workoutType: ongoingWorkout.type,
+                            elapsedSeconds: realTimeElapsedSeconds,
+                            elapsedMinutes: ongoingMinutes,
+                            totalMinutesBefore: totalMinutes,
+                            totalMinutesAfter: totalMinutes + ongoingMinutes
+                        })
+                        totalMinutes += ongoingMinutes
+                        sessionCount += 1 // Count ongoing workout as an active session
+                    }
                 }
             }
 
             const targetMinutes = userGoals.dailyExerciseMinutes
             const progress = Math.min(totalMinutes / targetMinutes, 1.0)
+
+            console.log('💪 GoalProgress Debug - Exercise calculation result:', {
+                todayWorkoutsCount: todayWorkouts.length,
+                totalMinutesFromWorkouts: totalMinutes,
+                targetMinutes,
+                progress: Math.round(progress * 100) + '%',
+                includeOngoingWorkout
+            })
 
             // Create session data for ring segments
             const sessions = todayWorkouts.map(workout => ({
@@ -449,10 +510,18 @@ export class GoalProgressCalculator {
         const sleepKeys = allKeys.filter(key => key.includes('sleep_data'))
         console.log('All sleep data keys in localStorage:', sleepKeys)
 
-        // Check workout activities
-        const workoutKey = 'WorkoutStorage-activities'
+        // Check workout activities using correct key format
+        const currentUser = JSON.parse(localStorage.getItem('supabase.auth.token') || '{}')?.user
+        const userSuffix = currentUser?.id ? `-${currentUser.id.slice(-8)}` : '-anonymous'
+        const workoutKey = `healss-workout-activities${userSuffix}`
         const workoutData = localStorage.getItem(workoutKey)
+        console.log('Workout activities key:', workoutKey)
         console.log('Workout activities:', workoutData ? JSON.parse(workoutData) : 'NOT_FOUND')
+
+        // Also check old legacy key in case it exists
+        const legacyKey = 'WorkoutStorage-activities'
+        const legacyData = localStorage.getItem(legacyKey)
+        console.log('Legacy workout activities:', legacyData ? JSON.parse(legacyData) : 'NOT_FOUND')
     }
 }
 
@@ -462,6 +531,7 @@ if (typeof window !== 'undefined') {
         debugGoalProgress?: () => Promise<void>
         debugLocalStorage?: () => void
         forceRefreshRings?: () => Promise<DailyGoalProgress | null>
+        testExerciseCalculation?: () => Promise<{ userGoals: unknown; activities: unknown }>
     }
 
     globalWindow.debugGoalProgress = () => GoalProgressCalculator.debugProgress()
@@ -471,5 +541,28 @@ if (typeof window !== 'undefined') {
         const progress = await GoalProgressCalculator.calculateDailyProgress(true)
         console.log('🔄 Force refreshed goal progress:', progress)
         return progress
+    }
+
+    globalWindow.testExerciseCalculation = async () => {
+        const { UserDataStorage } = await import('./user-data-storage')
+        const { WorkoutStorage } = await import('./workout-storage')
+
+        console.log('🧪 Testing exercise calculation...')
+
+        // Get user goals
+        const userGoals = await UserDataStorage.getUserGoals()
+        console.log('User goals:', userGoals)
+
+        // Get all activities
+        const activities = await WorkoutStorage.getWorkoutActivities(50, 0)
+        console.log('All activities:', activities)
+
+        // Test exercise calculation
+        if (userGoals) {
+            const exerciseResult = await GoalProgressCalculator.calculateExerciseProgress(userGoals, false)
+            console.log('Exercise calculation result:', exerciseResult)
+        }
+
+        return { userGoals, activities }
     }
 }
