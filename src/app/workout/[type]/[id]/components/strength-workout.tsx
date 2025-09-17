@@ -539,12 +539,21 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
         setIsRunning(false)
 
         try {
+            // Get the actual elapsed time from WorkoutStorage (includes background time)
+            const actualElapsedTime = WorkoutStorage.getBackgroundElapsedTime()
+
+            console.log('Finishing workout with duration:', {
+                displayTime: time,
+                actualElapsedTime,
+                minutes: Math.round(actualElapsedTime / 60)
+            })
+
             // Save the completed workout as an activity before clearing
             await WorkoutStorage.saveWorkoutActivity({
                 workoutType: 'strength',
                 name: workoutName || undefined,
                 exercises: exercises,
-                durationSeconds: time,
+                durationSeconds: actualElapsedTime,
                 completedAt: new Date().toISOString(),
                 userId: user?.id
             })
