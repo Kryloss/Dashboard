@@ -48,8 +48,40 @@ interface ProgressCache {
     timestamp: number
 }
 
+// User-specific cache manager to prevent data leakage between users
+class UserCacheManager {
+    private static caches = new Map<string, ProgressCache>()
+    private static readonly CACHE_DURATION = 2 * 60 * 1000 // 2 minutes for more responsive updates
+
+    static getCache(userId: string): ProgressCache | null {
+        return this.caches.get(userId) || null
+    }
+
+    static setCache(userId: string, cache: ProgressCache): void {
+        this.caches.set(userId, cache)
+    }
+
+    static invalidateUser(userId: string): void {
+        this.caches.delete(userId)
+    }
+
+    static isCacheValid(userId: string, todayDate: string): boolean {
+        const cache = this.getCache(userId)
+        if (!cache) return false
+
+        const now = Date.now()
+        const isExpired = now - cache.timestamp > this.CACHE_DURATION
+        const isDifferentDay = cache.date !== todayDate
+
+        return !isExpired && !isDifferentDay
+    }
+
+    static clearAll(): void {
+        this.caches.clear()
+    }
+}
+
 export class GoalProgressCalculator {
-    private static cache: ProgressCache | null = null
     private static readonly CACHE_DURATION = 2 * 60 * 1000 // 2 minutes for more responsive updates
 
     // Get today's date in user's local timezone
@@ -209,23 +241,23 @@ export class GoalProgressCalculator {
         }
     }
 
-    // Check if cache is valid
-    private static isCacheValid(): boolean {
-        if (!this.cache) return false
-
-        const now = Date.now()
-        const isExpired = now - this.cache.timestamp > this.CACHE_DURATION
-        const isDifferentDay = this.cache.date !== this.getTodayDateString()
-
-        return !isExpired && !isDifferentDay
-    }
-
     // Main function to calculate all daily progress with caching
-    static async calculateDailyProgress(forceRefresh = false, includeOngoingWorkout = false): Promise<DailyGoalProgress | null> {
+    static async calculateDailyProgress(forceRefresh = false, includeOngoingWorkout = false, userId?: string): Promise<DailyGoalProgress | null> {
         try {
+            // Require userId for proper user isolation
+            if (!userId) {
+                console.warn('GoalProgressCalculator: userId not provided, cache disabled')
+                // Continue without caching for backward compatibility
+            }
+
+            const todayDate = this.getTodayDateString()
+
             // Return cached data if valid and not forcing refresh
-            if (!forceRefresh && !includeOngoingWorkout && this.isCacheValid()) {
-                return this.cache!.data
+            if (!forceRefresh && !includeOngoingWorkout && userId && UserCacheManager.isCacheValid(userId, todayDate)) {
+                const cachedData = UserCacheManager.getCache(userId)
+                if (cachedData) {
+                    return cachedData.data
+                }
             }
 
             // Get user goals
@@ -261,11 +293,13 @@ export class GoalProgressCalculator {
                 recovery
             }
 
-            // Update cache
-            this.cache = {
-                date: this.getTodayDateString(),
-                data: result,
-                timestamp: Date.now()
+            // Update cache with user-specific data
+            if (userId) {
+                UserCacheManager.setCache(userId, {
+                    date: todayDate,
+                    data: result,
+                    timestamp: Date.now()
+                })
             }
 
             return result
@@ -276,13 +310,19 @@ export class GoalProgressCalculator {
     }
 
     // Invalidate cache (call when workout data changes)
-    static invalidateCache(): void {
-        this.cache = null
+    static invalidateCache(userId?: string): void {
+        if (userId) {
+            UserCacheManager.invalidateUser(userId)
+        } else {
+            // Fallback: clear all caches if no userId provided
+            console.warn('GoalProgressCalculator: invalidateCache called without userId, clearing all caches')
+            UserCacheManager.clearAll()
+        }
     }
 
     // Refresh progress and notify listeners (for real-time updates)
-    static async refreshProgress(): Promise<DailyGoalProgress | null> {
-        return this.calculateDailyProgress(true) // Force refresh for real-time updates
+    static async refreshProgress(userId?: string): Promise<DailyGoalProgress | null> {
+        return this.calculateDailyProgress(true, false, userId) // Force refresh for real-time updates
     }
 
     // Get progress for specific date (future enhancement)

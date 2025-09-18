@@ -24,9 +24,27 @@ class WorkoutStateManager {
     private lastRefreshTime = 0
     private readonly MIN_REFRESH_INTERVAL = 2000 // Minimum 2 seconds between refreshes
 
+    // User context for proper cache isolation
+    private currentUserId: string | null = null
+
     // Real-time workout tracking
     private ongoingWorkoutInterval: NodeJS.Timeout | null = null
     private readonly ONGOING_WORKOUT_UPDATE_INTERVAL = 30000 // Update every 30 seconds for better responsiveness
+
+    // Set user context for cache isolation
+    setUser(userId: string | null): void {
+        if (this.currentUserId !== userId) {
+            this.currentUserId = userId
+            // Clear state when user changes to prevent data leakage
+            this.state = {
+                goalProgress: null,
+                recentActivities: [],
+                isLoading: false,
+                lastUpdate: 0
+            }
+            this.notifyListeners()
+        }
+    }
 
     // Activity history polling
     private activityPollingInterval: NodeJS.Timeout | null = null
@@ -80,11 +98,11 @@ class WorkoutStateManager {
         try {
             // Invalidate cache for fresh data
             if (!includeOngoingWorkout) {
-                GoalProgressCalculator.invalidateCache()
+                GoalProgressCalculator.invalidateCache(this.currentUserId || undefined)
             }
 
             // Get fresh goal progress and activities
-            const goalProgress = await GoalProgressCalculator.calculateDailyProgress(true, includeOngoingWorkout)
+            const goalProgress = await GoalProgressCalculator.calculateDailyProgress(true, includeOngoingWorkout, this.currentUserId || undefined)
             let recentActivities = this.state.recentActivities
             if (!includeOngoingWorkout) {
                 recentActivities = await WorkoutStorage.getRecentActivities(5)
@@ -153,7 +171,7 @@ class WorkoutStateManager {
         try {
             const ongoingWorkout = await WorkoutStorage.getOngoingWorkout()
             if (ongoingWorkout && ongoingWorkout.isRunning) {
-                GoalProgressCalculator.invalidateCache()
+                GoalProgressCalculator.invalidateCache(this.currentUserId || undefined)
                 await this.refreshAll(true, true)
             } else {
                 this.stopOngoingWorkoutTracking()
@@ -202,7 +220,7 @@ class WorkoutStateManager {
                     if (data.timestamp > this.state.lastUpdate) {
                         console.log('🔄 Detected workout completion from localStorage, refreshing...')
                         localStorage.removeItem('workout-completed') // Clean up
-                        GoalProgressCalculator.invalidateCache()
+                        GoalProgressCalculator.invalidateCache(this.currentUserId || undefined)
                         await this.refreshAll(true)
                         return // Early return to avoid duplicate refresh
                     }
@@ -223,7 +241,7 @@ class WorkoutStateManager {
 
             if (hasNewActivities) {
                 console.log('🔄 Detected new activities from polling, refreshing...')
-                GoalProgressCalculator.invalidateCache()
+                GoalProgressCalculator.invalidateCache(this.currentUserId || undefined)
                 await this.refreshAll(true)
             }
         } catch (error) {
@@ -236,7 +254,7 @@ class WorkoutStateManager {
         try {
             const ongoingWorkout = await WorkoutStorage.getOngoingWorkout()
             if (ongoingWorkout && ongoingWorkout.isRunning) {
-                GoalProgressCalculator.invalidateCache()
+                GoalProgressCalculator.invalidateCache(this.currentUserId || undefined)
                 await this.refreshAll(true, true)
                 await this.checkAndUpdateOngoingWorkout()
             }

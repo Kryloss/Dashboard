@@ -44,10 +44,10 @@ export function useWorkoutState() {
             WorkoutStorage.initialize(user, supabase)
 
             // Force cache refresh and get fresh data
-            GoalProgressCalculator.invalidateCache()
+            GoalProgressCalculator.invalidateCache(user.id)
 
             const [goalProgress, recentActivities] = await Promise.all([
-                GoalProgressCalculator.calculateDailyProgress(true),
+                GoalProgressCalculator.calculateDailyProgress(true, false, user.id),
                 WorkoutStorage.getRecentActivities(5)
             ])
 

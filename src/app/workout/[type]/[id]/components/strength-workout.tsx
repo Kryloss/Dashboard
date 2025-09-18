@@ -10,6 +10,7 @@ import { X, Play, Pause, Square, Plus, GripVertical, BookOpen, Edit3, Check, X a
 import { WorkoutStorage, WorkoutExercise } from "@/lib/workout-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
+import { WorkoutValidation, validateWeight, validateReps, sanitizeWeightInput, sanitizeRepsInput } from "@/lib/workout-validation"
 
 // Use WorkoutExercise from storage
 type Exercise = WorkoutExercise
@@ -38,6 +39,9 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     const [workoutName, setWorkoutName] = useState<string>("")
     const [isEditingName, setIsEditingName] = useState(false)
     const [tempWorkoutName, setTempWorkoutName] = useState("")
+
+    // Validation state
+    const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
     const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -342,13 +346,70 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
     }
 
     const updateSet = (exerciseId: string, setId: string, field: keyof Exercise['sets'][0], value: string | number | boolean) => {
+        let sanitizedValue = value
+        const errorKey = `${exerciseId}-${setId}-${field}`
+
+        // Clear previous error for this field
+        setValidationErrors(prev => {
+            const newErrors = { ...prev }
+            delete newErrors[errorKey]
+            return newErrors
+        })
+
+        // Apply validation and sanitization for specific fields
+        if (typeof value === 'string') {
+            if (field === 'weight') {
+                // Real-time input sanitization
+                sanitizedValue = sanitizeWeightInput(value)
+
+                // Validate if not empty
+                if (value.trim() !== '') {
+                    const validation = validateWeight(value)
+                    if (!validation.isValid) {
+                        setValidationErrors(prev => ({
+                            ...prev,
+                            [errorKey]: validation.message || 'Invalid weight'
+                        }))
+                    } else if (validation.sanitizedValue !== undefined) {
+                        sanitizedValue = validation.sanitizedValue
+                    }
+                }
+            } else if (field === 'reps') {
+                // Real-time input sanitization
+                sanitizedValue = sanitizeRepsInput(value)
+
+                // Validate if not empty
+                if (value.trim() !== '') {
+                    const validation = validateReps(value)
+                    if (!validation.isValid) {
+                        setValidationErrors(prev => ({
+                            ...prev,
+                            [errorKey]: validation.message || 'Invalid reps'
+                        }))
+                    } else if (validation.sanitizedValue !== undefined) {
+                        sanitizedValue = validation.sanitizedValue
+                    }
+                }
+            } else if (field === 'notes') {
+                const validation = WorkoutValidation.exercise.notes(value)
+                if (!validation.isValid) {
+                    setValidationErrors(prev => ({
+                        ...prev,
+                        [errorKey]: validation.message || 'Invalid notes'
+                    }))
+                } else if (validation.sanitizedValue !== undefined) {
+                    sanitizedValue = validation.sanitizedValue
+                }
+            }
+        }
+
         const updatedExercises = exercises.map(exercise => {
             if (exercise.id === exerciseId) {
                 return {
                     ...exercise,
                     sets: exercise.sets.map(set => {
                         if (set.id === setId) {
-                            return { ...set, [field]: value }
+                            return { ...set, [field]: sanitizedValue }
                         }
                         return set
                     }),
@@ -867,8 +928,18 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                                                     value={set.reps}
                                                     onChange={(e) => updateSet(exercise.id, set.id, 'reps', e.target.value)}
                                                     placeholder="12"
-                                                    className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] placeholder-[#7A7F86] rounded-[10px] text-sm h-8"
+                                                    className={`bg-[#0E0F13] text-[#F3F4F6] placeholder-[#7A7F86] rounded-[10px] text-sm h-8 ${
+                                                        validationErrors[`${exercise.id}-${set.id}-reps`]
+                                                            ? 'border-red-500 border-2'
+                                                            : 'border-[#212227]'
+                                                    }`}
+                                                    title={validationErrors[`${exercise.id}-${set.id}-reps`] || ''}
                                                 />
+                                                {validationErrors[`${exercise.id}-${set.id}-reps`] && (
+                                                    <div className="text-xs text-red-400 mt-1">
+                                                        {validationErrors[`${exercise.id}-${set.id}-reps`]}
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="col-span-3">
                                                 <Input
@@ -877,8 +948,18 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                                                     value={set.weight}
                                                     onChange={(e) => updateSet(exercise.id, set.id, 'weight', e.target.value)}
                                                     placeholder="135 lbs"
-                                                    className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] placeholder-[#7A7F86] rounded-[10px] text-sm h-8"
+                                                    className={`bg-[#0E0F13] text-[#F3F4F6] placeholder-[#7A7F86] rounded-[10px] text-sm h-8 ${
+                                                        validationErrors[`${exercise.id}-${set.id}-weight`]
+                                                            ? 'border-red-500 border-2'
+                                                            : 'border-[#212227]'
+                                                    }`}
+                                                    title={validationErrors[`${exercise.id}-${set.id}-weight`] || ''}
                                                 />
+                                                {validationErrors[`${exercise.id}-${set.id}-weight`] && (
+                                                    <div className="text-xs text-red-400 mt-1">
+                                                        {validationErrors[`${exercise.id}-${set.id}-weight`]}
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="col-span-4">
                                                 <Input
@@ -887,8 +968,18 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                                                     value={set.notes}
                                                     onChange={(e) => updateSet(exercise.id, set.id, 'notes', e.target.value)}
                                                     placeholder="Notes..."
-                                                    className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] placeholder-[#7A7F86] rounded-[10px] text-sm h-8"
+                                                    className={`bg-[#0E0F13] text-[#F3F4F6] placeholder-[#7A7F86] rounded-[10px] text-sm h-8 ${
+                                                        validationErrors[`${exercise.id}-${set.id}-notes`]
+                                                            ? 'border-red-500 border-2'
+                                                            : 'border-[#212227]'
+                                                    }`}
+                                                    title={validationErrors[`${exercise.id}-${set.id}-notes`] || ''}
                                                 />
+                                                {validationErrors[`${exercise.id}-${set.id}-notes`] && (
+                                                    <div className="text-xs text-red-400 mt-1">
+                                                        {validationErrors[`${exercise.id}-${set.id}-notes`]}
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="col-span-1">
                                                 {exercise.sets.length > 1 && (
