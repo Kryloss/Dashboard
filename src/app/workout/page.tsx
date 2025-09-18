@@ -178,15 +178,21 @@ export default function WorkoutPage() {
         }
     }, [ongoingWorkout?.isRunning])
 
-    // Listen for workout completion events (for notifications only)
+    // Listen for workout completion events
     useEffect(() => {
-        const handleWorkoutCompleted = (e: CustomEvent) => {
+        const handleWorkoutCompleted = async (e: CustomEvent) => {
             // Show success notification for quick-log completion
             if (e.detail?.source === 'quick-log' || e.detail?.source === 'quick-log-dialog') {
                 notifications.success('Workout logged!', {
                     description: 'Goal progress updated',
                     duration: 3000
                 })
+
+                // Refresh goal rings and activities immediately after workout completion
+                if (user && supabase) {
+                    console.log('🔄 Refreshing workout state after quick-log completion')
+                    await workoutStateManager.refreshAll(true)
+                }
             }
         }
 
