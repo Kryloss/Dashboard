@@ -34,5 +34,5 @@ export async function testUserIsolation(): Promise<boolean> {
 
 // Add to global window for browser console testing
 if (typeof window !== 'undefined') {
-    (window as any).testUserIsolation = testUserIsolation
+    (window as typeof window & { testUserIsolation?: () => Promise<boolean> }).testUserIsolation = testUserIsolation
 }

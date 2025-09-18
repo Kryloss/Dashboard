@@ -1,6 +1,7 @@
 // Supabase-integrated workout storage with localStorage fallback
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { User } from '@supabase/supabase-js'
+import { UnifiedWorkoutStorage } from './unified-storage'
 
 export interface WorkoutExercise {
     id: string
@@ -111,6 +112,7 @@ interface SyncOperation {
 export class WorkoutStorage {
     private static supabase: SupabaseClient | null = null
     private static currentUser: User | null = null
+    private static unifiedStorage: UnifiedWorkoutStorage | null = null
     // Dynamic keys that include user context for isolation
     private static get ONGOING_WORKOUT_KEY(): string {
         const userSuffix = this.currentUser?.id ? `-${this.currentUser.id.slice(-8)}` : '-anonymous'
@@ -151,6 +153,26 @@ export class WorkoutStorage {
                 process.env.NEXT_PUBLIC_SUPABASE_URL!,
                 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
             )
+        }
+
+        // Initialize unified storage for coordinated operations
+        if (user && this.supabase) {
+            try {
+                // Dispose previous instance if exists
+                if (this.unifiedStorage) {
+                    this.unifiedStorage.dispose()
+                }
+
+                this.unifiedStorage = new UnifiedWorkoutStorage(user, this.supabase, {
+                    maxRetries: 3,
+                    syncInterval: 30000, // 30 seconds
+                    offlineQueueLimit: 100
+                })
+
+                console.log('✅ UnifiedWorkoutStorage initialized for user:', user.id)
+            } catch (error) {
+                console.error('❌ Failed to initialize UnifiedWorkoutStorage:', error)
+            }
         }
 
         // Verify the supabase client has the correct auth context
@@ -658,6 +680,118 @@ export class WorkoutStorage {
         }
 
         return newActivity
+    }
+
+    // NEW: Unified storage method for workout activities
+    static async saveWorkoutActivityUnified(activity: Omit<WorkoutActivity, 'id' | 'createdAt' | 'updatedAt'>): Promise<WorkoutActivity> {
+        if (!this.currentUser) {
+            throw new Error('User must be authenticated to save workout activities')
+        }
+
+        const newActivity: WorkoutActivity = {
+            ...activity,
+            id: `activity-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            userId: this.currentUser.id
+        }
+
+        // Use unified storage for coordinated save
+        if (this.unifiedStorage) {
+            try {
+                await this.unifiedStorage.save('activity', newActivity, 'create')
+                console.log('✅ Workout activity saved via unified storage:', newActivity.name)
+            } catch (error) {
+                console.error('❌ Unified storage failed, falling back to legacy method:', error)
+                // Fallback to direct localStorage save
+                try {
+                    const existing = localStorage.getItem(this.ACTIVITIES_KEY)
+                    const activities = existing ? JSON.parse(existing) : []
+                    activities.unshift(newActivity)
+                    localStorage.setItem(this.ACTIVITIES_KEY, JSON.stringify(activities))
+                } catch (localError) {
+                    console.error('Failed to save to localStorage:', localError)
+                }
+            }
+        } else {
+            // Fallback to direct localStorage save if unified storage not available
+            console.warn('Unified storage not available, using direct localStorage save')
+            try {
+                const existing = localStorage.getItem(this.ACTIVITIES_KEY)
+                const activities = existing ? JSON.parse(existing) : []
+                activities.unshift(newActivity)
+                localStorage.setItem(this.ACTIVITIES_KEY, JSON.stringify(activities))
+            } catch (localError) {
+                console.error('Failed to save to localStorage:', localError)
+            }
+        }
+
+        // Trigger completion event for UI updates
+        try {
+            window.dispatchEvent(new CustomEvent('workoutCompleted', {
+                detail: { activityId: newActivity.id, timestamp: Date.now() }
+            }))
+        } catch (error) {
+            console.warn('Could not trigger workout completion event:', error)
+        }
+
+        return newActivity
+    }
+
+    // NEW: Unified storage method for loading workout activities
+    static async getWorkoutActivitiesUnified(
+        limit: number = 50,
+        offset: number = 0,
+        type?: 'strength' | 'running' | 'yoga' | 'cycling'
+    ): Promise<WorkoutActivity[]> {
+        if (!this.currentUser) {
+            throw new Error('User must be authenticated to get workout activities')
+        }
+
+        // Use unified storage for coordinated load
+        if (this.unifiedStorage) {
+            try {
+                const activities = await this.unifiedStorage.load('activity')
+                console.log('✅ Workout activities loaded via unified storage:', activities.length)
+
+                // Apply filtering and pagination
+                let filtered = activities
+                if (type) {
+                    filtered = activities.filter(activity => activity.workoutType === type)
+                }
+
+                // Apply pagination
+                const paginated = filtered.slice(offset, offset + limit)
+
+                return paginated.map(activity => this.convertDbActivityToApp(activity as unknown as DatabaseWorkoutActivity))
+            } catch (error) {
+                console.error('❌ Unified storage load failed, falling back to legacy method:', error)
+                // Fallback to legacy method
+                return this.getWorkoutActivities(limit, offset, type)
+            }
+        } else {
+            // Fallback to legacy method if unified storage not available
+            console.warn('Unified storage not available, using legacy load method')
+            return this.getWorkoutActivities(limit, offset, type)
+        }
+    }
+
+    // NEW: Get unified storage sync status for debugging
+    static getStorageSyncStatus(): { pending: number; failed: number; online: boolean } | null {
+        if (!this.unifiedStorage) {
+            return null
+        }
+        return this.unifiedStorage.getSyncStatus()
+    }
+
+    // NEW: Force sync all pending operations
+    static async forceSyncAll(): Promise<void> {
+        if (this.unifiedStorage) {
+            await this.unifiedStorage.forceSyncAll()
+            console.log('🔄 Force sync completed')
+        } else {
+            console.warn('Unified storage not available for force sync')
+        }
     }
 
     static async getWorkoutActivities(
