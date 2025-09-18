@@ -76,12 +76,25 @@ export function useWorkoutState() {
         if (!user || !supabase) return
 
         try {
-            // Only refresh goal progress, don't invalidate cache or reload activities
+            // Only refresh goal progress, keep existing state (no loading indicators)
             const goalProgress = await GoalProgressCalculator.calculateDailyProgress(false, true, user.id)
 
+            // Don't change isLoading or other state - just update goal progress
             setState(prev => ({ ...prev, goalProgress }))
         } catch (error) {
             console.error('❌ Failed to refresh goal progress:', error)
+        }
+    }, [user, supabase])
+
+    // Lightweight recent activities refresh (separate from goals)
+    const refreshRecentActivities = useCallback(async () => {
+        if (!user || !supabase) return
+
+        try {
+            const recentActivities = await WorkoutStorage.getRecentActivities(5)
+            setState(prev => ({ ...prev, recentActivities }))
+        } catch (error) {
+            console.error('❌ Failed to refresh recent activities:', error)
         }
     }, [user, supabase])
 
@@ -146,6 +159,7 @@ export function useWorkoutState() {
         state,
         refreshWorkoutData: forceRefresh,
         refreshGoalProgress,
+        refreshRecentActivities,
         addWorkoutOptimistically
     }
 }

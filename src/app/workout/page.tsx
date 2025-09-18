@@ -34,7 +34,7 @@ export default function WorkoutPage() {
     const [showSleepDialog, setShowSleepDialog] = useState(false)
 
     // Simplified workout state management
-    const { state: workoutState, refreshWorkoutData, refreshGoalProgress, addWorkoutOptimistically } = useWorkoutState()
+    const { state: workoutState, refreshWorkoutData, refreshGoalProgress, refreshRecentActivities, addWorkoutOptimistically } = useWorkoutState()
 
     // Track if we've shown the sign-in notification to avoid duplicates
     const signInNotificationShownRef = useRef(false)
@@ -104,8 +104,14 @@ export default function WorkoutPage() {
                 }
             }, 10000)
 
+            // Separate timer for recent activities (less frequent to maintain performance)
+            const activitiesInterval = setInterval(() => {
+                refreshRecentActivities()
+            }, 30000) // Every 30 seconds
+
             return () => {
                 clearInterval(interval)
+                clearInterval(activitiesInterval)
             }
         } else if (onHealss && !loading && user === null && !signInNotificationShownRef.current) {
             signInNotificationShownRef.current = true
@@ -118,7 +124,7 @@ export default function WorkoutPage() {
                 }
             })
         }
-    }, [user, loading, supabase, notifications, router, refreshWorkoutData, refreshGoalProgress, ongoingWorkout])
+    }, [user, loading, supabase, notifications, router, refreshWorkoutData, refreshGoalProgress, refreshRecentActivities, ongoingWorkout])
 
     // Real-time timer effect for ongoing workouts with goal progress updates
     useEffect(() => {
