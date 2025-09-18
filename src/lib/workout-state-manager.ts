@@ -30,7 +30,7 @@ class WorkoutStateManager {
 
     // Activity history polling
     private activityPollingInterval: NodeJS.Timeout | null = null
-    private readonly ACTIVITY_POLLING_INTERVAL = 10000 // Check activity history every 10 seconds
+    private readonly ACTIVITY_POLLING_INTERVAL = 3000 // Check activity history every 3 seconds for quicker updates
 
     // Subscribe to state changes
     subscribe(listener: StateListener): () => void {
@@ -193,6 +193,25 @@ class WorkoutStateManager {
     // Check for new activities and update goal progress
     private async checkActivityHistory(): Promise<void> {
         try {
+            // Check localStorage for workout completion signals (cross-tab support)
+            const workoutCompletedData = localStorage.getItem('workout-completed')
+            if (workoutCompletedData) {
+                try {
+                    const data = JSON.parse(workoutCompletedData)
+                    // If the completion happened after our last update, refresh
+                    if (data.timestamp > this.state.lastUpdate) {
+                        console.log('🔄 Detected workout completion from localStorage, refreshing...')
+                        localStorage.removeItem('workout-completed') // Clean up
+                        GoalProgressCalculator.invalidateCache()
+                        await this.refreshAll(true)
+                        return // Early return to avoid duplicate refresh
+                    }
+                } catch (e) {
+                    localStorage.removeItem('workout-completed') // Clean up invalid data
+                }
+            }
+
+            // Regular activity polling check
             const recentActivities = await WorkoutStorage.getRecentActivities(5)
             const lastUpdateTime = this.state.lastUpdate
 
@@ -203,6 +222,7 @@ class WorkoutStateManager {
             })
 
             if (hasNewActivities) {
+                console.log('🔄 Detected new activities from polling, refreshing...')
                 GoalProgressCalculator.invalidateCache()
                 await this.refreshAll(true)
             }
