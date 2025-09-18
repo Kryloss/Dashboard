@@ -607,6 +607,14 @@ export class WorkoutStorage {
             try {
                 const dbActivity = this.convertAppActivityToDb(newActivity)
 
+                console.log('💾 Saving workout activity to Supabase:', {
+                    type: newActivity.workoutType,
+                    name: newActivity.name,
+                    duration: Math.round(newActivity.durationSeconds / 60),
+                    userId: this.currentUser.id,
+                    dbData: dbActivity
+                })
+
                 const { data, error } = await this.supabase
                     .from('workout_activities')
                     .insert({
@@ -623,7 +631,7 @@ export class WorkoutStorage {
                 newActivity.createdAt = data.created_at
                 newActivity.updatedAt = data.updated_at
 
-                console.log('Workout activity saved to Supabase:', newActivity.name)
+                console.log('✅ Workout activity saved to Supabase successfully:', newActivity.name)
 
             } catch (error) {
                 console.error('Error saving workout activity to Supabase:', error)
@@ -668,7 +676,6 @@ export class WorkoutStorage {
                     .from('workout_activities')
                     .select('*')
                     .eq('user_id', this.currentUser.id)
-                    .not('user_id', 'is', null)
                     .order('completed_at', { ascending: false })
                     .range(offset, offset + limit - 1)
 
@@ -679,6 +686,18 @@ export class WorkoutStorage {
                 const { data, error } = await query
 
                 if (error) throw error
+
+                console.log('🗂️ Supabase activities debug:', {
+                    totalSupabaseActivities: data?.length || 0,
+                    activities: (data || []).map(a => ({
+                        id: a.id,
+                        name: a.name,
+                        type: a.workout_type,
+                        completedAt: a.completed_at,
+                        duration: Math.round(a.duration_seconds / 60),
+                        userId: a.user_id
+                    }))
+                })
 
                 return (data || []).map(this.convertDbActivityToApp)
             } catch (error) {
