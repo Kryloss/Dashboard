@@ -214,7 +214,16 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
     }
 
     const handleLogWorkout = async () => {
+        console.log('🚀 handleLogWorkout called!', {
+            user: user?.email,
+            loading,
+            workoutType,
+            exercises: exercises.length,
+            duration: `${hours}h ${minutes}m`
+        })
+
         if (!loading && !user) {
+            console.log('❌ No user, showing sign-in notification')
             // Only show on user action, with rate limiting
             const lastQuickLogNotification = localStorage.getItem('last-quicklog-notification')
             const now = Date.now()
@@ -234,8 +243,11 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
         }
 
         if (loading) {
+            console.log('⏳ Still loading, skipping workout save')
             return // Don't proceed if still loading
         }
+
+        console.log('✅ Proceeding with workout save')
 
         try {
             // Calculate duration in seconds
@@ -245,8 +257,17 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
             // Combine date and time
             const completedAt = new Date(`${selectedDate}T${selectedTime}:00`).toISOString()
 
+            console.log('💾 About to save workout activity:', {
+                workoutType,
+                name: workoutName || "Quick Log Workout",
+                exerciseCount: exercises.length,
+                durationSeconds,
+                completedAt,
+                userId: user?.id
+            })
+
             // Save the workout activity
-            await WorkoutStorage.saveWorkoutActivity({
+            const savedWorkout = await WorkoutStorage.saveWorkoutActivity({
                 workoutType: workoutType as 'strength' | 'running' | 'yoga' | 'cycling',
                 name: workoutName || "Quick Log Workout",
                 exercises: exercises,
@@ -254,6 +275,8 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
                 completedAt,
                 userId: user?.id
             })
+
+            console.log('✅ Workout saved successfully:', savedWorkout)
 
             notifications.success('Workout logged', {
                 description: 'Saved to history',
@@ -290,6 +313,7 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
     }
 
     const confirmLogWorkout = () => {
+        console.log('🔘 Log Workout button clicked, opening date/time dialog')
         setShowDateTimeDialog(true)
     }
 
