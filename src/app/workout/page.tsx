@@ -17,9 +17,7 @@ import { WorkoutStorage, OngoingWorkout, WorkoutActivity } from "@/lib/workout-s
 import { UserDataStorage } from "@/lib/user-data-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
-import { workoutStateManager, WorkoutState, forceRefreshOngoingWorkout, debugWorkoutState } from "@/lib/workout-state-manager"
-import { runWorkoutDiagnostics, logWorkoutState } from "@/lib/workout-diagnostics"
-import { debugOngoingWorkout, forceUpdateRings } from "@/lib/workout-debug-helper"
+import { useWorkoutState } from "@/lib/hooks/useWorkoutState"
 import { Plus, Flame, Dumbbell, User, Timer, Bike, Clock, Heart, FileText, Play, Edit3, Trash2, Moon, Footprints } from "lucide-react"
 
 export default function WorkoutPage() {
@@ -35,13 +33,8 @@ export default function WorkoutPage() {
     const [showSetGoalDialog, setShowSetGoalDialog] = useState(false)
     const [showSleepDialog, setShowSleepDialog] = useState(false)
 
-    // New centralized state management
-    const [workoutState, setWorkoutState] = useState<WorkoutState>({
-        goalProgress: null,
-        recentActivities: [],
-        isLoading: true,
-        lastUpdate: 0
-    })
+    // Simplified workout state management
+    const { state: workoutState, refreshWorkoutData, addWorkoutOptimistically } = useWorkoutState()
 
     // Track if we've shown the sign-in notification to avoid duplicates
     const signInNotificationShownRef = useRef(false)
@@ -49,104 +42,56 @@ export default function WorkoutPage() {
 
 
 
-    // Initialize workout state management
+    // Simple initialization
     useEffect(() => {
         const onHealss = isOnSubdomain('healss')
         setIsHealssSubdomain(onHealss)
 
         if (onHealss && user && supabase) {
-            // Initialize storage with user context
+            // Initialize storage
             WorkoutStorage.initialize(user, supabase)
             UserDataStorage.initialize(user, supabase)
 
-            // Subscribe to workout state changes
-            const unsubscribe = workoutStateManager.subscribe((state) => {
-                console.log('📊 Workout state updated:', state)
-                setWorkoutState(state)
-            })
-
-            // Load initial data
-            const loadInitialData = async () => {
+            // Load ongoing workout
+            const loadOngoingWorkout = async () => {
                 try {
-                    // Load ongoing workout
                     const workout = await WorkoutStorage.getOngoingWorkout()
                     setOngoingWorkout(workout)
 
-                    // Initialize live workout time and start real-time tracking if needed
                     if (workout?.isRunning) {
                         const backgroundElapsedTime = WorkoutStorage.getBackgroundElapsedTime()
                         setLiveWorkoutTime(backgroundElapsedTime)
-                        workoutStateManager.startOngoingWorkoutTracking()
                     } else if (workout) {
                         setLiveWorkoutTime(workout.elapsedTime)
-                        workoutStateManager.stopOngoingWorkoutTracking()
-                    } else {
-                        workoutStateManager.stopOngoingWorkoutTracking()
                     }
-
-                    // Start activity history polling for goal ring updates
-                    workoutStateManager.startActivityPolling()
-
-                    // Refresh workout state (rings and activities)
-                    await workoutStateManager.refreshAll(true)
-
                 } catch (error) {
-                    console.error('Error loading initial data:', error)
-                    notifications.error('Load failed', {
-                        description: 'Could not load workout data'
-                    })
+                    console.error('Error loading ongoing workout:', error)
                 }
             }
 
-            loadInitialData()
+            loadOngoingWorkout()
 
-            // Set up periodic check for ongoing workout updates only
+            // Simple ongoing workout check (only for timer updates)
             const interval = setInterval(async () => {
                 try {
                     const workout = await WorkoutStorage.getOngoingWorkout()
                     setOngoingWorkout(workout)
 
-                    // If workout is running, calculate live time and start real-time ring updates
                     if (workout?.isRunning) {
                         const backgroundElapsedTime = WorkoutStorage.getBackgroundElapsedTime()
                         setLiveWorkoutTime(backgroundElapsedTime)
-
-                        // Start real-time ring updates for ongoing workout
-                        console.log('🚀 Starting real-time ring updates for ongoing workout (periodic check)', {
-                            workoutId: workout.workoutId,
-                            type: workout.type,
-                            isRunning: workout.isRunning,
-                            elapsedTime: workout.elapsedTime,
-                            backgroundElapsedTime
-                        })
-                        workoutStateManager.startOngoingWorkoutTracking()
                     } else if (workout) {
                         setLiveWorkoutTime(workout.elapsedTime)
-                        console.log('⏸️ Workout is paused (periodic check), stopping tracking', {
-                            workoutId: workout.workoutId,
-                            isRunning: workout.isRunning
-                        })
-                        // Stop real-time ring updates if workout is paused
-                        workoutStateManager.stopOngoingWorkoutTracking()
-                    } else {
-                        console.log('❌ No ongoing workout found (periodic check), stopping tracking')
-                        // No ongoing workout, stop tracking
-                        workoutStateManager.stopOngoingWorkoutTracking()
                     }
                 } catch (error) {
-                    console.error('Error loading ongoing workout:', error)
+                    console.error('Error checking ongoing workout:', error)
                 }
-            }, 30000) // Check every 30 seconds for ongoing workout updates
+            }, 30000)
 
             return () => {
                 clearInterval(interval)
-                unsubscribe()
-                // Stop tracking when component unmounts
-                workoutStateManager.stopOngoingWorkoutTracking()
-                workoutStateManager.stopActivityPolling()
             }
         } else if (onHealss && !loading && user === null && !signInNotificationShownRef.current) {
-            // Only show notification if auth is not loading and user is null
             signInNotificationShownRef.current = true
             notifications.warning('Sign in required', {
                 description: 'Please sign in to access workouts',
@@ -178,29 +123,33 @@ export default function WorkoutPage() {
         }
     }, [ongoingWorkout?.isRunning])
 
-    // Listen for workout completion events
+    // Listen for workout completion events - simplified
     useEffect(() => {
         const handleWorkoutCompleted = async (e: Event) => {
             const customEvent = e as CustomEvent
-            // Show success notification for quick-log completion
             if (customEvent.detail?.source === 'quick-log' || customEvent.detail?.source === 'quick-log-dialog') {
                 notifications.success('Workout logged!', {
                     description: 'Goal progress updated',
                     duration: 3000
                 })
 
-                // Refresh goal rings and activities immediately after workout completion
-                if (user && supabase) {
-                    console.log('🔄 Refreshing workout state after quick-log completion')
-                    await workoutStateManager.refreshAll(true)
+                // Optimistic update for immediate feedback
+                if (customEvent.detail?.workoutType && customEvent.detail?.duration) {
+                    addWorkoutOptimistically({
+                        workoutType: customEvent.detail.workoutType,
+                        durationSeconds: customEvent.detail.duration,
+                        exercises: new Array(customEvent.detail.exercises || 0)
+                    })
+                } else {
+                    // Fallback to regular refresh
+                    refreshWorkoutData()
                 }
             }
         }
 
         const handleVisibilityChange = () => {
             if (!document.hidden && user && supabase) {
-                // Refresh when user returns to tab
-                workoutStateManager.refreshAll(true)
+                refreshWorkoutData()
             }
         }
 
@@ -211,7 +160,7 @@ export default function WorkoutPage() {
             window.removeEventListener('workoutCompleted', handleWorkoutCompleted as EventListener)
             document.removeEventListener('visibilitychange', handleVisibilityChange)
         }
-    }, [user, supabase, notifications])
+    }, [user, supabase, notifications, refreshWorkoutData, addWorkoutOptimistically])
 
 
 
@@ -577,8 +526,8 @@ export default function WorkoutPage() {
         try {
             await WorkoutStorage.deleteWorkoutActivity(activity.id)
 
-            // Use state manager to refresh data
-            await workoutStateManager.handleWorkoutDeleted()
+            // Refresh with new hook
+            refreshWorkoutData()
 
             notifications.success('Activity deleted', {
                 description: 'Workout removed from history',
@@ -607,8 +556,8 @@ export default function WorkoutPage() {
                 notes: updatedActivity.notes
             })
 
-            // Use state manager to refresh data
-            await workoutStateManager.handleWorkoutUpdated()
+            // Refresh with new hook
+            refreshWorkoutData()
 
             notifications.success('Activity updated', {
                 description: 'Changes saved successfully',
@@ -667,9 +616,9 @@ export default function WorkoutPage() {
                                 {process.env.NODE_ENV === 'development' && (
                                     <>
                                         <Button
-                                            onClick={async () => {
+                                            onClick={() => {
                                                 console.log('🔧 Manual refresh triggered')
-                                                await forceRefreshOngoingWorkout()
+                                                refreshWorkoutData()
                                                 notifications.info('Debug refresh', {
                                                     description: 'Forced workout state refresh',
                                                     duration: 2000
@@ -682,7 +631,7 @@ export default function WorkoutPage() {
                                         </Button>
                                         <Button
                                             onClick={() => {
-                                                debugWorkoutState()
+                                                console.log('🔍 Current workout state:', workoutState)
                                                 notifications.info('Debug state', {
                                                     description: 'Check console for state details',
                                                     duration: 2000
@@ -692,66 +641,6 @@ export default function WorkoutPage() {
                                             className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full text-xs"
                                         >
                                             🔍 Debug
-                                        </Button>
-                                        <Button
-                                            onClick={async () => {
-                                                console.log('🏥 Running comprehensive diagnostics...')
-                                                const result = await runWorkoutDiagnostics()
-                                                console.log('🏥 Diagnostic Results:', result)
-
-                                                const status = result.overallHealth === 'healthy' ? 'success' :
-                                                    result.overallHealth === 'warning' ? 'warning' : 'error'
-
-                                                notifications[status](`Diagnostics: ${result.overallHealth}`, {
-                                                    description: `${result.issues.length} issues found`,
-                                                    duration: 4000
-                                                })
-                                            }}
-                                            variant="ghost"
-                                            className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full text-xs"
-                                        >
-                                            🏥 Diagnose
-                                        </Button>
-                                        <Button
-                                            onClick={() => {
-                                                logWorkoutState()
-                                                notifications.info('System state logged', {
-                                                    description: 'Check console for detailed state',
-                                                    duration: 2000
-                                                })
-                                            }}
-                                            variant="ghost"
-                                            className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full text-xs"
-                                        >
-                                            📊 State
-                                        </Button>
-                                        <Button
-                                            onClick={async () => {
-                                                console.log('🔍 Running ongoing workout debug...')
-                                                await debugOngoingWorkout()
-                                                notifications.info('Ongoing workout debug', {
-                                                    description: 'Check console for detailed analysis',
-                                                    duration: 3000
-                                                })
-                                            }}
-                                            variant="ghost"
-                                            className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full text-xs"
-                                        >
-                                            🔍 Debug
-                                        </Button>
-                                        <Button
-                                            onClick={async () => {
-                                                console.log('🔄 Force updating rings...')
-                                                await forceUpdateRings()
-                                                notifications.success('Rings force updated', {
-                                                    description: 'Check if rings updated',
-                                                    duration: 2000
-                                                })
-                                            }}
-                                            variant="ghost"
-                                            className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full text-xs"
-                                        >
-                                            ⚡ Force
                                         </Button>
                                     </>
                                 )}
@@ -1222,9 +1111,7 @@ export default function WorkoutPage() {
                     onOpenChange={setShowSleepDialog}
                     onSleepLogged={() => {
                         // Refresh goal progress when sleep is logged
-                        if (user && supabase) {
-                            workoutStateManager.refreshAll(true)
-                        }
+                        refreshWorkoutData()
                     }}
                 />
             </div>
