@@ -34,7 +34,7 @@ export default function WorkoutPage() {
     const [showSleepDialog, setShowSleepDialog] = useState(false)
 
     // Simplified workout state management
-    const { state: workoutState, refreshWorkoutData, addWorkoutOptimistically } = useWorkoutState()
+    const { state: workoutState, refreshWorkoutData, refreshGoalProgress, addWorkoutOptimistically } = useWorkoutState()
 
     // Track if we've shown the sign-in notification to avoid duplicates
     const signInNotificationShownRef = useRef(false)
@@ -62,11 +62,11 @@ export default function WorkoutPage() {
                         const backgroundElapsedTime = WorkoutStorage.getBackgroundElapsedTime()
                         setLiveWorkoutTime(backgroundElapsedTime)
                         // Immediately refresh goal progress for ongoing workouts
-                        refreshWorkoutData()
+                        refreshGoalProgress()
                     } else if (workout) {
                         setLiveWorkoutTime(workout.elapsedTime)
                         // Refresh for paused workouts too (they still count toward goals)
-                        refreshWorkoutData()
+                        refreshGoalProgress()
                     }
                 } catch (error) {
                     console.error('Error loading ongoing workout:', error)
@@ -87,22 +87,22 @@ export default function WorkoutPage() {
                         setLiveWorkoutTime(backgroundElapsedTime)
 
                         // Refresh goal progress if workout is running to show real-time updates
-                        refreshWorkoutData()
+                        refreshGoalProgress()
                     } else if (workout) {
                         setLiveWorkoutTime(workout.elapsedTime)
 
                         // Refresh goal progress for paused workouts too
                         if (previousWorkout?.isRunning !== workout.isRunning) {
-                            refreshWorkoutData()
+                            refreshGoalProgress()
                         }
                     } else if (previousWorkout && !workout) {
                         // Workout was stopped/completed - refresh goal progress
-                        refreshWorkoutData()
+                        refreshWorkoutData() // Use full refresh when workout completes
                     }
                 } catch (error) {
                     console.error('Error checking ongoing workout:', error)
                 }
-            }, 5000)
+            }, 10000)
 
             return () => {
                 clearInterval(interval)
@@ -118,7 +118,7 @@ export default function WorkoutPage() {
                 }
             })
         }
-    }, [user, loading, supabase, notifications, router, refreshWorkoutData, ongoingWorkout])
+    }, [user, loading, supabase, notifications, router, refreshWorkoutData, refreshGoalProgress, ongoingWorkout])
 
     // Real-time timer effect for ongoing workouts with goal progress updates
     useEffect(() => {
@@ -131,10 +131,10 @@ export default function WorkoutPage() {
                 const backgroundElapsedTime = WorkoutStorage.getBackgroundElapsedTime()
                 setLiveWorkoutTime(backgroundElapsedTime)
 
-                // Refresh goal progress every 3 seconds (very responsive)
+                // Refresh goal progress every 5 seconds (balanced performance)
                 goalRefreshCounter++
-                if (goalRefreshCounter >= 3) {
-                    refreshWorkoutData()
+                if (goalRefreshCounter >= 5) {
+                    refreshGoalProgress()
                     goalRefreshCounter = 0
                 }
             }, 1000)
@@ -145,7 +145,7 @@ export default function WorkoutPage() {
                 clearInterval(timerInterval)
             }
         }
-    }, [ongoingWorkout?.isRunning, refreshWorkoutData])
+    }, [ongoingWorkout?.isRunning, refreshGoalProgress])
 
     // Listen for workout completion events - simplified
     useEffect(() => {

@@ -71,6 +71,20 @@ export function useWorkoutState() {
         }
     }, [user, supabase])
 
+    // Lightweight goal progress refresh (for ongoing workouts)
+    const refreshGoalProgress = useCallback(async () => {
+        if (!user || !supabase) return
+
+        try {
+            // Only refresh goal progress, don't invalidate cache or reload activities
+            const goalProgress = await GoalProgressCalculator.calculateDailyProgress(false, true, user.id)
+
+            setState(prev => ({ ...prev, goalProgress }))
+        } catch (error) {
+            console.error('❌ Failed to refresh goal progress:', error)
+        }
+    }, [user, supabase])
+
     // Optimistic update for immediate feedback
     const addWorkoutOptimistically = useCallback((workoutData: {
         workoutType: string
@@ -131,6 +145,7 @@ export function useWorkoutState() {
     return {
         state,
         refreshWorkoutData: forceRefresh,
+        refreshGoalProgress,
         addWorkoutOptimistically
     }
 }
