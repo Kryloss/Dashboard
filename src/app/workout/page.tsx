@@ -102,7 +102,7 @@ export default function WorkoutPage() {
                 } catch (error) {
                     console.error('Error checking ongoing workout:', error)
                 }
-            }, 30000)
+            }, 5000)
 
             return () => {
                 clearInterval(interval)
@@ -131,9 +131,9 @@ export default function WorkoutPage() {
                 const backgroundElapsedTime = WorkoutStorage.getBackgroundElapsedTime()
                 setLiveWorkoutTime(backgroundElapsedTime)
 
-                // Refresh goal progress every 30 seconds (for performance)
+                // Refresh goal progress every 3 seconds (very responsive)
                 goalRefreshCounter++
-                if (goalRefreshCounter >= 30) {
+                if (goalRefreshCounter >= 3) {
                     refreshWorkoutData()
                     goalRefreshCounter = 0
                 }
