@@ -206,7 +206,7 @@ class WorkoutStateManager {
                         await this.refreshAll(true)
                         return // Early return to avoid duplicate refresh
                     }
-                } catch (e) {
+                } catch {
                     localStorage.removeItem('workout-completed') // Clean up invalid data
                 }
             }
