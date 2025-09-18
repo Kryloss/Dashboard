@@ -47,7 +47,7 @@ export function useWorkoutState() {
             GoalProgressCalculator.invalidateCache(user.id)
 
             const [goalProgress, recentActivities] = await Promise.all([
-                GoalProgressCalculator.calculateDailyProgress(true, false, user.id),
+                GoalProgressCalculator.calculateDailyProgress(true, true, user.id),
                 WorkoutStorage.getRecentActivities(5)
             ])
 

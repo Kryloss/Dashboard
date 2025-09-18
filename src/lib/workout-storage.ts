@@ -673,7 +673,14 @@ export class WorkoutStorage {
         // Trigger a custom event for same-tab detection
         try {
             window.dispatchEvent(new CustomEvent('workoutCompleted', {
-                detail: { activityId: newActivity.id, timestamp: Date.now() }
+                detail: {
+                    activityId: newActivity.id,
+                    timestamp: Date.now(),
+                    source: 'workout-storage',
+                    workoutType: newActivity.workoutType,
+                    duration: newActivity.durationSeconds,
+                    exercises: newActivity.exercises.length
+                }
             }))
         } catch (error) {
             console.warn('Could not trigger workout completion event:', error)
@@ -729,7 +736,14 @@ export class WorkoutStorage {
         // Trigger completion event for UI updates
         try {
             window.dispatchEvent(new CustomEvent('workoutCompleted', {
-                detail: { activityId: newActivity.id, timestamp: Date.now() }
+                detail: {
+                    activityId: newActivity.id,
+                    timestamp: Date.now(),
+                    source: 'workout-storage-unified',
+                    workoutType: newActivity.workoutType,
+                    duration: newActivity.durationSeconds,
+                    exercises: newActivity.exercises.length
+                }
             }))
         } catch (error) {
             console.warn('Could not trigger workout completion event:', error)

@@ -127,7 +127,9 @@ export default function WorkoutPage() {
     useEffect(() => {
         const handleWorkoutCompleted = async (e: Event) => {
             const customEvent = e as CustomEvent
-            if (customEvent.detail?.source === 'quick-log' || customEvent.detail?.source === 'quick-log-dialog') {
+
+            // Accept events from all sources (quick-log, workout-storage, etc.)
+            if (customEvent.detail) {
                 notifications.success('Workout logged!', {
                     description: 'Goal progress updated',
                     duration: 3000
