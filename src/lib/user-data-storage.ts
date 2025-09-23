@@ -480,6 +480,8 @@ export class UserDataStorage {
             throw new Error('User must be authenticated to save sleep data')
         }
 
+        console.log('💾 UserDataStorage.saveSleepData - Input date:', sleepData.date)
+
         const localSleepData = this.getSleepDataFromLocalStorage(sleepData.date)
         const updatedSleepData: SleepData = {
             id: localSleepData?.id || `sleep-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -497,6 +499,7 @@ export class UserDataStorage {
                 const dbSleepData = this.convertAppSleepToDb(updatedSleepData)
 
                 // Check if sleep data exists for this user and date
+                console.log('🗃️ Querying Supabase for existing sleep data with date:', sleepData.date)
                 const { data: existingSleepData } = await this.supabase
                     .from('sleep_data')
                     .select('id')
@@ -652,10 +655,15 @@ export class UserDataStorage {
         if (typeof window === 'undefined') return null
 
         try {
+            console.log('📁 Getting sleep data from localStorage for date:', date)
             const stored = localStorage.getItem(`${this.SLEEP_DATA_KEY}-${date}`)
-            if (!stored) return null
+            if (!stored) {
+                console.log('📁 No localStorage data found for date:', date)
+                return null
+            }
 
             const sleepData = JSON.parse(stored) as SleepData
+            console.log('📁 Found localStorage sleep data for date:', sleepData.date)
 
             // Security check: ensure sleep data belongs to current user
             if (this.currentUser && sleepData.userId && sleepData.userId !== this.currentUser.id) {
