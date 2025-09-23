@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useRef as useMutableRef } from "react"
+import { useEffect, useRef } from "react"
 import { cn } from "@/lib/utils"
 
 interface GoalRingsProps {
@@ -88,7 +88,7 @@ export function GoalRings({
     streak
 }: GoalRingsProps) {
     const svgRef = useRef<SVGSVGElement>(null)
-    const prevValuesRef = useMutableRef({
+    const prevValuesRef = useRef({
         recovery: recoveryProgress,
         nutrition: nutritionProgress,
         exercise: exerciseProgress,
