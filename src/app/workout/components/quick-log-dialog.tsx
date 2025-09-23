@@ -133,11 +133,7 @@ export function QuickLogDialog({ open, onOpenChange, onActivityLogged }: QuickLo
                 completedAt
             })
 
-            // Success notification
-            notifications.success('Activity logged', {
-                description: `${workoutTypes.find(w => w.id === selectedType)?.name} saved`,
-                duration: 3000
-            })
+            // Success notification handled by page event listener
 
             // Show quick log tip for first usage
             const quickLogCount = localStorage.getItem('quick-log-count')

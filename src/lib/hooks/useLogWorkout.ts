@@ -74,9 +74,7 @@ export function useLogWorkout() {
                 }))
             } catch {}
 
-            notifications.success('Activity logged', {
-                description: 'Saved to history'
-            })
+            // Notification handled by page event listener
 
             // Revalidate shortly to reconcile with server
             setTimeout(() => refreshWorkoutData(true), 200)
