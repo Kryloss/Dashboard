@@ -263,7 +263,9 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
 
                 if (isToday) return 'today'
                 if (isYesterday) return 'yesterday'
-                const date = new Date(selectedDate)
+                // Parse date safely to avoid timezone issues
+                const [year, month, day] = selectedDate.split('-').map(Number)
+                const date = new Date(year, month - 1, day) // month is 0-indexed
                 return `for ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
             })()
 
@@ -385,7 +387,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                             type="date"
                                             value={selectedDate}
                                             onChange={(e) => setSelectedDate(e.target.value)}
-                                            className="bg-[#161B22] border-[#212227] text-[#F3F4F6] text-xs h-8 px-2 w-auto min-w-[110px] [&::-webkit-calendar-picker-indicator]:filter-none [&::-webkit-calendar-picker-indicator]:opacity-70 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                                            className="bg-[#161B22] border-[#212227] text-[#F3F4F6] text-xs h-7 px-2 w-auto min-w-[100px] [&::-webkit-calendar-picker-indicator]:filter-none [&::-webkit-calendar-picker-indicator]:opacity-70 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                                             style={{
                                                 colorScheme: 'dark'
                                             }}
@@ -400,7 +402,9 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
 
                                                 if (isToday) return 'Today'
                                                 if (isYesterday) return 'Yesterday'
-                                                const date = new Date(selectedDate)
+                                                // Parse date safely to avoid timezone issues
+                                                const [year, month, day] = selectedDate.split('-').map(Number)
+                                                const date = new Date(year, month - 1, day) // month is 0-indexed
                                                 return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                                             })()}
                                         </span>
