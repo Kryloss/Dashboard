@@ -335,7 +335,8 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
             addWorkoutOptimistically({
                 workoutType,
                 durationSeconds,
-                exercises: []
+                exercises: [],
+                completedAt
             })
 
             // Save the workout activity
@@ -625,8 +626,8 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
                                                     onChange={(e) => updateSet(exercise.id, set.id, 'reps', e.target.value)}
                                                     placeholder="12"
                                                     className={`bg-[#0E0F13] text-[#F3F4F6] placeholder-[#7A7F86] rounded-[10px] text-sm h-8 ${validationErrors[`${exercise.id}-${set.id}-reps`]
-                                                            ? 'border-red-500 border-2'
-                                                            : 'border-[#212227]'
+                                                        ? 'border-red-500 border-2'
+                                                        : 'border-[#212227]'
                                                         }`}
                                                     title={validationErrors[`${exercise.id}-${set.id}-reps`] || ''}
                                                 />
@@ -644,8 +645,8 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
                                                     onChange={(e) => updateSet(exercise.id, set.id, 'weight', e.target.value)}
                                                     placeholder="135 lbs"
                                                     className={`bg-[#0E0F13] text-[#F3F4F6] placeholder-[#7A7F86] rounded-[10px] text-sm h-8 ${validationErrors[`${exercise.id}-${set.id}-weight`]
-                                                            ? 'border-red-500 border-2'
-                                                            : 'border-[#212227]'
+                                                        ? 'border-red-500 border-2'
+                                                        : 'border-[#212227]'
                                                         }`}
                                                     title={validationErrors[`${exercise.id}-${set.id}-weight`] || ''}
                                                 />
@@ -663,8 +664,8 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
                                                     onChange={(e) => updateSet(exercise.id, set.id, 'notes', e.target.value)}
                                                     placeholder="Notes..."
                                                     className={`bg-[#0E0F13] text-[#F3F4F6] placeholder-[#7A7F86] rounded-[10px] text-sm h-8 ${validationErrors[`${exercise.id}-${set.id}-notes`]
-                                                            ? 'border-red-500 border-2'
-                                                            : 'border-[#212227]'
+                                                        ? 'border-red-500 border-2'
+                                                        : 'border-[#212227]'
                                                         }`}
                                                     title={validationErrors[`${exercise.id}-${set.id}-notes`] || ''}
                                                 />

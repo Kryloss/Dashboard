@@ -75,47 +75,23 @@ export function useWorkoutState() {
                 GoalProgressCalculator.invalidateCache(user.id)
             }
 
-            const [fetchedGoalProgress, recentActivities] = await Promise.all([
+            const [goalProgress, recentActivities] = await Promise.all([
                 GoalProgressCalculator.calculateDailyProgress(force, true, user.id),
                 WorkoutStorage.getRecentActivities(5)
             ])
 
-            setState(prev => {
-                // Merge goal progress to avoid dropping optimistic values
-                const prevGoal = prev.goalProgress
-                const gp = fetchedGoalProgress
+            const nextState: WorkoutState = {
+                goalProgress,
+                recentActivities,
+                isLoading: false,
+                lastRefresh: Date.now()
+            }
 
-                let merged = gp || null
-                if (prevGoal && gp) {
-                    const exerciseMinutes = Math.max(prevGoal.exercise.currentMinutes, gp.exercise.currentMinutes)
-                    const exerciseProgress = Math.min(
-                        exerciseMinutes / Math.max(gp.exercise.targetMinutes, 1),
-                        1
-                    )
-                    merged = {
-                        ...gp,
-                        exercise: {
-                            ...gp.exercise,
-                            currentMinutes: exerciseMinutes,
-                            progress: exerciseProgress,
-                            sessionCount: Math.max(prevGoal.exercise.sessionCount, gp.exercise.sessionCount)
-                        }
-                    }
-                }
-
-                const next: WorkoutState = {
-                    goalProgress: merged,
-                    recentActivities,
-                    isLoading: false,
-                    lastRefresh: Date.now()
-                }
-
-                saveCachedState(next)
-                return next
-            })
+            setState(nextState)
+            saveCachedState(nextState)
 
             console.log('✅ Workout state refreshed:', {
-                exerciseProgress: fetchedGoalProgress?.exercise?.progress,
+                exerciseProgress: goalProgress?.exercise?.progress,
                 activitiesCount: recentActivities.length
             })
 
@@ -132,6 +108,7 @@ export function useWorkoutState() {
         workoutType: string
         durationSeconds: number
         exercises: unknown[]
+        completedAt?: string
     }) => {
         setState(prev => {
             const exerciseMinutes = Math.round(workoutData.durationSeconds / 60)
@@ -159,7 +136,10 @@ export function useWorkoutState() {
                 }
             }
 
-            const newExerciseMinutes = seeded.exercise.currentMinutes + exerciseMinutes
+            // Only adjust exercise if the activity counts for today
+            const completedAtIso = workoutData.completedAt || new Date().toISOString()
+            const isToday = GoalProgressCalculator.isWorkoutToday(completedAtIso)
+            const newExerciseMinutes = seeded.exercise.currentMinutes + (isToday ? exerciseMinutes : 0)
             const newExerciseProgress = Math.min(
                 newExerciseMinutes / Math.max(seeded.exercise.targetMinutes, 1),
                 1.0
@@ -173,7 +153,7 @@ export function useWorkoutState() {
                 exercises: [],
                 durationSeconds: workoutData.durationSeconds,
                 notes: undefined,
-                completedAt: new Date().toISOString(),
+                completedAt: completedAtIso,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
                 userId: user?.id
@@ -187,7 +167,7 @@ export function useWorkoutState() {
                         ...seeded.exercise,
                         currentMinutes: newExerciseMinutes,
                         progress: newExerciseProgress,
-                        sessionCount: Math.max(seeded.exercise.sessionCount, 0) + 1,
+                        sessionCount: Math.max(seeded.exercise.sessionCount, 0) + (isToday ? 1 : 0),
                         sessions: seeded.exercise.sessions
                     }
                 },

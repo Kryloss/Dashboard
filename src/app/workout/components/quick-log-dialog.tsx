@@ -131,7 +131,8 @@ export function QuickLogDialog({ open, onOpenChange, onActivityLogged }: QuickLo
             addWorkoutOptimistically({
                 workoutType: activity.workoutType,
                 durationSeconds: activity.durationSeconds,
-                exercises: []
+                exercises: [],
+                completedAt: completedAt
             })
             await WorkoutStorage.saveWorkoutActivity(activity)
             console.log('✅ Quick log - Activity saved successfully')
