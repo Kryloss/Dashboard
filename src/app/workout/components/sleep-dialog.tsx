@@ -104,18 +104,17 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
 
     useEffect(() => {
         if (open) {
-            // Reset to today's date when dialog opens
+            // Only reset to today's date when dialog first opens
             setSelectedDate(GoalProgressCalculator.getTodayDateString())
-            loadExistingSleepData()
         }
-    }, [open, loadExistingSleepData])
+    }, [open])
 
-    // Reload data when date changes
+    // Load data when dialog opens or date changes
     useEffect(() => {
-        if (open) {
+        if (open && selectedDate) {
             loadExistingSleepData()
         }
-    }, [selectedDate, loadExistingSleepData, open])
+    }, [selectedDate, open, loadExistingSleepData])
 
     // Convert time string to minutes
     const timeToMinutes = (timeStr: string) => {
