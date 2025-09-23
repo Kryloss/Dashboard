@@ -11,6 +11,7 @@ import { WorkoutStorage, WorkoutExercise } from "@/lib/workout-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 import { WorkoutValidation, validateWeight, validateReps, sanitizeWeightInput, sanitizeRepsInput } from "@/lib/workout-validation"
+import { useWorkoutState } from "@/lib/hooks/useWorkoutState"
 
 // Use WorkoutExercise from storage
 type Exercise = WorkoutExercise
@@ -27,6 +28,7 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
     const router = useRouter()
     const { user, loading, supabase } = useAuth()
     const notifications = useNotifications()
+    const { addWorkoutOptimistically } = useWorkoutState()
     const [exercises, setExercises] = useState<Exercise[]>([])
     const [showAddExercise, setShowAddExercise] = useState(false)
     const [newExerciseName, setNewExerciseName] = useState("")
@@ -329,6 +331,13 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
                 userId: user?.id
             })
 
+            // Optimistic update so /workout rings & summary reflect immediately
+            addWorkoutOptimistically({
+                workoutType,
+                durationSeconds,
+                exercises: []
+            })
+
             // Save the workout activity
             const savedWorkout = await WorkoutStorage.saveWorkoutActivity({
                 workoutType: workoutType as 'strength' | 'running' | 'yoga' | 'cycling',
@@ -615,11 +624,10 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
                                                     value={set.reps}
                                                     onChange={(e) => updateSet(exercise.id, set.id, 'reps', e.target.value)}
                                                     placeholder="12"
-                                                    className={`bg-[#0E0F13] text-[#F3F4F6] placeholder-[#7A7F86] rounded-[10px] text-sm h-8 ${
-                                                        validationErrors[`${exercise.id}-${set.id}-reps`]
+                                                    className={`bg-[#0E0F13] text-[#F3F4F6] placeholder-[#7A7F86] rounded-[10px] text-sm h-8 ${validationErrors[`${exercise.id}-${set.id}-reps`]
                                                             ? 'border-red-500 border-2'
                                                             : 'border-[#212227]'
-                                                    }`}
+                                                        }`}
                                                     title={validationErrors[`${exercise.id}-${set.id}-reps`] || ''}
                                                 />
                                                 {validationErrors[`${exercise.id}-${set.id}-reps`] && (
@@ -635,11 +643,10 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
                                                     value={set.weight}
                                                     onChange={(e) => updateSet(exercise.id, set.id, 'weight', e.target.value)}
                                                     placeholder="135 lbs"
-                                                    className={`bg-[#0E0F13] text-[#F3F4F6] placeholder-[#7A7F86] rounded-[10px] text-sm h-8 ${
-                                                        validationErrors[`${exercise.id}-${set.id}-weight`]
+                                                    className={`bg-[#0E0F13] text-[#F3F4F6] placeholder-[#7A7F86] rounded-[10px] text-sm h-8 ${validationErrors[`${exercise.id}-${set.id}-weight`]
                                                             ? 'border-red-500 border-2'
                                                             : 'border-[#212227]'
-                                                    }`}
+                                                        }`}
                                                     title={validationErrors[`${exercise.id}-${set.id}-weight`] || ''}
                                                 />
                                                 {validationErrors[`${exercise.id}-${set.id}-weight`] && (
@@ -655,11 +662,10 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
                                                     value={set.notes}
                                                     onChange={(e) => updateSet(exercise.id, set.id, 'notes', e.target.value)}
                                                     placeholder="Notes..."
-                                                    className={`bg-[#0E0F13] text-[#F3F4F6] placeholder-[#7A7F86] rounded-[10px] text-sm h-8 ${
-                                                        validationErrors[`${exercise.id}-${set.id}-notes`]
+                                                    className={`bg-[#0E0F13] text-[#F3F4F6] placeholder-[#7A7F86] rounded-[10px] text-sm h-8 ${validationErrors[`${exercise.id}-${set.id}-notes`]
                                                             ? 'border-red-500 border-2'
                                                             : 'border-[#212227]'
-                                                    }`}
+                                                        }`}
                                                     title={validationErrors[`${exercise.id}-${set.id}-notes`] || ''}
                                                 />
                                                 {validationErrors[`${exercise.id}-${set.id}-notes`] && (
