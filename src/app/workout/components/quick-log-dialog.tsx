@@ -71,7 +71,6 @@ export function QuickLogDialog({ open, onOpenChange, onActivityLogged }: QuickLo
         return timeStr
     })
     const [notes, setNotes] = useState('')
-    const [isLogging, setIsLogging] = useState(false)
 
     const handleClose = () => {
         // Reset form

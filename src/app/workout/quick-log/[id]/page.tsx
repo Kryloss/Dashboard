@@ -29,7 +29,7 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
     const router = useRouter()
     const { user, loading, supabase } = useAuth()
     const notifications = useNotifications()
-    const { logWorkout, isLogging } = useLogWorkout()
+    const { logWorkout } = useLogWorkout()
     const { addWorkoutOptimistically } = useWorkoutState()
     const [exercises, setExercises] = useState<Exercise[]>([])
     const [showAddExercise, setShowAddExercise] = useState(false)
