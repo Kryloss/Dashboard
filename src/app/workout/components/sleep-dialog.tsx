@@ -4,12 +4,13 @@ import { useState, useEffect, useCallback } from "react"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 import { UserDataStorage } from "@/lib/user-data-storage"
+import { GoalProgressCalculator } from "@/lib/goal-progress"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Moon, Smile, Meh, Frown, Plus, X } from "lucide-react"
+import { Moon, Smile, Meh, Frown, Plus, X, Calendar } from "lucide-react"
 
 interface SleepDialogProps {
     open: boolean
@@ -31,6 +32,10 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
     const [isLoading, setIsLoading] = useState(false)
     const [sleepQuality, setSleepQuality] = useState(3) // 1-5 rating
     const [sleepSessions, setSleepSessions] = useState<SleepSession[]>([])
+    const [selectedDate, setSelectedDate] = useState(() => {
+        // Initialize with today's date in local timezone
+        return GoalProgressCalculator.getTodayDateString()
+    })
 
     // Sleep quality icons
     const qualityIcons = [Frown, Meh, Smile, Smile]
@@ -70,17 +75,16 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
         }
     }, [user, supabase])
 
-    // Load existing sleep data for today
+    // Load existing sleep data for selected date
     const loadExistingSleepData = useCallback(async () => {
         if (!user || !supabase) return
 
         try {
             UserDataStorage.initialize(user, supabase)
-            const todayDate = new Date().toISOString().split('T')[0]
-            const existingSleepData = await UserDataStorage.getSleepData(todayDate)
+            const existingSleepData = await UserDataStorage.getSleepData(selectedDate)
 
             if (existingSleepData && existingSleepData.sessions.length > 0) {
-                // Load existing data for today
+                // Load existing data for selected date
                 setSleepSessions(existingSleepData.sessions)
                 setSleepQuality(existingSleepData.qualityRating)
             } else {
@@ -96,13 +100,22 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
             loadDefaultSleepSession()
             setSleepQuality(3)
         }
-    }, [user, supabase, loadDefaultSleepSession])
+    }, [user, supabase, selectedDate, loadDefaultSleepSession])
 
+    useEffect(() => {
+        if (open) {
+            // Reset to today's date when dialog opens
+            setSelectedDate(GoalProgressCalculator.getTodayDateString())
+            loadExistingSleepData()
+        }
+    }, [open, loadExistingSleepData])
+
+    // Reload data when date changes
     useEffect(() => {
         if (open) {
             loadExistingSleepData()
         }
-    }, [open, loadExistingSleepData])
+    }, [selectedDate, loadExistingSleepData, open])
 
     // Convert time string to minutes
     const timeToMinutes = (timeStr: string) => {
@@ -230,9 +243,9 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                 return total + duration.totalMinutes
             }, 0)
 
-            // Save sleep data
+            // Save sleep data for selected date
             const sleepData = {
-                date: new Date().toISOString().split('T')[0],
+                date: selectedDate,
                 sessions: sleepSessions,
                 qualityRating: sleepQuality,
                 totalMinutes: totalSleep,
@@ -241,10 +254,27 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
 
             await UserDataStorage.saveSleepData(sleepData)
 
+            // Create a descriptive date label for notification
+            const dateLabel = (() => {
+                const isToday = selectedDate === GoalProgressCalculator.getTodayDateString()
+                const today = new Date()
+                const yesterday = new Date(today)
+                yesterday.setDate(today.getDate() - 1)
+                const isYesterday = selectedDate === GoalProgressCalculator.getLocalDateString(yesterday)
+
+                if (isToday) return 'today'
+                if (isYesterday) return 'yesterday'
+                const date = new Date(selectedDate)
+                return `for ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+            })()
+
             notifications.success('Sleep logged!', {
-                description: `${Math.floor(totalSleep / 60)}h ${totalSleep % 60}m recorded`,
+                description: `${Math.floor(totalSleep / 60)}h ${totalSleep % 60}m recorded ${dateLabel}`,
                 duration: 3000
             })
+
+            // Reset to today's date after successful save
+            setSelectedDate(GoalProgressCalculator.getTodayDateString())
 
             onSleepLogged?.()
             onOpenChange(false)
@@ -349,15 +379,50 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
                                 <Label className="text-sm font-medium text-[#F3F4F6]">How did you sleep?</Label>
-                                <Button
-                                    onClick={addNap}
-                                    size="sm"
-                                    variant="outline"
-                                    disabled={sleepSessions.length >= 3}
-                                    className="h-8 w-8 p-0 border-[#212227] text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <Plus className="w-4 h-4" />
-                                </Button>
+                                <div className="flex items-center space-x-2">
+                                    {/* Date Picker */}
+                                    <div className="relative">
+                                        <Input
+                                            type="date"
+                                            value={selectedDate}
+                                            onChange={(e) => setSelectedDate(e.target.value)}
+                                            className="sr-only"
+                                            id="sleep-date-picker"
+                                        />
+                                        <Button
+                                            onClick={() => document.getElementById('sleep-date-picker')?.click()}
+                                            size="sm"
+                                            variant="outline"
+                                            className="h-8 px-3 border-[#212227] text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] flex items-center space-x-1"
+                                        >
+                                            <Calendar className="w-3 h-3" />
+                                            <span className="text-xs">
+                                                {(() => {
+                                                    const date = new Date(selectedDate)
+                                                    const today = new Date()
+                                                    const isToday = selectedDate === GoalProgressCalculator.getTodayDateString()
+                                                    const yesterday = new Date(today)
+                                                    yesterday.setDate(today.getDate() - 1)
+                                                    const isYesterday = selectedDate === GoalProgressCalculator.getLocalDateString(yesterday)
+
+                                                    if (isToday) return 'Today'
+                                                    if (isYesterday) return 'Yesterday'
+                                                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                                                })()}
+                                            </span>
+                                        </Button>
+                                    </div>
+                                    {/* Add Nap Button */}
+                                    <Button
+                                        onClick={addNap}
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={sleepSessions.length >= 3}
+                                        className="h-8 w-8 p-0 border-[#212227] text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                    </Button>
+                                </div>
                             </div>
 
                             <div className="flex items-center justify-center gap-6">
