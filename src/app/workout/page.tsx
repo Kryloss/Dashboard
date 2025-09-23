@@ -161,11 +161,16 @@ export default function WorkoutPage() {
 
                 // Optimistic update for immediate feedback
                 if (customEvent.detail?.workoutType && customEvent.detail?.duration) {
-                    addWorkoutOptimistically({
-                        workoutType: customEvent.detail.workoutType,
-                        durationSeconds: customEvent.detail.duration,
-                        exercises: new Array(customEvent.detail.exercises || 0)
-                    })
+                    // Avoid double optimistic add if Quick Log already performed one
+                    const source: string | undefined = customEvent.detail?.source
+                    if (source !== 'quick-log' && source !== 'quick-log-dialog') {
+                        addWorkoutOptimistically({
+                            workoutType: customEvent.detail.workoutType,
+                            durationSeconds: customEvent.detail.duration,
+                            exercises: new Array(customEvent.detail.exercises || 0),
+                            completedAt: customEvent.detail?.completedAt
+                        })
+                    }
                 } else {
                     // Fallback to regular refresh
                     refreshWorkoutData()
