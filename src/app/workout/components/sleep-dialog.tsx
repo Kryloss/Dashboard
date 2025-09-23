@@ -251,7 +251,6 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                 totalWakeUps: sleepSessions.reduce((total, session) => total + session.wakeUps, 0)
             }
 
-            console.log('💾 Saving sleep data for date:', selectedDate, sleepData)
             await UserDataStorage.saveSleepData(sleepData)
 
             // Create a descriptive date label for notification
@@ -277,6 +276,11 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
 
             // Reset to today's date after successful save
             setSelectedDate(GoalProgressCalculator.getTodayDateString())
+
+            // Dispatch event to notify other parts of the app (like history page)
+            window.dispatchEvent(new CustomEvent('sleepDataUpdated', {
+                detail: { date: selectedDate, action: 'created' }
+            }))
 
             onSleepLogged?.()
             onOpenChange(false)
@@ -387,10 +391,7 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                         <Input
                                             type="date"
                                             value={selectedDate}
-                                            onChange={(e) => {
-                                                console.log('🗓️ Date changed from', selectedDate, 'to', e.target.value)
-                                                setSelectedDate(e.target.value)
-                                            }}
+                                            onChange={(e) => setSelectedDate(e.target.value)}
                                             className="bg-[#161B22] border-[#212227] text-[#F3F4F6] text-xs h-7 px-2 w-auto min-w-[100px] [&::-webkit-calendar-picker-indicator]:filter-none [&::-webkit-calendar-picker-indicator]:opacity-70 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                                             style={{
                                                 colorScheme: 'dark'

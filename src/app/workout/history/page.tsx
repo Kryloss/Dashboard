@@ -4,12 +4,12 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, Search, Filter, Dumbbell, Footprints, Heart, Bike, Plus, Moon } from "lucide-react"
 import { WorkoutStorage, WorkoutActivity } from "@/lib/workout-storage"
 import { UserDataStorage, SleepData } from "@/lib/user-data-storage"
+import { GoalProgressCalculator } from "@/lib/goal-progress"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 import { ActivityCard } from "./components/activity-card"
@@ -97,8 +97,13 @@ export default function WorkoutHistoryPage() {
                         setIsSleepLoading(true)
                         UserDataStorage.initialize(user, supabase)
 
-                        const endDate = new Date().toISOString().split('T')[0]
-                        const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+                        // Use proper local timezone dates
+                        const endDate = GoalProgressCalculator.getTodayDateString()
+                        const startDate = (() => {
+                            const date = new Date()
+                            date.setDate(date.getDate() - 30)
+                            return GoalProgressCalculator.getLocalDateString(date)
+                        })()
 
                         const sleepHistory = await UserDataStorage.getSleepDataRange(startDate, endDate)
                         setSleepData(sleepHistory)
@@ -114,6 +119,14 @@ export default function WorkoutHistoryPage() {
 
                 loadSleepData()
 
+                // Listen for sleep data updates from other parts of the app
+                const handleSleepDataUpdate = () => {
+                    console.log('🔄 Sleep data updated, refreshing history...')
+                    loadSleepData()
+                }
+
+                window.addEventListener('sleepDataUpdated', handleSleepDataUpdate)
+
                 // Show history tip for first-time visitors
                 setTimeout(() => {
                     const hasSeenHistoryTip = localStorage.getItem('history-tip-shown')
@@ -125,6 +138,11 @@ export default function WorkoutHistoryPage() {
                         localStorage.setItem('history-tip-shown', 'true')
                     }
                 }, 2000)
+
+                // Cleanup function
+                return () => {
+                    window.removeEventListener('sleepDataUpdated', handleSleepDataUpdate)
+                }
             }
         }, 2000) // 2 second delay to allow auth to settle
 
@@ -223,9 +241,16 @@ export default function WorkoutHistoryPage() {
         if (!deletingSleep) return
 
         try {
-            // TODO: Implement UserDataStorage.deleteSleepData method
-            // For now, just remove from local state
+            // Delete from storage (both localStorage and Supabase)
+            await UserDataStorage.deleteSleepData(deletingSleep.id, deletingSleep.date)
+
+            // Remove from local state
             setSleepData(prev => prev.filter(s => s.id !== deletingSleep.id))
+
+            // Dispatch event to notify other parts of the app
+            window.dispatchEvent(new CustomEvent('sleepDataUpdated', {
+                detail: { date: deletingSleep.date, action: 'deleted' }
+            }))
 
             notifications.success('Sleep session deleted', {
                 description: 'Sleep data removed from history',
@@ -428,34 +453,32 @@ export default function WorkoutHistoryPage() {
                                     </Button>
                                 </div>
                             ) : (
-                                <ScrollArea className="h-[600px]">
-                                    <div className="space-y-4 pr-4">
-                                        {filteredActivities.map((activity) => (
-                                            <ActivityCard
-                                                key={activity.id}
-                                                activity={activity}
-                                                onEdit={() => setEditingActivity(activity)}
-                                                onDelete={() => setDeletingActivity(activity)}
-                                                formatDuration={formatDuration}
-                                                getWorkoutIcon={getWorkoutIcon}
-                                                getWorkoutColor={getWorkoutColor}
-                                            />
-                                        ))}
+                                <div className="space-y-4">
+                                    {filteredActivities.map((activity) => (
+                                        <ActivityCard
+                                            key={activity.id}
+                                            activity={activity}
+                                            onEdit={() => setEditingActivity(activity)}
+                                            onDelete={() => setDeletingActivity(activity)}
+                                            formatDuration={formatDuration}
+                                            getWorkoutIcon={getWorkoutIcon}
+                                            getWorkoutColor={getWorkoutColor}
+                                        />
+                                    ))}
 
-                                        {hasMore && !searchQuery && (
-                                            <div className="flex justify-center pt-4">
-                                                <Button
-                                                    onClick={loadMoreActivities}
-                                                    disabled={isLoading}
-                                                    variant="ghost"
-                                                    className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full"
-                                                >
-                                                    {isLoading ? 'Loading...' : 'Load More'}
-                                                </Button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </ScrollArea>
+                                    {hasMore && !searchQuery && (
+                                        <div className="flex justify-center pt-4">
+                                            <Button
+                                                onClick={loadMoreActivities}
+                                                disabled={isLoading}
+                                                variant="ghost"
+                                                className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full"
+                                            >
+                                                {isLoading ? 'Loading...' : 'Load More'}
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
                             )}
                         </TabsContent>
 
@@ -480,18 +503,16 @@ export default function WorkoutHistoryPage() {
                                     </Button>
                                 </div>
                             ) : (
-                                <ScrollArea className="h-[600px]">
-                                    <div className="space-y-4 pr-4">
-                                        {sleepData.map((sleep) => (
-                                            <SleepCard
-                                                key={sleep.id}
-                                                sleepData={sleep}
-                                                onEdit={() => setEditingSleep(sleep)}
-                                                onDelete={() => setDeletingSleep(sleep)}
-                                            />
-                                        ))}
-                                    </div>
-                                </ScrollArea>
+                                <div className="space-y-4">
+                                    {sleepData.map((sleep) => (
+                                        <SleepCard
+                                            key={sleep.id}
+                                            sleepData={sleep}
+                                            onEdit={() => setEditingSleep(sleep)}
+                                            onDelete={() => setDeletingSleep(sleep)}
+                                        />
+                                    ))}
+                                </div>
                             )}
                         </TabsContent>
                     </Tabs>

@@ -550,6 +550,39 @@ export class UserDataStorage {
         return updatedSleepData
     }
 
+    static async deleteSleepData(sleepId: string, date: string): Promise<void> {
+        if (!this.currentUser) {
+            throw new Error('User must be authenticated to delete sleep data')
+        }
+
+        console.log('🗑️ UserDataStorage.deleteSleepData - Deleting sleep data:', { sleepId, date })
+
+        // Remove from localStorage first
+        this.removeSleepDataFromLocalStorage(date)
+
+        // Try to delete from Supabase
+        if (this.supabase) {
+            try {
+                const { error } = await this.supabase
+                    .from('sleep_data')
+                    .delete()
+                    .eq('user_id', this.currentUser.id)
+                    .eq('date', date)
+
+                if (error) {
+                    console.error('Error deleting sleep data from Supabase:', error)
+                    throw error
+                }
+
+                console.log('✅ Sleep data deleted from Supabase successfully')
+            } catch (error) {
+                console.error('Error deleting sleep data from Supabase:', error)
+                // Re-throw to let the UI handle the error
+                throw error
+            }
+        }
+    }
+
     static async getSleepDataRange(startDate: string, endDate: string): Promise<SleepData[]> {
         if (!this.currentUser) return []
 
@@ -686,6 +719,17 @@ export class UserDataStorage {
             localStorage.setItem(`${this.SLEEP_DATA_KEY}-${sleepData.date}`, JSON.stringify(sleepData))
         } catch (error) {
             console.error('Error saving sleep data to localStorage:', error)
+        }
+    }
+
+    private static removeSleepDataFromLocalStorage(date: string): void {
+        if (typeof window === 'undefined') return
+
+        try {
+            localStorage.removeItem(`${this.SLEEP_DATA_KEY}-${date}`)
+            console.log('🗑️ Removed sleep data from localStorage for date:', date)
+        } catch (error) {
+            console.error('Error removing sleep data from localStorage:', error)
         }
     }
 
