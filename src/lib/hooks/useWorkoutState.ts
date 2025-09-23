@@ -189,7 +189,7 @@ export function useWorkoutState() {
     const removeActivityOptimistically = useCallback((activity: WorkoutActivity) => {
         setState(prev => {
             // Adjust goal progress only if activity is today
-            const isToday = new Date(activity.completedAt).toISOString().split('T')[0] === GoalProgressCalculator.getTodayDateString()
+            const isToday = GoalProgressCalculator.isWorkoutToday(activity.completedAt)
             let goalProgress = prev.goalProgress
 
             if (isToday && goalProgress) {
@@ -223,8 +223,8 @@ export function useWorkoutState() {
 
             if (index !== -1) {
                 const prevAct = prev.recentActivities[index]
-                const prevIsToday = new Date(prevAct.completedAt).toISOString().split('T')[0] === GoalProgressCalculator.getTodayDateString()
-                const newIsToday = new Date(updated.completedAt).toISOString().split('T')[0] === GoalProgressCalculator.getTodayDateString()
+                const prevIsToday = GoalProgressCalculator.isWorkoutToday(prevAct.completedAt)
+                const newIsToday = GoalProgressCalculator.isWorkoutToday(updated.completedAt)
 
                 if (goalProgress) {
                     let minutes = goalProgress.exercise.currentMinutes

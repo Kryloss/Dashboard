@@ -67,6 +67,9 @@ export default function WorkoutPage() {
                         setLiveWorkoutTime(workout.elapsedTime)
                         // Refresh for paused workouts too (they still count toward goals)
                         refreshWorkoutData()
+                    } else {
+                        // No ongoing workout – still refresh to reflect newly logged activities
+                        refreshWorkoutData()
                     }
                 } catch (error) {
                     console.error('Error loading ongoing workout:', error)
