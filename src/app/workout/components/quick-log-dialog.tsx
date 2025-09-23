@@ -9,8 +9,6 @@ import { Textarea } from "@/components/ui/textarea"
 
 import { Dumbbell, Footprints, Heart, Bike, FileText, Calendar, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { WorkoutStorage } from "@/lib/workout-storage"
-import { useWorkoutState } from "@/lib/hooks/useWorkoutState"
 import { useLogWorkout } from "@/lib/hooks/useLogWorkout"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
@@ -55,7 +53,6 @@ const workoutTypes = [
 export function QuickLogDialog({ open, onOpenChange, onActivityLogged }: QuickLogDialogProps) {
     const { user, loading } = useAuth()
     const notifications = useNotifications()
-    const { addWorkoutOptimistically } = useWorkoutState()
     const { logWorkout, isLogging } = useLogWorkout()
     const [selectedType, setSelectedType] = useState<string>('')
     const [workoutName, setWorkoutName] = useState('')
@@ -126,7 +123,7 @@ export function QuickLogDialog({ open, onOpenChange, onActivityLogged }: QuickLo
                 completedAt
             }
 
-            console.log('🚀 Quick log - Logging via hook:', activity)
+            // The useLogWorkout hook will handle optimistic updates and persistence
             await logWorkout({
                 workoutType: activity.workoutType,
                 name: activity.name,
@@ -135,7 +132,6 @@ export function QuickLogDialog({ open, onOpenChange, onActivityLogged }: QuickLo
                 notes: activity.notes,
                 completedAt
             })
-            console.log('✅ Quick log - Logged via hook successfully')
 
             // Success notification
             notifications.success('Activity logged', {
@@ -157,10 +153,7 @@ export function QuickLogDialog({ open, onOpenChange, onActivityLogged }: QuickLo
                 }, 2000)
             }
 
-            // Trigger simple event for notifications only
-            window.dispatchEvent(new CustomEvent('workoutCompleted', {
-                detail: { source: 'quick-log-dialog', workoutType: selectedType, duration: durationSeconds }
-            }))
+            // Event is dispatched by useLogWorkout hook automatically
 
             // Small delay to ensure events are processed before closing
             setTimeout(() => {

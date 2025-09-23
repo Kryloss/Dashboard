@@ -84,18 +84,10 @@ class UserCacheManager {
 export class GoalProgressCalculator {
     private static readonly CACHE_DURATION = 2 * 60 * 1000 // 2 minutes for more responsive updates
 
-    // Format Date to YYYY-MM-DD in the user's local timezone (not UTC)
-    private static formatDateLocal(date: Date): string {
-        const year = date.getFullYear()
-        const month = String(date.getMonth() + 1).padStart(2, '0')
-        const day = String(date.getDate()).padStart(2, '0')
-        return `${year}-${month}-${day}`
-    }
-
     // Get today's date in user's local timezone
     static getTodayDateString(): string {
         const today = new Date()
-        return this.formatDateLocal(today) // YYYY-MM-DD format in local time
+        return today.toISOString().split('T')[0] // YYYY-MM-DD format
     }
 
     // Get start and end of today in user's local timezone
@@ -109,9 +101,9 @@ export class GoalProgressCalculator {
 
     // Check if a workout was completed today
     static isWorkoutToday(completedAt: string): boolean {
-        const workoutDateLocal = this.formatDateLocal(new Date(completedAt))
+        const workoutDate = new Date(completedAt).toISOString().split('T')[0]
         const todayDate = this.getTodayDateString()
-        return workoutDateLocal === todayDate
+        return workoutDate === todayDate
     }
 
 
@@ -122,9 +114,10 @@ export class GoalProgressCalculator {
             const allActivities = await WorkoutStorage.getWorkoutActivities(50, 0)
             const todayDate = this.getTodayDateString()
             const todayWorkouts = allActivities.filter(activity => {
-                const workoutDateLocal = this.formatDateLocal(new Date(activity.completedAt))
-                return workoutDateLocal === todayDate
+                const workoutDate = new Date(activity.completedAt).toISOString().split('T')[0]
+                return workoutDate === todayDate
             })
+
 
 
             let totalMinutes = todayWorkouts.reduce((sum, workout) => {

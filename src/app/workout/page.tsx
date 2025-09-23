@@ -67,9 +67,6 @@ export default function WorkoutPage() {
                         setLiveWorkoutTime(workout.elapsedTime)
                         // Refresh for paused workouts too (they still count toward goals)
                         refreshWorkoutData()
-                    } else {
-                        // No ongoing workout – still refresh to reflect newly logged activities
-                        refreshWorkoutData()
                     }
                 } catch (error) {
                     console.error('Error loading ongoing workout:', error)
@@ -162,22 +159,9 @@ export default function WorkoutPage() {
                     duration: 3000
                 })
 
-                // Optimistic update for immediate feedback
-                if (customEvent.detail?.workoutType && customEvent.detail?.duration) {
-                    // Avoid double optimistic add if Quick Log already performed one
-                    const source: string | undefined = customEvent.detail?.source
-                    if (source !== 'quick-log' && source !== 'quick-log-dialog') {
-                        addWorkoutOptimistically({
-                            workoutType: customEvent.detail.workoutType,
-                            durationSeconds: customEvent.detail.duration,
-                            exercises: new Array(customEvent.detail.exercises || 0),
-                            completedAt: customEvent.detail?.completedAt
-                        })
-                    }
-                } else {
-                    // Fallback to regular refresh
-                    refreshWorkoutData()
-                }
+                // Always refresh workout data to ensure consistency
+                // The individual hooks handle their own optimistic updates
+                refreshWorkoutData(true)
             }
         }
 

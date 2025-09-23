@@ -90,10 +90,6 @@ export function useWorkoutState() {
             setState(nextState)
             saveCachedState(nextState)
 
-            console.log('✅ Workout state refreshed:', {
-                exerciseProgress: goalProgress?.exercise?.progress,
-                activitiesCount: recentActivities.length
-            })
 
         } catch (error) {
             console.error('❌ Failed to refresh workout state:', error)
@@ -101,7 +97,7 @@ export function useWorkoutState() {
         } finally {
             isRefreshingRef.current = false
         }
-    }, [user, supabase])
+    }, [user, supabase, saveCachedState])
 
     // Optimistic update for immediate feedback
     const addWorkoutOptimistically = useCallback((workoutData: {
@@ -189,7 +185,7 @@ export function useWorkoutState() {
     const removeActivityOptimistically = useCallback((activity: WorkoutActivity) => {
         setState(prev => {
             // Adjust goal progress only if activity is today
-            const isToday = GoalProgressCalculator.isWorkoutToday(activity.completedAt)
+            const isToday = new Date(activity.completedAt).toISOString().split('T')[0] === GoalProgressCalculator.getTodayDateString()
             let goalProgress = prev.goalProgress
 
             if (isToday && goalProgress) {
@@ -223,8 +219,8 @@ export function useWorkoutState() {
 
             if (index !== -1) {
                 const prevAct = prev.recentActivities[index]
-                const prevIsToday = GoalProgressCalculator.isWorkoutToday(prevAct.completedAt)
-                const newIsToday = GoalProgressCalculator.isWorkoutToday(updated.completedAt)
+                const prevIsToday = new Date(prevAct.completedAt).toISOString().split('T')[0] === GoalProgressCalculator.getTodayDateString()
+                const newIsToday = new Date(updated.completedAt).toISOString().split('T')[0] === GoalProgressCalculator.getTodayDateString()
 
                 if (goalProgress) {
                     let minutes = goalProgress.exercise.currentMinutes
@@ -255,17 +251,17 @@ export function useWorkoutState() {
         })
     }, [saveCachedState])
 
-    // Immediate refresh function for explicit calls
-    const forceRefresh = useCallback(() => {
-        refreshWorkoutData(true)
-    }, [refreshWorkoutData])
+    // Immediate refresh function for explicit calls (currently unused but available)
+    // const forceRefresh = useCallback(() => {
+    //     refreshWorkoutData(true)
+    // }, [refreshWorkoutData])
 
     // Initial load: seed from cache immediately, then refresh (not forced)
     useEffect(() => {
         if (user && supabase) {
             const cached = loadCachedState()
             if (cached) {
-                setState(prev => ({ ...cached, isLoading: true }))
+                setState(() => ({ ...cached, isLoading: true }))
             }
             // Prefer cached unless forced elsewhere
             // Small delay to yield to paint

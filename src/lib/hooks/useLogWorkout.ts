@@ -41,6 +41,7 @@ export function useLogWorkout() {
             const completedAt = input.completedAt || new Date().toISOString()
             const exercises = input.exercises || []
 
+
             // Optimistic UI
             addWorkoutOptimistically({
                 workoutType: input.workoutType,
