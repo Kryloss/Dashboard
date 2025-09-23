@@ -56,7 +56,9 @@
       "Bash(del \"C:\\Users\\mrRep\\Desktop\\Dashboard\\src\\lib\\session-fix.ts\")",
       "Bash(git clean:*)",
       "Bash(del \"C:\\Users\\mrRep\\Desktop\\Dashboard\\src\\components\\progress-photos-tab.tsx\")",
-      "mcp__shadcn__get_item_examples_from_registries"
+      "mcp__shadcn__get_item_examples_from_registries",
+      "Bash(node:*)",
+      "Bash(del \"C:\\Users\\mrRep\\Desktop\\Dashboard\\timezone-test.js\")"
     ],
     "deny": [],
     "ask": [],

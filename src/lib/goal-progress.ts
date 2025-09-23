@@ -86,8 +86,15 @@ export class GoalProgressCalculator {
 
     // Get today's date in user's local timezone
     static getTodayDateString(): string {
-        const today = new Date()
-        return today.toISOString().split('T')[0] // YYYY-MM-DD format
+        return this.getLocalDateString(new Date())
+    }
+
+    // Helper: Convert any date to YYYY-MM-DD in local timezone
+    static getLocalDateString(date: Date): string {
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        return `${year}-${month}-${day}` // YYYY-MM-DD format in local timezone
     }
 
     // Get start and end of today in user's local timezone
@@ -99,11 +106,12 @@ export class GoalProgressCalculator {
         return { startOfDay, endOfDay }
     }
 
-    // Check if a workout was completed today
+    // Check if a workout was completed today (in user's local timezone)
     static isWorkoutToday(completedAt: string): boolean {
-        const workoutDate = new Date(completedAt).toISOString().split('T')[0]
+        const workoutDate = new Date(completedAt)
+        const workoutDateString = this.getLocalDateString(workoutDate)
         const todayDate = this.getTodayDateString()
-        return workoutDate === todayDate
+        return workoutDateString === todayDate
     }
 
 
@@ -112,10 +120,8 @@ export class GoalProgressCalculator {
         try {
             // Get all activities and filter for today
             const allActivities = await WorkoutStorage.getWorkoutActivities(50, 0)
-            const todayDate = this.getTodayDateString()
             const todayWorkouts = allActivities.filter(activity => {
-                const workoutDate = new Date(activity.completedAt).toISOString().split('T')[0]
-                return workoutDate === todayDate
+                return this.isWorkoutToday(activity.completedAt)
             })
 
 

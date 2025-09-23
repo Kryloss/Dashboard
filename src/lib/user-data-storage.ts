@@ -2,6 +2,7 @@
 // Following the same pattern as WorkoutStorage for consistency
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { User } from '@supabase/supabase-js'
+import { GoalProgressCalculator } from './goal-progress'
 
 export interface UserProfile {
     id: string
@@ -431,7 +432,8 @@ export class UserDataStorage {
     // ============================================================================
 
     static async getSleepData(date?: string): Promise<SleepData | null> {
-        const targetDate = date || new Date().toISOString().split('T')[0]
+        // Use proper local timezone date if no date provided
+        const targetDate = date || GoalProgressCalculator.getTodayDateString()
         console.log('UserDataStorage.getSleepData - Date:', targetDate, 'User:', this.currentUser?.id)
 
         // Try Supabase first if user is authenticated
