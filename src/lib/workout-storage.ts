@@ -835,19 +835,28 @@ export class WorkoutStorage {
 
                 if (error) throw error
 
-                console.log('🗂️ Supabase activities debug:', {
-                    totalSupabaseActivities: data?.length || 0,
-                    activities: (data || []).map(a => ({
-                        id: a.id,
-                        name: a.name,
-                        type: a.workout_type,
-                        completedAt: a.completed_at,
-                        duration: Math.round(a.duration_seconds / 60),
-                        userId: a.user_id
-                    }))
+                // Map Supabase results
+                const supabaseActivities = (data || []).map(this.convertDbActivityToApp)
+
+                // Merge with localStorage activities to preserve fresh/optimistic items
+                const localActivities = this.getActivitiesFromLocalStorage()
+                const supabaseIds = new Set(supabaseActivities.map(a => a.id))
+                const merged = [
+                    ...supabaseActivities,
+                    ...localActivities.filter(a => !supabaseIds.has(a.id))
+                ]
+
+                // Sort by completedAt desc and apply pagination
+                merged.sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
+                const paginated = merged.slice(offset, offset + limit)
+
+                console.log('🗂️ Activities merged (supabase + local):', {
+                    supabaseCount: supabaseActivities.length,
+                    localOnlyAdded: merged.length - supabaseActivities.length,
+                    returnedCount: paginated.length
                 })
 
-                return (data || []).map(this.convertDbActivityToApp)
+                return paginated
             } catch (error) {
                 console.error('Error fetching workout activities from Supabase:', error)
             }
