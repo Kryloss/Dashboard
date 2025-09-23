@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Dumbbell, Footprints, Heart, Bike, FileText, Calendar, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { WorkoutStorage } from "@/lib/workout-storage"
+import { useWorkoutState } from "@/lib/hooks/useWorkoutState"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 
@@ -53,6 +54,7 @@ const workoutTypes = [
 export function QuickLogDialog({ open, onOpenChange, onActivityLogged }: QuickLogDialogProps) {
     const { user, loading } = useAuth()
     const notifications = useNotifications()
+    const { addWorkoutOptimistically } = useWorkoutState()
     const [selectedType, setSelectedType] = useState<string>('')
     const [workoutName, setWorkoutName] = useState('')
     const [hours, setHours] = useState('')
@@ -125,6 +127,12 @@ export function QuickLogDialog({ open, onOpenChange, onActivityLogged }: QuickLo
             }
 
             console.log('🚀 Quick log - Saving activity:', activity)
+            // Optimistic update so goal rings and summary update instantly
+            addWorkoutOptimistically({
+                workoutType: activity.workoutType,
+                durationSeconds: activity.durationSeconds,
+                exercises: []
+            })
             await WorkoutStorage.saveWorkoutActivity(activity)
             console.log('✅ Quick log - Activity saved successfully')
 

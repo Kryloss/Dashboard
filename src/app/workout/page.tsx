@@ -34,7 +34,7 @@ export default function WorkoutPage() {
     const [showSleepDialog, setShowSleepDialog] = useState(false)
 
     // Simplified workout state management
-    const { state: workoutState, refreshWorkoutData, addWorkoutOptimistically } = useWorkoutState()
+    const { state: workoutState, refreshWorkoutData, addWorkoutOptimistically, removeActivityOptimistically, updateActivityOptimistically } = useWorkoutState()
 
     // Track if we've shown the sign-in notification to avoid duplicates
     const signInNotificationShownRef = useRef(false)
@@ -550,10 +550,12 @@ export default function WorkoutPage() {
         if (!user) return
 
         try {
+            // Optimistic UI removal for snappy UX
+            removeActivityOptimistically(activity)
+            // Do server/local deletion
             await WorkoutStorage.deleteWorkoutActivity(activity.id)
-
-            // Refresh with new hook
-            refreshWorkoutData()
+            // Soft refresh soon after to reconcile
+            setTimeout(() => refreshWorkoutData(true), 300)
 
             notifications.success('Activity deleted', {
                 description: 'Workout removed from history',
@@ -574,16 +576,17 @@ export default function WorkoutPage() {
         setEditingActivity(null)
 
         try {
-            // Update to database
+            // Optimistic UI update first
+            updateActivityOptimistically(updatedActivity)
+            // Persist change
             await WorkoutStorage.updateWorkoutActivity(updatedActivity.id, {
                 name: updatedActivity.name,
                 exercises: updatedActivity.exercises,
                 durationSeconds: updatedActivity.durationSeconds,
                 notes: updatedActivity.notes
             })
-
-            // Refresh with new hook
-            refreshWorkoutData()
+            // Revalidate shortly after
+            setTimeout(() => refreshWorkoutData(true), 300)
 
             notifications.success('Activity updated', {
                 description: 'Changes saved successfully',
