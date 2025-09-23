@@ -940,7 +940,7 @@ export default function WorkoutPage() {
                                 </div>
 
                                 <div className="space-y-4">
-                                    {workoutState.isLoading && workoutState.recentActivities.length === 0 ? (
+                                    {workoutState.isLoading && workoutState.recentActivities.length === 0 && workoutState.lastRefresh === 0 ? (
                                         <>
                                             {Array.from({ length: 3 }, (_, index) => (
                                                 <div
