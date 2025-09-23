@@ -129,7 +129,6 @@ GRANT EXECUTE ON FUNCTION public.handle_new_user() TO authenticated;
 -- \d public.profiles
 
 -- 4. Check triggers:
--- SELECT * FROM information_schema.triggers WHERE event_object_table = 'users' AND trigger_schema = 'auth';
-
+-- SELECT s
 -- 5. Check if the function exists:
 -- SELECT * FROM information_schema.routines WHERE routine_name = 'handle_new_user';
