@@ -11,6 +11,7 @@ import { Dumbbell, Footprints, Heart, Bike, FileText, Calendar, Clock } from "lu
 import { cn } from "@/lib/utils"
 import { WorkoutStorage } from "@/lib/workout-storage"
 import { useWorkoutState } from "@/lib/hooks/useWorkoutState"
+import { useLogWorkout } from "@/lib/hooks/useLogWorkout"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 
@@ -55,6 +56,7 @@ export function QuickLogDialog({ open, onOpenChange, onActivityLogged }: QuickLo
     const { user, loading } = useAuth()
     const notifications = useNotifications()
     const { addWorkoutOptimistically } = useWorkoutState()
+    const { logWorkout, isLogging } = useLogWorkout()
     const [selectedType, setSelectedType] = useState<string>('')
     const [workoutName, setWorkoutName] = useState('')
     const [hours, setHours] = useState('')
@@ -107,7 +109,6 @@ export function QuickLogDialog({ open, onOpenChange, onActivityLogged }: QuickLo
             return // Don't proceed if still loading
         }
 
-        setIsLogging(true)
         try {
             // Calculate duration in seconds
             const totalMinutes = (parseInt(hours) || 0) * 60 + (parseInt(minutes) || 0)
@@ -126,16 +127,16 @@ export function QuickLogDialog({ open, onOpenChange, onActivityLogged }: QuickLo
                 completedAt
             }
 
-            console.log('🚀 Quick log - Saving activity:', activity)
-            // Optimistic update so goal rings and summary update instantly
-            addWorkoutOptimistically({
+            console.log('🚀 Quick log - Logging via hook:', activity)
+            await logWorkout({
                 workoutType: activity.workoutType,
-                durationSeconds: activity.durationSeconds,
+                name: activity.name,
                 exercises: [],
-                completedAt: completedAt
+                durationSeconds: activity.durationSeconds,
+                notes: activity.notes,
+                completedAt
             })
-            await WorkoutStorage.saveWorkoutActivity(activity)
-            console.log('✅ Quick log - Activity saved successfully')
+            console.log('✅ Quick log - Logged via hook successfully')
 
             // Success notification
             notifications.success('Activity logged', {
@@ -176,8 +177,6 @@ export function QuickLogDialog({ open, onOpenChange, onActivityLogged }: QuickLo
             notifications.error('Log failed', {
                 description: 'Could not save activity'
             })
-        } finally {
-            setIsLogging(false)
         }
     }
 

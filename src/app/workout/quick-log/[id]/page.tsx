@@ -11,6 +11,7 @@ import { WorkoutStorage, WorkoutExercise } from "@/lib/workout-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 import { WorkoutValidation, validateWeight, validateReps, sanitizeWeightInput, sanitizeRepsInput } from "@/lib/workout-validation"
+import { useLogWorkout } from "@/lib/hooks/useLogWorkout"
 import { useWorkoutState } from "@/lib/hooks/useWorkoutState"
 
 // Use WorkoutExercise from storage
@@ -28,6 +29,7 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
     const router = useRouter()
     const { user, loading, supabase } = useAuth()
     const notifications = useNotifications()
+    const { logWorkout, isLogging } = useLogWorkout()
     const { addWorkoutOptimistically } = useWorkoutState()
     const [exercises, setExercises] = useState<Exercise[]>([])
     const [showAddExercise, setShowAddExercise] = useState(false)
@@ -339,17 +341,16 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
                 completedAt
             })
 
-            // Save the workout activity
-            const savedWorkout = await WorkoutStorage.saveWorkoutActivity({
+            // Save via centralized hook (handles optimistic + persist + revalidate)
+            await logWorkout({
                 workoutType: workoutType as 'strength' | 'running' | 'yoga' | 'cycling',
                 name: workoutName || "Quick Log Workout",
-                exercises: exercises,
+                exercises,
                 durationSeconds,
-                completedAt,
-                userId: user?.id
+                completedAt
             })
 
-            console.log('✅ Workout saved successfully:', savedWorkout)
+            console.log('✅ Workout saved successfully')
 
             notifications.success('Workout logged', {
                 description: 'Saved to history',
@@ -358,17 +359,7 @@ export default function QuickLogPage({ params, searchParams }: QuickLogPageProps
 
             console.log('Quick log workout saved to history')
 
-            // Trigger refresh event for the main workout page
-            const eventDetail = {
-                source: 'quick-log',
-                workoutType,
-                duration: durationSeconds,
-                exercises: exercises.length
-            }
-            console.log('🚀 Dispatching workoutCompleted event:', eventDetail)
-            window.dispatchEvent(new CustomEvent('workoutCompleted', {
-                detail: eventDetail
-            }))
+            // No need to emit a second event here; the hook already notifies
 
             // Small delay to ensure events are processed before navigation
             setTimeout(() => {
