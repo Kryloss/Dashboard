@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Moon, Smile, Meh, Frown, Plus, X, Calendar } from "lucide-react"
+import { Moon, Smile, Meh, Frown, Plus, X } from "lucide-react"
 
 interface SleepDialogProps {
     open: boolean
@@ -381,36 +381,30 @@ export function SleepDialog({ open, onOpenChange, onSleepLogged }: SleepDialogPr
                                 <Label className="text-sm font-medium text-[#F3F4F6]">How did you sleep?</Label>
                                 <div className="flex items-center space-x-2">
                                     {/* Date Picker */}
-                                    <div className="relative">
+                                    <div className="flex flex-col items-center space-y-1">
                                         <Input
                                             type="date"
                                             value={selectedDate}
                                             onChange={(e) => setSelectedDate(e.target.value)}
-                                            className="sr-only"
-                                            id="sleep-date-picker"
+                                            className="bg-[#161B22] border-[#212227] text-[#F3F4F6] text-xs h-8 px-2 w-auto min-w-[110px] [&::-webkit-calendar-picker-indicator]:filter-none [&::-webkit-calendar-picker-indicator]:opacity-70 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                                            style={{
+                                                colorScheme: 'dark'
+                                            }}
                                         />
-                                        <Button
-                                            onClick={() => document.getElementById('sleep-date-picker')?.click()}
-                                            size="sm"
-                                            variant="outline"
-                                            className="h-8 px-3 border-[#212227] text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] flex items-center space-x-1"
-                                        >
-                                            <Calendar className="w-3 h-3" />
-                                            <span className="text-xs">
-                                                {(() => {
-                                                    const date = new Date(selectedDate)
-                                                    const today = new Date()
-                                                    const isToday = selectedDate === GoalProgressCalculator.getTodayDateString()
-                                                    const yesterday = new Date(today)
-                                                    yesterday.setDate(today.getDate() - 1)
-                                                    const isYesterday = selectedDate === GoalProgressCalculator.getLocalDateString(yesterday)
+                                        <span className="text-xs text-[#A1A1AA]">
+                                            {(() => {
+                                                const today = new Date()
+                                                const isToday = selectedDate === GoalProgressCalculator.getTodayDateString()
+                                                const yesterday = new Date(today)
+                                                yesterday.setDate(today.getDate() - 1)
+                                                const isYesterday = selectedDate === GoalProgressCalculator.getLocalDateString(yesterday)
 
-                                                    if (isToday) return 'Today'
-                                                    if (isYesterday) return 'Yesterday'
-                                                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                                                })()}
-                                            </span>
-                                        </Button>
+                                                if (isToday) return 'Today'
+                                                if (isYesterday) return 'Yesterday'
+                                                const date = new Date(selectedDate)
+                                                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                                            })()}
+                                        </span>
                                     </div>
                                     {/* Add Nap Button */}
                                     <Button
