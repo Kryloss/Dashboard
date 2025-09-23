@@ -75,23 +75,47 @@ export function useWorkoutState() {
                 GoalProgressCalculator.invalidateCache(user.id)
             }
 
-            const [goalProgress, recentActivities] = await Promise.all([
+            const [fetchedGoalProgress, recentActivities] = await Promise.all([
                 GoalProgressCalculator.calculateDailyProgress(force, true, user.id),
                 WorkoutStorage.getRecentActivities(5)
             ])
 
-            const nextState: WorkoutState = {
-                goalProgress,
-                recentActivities,
-                isLoading: false,
-                lastRefresh: Date.now()
-            }
+            setState(prev => {
+                // Merge goal progress to avoid dropping optimistic values
+                const prevGoal = prev.goalProgress
+                const gp = fetchedGoalProgress
 
-            setState(nextState)
-            saveCachedState(nextState)
+                let merged = gp || null
+                if (prevGoal && gp) {
+                    const exerciseMinutes = Math.max(prevGoal.exercise.currentMinutes, gp.exercise.currentMinutes)
+                    const exerciseProgress = Math.min(
+                        exerciseMinutes / Math.max(gp.exercise.targetMinutes, 1),
+                        1
+                    )
+                    merged = {
+                        ...gp,
+                        exercise: {
+                            ...gp.exercise,
+                            currentMinutes: exerciseMinutes,
+                            progress: exerciseProgress,
+                            sessionCount: Math.max(prevGoal.exercise.sessionCount, gp.exercise.sessionCount)
+                        }
+                    }
+                }
+
+                const next: WorkoutState = {
+                    goalProgress: merged,
+                    recentActivities,
+                    isLoading: false,
+                    lastRefresh: Date.now()
+                }
+
+                saveCachedState(next)
+                return next
+            })
 
             console.log('✅ Workout state refreshed:', {
-                exerciseProgress: goalProgress?.exercise?.progress,
+                exerciseProgress: fetchedGoalProgress?.exercise?.progress,
                 activitiesCount: recentActivities.length
             })
 
