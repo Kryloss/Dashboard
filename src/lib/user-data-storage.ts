@@ -583,6 +583,50 @@ export class UserDataStorage {
         }
     }
 
+    static async updateSleepData(sleepData: SleepData): Promise<SleepData> {
+        if (!this.currentUser) {
+            throw new Error('User must be authenticated to update sleep data')
+        }
+
+        console.log('🔄 UserDataStorage.updateSleepData - Updating sleep data:', sleepData.date)
+
+        // Update localStorage first for immediate feedback
+        this.saveSleepDataToLocalStorage(sleepData)
+
+        // Try to update Supabase
+        if (this.supabase) {
+            try {
+                const dbSleepData = this.convertAppSleepToDb(sleepData)
+
+                const { error } = await this.supabase
+                    .from('sleep_data')
+                    .update({
+                        ...dbSleepData,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('user_id', this.currentUser.id)
+                    .eq('date', sleepData.date)
+                    .not('user_id', 'is', null)
+
+                if (error) throw error
+
+                console.log('✅ Sleep data updated in Supabase successfully')
+            } catch (error) {
+                console.error('Error updating sleep data in Supabase:', error)
+                // Add to sync queue for retry later
+                this.addToSyncQueue({
+                    action: 'upsert',
+                    table: 'sleep_data',
+                    data: sleepData,
+                    timestamp: Date.now()
+                })
+                throw error
+            }
+        }
+
+        return sleepData
+    }
+
     static async getSleepDataRange(startDate: string, endDate: string): Promise<SleepData[]> {
         if (!this.currentUser) return []
 

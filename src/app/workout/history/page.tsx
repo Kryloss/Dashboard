@@ -258,8 +258,8 @@ export default function WorkoutHistoryPage() {
             })
         } catch (error) {
             console.error('Error deleting sleep data:', error)
-            notifications.error('Delete failed', {
-                description: 'Failed to delete sleep session. Please try again.',
+            notifications.error('Failed to delete sleep session', {
+                description: 'Please try again.',
                 duration: 4000
             })
         } finally {
@@ -279,9 +279,13 @@ export default function WorkoutHistoryPage() {
         ))
 
         try {
-            // TODO: Implement UserDataStorage.updateSleepData method
-            // For now, just use saveSleepData which might work for updates
-            // await UserDataStorage.saveSleepData(updatedSleepData)
+            // Use the proper updateSleepData method
+            await UserDataStorage.updateSleepData(optimisticUpdate)
+
+            // Dispatch event to notify other parts of the app
+            window.dispatchEvent(new CustomEvent('sleepDataUpdated', {
+                detail: { date: updatedSleepData.date, action: 'updated' }
+            }))
 
             notifications.success('Sleep session updated', {
                 description: 'Changes saved successfully',
@@ -289,6 +293,12 @@ export default function WorkoutHistoryPage() {
             })
         } catch (error) {
             console.error('Error updating sleep data:', error)
+
+            // Revert optimistic update on error
+            setSleepData(prev => prev.map(s =>
+                s.id === updatedSleepData.id ? updatedSleepData : s
+            ))
+
             notifications.error('Update failed', {
                 description: 'Failed to update sleep session. Please try again.',
                 duration: 4000
