@@ -240,17 +240,14 @@ export default function WorkoutHistoryPage() {
     const handleDeleteSleep = async () => {
         if (!deletingSleep) return
 
+        const sleepToDelete = deletingSleep
+
         try {
             // Delete from storage (both localStorage and Supabase)
-            await UserDataStorage.deleteSleepData(deletingSleep.id, deletingSleep.date)
+            await UserDataStorage.deleteSleepData(sleepToDelete.id, sleepToDelete.date)
 
-            // Remove from local state
-            setSleepData(prev => prev.filter(s => s.id !== deletingSleep.id))
-
-            // Dispatch event to notify other parts of the app
-            window.dispatchEvent(new CustomEvent('sleepDataUpdated', {
-                detail: { date: deletingSleep.date, action: 'deleted' }
-            }))
+            // Only remove from local state if deletion was successful
+            setSleepData(prev => prev.filter(s => s.id !== sleepToDelete.id))
 
             notifications.success('Sleep session deleted', {
                 description: 'Sleep data removed from history',
