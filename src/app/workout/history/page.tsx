@@ -37,7 +37,6 @@ export default function WorkoutHistoryPage() {
 
     // Sleep data state
     const [sleepData, setSleepData] = useState<SleepData[]>([])
-    const [isSleepLoading, setIsSleepLoading] = useState(true)
     const [activeTab, setActiveTab] = useState("workouts")
 
     // Removed loadActivities callback to prevent infinite loop
@@ -67,57 +66,52 @@ export default function WorkoutHistoryPage() {
             if (user && supabase) {
                 setOffset(0)
                 setActivities([]) // Clear activities immediately
+                setSleepData([]) // Clear sleep data immediately
                 setIsLoading(true)
 
-                // Load activities for the current filter
-                const loadData = async () => {
+                // Load both workouts and sleep data concurrently
+                const loadAllData = async () => {
                     try {
+                        // Initialize both storage modules
                         WorkoutStorage.initialize(user, supabase)
-                        const type = filterType === "all" ? undefined : filterType as 'strength' | 'running' | 'yoga' | 'cycling'
-                        const newActivities = await WorkoutStorage.getWorkoutActivities(limit, 0, type)
-
-                        setActivities(newActivities)
-                        setOffset(limit)
-                        setHasMore(newActivities.length === limit)
-                    } catch (error) {
-                        console.error('Error loading workout activities:', error)
-                        notifications.error('Load failed', {
-                            description: 'Could not load workout history'
-                        })
-                    } finally {
-                        setIsLoading(false)
-                    }
-                }
-
-                loadData()
-
-                // Load sleep data for the last 30 days
-                const loadSleepData = async () => {
-                    try {
-                        setIsSleepLoading(true)
                         UserDataStorage.initialize(user, supabase)
 
-                        // Use proper local timezone dates
+                        // Prepare data loading promises
+                        const type = filterType === "all" ? undefined : filterType as 'strength' | 'running' | 'yoga' | 'cycling'
+                        const workoutPromise = WorkoutStorage.getWorkoutActivities(limit, 0, type)
+
+                        // Use proper local timezone dates for sleep data
                         const endDate = GoalProgressCalculator.getTodayDateString()
                         const startDate = (() => {
                             const date = new Date()
                             date.setDate(date.getDate() - 30)
                             return GoalProgressCalculator.getLocalDateString(date)
                         })()
+                        const sleepPromise = UserDataStorage.getSleepDataRange(startDate, endDate)
 
-                        const sleepHistory = await UserDataStorage.getSleepDataRange(startDate, endDate)
+                        // Load both concurrently
+                        const [newActivities, sleepHistory] = await Promise.all([
+                            workoutPromise,
+                            sleepPromise
+                        ])
+
+                        // Update state with both results
+                        setActivities(newActivities)
+                        setOffset(limit)
+                        setHasMore(newActivities.length === limit)
                         setSleepData(sleepHistory)
+
                     } catch (error) {
-                        console.error('Error loading sleep data:', error)
+                        console.error('Error loading data:', error)
                         notifications.error('Load failed', {
-                            description: 'Could not load sleep history'
+                            description: 'Could not load history data'
                         })
                     } finally {
-                        setIsSleepLoading(false)
+                        setIsLoading(false)
                     }
                 }
 
-                loadSleepData()
+                loadAllData()
 
                 // Listen for sleep data updates from other parts of the app, but avoid full refreshes
                 type SleepDataEventDetail = {
@@ -556,7 +550,7 @@ export default function WorkoutHistoryPage() {
 
                         <TabsContent value="sleep" className="mt-6">
                             {/* Sleep Data List */}
-                            {isSleepLoading ? (
+                            {isLoading ? (
                                 <div className="flex items-center justify-center py-12">
                                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2BD2FF]"></div>
                                 </div>
