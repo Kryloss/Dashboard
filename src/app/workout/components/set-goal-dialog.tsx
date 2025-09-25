@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 import { UserDataStorage } from "@/lib/user-data-storage"
+import { NutritionStorage } from "@/lib/nutrition-storage"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -40,6 +41,17 @@ interface GoalsFormData {
     dietType: string
 }
 
+interface NutritionFormData {
+    dailyCalories: string
+    carbsGrams: string
+    proteinGrams: string
+    fatsGrams: string
+    fiberGrams: string
+    waterMl: string
+    sodiumMg: string
+    macroPreference: 'balanced' | 'highProtein' | 'lowCarb' | 'custom'
+}
+
 export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
     const { user, loading, supabase } = useAuth()
     const notifications = useNotifications()
@@ -67,6 +79,17 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
         dietType: "maintenance"
     })
 
+    const [nutrition, setNutrition] = useState<NutritionFormData>({
+        dailyCalories: "2000",
+        carbsGrams: "250",
+        proteinGrams: "150",
+        fatsGrams: "67",
+        fiberGrams: "25",
+        waterMl: "2000",
+        sodiumMg: "2300",
+        macroPreference: "balanced"
+    })
+
     // Detect if user is on mobile device
     const [isMobile, setIsMobile] = useState(false)
 
@@ -89,8 +112,9 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
         try {
             setIsLoading(true)
 
-            // Initialize UserDataStorage with current user and supabase client
+            // Initialize storage systems
             UserDataStorage.initialize(user, supabase)
+            NutritionStorage.initialize(user, supabase)
 
             // Load user profile
             const profileData = await UserDataStorage.getUserProfile()
@@ -117,6 +141,27 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                     startingWeight: goalsData.startingWeight?.toString() || "",
                     goalWeight: goalsData.goalWeight?.toString() || "",
                     dietType: goalsData.dietType
+                })
+
+                // Also sync calories to nutrition form
+                setNutrition(prev => ({
+                    ...prev,
+                    dailyCalories: goalsData.dailyCalories.toString()
+                }))
+            }
+
+            // Load nutrition goals
+            const nutritionGoals = await NutritionStorage.getNutritionGoals()
+            if (nutritionGoals) {
+                setNutrition({
+                    dailyCalories: nutritionGoals.dailyCalories.toString(),
+                    carbsGrams: nutritionGoals.macroTargets.carbs.toString(),
+                    proteinGrams: nutritionGoals.macroTargets.protein.toString(),
+                    fatsGrams: nutritionGoals.macroTargets.fats.toString(),
+                    fiberGrams: nutritionGoals.fiberTarget?.toString() || "25",
+                    waterMl: nutritionGoals.waterTarget?.toString() || "2000",
+                    sodiumMg: nutritionGoals.sodiumLimit?.toString() || "2300",
+                    macroPreference: nutritionGoals.macroPercentages ? 'custom' : 'balanced'
                 })
             }
         } catch (error) {
@@ -276,8 +321,9 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
         try {
             setIsLoading(true)
 
-            // Initialize UserDataStorage if not already done
+            // Initialize UserDataStorage and NutritionStorage if not already done
             UserDataStorage.initialize(user, supabase)
+            NutritionStorage.initialize(user, supabase)
 
             const goalsData = {
                 dailyExerciseMinutes: goals.dailyExerciseMinutes ? parseInt(goals.dailyExerciseMinutes) : 30,
@@ -291,10 +337,32 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                 dietType: goals.dietType
             }
 
-            await UserDataStorage.saveUserGoals(goalsData)
+            // Save nutrition goals
+            const nutritionGoalsData = {
+                dailyCalories: parseInt(nutrition.dailyCalories) || 2000,
+                macroTargets: {
+                    carbs: parseInt(nutrition.carbsGrams) || 250,
+                    protein: parseInt(nutrition.proteinGrams) || 150,
+                    fats: parseInt(nutrition.fatsGrams) || 67
+                },
+                fiberTarget: parseInt(nutrition.fiberGrams) || 25,
+                waterTarget: parseInt(nutrition.waterMl) || 2000,
+                sodiumLimit: parseInt(nutrition.sodiumMg) || 2300,
+                macroPercentages: nutrition.macroPreference === 'custom' ? {
+                    carbs: Math.round((parseInt(nutrition.carbsGrams) * 4 / parseInt(nutrition.dailyCalories)) * 100),
+                    protein: Math.round((parseInt(nutrition.proteinGrams) * 4 / parseInt(nutrition.dailyCalories)) * 100),
+                    fats: Math.round((parseInt(nutrition.fatsGrams) * 9 / parseInt(nutrition.dailyCalories)) * 100)
+                } : undefined
+            }
+
+            // Save both workout goals and nutrition goals
+            await Promise.all([
+                UserDataStorage.saveUserGoals(goalsData),
+                NutritionStorage.saveNutritionGoals(nutritionGoalsData)
+            ])
 
             notifications.success('Goals saved', {
-                description: 'Your goals have been updated successfully'
+                description: 'Your workout and nutrition goals have been updated successfully'
             })
         } catch (error: unknown) {
             console.error('Error saving goals:', error)
@@ -546,7 +614,12 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                         id="dailyCalories"
                                                         type="text"
                                                         value={goals.dailyCalories}
-                                                        onChange={(e) => setGoals({ ...goals, dailyCalories: handleNumericInput(e.target.value, 5, false) })}
+                                                        onChange={(e) => {
+                                                            const value = handleNumericInput(e.target.value, 5, false)
+                                                            setGoals({ ...goals, dailyCalories: value })
+                                                            // Sync with detailed nutrition form
+                                                            setNutrition({ ...nutrition, dailyCalories: value })
+                                                        }}
                                                         className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#9BE15D] focus:border-[#9BE15D] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                         placeholder="2000"
                                                         inputMode="numeric"
@@ -566,6 +639,143 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                                         ]}
                                                         className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-xs focus:ring-1 focus:ring-[#9BE15D] focus:border-[#9BE15D]"
                                                     />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Detailed Nutrition Goals Section */}
+                                        <div className="space-y-3 border-t border-[#212227] pt-4">
+                                            <div className="flex items-center space-x-2">
+                                                <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-[#9BE15D] to-[#00E676] flex items-center justify-center">
+                                                    <Flame className="w-3.5 h-3.5 text-white" />
+                                                </div>
+                                                <span className="text-sm font-medium text-[#F3F4F6]">Detailed Nutrition</span>
+                                            </div>
+
+                                            <div className="space-y-3">
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="macroPreference" className="text-xs text-[#A1A1AA] font-medium uppercase tracking-wide">Macro Preference</Label>
+                                                    <MobileSelect
+                                                        value={nutrition.macroPreference}
+                                                        onValueChange={(value) => {
+                                                            const macroValue = value as 'balanced' | 'highProtein' | 'lowCarb' | 'custom'
+                                                            setNutrition({ ...nutrition, macroPreference: macroValue })
+                                                            // Auto-calculate macros for preset options
+                                                            if (macroValue === 'balanced') {
+                                                                const calories = parseInt(nutrition.dailyCalories) || 2000
+                                                                setNutrition(prev => ({
+                                                                    ...prev,
+                                                                    macroPreference: macroValue,
+                                                                    carbsGrams: Math.round(calories * 0.45 / 4).toString(),
+                                                                    proteinGrams: Math.round(calories * 0.25 / 4).toString(),
+                                                                    fatsGrams: Math.round(calories * 0.30 / 9).toString()
+                                                                }))
+                                                            } else if (macroValue === 'highProtein') {
+                                                                const calories = parseInt(nutrition.dailyCalories) || 2000
+                                                                setNutrition(prev => ({
+                                                                    ...prev,
+                                                                    macroPreference: macroValue,
+                                                                    carbsGrams: Math.round(calories * 0.35 / 4).toString(),
+                                                                    proteinGrams: Math.round(calories * 0.35 / 4).toString(),
+                                                                    fatsGrams: Math.round(calories * 0.30 / 9).toString()
+                                                                }))
+                                                            } else if (macroValue === 'lowCarb') {
+                                                                const calories = parseInt(nutrition.dailyCalories) || 2000
+                                                                setNutrition(prev => ({
+                                                                    ...prev,
+                                                                    macroPreference: macroValue,
+                                                                    carbsGrams: Math.round(calories * 0.20 / 4).toString(),
+                                                                    proteinGrams: Math.round(calories * 0.30 / 4).toString(),
+                                                                    fatsGrams: Math.round(calories * 0.50 / 9).toString()
+                                                                }))
+                                                            }
+                                                        }}
+                                                        options={[
+                                                            { value: "balanced", label: "Balanced (45/25/30)" },
+                                                            { value: "highProtein", label: "High Protein (35/35/30)" },
+                                                            { value: "lowCarb", label: "Low Carb (20/30/50)" },
+                                                            { value: "custom", label: "Custom" }
+                                                        ]}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-xs focus:ring-1 focus:ring-[#9BE15D] focus:border-[#9BE15D]"
+                                                    />
+                                                </div>
+
+                                                <div className="grid grid-cols-3 gap-3">
+                                                    <div className="space-y-2">
+                                                        <Label htmlFor="carbsGrams" className="text-xs text-[#FFA500] font-medium uppercase tracking-wide">Carbs (g)</Label>
+                                                        <Input
+                                                            id="carbsGrams"
+                                                            type="text"
+                                                            value={nutrition.carbsGrams}
+                                                            onChange={(e) => setNutrition({ ...nutrition, carbsGrams: handleNumericInput(e.target.value, 4, false) })}
+                                                            className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#FFA500] focus:border-[#FFA500] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                            placeholder="250"
+                                                            inputMode="numeric"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label htmlFor="proteinGrams" className="text-xs text-[#FF6B6B] font-medium uppercase tracking-wide">Protein (g)</Label>
+                                                        <Input
+                                                            id="proteinGrams"
+                                                            type="text"
+                                                            value={nutrition.proteinGrams}
+                                                            onChange={(e) => setNutrition({ ...nutrition, proteinGrams: handleNumericInput(e.target.value, 4, false) })}
+                                                            className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#FF6B6B] focus:border-[#FF6B6B] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                            placeholder="150"
+                                                            inputMode="numeric"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label htmlFor="fatsGrams" className="text-xs text-[#4ECDC4] font-medium uppercase tracking-wide">Fats (g)</Label>
+                                                        <Input
+                                                            id="fatsGrams"
+                                                            type="text"
+                                                            value={nutrition.fatsGrams}
+                                                            onChange={(e) => setNutrition({ ...nutrition, fatsGrams: handleNumericInput(e.target.value, 4, false) })}
+                                                            className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#4ECDC4] focus:border-[#4ECDC4] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                            placeholder="67"
+                                                            inputMode="numeric"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-3 gap-3">
+                                                    <div className="space-y-2">
+                                                        <Label htmlFor="fiberGrams" className="text-xs text-[#A1A1AA] font-medium uppercase tracking-wide">Fiber (g)</Label>
+                                                        <Input
+                                                            id="fiberGrams"
+                                                            type="text"
+                                                            value={nutrition.fiberGrams}
+                                                            onChange={(e) => setNutrition({ ...nutrition, fiberGrams: handleNumericInput(e.target.value, 3, false) })}
+                                                            className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                            placeholder="25"
+                                                            inputMode="numeric"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label htmlFor="waterMl" className="text-xs text-[#A1A1AA] font-medium uppercase tracking-wide">Water (ml)</Label>
+                                                        <Input
+                                                            id="waterMl"
+                                                            type="text"
+                                                            value={nutrition.waterMl}
+                                                            onChange={(e) => setNutrition({ ...nutrition, waterMl: handleNumericInput(e.target.value, 5, false) })}
+                                                            className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                            placeholder="2000"
+                                                            inputMode="numeric"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label htmlFor="sodiumMg" className="text-xs text-[#A1A1AA] font-medium uppercase tracking-wide">Sodium (mg)</Label>
+                                                        <Input
+                                                            id="sodiumMg"
+                                                            type="text"
+                                                            value={nutrition.sodiumMg}
+                                                            onChange={(e) => setNutrition({ ...nutrition, sodiumMg: handleNumericInput(e.target.value, 5, false) })}
+                                                            className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] h-9 text-sm font-medium text-center focus:ring-1 focus:ring-[#2A8CEA] focus:border-[#2A8CEA] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                            placeholder="2300"
+                                                            inputMode="numeric"
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
