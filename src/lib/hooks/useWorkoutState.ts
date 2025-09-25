@@ -122,6 +122,9 @@ export function useWorkoutState() {
                     progress: 0,
                     currentCalories: 0,
                     targetCalories: 2000,
+                    currentMacros: { carbs: 0, protein: 0, fats: 0 },
+                    targetMacros: { carbs: 250, protein: 150, fats: 67 },
+                    mealsConsumed: 0,
                     placeholder: true
                 },
                 recovery: {

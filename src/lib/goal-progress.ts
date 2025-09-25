@@ -1,6 +1,7 @@
 // Goal progress calculation logic for daily fitness rings
 import { WorkoutStorage } from './workout-storage'
 import { UserDataStorage, UserGoals } from './user-data-storage'
+import { NutritionStorage } from './nutrition-storage'
 
 export interface DailyWorkoutSummary {
     date: string // YYYY-MM-DD format
@@ -31,6 +32,17 @@ export interface DailyGoalProgress {
         progress: number // 0-1
         currentCalories: number
         targetCalories: number
+        currentMacros: {
+            carbs: number
+            protein: number
+            fats: number
+        }
+        targetMacros: {
+            carbs: number
+            protein: number
+            fats: number
+        }
+        mealsConsumed: number
         placeholder: boolean
     }
     recovery: {
@@ -185,24 +197,77 @@ export class GoalProgressCalculator {
         }
     }
 
-    // Calculate nutrition progress (placeholder for now)
-    static calculateNutritionProgress(userGoals: UserGoals): DailyGoalProgress['nutrition'] {
-        // Placeholder logic - can be enhanced later with actual calorie tracking
+    // Calculate nutrition progress using actual nutrition data
+    static async calculateNutritionProgress(userGoals: UserGoals): Promise<DailyGoalProgress['nutrition']> {
         const targetCalories = userGoals.dailyCalories
 
-        // For now, return a placeholder progress based on time of day
-        // This gives users a visual indication that the ring works
-        const now = new Date()
-        const hoursIntoDay = now.getHours() + (now.getMinutes() / 60)
-        const timeBasedProgress = Math.min(hoursIntoDay / 24, 1.0) * 0.6 // Max 60% from time
+        try {
+            // Get today's nutrition entry
+            const todayDate = this.getTodayDateString()
+            const nutritionEntry = await NutritionStorage.getNutritionEntry(todayDate)
 
-        const currentCalories = Math.round(targetCalories * timeBasedProgress)
+            // Get nutrition goals (may be more detailed than UserGoals)
+            const nutritionGoals = await NutritionStorage.getNutritionGoals()
 
-        return {
-            progress: timeBasedProgress,
-            currentCalories,
-            targetCalories,
-            placeholder: true
+            if (nutritionEntry && nutritionEntry.totalCalories > 0) {
+                // We have actual nutrition data for today
+                const currentCalories = nutritionEntry.totalCalories
+                const progress = Math.min(currentCalories / targetCalories, 1.0)
+
+                // Use detailed nutrition goals if available, otherwise derive from user goals
+                const targetMacros = nutritionGoals ? nutritionGoals.macroTargets : {
+                    // Default macro split: 50% carbs, 25% protein, 25% fats
+                    carbs: Math.round((targetCalories * 0.50) / 4), // 4 calories per gram of carbs
+                    protein: Math.round((targetCalories * 0.25) / 4), // 4 calories per gram of protein
+                    fats: Math.round((targetCalories * 0.25) / 9) // 9 calories per gram of fats
+                }
+
+                return {
+                    progress,
+                    currentCalories,
+                    targetCalories,
+                    currentMacros: nutritionEntry.totalMacros,
+                    targetMacros,
+                    mealsConsumed: nutritionEntry.meals.length,
+                    placeholder: false
+                }
+            }
+
+            // No nutrition data for today - start at 0
+            const targetMacros = nutritionGoals ? nutritionGoals.macroTargets : {
+                carbs: Math.round((targetCalories * 0.50) / 4),
+                protein: Math.round((targetCalories * 0.25) / 4),
+                fats: Math.round((targetCalories * 0.25) / 9)
+            }
+
+            return {
+                progress: 0,
+                currentCalories: 0,
+                targetCalories,
+                currentMacros: { carbs: 0, protein: 0, fats: 0 },
+                targetMacros,
+                mealsConsumed: 0,
+                placeholder: false
+            }
+        } catch (error) {
+            console.error('Error calculating nutrition progress:', error)
+
+            // Return fallback with default macro split on error
+            const targetMacros = {
+                carbs: Math.round((targetCalories * 0.50) / 4),
+                protein: Math.round((targetCalories * 0.25) / 4),
+                fats: Math.round((targetCalories * 0.25) / 9)
+            }
+
+            return {
+                progress: 0,
+                currentCalories: 0,
+                targetCalories,
+                currentMacros: { carbs: 0, protein: 0, fats: 0 },
+                targetMacros,
+                mealsConsumed: 0,
+                placeholder: true // Mark as placeholder when error occurs
+            }
         }
     }
 
@@ -291,7 +356,7 @@ export class GoalProgressCalculator {
             // Calculate each ring's progress
             const exercise = await this.calculateExerciseProgress(userGoals, includeOngoingWorkout)
 
-            const nutrition = this.calculateNutritionProgress(userGoals)
+            const nutrition = await this.calculateNutritionProgress(userGoals)
             const recovery = await this.calculateRecoveryProgress(userGoals)
 
             const result = {
