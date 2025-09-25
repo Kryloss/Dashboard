@@ -220,18 +220,29 @@ export default function WorkoutHistoryPage() {
     const handleDeleteActivity = async () => {
         if (!deletingActivity) return
 
+        const activityToDelete = deletingActivity
+
+        // Optimistic update - remove from UI immediately
+        setActivities(prev => prev.filter(a => a.id !== activityToDelete.id))
+
+        // Close dialog immediately for better UX
+        setDeletingActivity(null)
+
         try {
-            await WorkoutStorage.deleteWorkoutActivity(deletingActivity.id)
-            setActivities(prev => prev.filter(a => a.id !== deletingActivity.id))
+            await WorkoutStorage.deleteWorkoutActivity(activityToDelete.id)
 
             notifications.success('Activity deleted', {
                 description: 'Workout removed from history',
                 duration: 3000
             })
 
-            setDeletingActivity(null)
+            console.log('Activity deleted successfully')
         } catch (error) {
             console.error('Error deleting activity:', error)
+
+            // Revert optimistic update on error
+            setActivities(prev => [...prev, activityToDelete].sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()))
+
             notifications.error('Delete failed', {
                 description: 'Could not remove activity'
             })
