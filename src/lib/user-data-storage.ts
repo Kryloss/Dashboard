@@ -557,10 +557,7 @@ export class UserDataStorage {
 
         console.log('🗑️ UserDataStorage.deleteSleepData - Deleting sleep data:', { sleepId, date })
 
-        // Remove from localStorage first
-        this.removeSleepDataFromLocalStorage(date)
-
-        // Try to delete from Supabase
+        // Try to delete from Supabase first
         if (this.supabase) {
             try {
                 const { error } = await this.supabase
@@ -580,6 +577,16 @@ export class UserDataStorage {
                 // Re-throw to let the UI handle the error
                 throw error
             }
+        }
+
+        // Only remove from localStorage after Supabase deletion succeeds
+        this.removeSleepDataFromLocalStorage(date)
+
+        // Dispatch event to notify other parts of the app
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('sleepDataUpdated', {
+                detail: { date, action: 'deleted' }
+            }))
         }
     }
 

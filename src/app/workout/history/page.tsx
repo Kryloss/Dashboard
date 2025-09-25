@@ -242,25 +242,32 @@ export default function WorkoutHistoryPage() {
 
         const sleepToDelete = deletingSleep
 
+        // Optimistic update - remove from UI immediately
+        setSleepData(prev => prev.filter(s => s.id !== sleepToDelete.id))
+
+        // Close dialog immediately for better UX
+        setDeletingSleep(null)
+
         try {
             // Delete from storage (both localStorage and Supabase)
             await UserDataStorage.deleteSleepData(sleepToDelete.id, sleepToDelete.date)
-
-            // Only remove from local state if deletion was successful
-            setSleepData(prev => prev.filter(s => s.id !== sleepToDelete.id))
 
             notifications.success('Sleep session deleted', {
                 description: 'Sleep data removed from history',
                 duration: 3000
             })
+
+            console.log('Sleep data deleted successfully')
         } catch (error) {
             console.error('Error deleting sleep data:', error)
+
+            // Revert optimistic update on error
+            setSleepData(prev => [...prev, sleepToDelete].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()))
+
             notifications.error('Failed to delete sleep session', {
                 description: 'Please try again.',
                 duration: 4000
             })
-        } finally {
-            setDeletingSleep(null)
         }
     }
 
