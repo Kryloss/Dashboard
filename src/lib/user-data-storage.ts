@@ -560,11 +560,12 @@ export class UserDataStorage {
         // Try to delete from Supabase first
         if (this.supabase) {
             try {
+                // Delete by user_id and date to avoid UUID mismatches with locally generated IDs
                 const { error } = await this.supabase
                     .from('sleep_data')
                     .delete()
-                    .eq('id', sleepId)
-                    .eq('user_id', this.currentUser.id) // Additional security check
+                    .eq('user_id', this.currentUser.id)
+                    .eq('date', date)
 
                 if (error) {
                     console.error('Error deleting sleep data from Supabase:', error)
