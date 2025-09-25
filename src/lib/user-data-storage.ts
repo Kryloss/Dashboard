@@ -555,26 +555,45 @@ export class UserDataStorage {
             throw new Error('User must be authenticated to delete sleep data')
         }
 
-        console.log('🗑️ UserDataStorage.deleteSleepData - Deleting sleep data:', { sleepId, date })
+        console.log('🗑️ UserDataStorage.deleteSleepData - Deleting sleep data:', { sleepId, date, userId: this.currentUser.id })
 
         // Try to delete from Supabase first
         if (this.supabase) {
             try {
+                // Verify auth context before deletion
+                const { data: authUser, error: authError } = await this.supabase.auth.getUser()
+                console.log('🔐 Auth check before deletion:', { authUserId: authUser.user?.id, currentUserId: this.currentUser.id, authError })
+
+                if (authError || !authUser.user) {
+                    throw new Error(`Authentication error: ${authError?.message || 'No authenticated user'}`)
+                }
+
+                if (authUser.user.id !== this.currentUser.id) {
+                    throw new Error('Authentication mismatch: user IDs do not match')
+                }
+
                 // Delete by user_id and date to avoid UUID mismatches with locally generated IDs
-                const { error } = await this.supabase
+                const { data, error, count } = await this.supabase
                     .from('sleep_data')
-                    .delete()
+                    .delete({ count: 'exact' })
                     .eq('user_id', this.currentUser.id)
                     .eq('date', date)
 
+                console.log('🗑️ Delete result:', { data, error, count })
+
                 if (error) {
-                    console.error('Error deleting sleep data from Supabase:', error)
+                    console.error('❌ Error deleting sleep data from Supabase:', error)
                     throw error
+                }
+
+                if (count === 0) {
+                    console.warn('⚠️ No sleep data found to delete for user:', this.currentUser.id, 'date:', date)
+                    // This is not necessarily an error - the record might not exist
                 }
 
                 console.log('✅ Sleep data deleted from Supabase successfully')
             } catch (error) {
-                console.error('Error deleting sleep data from Supabase:', error)
+                console.error('❌ Error deleting sleep data from Supabase:', error)
                 // Re-throw to let the UI handle the error
                 throw error
             }

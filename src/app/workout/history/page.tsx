@@ -264,8 +264,10 @@ export default function WorkoutHistoryPage() {
             // Revert optimistic update on error
             setSleepData(prev => [...prev, sleepToDelete].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()))
 
+            // Show more specific error message
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
             notifications.error('Failed to delete sleep session', {
-                description: 'Please try again.',
+                description: errorMessage.includes('Authentication') ? 'Please refresh the page and try again.' : 'Please try again.',
                 duration: 4000
             })
         }
