@@ -119,13 +119,58 @@ export default function WorkoutHistoryPage() {
 
                 loadSleepData()
 
-                // Listen for sleep data updates from other parts of the app
-                const handleSleepDataUpdate = () => {
-                    console.log('🔄 Sleep data updated, refreshing history...')
-                    loadSleepData()
+                // Listen for sleep data updates from other parts of the app, but avoid full refreshes
+                type SleepDataEventDetail = {
+                    date: string
+                    action: 'created' | 'updated' | 'deleted'
+                    // optional payload to avoid extra fetches
+                    payload?: SleepData
                 }
 
-                window.addEventListener('sleepDataUpdated', handleSleepDataUpdate)
+                const handleSleepDataUpdate = async (event: Event) => {
+                    const custom = event as CustomEvent<SleepDataEventDetail>
+                    const { date: changedDate, action, payload } = custom.detail || { date: '', action: 'updated' as const }
+
+                    console.log('🔄 Sleep data event received:', { action, changedDate, hasPayload: !!payload })
+
+                    try {
+                        if (action === 'deleted') {
+                            // Just remove the deleted entry; no fetch
+                            setSleepData(prev => prev.filter(s => s.date !== changedDate))
+                            return
+                        }
+
+                        if (action === 'updated') {
+                            if (payload) {
+                                setSleepData(prev => prev.map(s => s.date === changedDate ? payload : s))
+                                return
+                            }
+                            // Fetch only the single date if no payload provided
+                            const single = await UserDataStorage.getSleepData(changedDate)
+                            if (single) {
+                                setSleepData(prev => prev.map(s => s.date === changedDate ? single : s))
+                            }
+                            return
+                        }
+
+                        if (action === 'created') {
+                            if (payload) {
+                                setSleepData(prev => [payload, ...prev].sort((a, b) => b.date.localeCompare(a.date)))
+                                return
+                            }
+                            // Fetch only the created date and insert
+                            const created = await UserDataStorage.getSleepData(changedDate)
+                            if (created) {
+                                setSleepData(prev => [created, ...prev].sort((a, b) => b.date.localeCompare(a.date)))
+                            }
+                            return
+                        }
+                    } catch (e) {
+                        console.error('Error handling sleepDataUpdated event:', e)
+                    }
+                }
+
+                window.addEventListener('sleepDataUpdated', handleSleepDataUpdate as EventListener)
 
                 // Show history tip for first-time visitors
                 setTimeout(() => {
@@ -141,7 +186,7 @@ export default function WorkoutHistoryPage() {
 
                 // Cleanup function
                 return () => {
-                    window.removeEventListener('sleepDataUpdated', handleSleepDataUpdate)
+                    window.removeEventListener('sleepDataUpdated', handleSleepDataUpdate as EventListener)
                 }
             }
         }, 2000) // 2 second delay to allow auth to settle

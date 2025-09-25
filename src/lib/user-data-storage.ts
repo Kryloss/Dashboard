@@ -583,19 +583,32 @@ export class UserDataStorage {
 
                 if (error) {
                     console.error('❌ Error deleting sleep data from Supabase:', error)
-                    throw error
-                }
 
-                if (count === 0) {
-                    console.warn('⚠️ No sleep data found to delete for user:', this.currentUser.id, 'date:', date)
-                    // This is not necessarily an error - the record might not exist
+                    // Handle permission denied error specifically
+                    if (error.code === '42501') {
+                        console.warn('⚠️ Permission denied - sleep_data table may not exist or have proper RLS policies')
+                        console.warn('⚠️ Continuing with localStorage-only deletion')
+                        // Don't throw error, just continue with localStorage cleanup
+                    } else {
+                        throw error
+                    }
+                } else {
+                    if (count === 0) {
+                        console.warn('⚠️ No sleep data found to delete for user:', this.currentUser.id, 'date:', date)
+                        // This is not necessarily an error - the record might not exist
+                    }
+                    console.log('✅ Sleep data deleted from Supabase successfully')
                 }
-
-                console.log('✅ Sleep data deleted from Supabase successfully')
             } catch (error) {
                 console.error('❌ Error deleting sleep data from Supabase:', error)
-                // Re-throw to let the UI handle the error
-                throw error
+
+                // Handle permission denied error specifically
+                if (error.code === '42501') {
+                    console.warn('⚠️ Permission denied - continuing with localStorage cleanup only')
+                    // Don't throw error, just continue with localStorage cleanup
+                } else {
+                    throw error
+                }
             }
         }
 
