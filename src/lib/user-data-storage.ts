@@ -603,7 +603,7 @@ export class UserDataStorage {
                 console.error('❌ Error deleting sleep data from Supabase:', error)
 
                 // Handle permission denied error specifically
-                if (error.code === '42501') {
+                if (error && typeof error === 'object' && 'code' in error && error.code === '42501') {
                     console.warn('⚠️ Permission denied - continuing with localStorage cleanup only')
                     // Don't throw error, just continue with localStorage cleanup
                 } else {

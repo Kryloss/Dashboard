@@ -137,8 +137,8 @@ export function GoalRings({
             exercise: exerciseProgress,
             initialized: true
         }
-    // prevValuesRef is a mutable ref and stable; no need to include in deps
-    }, [animated, recoveryProgress, nutritionProgress, exerciseProgress])
+        // prevValuesRef is a mutable ref and stable; no need to include in deps
+    }, [animated, recoveryProgress, nutritionProgress, exerciseProgress]) // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
         <div className={cn(
