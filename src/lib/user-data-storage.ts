@@ -563,8 +563,8 @@ export class UserDataStorage {
                 const { error } = await this.supabase
                     .from('sleep_data')
                     .delete()
-                    .eq('user_id', this.currentUser.id)
-                    .eq('date', date)
+                    .eq('id', sleepId)
+                    .eq('user_id', this.currentUser.id) // Additional security check
 
                 if (error) {
                     console.error('Error deleting sleep data from Supabase:', error)
