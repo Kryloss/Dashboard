@@ -53,49 +53,51 @@ export function NutritionCard({ date, nutritionEntry, onEdit, onDelete }: Nutrit
                         </div>
 
                         {nutritionEntry ? (
-                            <div className="flex items-center space-x-4">
-                                {/* Main Stats - Inline */}
-                                <div className="flex items-center space-x-1">
-                                    <span className="text-lg font-bold text-[#F3F4F6]">{nutritionEntry.totalCalories}</span>
-                                    <span className="text-xs text-[#A1A1AA]">cal</span>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-6">
+                                    {/* Main Stats */}
+                                    <div className="flex items-center space-x-1">
+                                        <span className="text-xl font-bold text-[#F3F4F6]">{nutritionEntry.totalCalories}</span>
+                                        <span className="text-sm text-[#A1A1AA]">calories</span>
+                                    </div>
+
+                                    {/* Macro Breakdown */}
+                                    <div className="flex items-center space-x-4 text-sm">
+                                        <div className="flex items-center space-x-1">
+                                            <span className="font-semibold text-[#FFA500]">{Math.round(nutritionEntry.totalMacros.carbs)}g</span>
+                                            <span className="text-[#A1A1AA]">carbs</span>
+                                        </div>
+                                        <div className="flex items-center space-x-1">
+                                            <span className="font-semibold text-[#FF6B6B]">{Math.round(nutritionEntry.totalMacros.protein)}g</span>
+                                            <span className="text-[#A1A1AA]">protein</span>
+                                        </div>
+                                        <div className="flex items-center space-x-1">
+                                            <span className="font-semibold text-[#4ECDC4]">{Math.round(nutritionEntry.totalMacros.fats)}g</span>
+                                            <span className="text-[#A1A1AA]">fats</span>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                {/* Compact Macro Breakdown */}
-                                <div className="flex items-center space-x-3 text-xs">
-                                    <div className="flex items-center space-x-1">
-                                        <span className="font-medium text-[#FFA500]">{Math.round(nutritionEntry.totalMacros.carbs)}g</span>
-                                        <span className="text-[#A1A1AA]">C</span>
-                                    </div>
-                                    <div className="flex items-center space-x-1">
-                                        <span className="font-medium text-[#FF6B6B]">{Math.round(nutritionEntry.totalMacros.protein)}g</span>
-                                        <span className="text-[#A1A1AA]">P</span>
-                                    </div>
-                                    <div className="flex items-center space-x-1">
-                                        <span className="font-medium text-[#4ECDC4]">{Math.round(nutritionEntry.totalMacros.fats)}g</span>
-                                        <span className="text-[#A1A1AA]">F</span>
-                                    </div>
-                                </div>
-
-                                {/* Meals Summary - Compact */}
+                                {/* Meals Summary */}
                                 {nutritionEntry.meals.length > 0 && (
-                                    <div className="flex items-center space-x-1">
-                                        {nutritionEntry.meals.slice(0, 3).map((meal, index) => (
-                                            <span
-                                                key={index}
-                                                className="inline-flex items-center px-1.5 py-0.5 rounded bg-[rgba(155,225,93,0.15)] text-xs text-[#9BE15D]"
-                                            >
-                                                {meal.type.charAt(0).toUpperCase()}
-                                            </span>
-                                        ))}
-                                        {nutritionEntry.meals.length > 3 && (
-                                            <span className="text-xs text-[#A1A1AA]">+{nutritionEntry.meals.length - 3}</span>
-                                        )}
+                                    <div className="flex items-center space-x-2">
+                                        <span className="text-xs text-[#A1A1AA] mr-1">Meals:</span>
+                                        <div className="flex items-center space-x-1">
+                                            {nutritionEntry.meals.map((meal, index) => (
+                                                <span
+                                                    key={index}
+                                                    className="inline-flex items-center px-2 py-1 rounded-md bg-[rgba(155,225,93,0.15)] text-xs font-medium text-[#9BE15D]"
+                                                >
+                                                    {meal.type.charAt(0).toUpperCase() + meal.type.slice(1)}
+                                                </span>
+                                            ))}
+                                        </div>
                                     </div>
                                 )}
                             </div>
                         ) : (
                             <div className="flex items-center">
-                                <span className="text-sm text-[#7A7F86]">No data recorded</span>
+                                <span className="text-sm text-[#7A7F86]">No nutrition data recorded for this date</span>
                             </div>
                         )}
                     </div>
