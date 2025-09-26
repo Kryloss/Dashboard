@@ -692,8 +692,30 @@ export default function WorkoutPage() {
                                     <h2 className="text-lg font-semibold text-[#F3F4F6] mb-2">Today&apos;s Summary</h2>
 
                                     <div className="grid grid-cols-1 gap-2">
-                                        {/* Recovery Summary */}
-                                        <div className="p-3 bg-[#121318] border border-[#212227] rounded-[12px] hover:border-[#2A2B31] transition-colors">
+                                        {/* Exercise Summary - Highlighted and moved to top */}
+                                        <div className="p-4 bg-gradient-to-br from-[#FF2D55]/10 via-[#FF375F]/5 to-transparent border-2 border-[#FF2D55]/20 rounded-[12px] hover:border-[#FF2D55]/30 transition-all">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center space-x-3">
+                                                    <div className="w-6 h-6 bg-gradient-to-br from-[#FF2D55] to-[#FF375F] rounded-[8px] flex items-center justify-center">
+                                                        <Dumbbell className="w-3 h-3 text-white" />
+                                                    </div>
+                                                    <span className="text-[#F3F4F6] font-medium text-sm">Exercise</span>
+                                                </div>
+                                                <div className="flex-1 text-center">
+                                                    {workoutState.goalProgress && (
+                                                        <div className="text-xs text-[#A1A1AA]">
+                                                            {workoutState.goalProgress.exercise.currentMinutes}m of {workoutState.goalProgress.exercise.targetMinutes}m
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="text-[#FF2D55] text-sm font-semibold">
+                                                    {Math.round(getSummaryPercentages().exercise)}%
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Recovery Summary - Highlighted */}
+                                        <div className="p-4 bg-gradient-to-br from-[#2BD2FF]/10 via-[#2A8CEA]/5 to-transparent border-2 border-[#2BD2FF]/20 rounded-[12px] hover:border-[#2BD2FF]/30 transition-all">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center space-x-3">
                                                     <div className="w-6 h-6 bg-gradient-to-br from-[#2BD2FF] to-[#2A8CEA] rounded-[8px] flex items-center justify-center">
@@ -734,28 +756,6 @@ export default function WorkoutPage() {
                                                 </div>
                                                 <div className="text-[#9BE15D] text-sm font-semibold">
                                                     {Math.round(getSummaryPercentages().nutrition)}%
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Exercise Summary */}
-                                        <div className="p-3 bg-[#121318] border border-[#212227] rounded-[12px] hover:border-[#2A2B31] transition-colors">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center space-x-3">
-                                                    <div className="w-6 h-6 bg-gradient-to-br from-[#FF2D55] to-[#FF375F] rounded-[8px] flex items-center justify-center">
-                                                        <Dumbbell className="w-3 h-3 text-white" />
-                                                    </div>
-                                                    <span className="text-[#F3F4F6] font-medium text-sm">Exercise</span>
-                                                </div>
-                                                <div className="flex-1 text-center">
-                                                    {workoutState.goalProgress && (
-                                                        <div className="text-xs text-[#A1A1AA]">
-                                                            {workoutState.goalProgress.exercise.currentMinutes}m of {workoutState.goalProgress.exercise.targetMinutes}m
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="text-[#FF2D55] text-sm font-semibold">
-                                                    {Math.round(getSummaryPercentages().exercise)}%
                                                 </div>
                                             </div>
                                         </div>

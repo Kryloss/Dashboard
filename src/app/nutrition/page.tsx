@@ -13,7 +13,8 @@ import { useNotifications } from "@/lib/contexts/NotificationContext"
 import { useWorkoutState } from "@/lib/hooks/useWorkoutState"
 import { DetailedMacroModal } from "./components/detailed-macro-modal"
 import { AddFoodDialog } from "./components/add-food-dialog"
-import { Plus, Apple, Utensils, User, Target, Coffee, Sandwich, ChefHat, Cookie, Flame, BarChart3, TrendingUp } from "lucide-react"
+import { SetGoalDialog } from "../workout/components/set-goal-dialog"
+import { Plus, Apple, Utensils, User, Dumbbell, Coffee, Sandwich, ChefHat, Cookie, Flame, Moon, TrendingUp } from "lucide-react"
 
 export default function NutritionPage() {
     const router = useRouter()
@@ -30,6 +31,9 @@ export default function NutritionPage() {
     // Add food dialog state
     const [selectedMealType, setSelectedMealType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snacks' | null>(null)
     const [isAddFoodDialogOpen, setIsAddFoodDialogOpen] = useState(false)
+
+    // Settings dialog state
+    const [showSetGoalDialog, setShowSetGoalDialog] = useState(false)
 
     // Use workout state for goal rings integration
     const { state: workoutState, refreshWorkoutData } = useWorkoutState()
@@ -400,7 +404,7 @@ export default function NutritionPage() {
                         <section className="mb-6">
                             <div className="flex items-center justify-end mb-3 space-x-2">
                                 <Button
-                                    onClick={() => notifications.info('Settings', { description: 'Nutrition settings coming soon!', duration: 3000 })}
+                                    onClick={() => setShowSetGoalDialog(true)}
                                     variant="ghost"
                                     className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full"
                                 >
@@ -451,7 +455,7 @@ export default function NutritionPage() {
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center space-x-3">
                                                     <div className="w-6 h-6 bg-gradient-to-br from-[#FF2D55] to-[#FF375F] rounded-[8px] flex items-center justify-center">
-                                                        <Target className="w-3 h-3 text-white" />
+                                                        <Dumbbell className="w-3 h-3 text-white" />
                                                     </div>
                                                     <span className="text-[#F3F4F6] font-medium text-sm">Exercise</span>
                                                 </div>
@@ -473,7 +477,7 @@ export default function NutritionPage() {
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center space-x-3">
                                                     <div className="w-6 h-6 bg-gradient-to-br from-[#2BD2FF] to-[#2A8CEA] rounded-[8px] flex items-center justify-center">
-                                                        <BarChart3 className="w-3 h-3 text-white" />
+                                                        <Moon className="w-3 h-3 text-white" />
                                                     </div>
                                                     <span className="text-[#F3F4F6] font-medium text-sm">Recovery</span>
                                                 </div>
@@ -503,7 +507,7 @@ export default function NutritionPage() {
                                         onClick={() => handleQuickAction('scan-barcode')}
                                         className="bg-gradient-to-r from-[#6B7280] via-[#4B5563] to-[#374151] text-white rounded-full border border-[rgba(107,114,128,0.35)] shadow-[0_8px_32px_rgba(107,114,128,0.28)] hover:shadow-[0_10px_40px_rgba(107,114,128,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all"
                                     >
-                                        <BarChart3 className="w-4 h-4 mr-2" />
+                                        <Apple className="w-4 h-4 mr-2" />
                                         Scan Food
                                     </Button>
                                     <Button
@@ -742,6 +746,12 @@ export default function NutritionPage() {
                         onFoodAdded={handleFoodAdded}
                     />
                 )}
+
+                {/* Settings Dialog */}
+                <SetGoalDialog
+                    open={showSetGoalDialog}
+                    onOpenChange={setShowSetGoalDialog}
+                />
             </div>
         )
     }
