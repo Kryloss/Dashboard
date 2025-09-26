@@ -379,6 +379,36 @@ export class NutritionStorage {
         return this.getNutritionEntryFromLocalStorage(targetDate)
     }
 
+    static async getAllNutritionEntries(): Promise<NutritionEntry[]> {
+        console.log('NutritionStorage.getAllNutritionEntries - User:', this.currentUser?.id)
+
+        // Try Supabase first if user is authenticated
+        if (this.currentUser && this.supabase) {
+            try {
+                const { data: authUser } = await this.supabase.auth.getUser()
+                if (!authUser.user) {
+                    return this.getAllNutritionEntriesFromLocalStorage()
+                }
+
+                const { data, error } = await this.supabase
+                    .from('nutrition_entries')
+                    .select('*')
+                    .eq('user_id', this.currentUser.id)
+                    .not('user_id', 'is', null)
+                    .order('date', { ascending: false })
+
+                if (error) throw error
+
+                return (data || []).map(this.convertDbNutritionEntryToApp)
+            } catch (error) {
+                console.error('Error fetching nutrition entries from Supabase:', error)
+            }
+        }
+
+        // Fallback to localStorage
+        return this.getAllNutritionEntriesFromLocalStorage()
+    }
+
     static async saveNutritionEntry(entryData: Omit<NutritionEntry, 'id' | 'createdAt' | 'updatedAt'>): Promise<NutritionEntry> {
         if (!this.currentUser) {
             throw new Error('User must be authenticated to save nutrition entries')
@@ -679,6 +709,46 @@ export class NutritionStorage {
             localStorage.setItem(`${this.ENTRIES_KEY}-${entry.date}`, JSON.stringify(entry))
         } catch (error) {
             console.error('Error saving nutrition entry to localStorage:', error)
+        }
+    }
+
+    private static getAllNutritionEntriesFromLocalStorage(): NutritionEntry[] {
+        if (typeof window === 'undefined') return []
+
+        try {
+            const entries: NutritionEntry[] = []
+
+            // Scan localStorage for all entries with our key prefix
+            const keyPrefix = this.ENTRIES_KEY + '-'
+
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i)
+                if (key && key.startsWith(keyPrefix)) {
+                    try {
+                        const stored = localStorage.getItem(key)
+                        if (stored) {
+                            const entry = JSON.parse(stored) as NutritionEntry
+
+                            // Security check: ensure entry belongs to current user
+                            if (this.currentUser && entry.userId && entry.userId !== this.currentUser.id) {
+                                localStorage.removeItem(key)
+                                continue
+                            }
+
+                            entries.push(entry)
+                        }
+                    } catch (error) {
+                        console.error('Error parsing nutrition entry from localStorage:', key, error)
+                        localStorage.removeItem(key) // Clean up corrupted data
+                    }
+                }
+            }
+
+            // Sort by date (newest first)
+            return entries.sort((a, b) => b.date.localeCompare(a.date))
+        } catch (error) {
+            console.error('Error loading nutrition entries from localStorage:', error)
+            return []
         }
     }
 

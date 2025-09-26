@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowLeft, Search, Filter, Dumbbell, Footprints, Heart, Bike, Moon, Flame } from "lucide-react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
+import { ArrowLeft, Search, Filter, Dumbbell, Footprints, Heart, Bike, Moon, Flame, Plus, CalendarDays } from "lucide-react"
 
 // Workout related imports
 import { WorkoutStorage, WorkoutActivity } from "@/lib/workout-storage"
@@ -62,6 +64,7 @@ export default function HistoryPage() {
     const [nutritionEntries, setNutritionEntries] = useState<{[date: string]: NutritionEntry | null}>({})
     const [isNutritionLoading, setIsNutritionLoading] = useState(false)
     const [editingNutritionDate, setEditingNutritionDate] = useState<string | null>(null)
+    const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
 
     // Track if we've shown the sign-in notification to avoid duplicates
     const signInNotificationShownRef = useRef(false)
@@ -148,29 +151,38 @@ export default function HistoryPage() {
         }
     }
 
-    // Load nutrition data for recent dates
+    // Load nutrition data from first entry to today
     const loadNutritionData = async () => {
         if (!user || !supabase) return
 
         try {
             setIsNutritionLoading(true)
 
-            // Load last 30 days of nutrition data
-            const entries: {[date: string]: NutritionEntry | null} = {}
+            // First, find all existing nutrition entries to determine date range
+            const allEntries = await NutritionStorage.getAllNutritionEntries()
+
+            if (allEntries.length === 0) {
+                setNutritionEntries({})
+                return
+            }
+
+            // Find the earliest entry date
+            const sortedDates = allEntries.map(entry => entry.date).sort()
+            const firstDate = new Date(sortedDates[0])
             const today = new Date()
 
-            for (let i = 0; i < 30; i++) {
-                const date = new Date(today)
-                date.setDate(date.getDate() - i)
-                const dateString = format(date, 'yyyy-MM-dd')
+            // Load data from first entry date to today
+            const entries: {[date: string]: NutritionEntry | null} = {}
+            const currentDate = new Date(firstDate)
 
-                try {
-                    const entry = await NutritionStorage.getNutritionEntry(dateString)
-                    entries[dateString] = entry
-                } catch (error) {
-                    // If no entry exists for this date, set to null
-                    entries[dateString] = null
-                }
+            while (currentDate <= today) {
+                const dateString = format(currentDate, 'yyyy-MM-dd')
+
+                // Find existing entry for this date
+                const existingEntry = allEntries.find(entry => entry.date === dateString)
+                entries[dateString] = existingEntry || null
+
+                currentDate.setDate(currentDate.getDate() + 1)
             }
 
             setNutritionEntries(entries)
@@ -314,6 +326,24 @@ export default function HistoryPage() {
             }))
         }
         setEditingNutritionDate(null)
+    }
+
+    const handleDateSelect = (date: Date | undefined) => {
+        if (!date) return
+
+        const dateString = format(date, 'yyyy-MM-dd')
+        setIsDatePickerOpen(false)
+
+        // If the date is not in our current entries, add it
+        if (!(dateString in nutritionEntries)) {
+            setNutritionEntries(prev => ({
+                ...prev,
+                [dateString]: null
+            }))
+        }
+
+        // Open the edit modal for the selected date
+        setEditingNutritionDate(dateString)
     }
 
     // Helper functions for workout display
@@ -560,6 +590,39 @@ export default function HistoryPage() {
                         </TabsContent>
 
                         <TabsContent value="nutrition" className="mt-6">
+                            {/* Add Nutrition Button */}
+                            <div className="bg-[#121318] border border-[#212227] rounded-[20px] p-6 mb-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)]">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-[#F3F4F6] mb-1">Nutrition Log</h3>
+                                        <p className="text-sm text-[#A1A1AA]">Track your daily nutrition and view your history</p>
+                                    </div>
+                                    <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant="ghost"
+                                                className="bg-gradient-to-r from-[#9BE15D] to-[#00E676] text-[#0B0B0F] rounded-full hover:shadow-lg font-semibold px-6"
+                                            >
+                                                <Plus className="w-4 h-4 mr-2" />
+                                                Log Nutrition
+                                                <CalendarDays className="w-4 h-4 ml-2" />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0 bg-[#121318] border-[#212227]" align="end">
+                                            <Calendar
+                                                mode="single"
+                                                selected={undefined}
+                                                onSelect={handleDateSelect}
+                                                disabled={(date) =>
+                                                    date > new Date() || date < new Date("1900-01-01")
+                                                }
+                                                className="rounded-md"
+                                            />
+                                        </PopoverContent>
+                                    </Popover>
+                                </div>
+                            </div>
+
                             {/* Nutrition Cards List */}
                             {isNutritionLoading ? (
                                 <div className="flex items-center justify-center py-12">
@@ -571,7 +634,7 @@ export default function HistoryPage() {
                                         <Flame className="w-8 h-8 text-[#A1A1AA]" />
                                     </div>
                                     <h3 className="text-lg font-semibold text-[#F3F4F6] mb-2">No nutrition data found</h3>
-                                    <p className="text-[#A1A1AA] mb-6">Start logging your nutrition to see it here</p>
+                                    <p className="text-[#A1A1AA] mb-6">Click &ldquo;Log Nutrition&rdquo; above to start tracking your daily nutrition</p>
                                 </div>
                             ) : (
                                 <div className="space-y-4">
