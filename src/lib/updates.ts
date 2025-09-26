@@ -21,7 +21,7 @@ export const updates: Update[] = [
         "title": "Activity history created",
         "summary": "Track your journey with the new Activity History feature. Review past sessions and monitor progress anytime.",
         "date": "2025-09-01",
-        "link": "https://healss.kryloss.com/workout/history",
+        "link": "https://healss.kryloss.com/history",
         "category": "Feature Update"
     },
     {

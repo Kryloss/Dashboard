@@ -630,7 +630,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                 duration: 5000,
                 action: {
                     label: 'History',
-                    onClick: () => router.push('/workout/history')
+                    onClick: () => router.push('/history')
                 }
             })
 
@@ -647,7 +647,7 @@ export function StrengthWorkout({ workoutId }: StrengthWorkoutProps) {
                         duration: 4000,
                         action: {
                             label: 'View History',
-                            onClick: () => router.push('/workout/history')
+                            onClick: () => router.push('/history')
                         }
                     })
                 }, 2000)

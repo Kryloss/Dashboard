@@ -931,7 +931,7 @@ export default function WorkoutPage() {
                                 <div className="flex items-center justify-between mb-6">
                                     <h2 className="text-xl font-semibold text-[#F3F4F6]">Recent Activity</h2>
                                     <Button
-                                        onClick={() => router.push('/workout/history')}
+                                        onClick={() => router.push('/history')}
                                         variant="ghost"
                                         className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full text-sm"
                                     >

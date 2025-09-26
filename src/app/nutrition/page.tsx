@@ -679,7 +679,7 @@ export default function NutritionPage() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <Button
-                                        onClick={() => router.push('/nutrition/history')}
+                                        onClick={() => router.push('/history?tab=nutrition')}
                                         className="bg-[#121318] border border-[#212227] text-[#F3F4F6] hover:border-[#2A2B31] rounded-[16px] p-4 h-auto justify-start"
                                         variant="ghost"
                                     >
