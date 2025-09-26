@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { GoalRings } from "../workout/components/goal-rings"
 import { StatCard } from "../workout/components/stat-card"
 
-import { NutritionStorage, NutritionEntry, NutritionGoals, DetailedNutrients, Food, FoodEntry } from "@/lib/nutrition-storage"
+import { NutritionStorage, NutritionEntry, NutritionGoals, DetailedNutrients, Food, FoodEntry, Meal } from "@/lib/nutrition-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 import { useWorkoutState } from "@/lib/hooks/useWorkoutState"
@@ -108,7 +108,16 @@ export default function NutritionPage() {
             return
         }
 
-        // TODO: Implement quick actions
+        if (action === 'add-food') {
+            // Show meal creation dialog
+            notifications.info('Add Meal', {
+                description: 'Meal creation feature coming soon! Use + buttons on meal cards to add foods for now.',
+                duration: 4000
+            })
+            return
+        }
+
+        // TODO: Implement other quick actions
         notifications.info('Quick action', {
             description: `${action} feature coming soon!`,
             duration: 3000
@@ -210,6 +219,71 @@ export default function NutritionPage() {
             console.error('Error deleting food:', error)
             notifications.error('Delete failed', {
                 description: 'Unable to remove food item. Please try again.',
+                duration: 4000
+            })
+        }
+    }
+
+    const handleEditMeal = async (mealType: 'breakfast' | 'lunch' | 'dinner' | 'snacks', meal: Meal) => {
+        if (!user) {
+            notifications.warning('Sign in required', {
+                description: 'Please sign in to edit meals',
+                duration: 4000,
+                action: {
+                    label: 'Sign In',
+                    onClick: () => router.push('/auth/signin')
+                }
+            })
+            return
+        }
+
+        // TODO: Implement meal editing functionality
+        notifications.info('Edit Meal', {
+            description: `Editing ${meal.name} meal. Feature coming soon!`,
+            duration: 3000
+        })
+    }
+
+    const handleDeleteMeal = async (mealType: 'breakfast' | 'lunch' | 'dinner' | 'snacks', meal: Meal) => {
+        if (!user || !nutritionEntry) return
+
+        try {
+            const updatedEntry = { ...nutritionEntry }
+
+            // Remove the entire meal
+            updatedEntry.meals = updatedEntry.meals.filter(m => m.id !== meal.id)
+
+            // Recalculate entry totals
+            updatedEntry.totalCalories = updatedEntry.meals.reduce((sum, m) => sum + m.totalCalories, 0)
+            updatedEntry.totalMacros = {
+                carbs: updatedEntry.meals.reduce((sum, m) => sum + m.totalMacros.carbs, 0),
+                protein: updatedEntry.meals.reduce((sum, m) => sum + m.totalMacros.protein, 0),
+                fats: updatedEntry.meals.reduce((sum, m) => sum + m.totalMacros.fats, 0),
+                fiber: updatedEntry.meals.reduce((sum, m) => sum + (m.totalMacros.fiber || 0), 0),
+                sugar: updatedEntry.meals.reduce((sum, m) => sum + (m.totalMacros.sugar || 0), 0),
+                sodium: updatedEntry.meals.reduce((sum, m) => sum + (m.totalMacros.sodium || 0), 0)
+            }
+
+            // Save to storage
+            const savedEntry = await NutritionStorage.saveNutritionEntry(updatedEntry)
+
+            // Update local state
+            setNutritionEntry(savedEntry)
+
+            // Refresh workout state to update goal rings
+            if (refreshWorkoutData) {
+                refreshWorkoutData(true)
+            }
+
+            notifications.success('Meal deleted', {
+                description: `${meal.name} meal removed with all ${meal.foods.length} items`,
+                duration: 3000
+            })
+
+        } catch (error) {
+            console.error('Error deleting meal:', error)
+            notifications.error('Delete failed', {
+                description: 'Unable to remove meal. Please try again.',
                 duration: 4000
             })
         }
@@ -667,7 +741,7 @@ export default function NutritionPage() {
 
                                     return (
                                         <div key={mealType} className="bg-[#121318] border border-[#212227] rounded-[20px] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)] hover:border-[#2A2B31] transition-colors">
-                                            <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center justify-between mb-3 group/meal">
                                                 <div className="flex items-center space-x-3">
                                                     <div className="w-8 h-8 bg-[rgba(255,255,255,0.03)] border border-[#2A2B31] rounded-[10px] flex items-center justify-center text-[#F3F4F6]">
                                                         {getMealIcon(mealType)}
@@ -679,14 +753,36 @@ export default function NutritionPage() {
                                                         )}
                                                     </div>
                                                 </div>
-                                                <Button
-                                                    onClick={() => handleAddFood(mealType as 'breakfast' | 'lunch' | 'dinner' | 'snacks')}
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full w-7 h-7"
-                                                >
-                                                    <Plus className="w-4 h-4" />
-                                                </Button>
+                                                <div className="flex items-center space-x-1">
+                                                    {meal && (
+                                                        <>
+                                                            <Button
+                                                                onClick={() => handleEditMeal(mealType as 'breakfast' | 'lunch' | 'dinner' | 'snacks', meal)}
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full w-6 h-6 opacity-0 group-hover/meal:opacity-100 transition-opacity"
+                                                            >
+                                                                <Edit3 className="w-3 h-3" />
+                                                            </Button>
+                                                            <Button
+                                                                onClick={() => handleDeleteMeal(mealType as 'breakfast' | 'lunch' | 'dinner' | 'snacks', meal)}
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="text-[#A1A1AA] hover:text-red-400 hover:bg-red-500/10 rounded-full w-6 h-6 opacity-0 group-hover/meal:opacity-100 transition-opacity"
+                                                            >
+                                                                <Trash2 className="w-3 h-3" />
+                                                            </Button>
+                                                        </>
+                                                    )}
+                                                    <Button
+                                                        onClick={() => handleAddFood(mealType as 'breakfast' | 'lunch' | 'dinner' | 'snacks')}
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full w-7 h-7"
+                                                    >
+                                                        <Plus className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
                                             </div>
 
                                             {meal ? (
