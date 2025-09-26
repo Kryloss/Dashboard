@@ -647,33 +647,6 @@ export default function NutritionPage() {
                         {/* Statistics Section */}
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                             <section>
-                                <h2 className="text-xl font-semibold text-[#F3F4F6] mb-6">This Week&apos;s Progress</h2>
-                                <div className="space-y-4">
-                                    <StatCard
-                                        icon={<Flame className="w-4 h-4" />}
-                                        label="Avg Calories"
-                                        value="1,847"
-                                        change={{ value: "No progress data yet", direction: "neutral" }}
-                                        period=""
-                                    />
-                                    <StatCard
-                                        icon={<Apple className="w-4 h-4" />}
-                                        label="Foods Logged"
-                                        value="24"
-                                        change={{ value: "No progress data yet", direction: "neutral" }}
-                                        period=""
-                                    />
-                                    <StatCard
-                                        icon={<TrendingUp className="w-4 h-4" />}
-                                        label="Streak"
-                                        value="7 days"
-                                        change={{ value: "No progress data yet", direction: "neutral" }}
-                                        period=""
-                                    />
-                                </div>
-                            </section>
-
-                            <section>
                                 <div className="flex items-center justify-between mb-6">
                                     <h2 className="text-xl font-semibold text-[#F3F4F6]">Quick Actions</h2>
                                 </div>
@@ -718,6 +691,33 @@ export default function NutritionPage() {
                                             <div className="text-xs text-[#A1A1AA]">Get recommendations</div>
                                         </div>
                                     </Button>
+                                </div>
+                            </section>
+
+                            <section>
+                                <h2 className="text-xl font-semibold text-[#F3F4F6] mb-6">This Week&apos;s Progress</h2>
+                                <div className="space-y-4">
+                                    <StatCard
+                                        icon={<Flame className="w-4 h-4" />}
+                                        label="Avg Calories"
+                                        value="1,847"
+                                        change={{ value: "No progress data yet", direction: "neutral" }}
+                                        period=""
+                                    />
+                                    <StatCard
+                                        icon={<Apple className="w-4 h-4" />}
+                                        label="Foods Logged"
+                                        value="24"
+                                        change={{ value: "No progress data yet", direction: "neutral" }}
+                                        period=""
+                                    />
+                                    <StatCard
+                                        icon={<TrendingUp className="w-4 h-4" />}
+                                        label="Streak"
+                                        value="7 days"
+                                        change={{ value: "No progress data yet", direction: "neutral" }}
+                                        period=""
+                                    />
                                 </div>
                             </section>
                         </div>
