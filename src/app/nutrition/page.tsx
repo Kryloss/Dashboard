@@ -12,7 +12,8 @@ import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 import { useWorkoutState } from "@/lib/hooks/useWorkoutState"
 import { DetailedMacroModal } from "./components/detailed-macro-modal"
-import { AddFoodDialog } from "./components/add-food-dialog"
+import { AddMealDialog } from "./components/add-meal-dialog"
+import { EditFoodDialog } from "./components/edit-food-dialog"
 import { SetGoalDialog } from "../workout/components/set-goal-dialog"
 import { Plus, Apple, Utensils, User, Dumbbell, Coffee, Sandwich, ChefHat, Cookie, Flame, Moon, TrendingUp, Edit3, Trash2 } from "lucide-react"
 
@@ -31,6 +32,11 @@ export default function NutritionPage() {
     // Add food dialog state
     const [selectedMealType, setSelectedMealType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snacks' | null>(null)
     const [isAddFoodDialogOpen, setIsAddFoodDialogOpen] = useState(false)
+
+    // Edit food dialog state
+    const [editingFoodEntry, setEditingFoodEntry] = useState<FoodEntry | null>(null)
+    const [editingMealType, setEditingMealType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snacks' | null>(null)
+    const [isEditFoodDialogOpen, setIsEditFoodDialogOpen] = useState(false)
 
     // Settings dialog state
     const [showSetGoalDialog, setShowSetGoalDialog] = useState(false)
@@ -151,6 +157,12 @@ export default function NutritionPage() {
         setSelectedMealType(null)
     }
 
+    const closeEditFoodDialog = () => {
+        setIsEditFoodDialogOpen(false)
+        setEditingFoodEntry(null)
+        setEditingMealType(null)
+    }
+
     const handleEditFood = async (mealType: 'breakfast' | 'lunch' | 'dinner' | 'snacks', food: FoodEntry) => {
         if (!user) {
             notifications.warning('Sign in required', {
@@ -164,11 +176,9 @@ export default function NutritionPage() {
             return
         }
 
-        // TODO: Implement food editing functionality
-        notifications.info('Edit Food', {
-            description: `Editing ${food.food.name} from ${mealType}. Feature coming soon!`,
-            duration: 3000
-        })
+        setEditingFoodEntry(food)
+        setEditingMealType(mealType)
+        setIsEditFoodDialogOpen(true)
     }
 
     const handleDeleteFood = async (mealType: 'breakfast' | 'lunch' | 'dinner' | 'snacks', foodId: string) => {
@@ -375,6 +385,62 @@ export default function NutritionPage() {
             console.error('Error adding food:', error)
             notifications.error('Add food failed', {
                 description: 'Unable to add food. Please try again.',
+                duration: 4000
+            })
+        }
+    }
+
+    const handleFoodUpdated = async (updatedFoodEntry: FoodEntry) => {
+        if (!editingMealType || !user || !nutritionEntry) return
+
+        try {
+            const currentEntry = { ...nutritionEntry }
+            const meal = currentEntry.meals.find(m => m.type === editingMealType)
+
+            if (!meal) return
+
+            // Find and update the food entry
+            const foodIndex = meal.foods.findIndex(f => f.id === updatedFoodEntry.id)
+            if (foodIndex === -1) return
+
+            meal.foods[foodIndex] = updatedFoodEntry
+
+            // Recalculate meal totals
+            const mealTotals = NutritionStorage.calculateMealTotals(meal)
+            meal.totalCalories = mealTotals.calories
+            meal.totalMacros = mealTotals.macros
+
+            // Recalculate entry totals
+            currentEntry.totalCalories = currentEntry.meals.reduce((sum, m) => sum + m.totalCalories, 0)
+            currentEntry.totalMacros = {
+                carbs: currentEntry.meals.reduce((sum, m) => sum + m.totalMacros.carbs, 0),
+                protein: currentEntry.meals.reduce((sum, m) => sum + m.totalMacros.protein, 0),
+                fats: currentEntry.meals.reduce((sum, m) => sum + m.totalMacros.fats, 0),
+                fiber: currentEntry.meals.reduce((sum, m) => sum + (m.totalMacros.fiber || 0), 0),
+                sugar: currentEntry.meals.reduce((sum, m) => sum + (m.totalMacros.sugar || 0), 0),
+                sodium: currentEntry.meals.reduce((sum, m) => sum + (m.totalMacros.sodium || 0), 0)
+            }
+
+            // Save to storage
+            const savedEntry = await NutritionStorage.saveNutritionEntry(currentEntry)
+
+            // Update local state
+            setNutritionEntry(savedEntry)
+
+            // Refresh workout state to update goal rings
+            if (refreshWorkoutData) {
+                refreshWorkoutData(true)
+            }
+
+            notifications.success('Food updated', {
+                description: 'Food item updated successfully',
+                duration: 3000
+            })
+
+        } catch (error) {
+            console.error('Error updating food:', error)
+            notifications.error('Update failed', {
+                description: 'Unable to update food item. Please try again.',
                 duration: 4000
             })
         }
@@ -822,7 +888,7 @@ export default function NutritionPage() {
                                             ) : (
                                                 <div className="text-center py-4">
                                                     <p className="text-sm text-[#7A7F86]">No foods added yet</p>
-                                                    <p className="text-xs text-[#5A5F66] mt-1">Tap + to add food</p>
+                                                    <p className="text-xs text-[#5A5F66] mt-1">Tap + to add items</p>
                                                 </div>
                                             )}
                                         </div>
@@ -924,13 +990,24 @@ export default function NutritionPage() {
                     />
                 )}
 
-                {/* Add Food Dialog */}
+                {/* Add Meal Dialog */}
                 {selectedMealType && (
-                    <AddFoodDialog
+                    <AddMealDialog
                         isOpen={isAddFoodDialogOpen}
                         onClose={closeAddFoodDialog}
                         mealType={selectedMealType}
                         onFoodAdded={handleFoodAdded}
+                    />
+                )}
+
+                {/* Edit Food Dialog */}
+                {editingFoodEntry && editingMealType && (
+                    <EditFoodDialog
+                        isOpen={isEditFoodDialogOpen}
+                        onClose={closeEditFoodDialog}
+                        foodEntry={editingFoodEntry}
+                        mealType={editingMealType}
+                        onFoodUpdated={handleFoodUpdated}
                     />
                 )}
 

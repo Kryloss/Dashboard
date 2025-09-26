@@ -11,7 +11,7 @@ import { NutritionStorage, Food, DetailedNutrients } from "@/lib/nutrition-stora
 import { Search, X, Plus, Package, Edit3, Calculator } from "lucide-react"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 
-interface AddFoodDialogProps {
+interface AddMealDialogProps {
     isOpen: boolean
     onClose: () => void
     mealType: 'breakfast' | 'lunch' | 'dinner' | 'snacks'
@@ -28,7 +28,7 @@ interface FoodSearchResult {
     macros: DetailedNutrients
 }
 
-export function AddFoodDialog({ isOpen, onClose, mealType, onFoodAdded }: AddFoodDialogProps) {
+export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMealDialogProps) {
     const notifications = useNotifications()
 
     // Search state
@@ -240,7 +240,7 @@ export function AddFoodDialog({ isOpen, onClose, mealType, onFoodAdded }: AddFoo
                 <DialogHeader>
                     <div className="flex items-center justify-between">
                         <DialogTitle className="text-xl font-semibold text-[#F3F4F6]">
-                            Add Food to {getMealDisplayName()}
+                            Add to {getMealDisplayName()}
                         </DialogTitle>
                         <Button
                             onClick={handleClose}

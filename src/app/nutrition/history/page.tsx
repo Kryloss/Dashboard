@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { NutritionStorage, NutritionEntry, Food } from "@/lib/nutrition-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
-import { AddFoodDialog } from "../components/add-food-dialog"
+import { AddMealDialog } from "../components/add-meal-dialog"
 import {
     ArrowLeft,
     Calendar as CalendarIcon,
@@ -540,7 +540,7 @@ export default function NutritionHistoryPage() {
 
                     {/* Add Food Dialog */}
                     {selectedMealType && (
-                        <AddFoodDialog
+                        <AddMealDialog
                             isOpen={isAddFoodDialogOpen}
                             onClose={closeAddFoodDialog}
                             mealType={selectedMealType}

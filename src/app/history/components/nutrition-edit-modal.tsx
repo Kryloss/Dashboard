@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { NutritionStorage, NutritionEntry, Food } from "@/lib/nutrition-storage"
-import { AddFoodDialog } from "../../nutrition/components/add-food-dialog"
+import { AddMealDialog } from "../../nutrition/components/add-meal-dialog"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 import {
@@ -326,9 +326,9 @@ export function NutritionEditModal({ date, nutritionEntry: initialEntry, onClose
                 </DialogContent>
             </Dialog>
 
-            {/* Add Food Dialog */}
+            {/* Add Meal Dialog */}
             {selectedMealType && (
-                <AddFoodDialog
+                <AddMealDialog
                     isOpen={isAddFoodDialogOpen}
                     onClose={closeAddFoodDialog}
                     mealType={selectedMealType}
