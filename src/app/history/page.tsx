@@ -7,9 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { ArrowLeft, Search, Filter, Dumbbell, Footprints, Heart, Bike, Plus, Moon, Calendar as CalendarIcon, Trash2, Coffee, Sandwich, ChefHat, Cookie, Flame } from "lucide-react"
+import { ArrowLeft, Search, Filter, Dumbbell, Footprints, Heart, Bike, Moon, Flame } from "lucide-react"
 
 // Workout related imports
 import { WorkoutStorage, WorkoutActivity } from "@/lib/workout-storage"
@@ -17,7 +15,7 @@ import { UserDataStorage, SleepData } from "@/lib/user-data-storage"
 import { GoalProgressCalculator } from "@/lib/goal-progress"
 
 // Nutrition related imports
-import { NutritionStorage, NutritionEntry, Food } from "@/lib/nutrition-storage"
+import { NutritionStorage, NutritionEntry } from "@/lib/nutrition-storage"
 
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
@@ -29,9 +27,10 @@ import { DeleteConfirmDialog } from "./components/delete-confirm-dialog"
 import { SleepCard } from "./components/sleep-card"
 import { SleepEditModal } from "./components/sleep-edit-modal"
 import { SleepDeleteConfirmDialog } from "./components/sleep-delete-confirm-dialog"
-import { AddFoodDialog } from "../nutrition/components/add-food-dialog"
+import { NutritionCard } from "./components/nutrition-card"
+import { NutritionEditModal } from "./components/nutrition-edit-modal"
 
-import { format, subDays, addDays } from "date-fns"
+import { format } from "date-fns"
 
 export default function HistoryPage() {
     const router = useRouter()
@@ -60,12 +59,9 @@ export default function HistoryPage() {
     const [deletingSleep, setDeletingSleep] = useState<SleepData | null>(null)
 
     // Nutrition related state
-    const [selectedDate, setSelectedDate] = useState<Date>(new Date())
-    const [nutritionEntry, setNutritionEntry] = useState<NutritionEntry | null>(null)
+    const [nutritionEntries, setNutritionEntries] = useState<{[date: string]: NutritionEntry | null}>({})
     const [isNutritionLoading, setIsNutritionLoading] = useState(false)
-    const [isCalendarOpen, setIsCalendarOpen] = useState(false)
-    const [selectedMealType, setSelectedMealType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snacks' | null>(null)
-    const [isAddFoodDialogOpen, setIsAddFoodDialogOpen] = useState(false)
+    const [editingNutritionDate, setEditingNutritionDate] = useState<string | null>(null)
 
     // Track if we've shown the sign-in notification to avoid duplicates
     const signInNotificationShownRef = useRef(false)
@@ -152,30 +148,48 @@ export default function HistoryPage() {
         }
     }
 
-    // Load nutrition data for selected date
-    useEffect(() => {
-        const loadNutritionData = async () => {
-            if (!user || !supabase || activeTab !== "nutrition") return
+    // Load nutrition data for recent dates
+    const loadNutritionData = async () => {
+        if (!user || !supabase) return
 
-            const dateString = format(selectedDate, 'yyyy-MM-dd')
+        try {
             setIsNutritionLoading(true)
 
-            try {
-                const entry = await NutritionStorage.getNutritionEntry(dateString)
-                setNutritionEntry(entry)
-            } catch (error) {
-                console.error('Error loading nutrition data:', error)
-                notifications.error('Load failed', {
-                    description: 'Unable to load nutrition data for selected date',
-                    duration: 3000
-                })
-            } finally {
-                setIsNutritionLoading(false)
-            }
-        }
+            // Load last 30 days of nutrition data
+            const entries: {[date: string]: NutritionEntry | null} = {}
+            const today = new Date()
 
-        loadNutritionData()
-    }, [selectedDate, user, supabase, notifications, activeTab])
+            for (let i = 0; i < 30; i++) {
+                const date = new Date(today)
+                date.setDate(date.getDate() - i)
+                const dateString = format(date, 'yyyy-MM-dd')
+
+                try {
+                    const entry = await NutritionStorage.getNutritionEntry(dateString)
+                    entries[dateString] = entry
+                } catch (error) {
+                    // If no entry exists for this date, set to null
+                    entries[dateString] = null
+                }
+            }
+
+            setNutritionEntries(entries)
+        } catch (error) {
+            console.error('Error loading nutrition data:', error)
+            notifications.error('Load failed', {
+                description: 'Unable to load nutrition data',
+                duration: 3000
+            })
+        } finally {
+            setIsNutritionLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        if (user && supabase && activeTab === "nutrition") {
+            loadNutritionData()
+        }
+    }, [user, supabase, activeTab, notifications])
 
     // Reload data when filter changes
     useEffect(() => {
@@ -287,185 +301,19 @@ export default function HistoryPage() {
         }
     }
 
-    // Nutrition helper functions
-    const getMealIcon = (mealType: string) => {
-        switch (mealType) {
-            case 'breakfast': return <Coffee className="w-4 h-4" />
-            case 'lunch': return <Sandwich className="w-4 h-4" />
-            case 'dinner': return <ChefHat className="w-4 h-4" />
-            case 'snacks': return <Cookie className="w-4 h-4" />
-            default: return <Coffee className="w-4 h-4" />
-        }
+    // Nutrition handlers
+    const handleEditNutrition = (date: string) => {
+        setEditingNutritionDate(date)
     }
 
-    const getMealDisplayName = (mealType: string) => {
-        const names = {
-            breakfast: 'Breakfast',
-            lunch: 'Lunch',
-            dinner: 'Dinner',
-            snacks: 'Snacks'
+    const handleNutritionSave = (updatedEntry: NutritionEntry | null) => {
+        if (editingNutritionDate) {
+            setNutritionEntries(prev => ({
+                ...prev,
+                [editingNutritionDate]: updatedEntry
+            }))
         }
-        return names[mealType as keyof typeof names] || mealType
-    }
-
-    const handleDateSelect = (date: Date | undefined) => {
-        if (date) {
-            setSelectedDate(date)
-            setIsCalendarOpen(false)
-        }
-    }
-
-    const navigateDate = (direction: 'prev' | 'next') => {
-        if (direction === 'prev') {
-            setSelectedDate(prev => subDays(prev, 1))
-        } else {
-            setSelectedDate(prev => addDays(prev, 1))
-        }
-    }
-
-    const handleAddFood = (mealType: 'breakfast' | 'lunch' | 'dinner' | 'snacks') => {
-        if (!user) {
-            notifications.warning('Sign in required', {
-                description: 'Please sign in to edit nutrition',
-                duration: 4000,
-                action: {
-                    label: 'Sign In',
-                    onClick: () => router.push('/auth/signin')
-                }
-            })
-            return
-        }
-
-        setSelectedMealType(mealType)
-        setIsAddFoodDialogOpen(true)
-    }
-
-    const closeAddFoodDialog = () => {
-        setIsAddFoodDialogOpen(false)
-        setSelectedMealType(null)
-    }
-
-    const handleFoodAdded = async (food: Food, quantity: number, notes?: string) => {
-        if (!selectedMealType || !user) return
-
-        try {
-            const dateString = format(selectedDate, 'yyyy-MM-dd')
-            let currentEntry = nutritionEntry
-
-            if (!currentEntry) {
-                currentEntry = {
-                    id: `nutrition-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                    userId: user.id,
-                    date: dateString,
-                    meals: [],
-                    totalCalories: 0,
-                    totalMacros: { carbs: 0, protein: 0, fats: 0 },
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                }
-            }
-
-            const adjustedCalories = Math.round(food.caloriesPerServing * quantity)
-            const adjustedMacros = {
-                carbs: food.macros.carbs * quantity,
-                protein: food.macros.protein * quantity,
-                fats: food.macros.fats * quantity,
-                fiber: (food.macros.fiber || 0) * quantity,
-                sugar: (food.macros.sugar || 0) * quantity,
-                sodium: (food.macros.sodium || 0) * quantity
-            }
-
-            const foodEntry = {
-                id: `food-entry-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                foodId: food.id,
-                food: food,
-                quantity: quantity,
-                adjustedCalories: adjustedCalories,
-                adjustedMacros: adjustedMacros,
-                notes: notes,
-                createdAt: new Date().toISOString()
-            }
-
-            let meal = currentEntry.meals.find(m => m.type === selectedMealType)
-            if (!meal) {
-                meal = NutritionStorage.createEmptyMeal(selectedMealType)
-                currentEntry.meals.push(meal)
-            }
-
-            meal.foods.push(foodEntry)
-
-            const mealTotals = NutritionStorage.calculateMealTotals(meal)
-            meal.totalCalories = mealTotals.calories
-            meal.totalMacros = mealTotals.macros
-
-            currentEntry.totalCalories = currentEntry.meals.reduce((sum, m) => sum + m.totalCalories, 0)
-            currentEntry.totalMacros = {
-                carbs: currentEntry.meals.reduce((sum, m) => sum + m.totalMacros.carbs, 0),
-                protein: currentEntry.meals.reduce((sum, m) => sum + m.totalMacros.protein, 0),
-                fats: currentEntry.meals.reduce((sum, m) => sum + m.totalMacros.fats, 0),
-                fiber: currentEntry.meals.reduce((sum, m) => sum + (m.totalMacros.fiber || 0), 0),
-                sugar: currentEntry.meals.reduce((sum, m) => sum + (m.totalMacros.sugar || 0), 0),
-                sodium: currentEntry.meals.reduce((sum, m) => sum + (m.totalMacros.sodium || 0), 0)
-            }
-
-            const savedEntry = await NutritionStorage.saveNutritionEntry(currentEntry)
-            setNutritionEntry(savedEntry)
-            closeAddFoodDialog()
-
-            notifications.success('Food added', {
-                description: 'Food added to your nutrition log',
-                duration: 3000
-            })
-
-        } catch (error) {
-            console.error('Error adding food:', error)
-            notifications.error('Add food failed', {
-                description: 'Unable to add food. Please try again.',
-                duration: 4000
-            })
-        }
-    }
-
-    const handleDeleteFood = async (mealType: string, foodEntryId: string) => {
-        if (!nutritionEntry || !user) return
-
-        try {
-            const updatedEntry = { ...nutritionEntry }
-            const meal = updatedEntry.meals.find(m => m.type === mealType)
-
-            if (!meal) return
-
-            meal.foods = meal.foods.filter(f => f.id !== foodEntryId)
-
-            const mealTotals = NutritionStorage.calculateMealTotals(meal)
-            meal.totalCalories = mealTotals.calories
-            meal.totalMacros = mealTotals.macros
-
-            updatedEntry.totalCalories = updatedEntry.meals.reduce((sum, m) => sum + m.totalCalories, 0)
-            updatedEntry.totalMacros = {
-                carbs: updatedEntry.meals.reduce((sum, m) => sum + m.totalMacros.carbs, 0),
-                protein: updatedEntry.meals.reduce((sum, m) => sum + m.totalMacros.protein, 0),
-                fats: updatedEntry.meals.reduce((sum, m) => sum + m.totalMacros.fats, 0),
-                fiber: updatedEntry.meals.reduce((sum, m) => sum + (m.totalMacros.fiber || 0), 0),
-                sugar: updatedEntry.meals.reduce((sum, m) => sum + (m.totalMacros.sugar || 0), 0),
-                sodium: updatedEntry.meals.reduce((sum, m) => sum + (m.totalMacros.sodium || 0), 0)
-            }
-
-            const savedEntry = await NutritionStorage.saveNutritionEntry(updatedEntry)
-            setNutritionEntry(savedEntry)
-
-            notifications.success('Food removed', {
-                description: 'Food removed from your nutrition log',
-                duration: 3000
-            })
-
-        } catch (error) {
-            console.error('Error removing food:', error)
-            notifications.error('Remove failed', {
-                description: 'Unable to remove food. Please try again.',
-                duration: 4000
-            })
-        }
+        setEditingNutritionDate(null)
     }
 
     // Helper functions for workout display
@@ -712,153 +560,31 @@ export default function HistoryPage() {
                         </TabsContent>
 
                         <TabsContent value="nutrition" className="mt-6">
-                            {/* Date Navigation */}
-                            <div className="bg-[#121318] border border-[#212227] rounded-[20px] p-6 mb-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)]">
-                                <div className="flex items-center justify-between">
-                                    <Button
-                                        onClick={() => navigateDate('prev')}
-                                        variant="ghost"
-                                        className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)]"
-                                    >
-                                        ← Previous
-                                    </Button>
-
-                                    <div className="flex items-center space-x-4">
-                                        <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-                                            <PopoverTrigger asChild>
-                                                <Button
-                                                    variant="outline"
-                                                    className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)]"
-                                                >
-                                                    <CalendarIcon className="w-4 h-4 mr-2" />
-                                                    {format(selectedDate, 'MMM d, yyyy')}
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent
-                                                className="w-auto p-0 bg-[#121318] border-[#212227]"
-                                                align="center"
-                                                side="bottom"
-                                                sideOffset={8}
-                                            >
-                                                <Calendar
-                                                    mode="single"
-                                                    selected={selectedDate}
-                                                    onSelect={handleDateSelect}
-                                                    disabled={(date) => date > new Date()}
-                                                    initialFocus
-                                                    className="bg-[#121318] text-[#F3F4F6]"
-                                                />
-                                            </PopoverContent>
-                                        </Popover>
-                                    </div>
-
-                                    <Button
-                                        onClick={() => navigateDate('next')}
-                                        variant="ghost"
-                                        disabled={format(selectedDate, 'yyyy-MM-dd') >= format(new Date(), 'yyyy-MM-dd')}
-                                        className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        Next →
-                                    </Button>
-                                </div>
-                            </div>
-
-                            {/* Nutrition Summary */}
-                            {nutritionEntry && (
-                                <div className="bg-[#121318] border border-[#212227] rounded-[20px] p-6 mb-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)]">
-                                    <h3 className="text-lg font-semibold text-[#F3F4F6] mb-4">Daily Summary</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                        <div className="text-center">
-                                            <div className="text-2xl font-bold text-[#F3F4F6]">{nutritionEntry.totalCalories}</div>
-                                            <div className="text-sm text-[#A1A1AA]">Calories</div>
-                                        </div>
-                                        <div className="text-center">
-                                            <div className="text-2xl font-bold text-[#FFA500]">{Math.round(nutritionEntry.totalMacros.carbs)}g</div>
-                                            <div className="text-sm text-[#A1A1AA]">Carbs</div>
-                                        </div>
-                                        <div className="text-center">
-                                            <div className="text-2xl font-bold text-[#FF6B6B]">{Math.round(nutritionEntry.totalMacros.protein)}g</div>
-                                            <div className="text-sm text-[#A1A1AA]">Protein</div>
-                                        </div>
-                                        <div className="text-center">
-                                            <div className="text-2xl font-bold text-[#4ECDC4]">{Math.round(nutritionEntry.totalMacros.fats)}g</div>
-                                            <div className="text-sm text-[#A1A1AA]">Fats</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Nutrition Data */}
+                            {/* Nutrition Cards List */}
                             {isNutritionLoading ? (
                                 <div className="flex items-center justify-center py-12">
                                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2BD2FF]"></div>
                                 </div>
-                            ) : !nutritionEntry ? (
+                            ) : Object.keys(nutritionEntries).length === 0 ? (
                                 <div className="text-center py-12">
                                     <div className="w-16 h-16 bg-[rgba(255,255,255,0.03)] border border-[#2A2B31] rounded-full flex items-center justify-center mx-auto mb-4">
                                         <Flame className="w-8 h-8 text-[#A1A1AA]" />
                                     </div>
-                                    <h3 className="text-lg font-semibold text-[#F3F4F6] mb-2">No nutrition data</h3>
-                                    <p className="text-[#A1A1AA] mb-6">No food was logged on {format(selectedDate, 'MMM d, yyyy')}</p>
+                                    <h3 className="text-lg font-semibold text-[#F3F4F6] mb-2">No nutrition data found</h3>
+                                    <p className="text-[#A1A1AA] mb-6">Start logging your nutrition to see it here</p>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {['breakfast', 'lunch', 'dinner', 'snacks'].map((mealType) => {
-                                        const meal = nutritionEntry.meals.find(m => m.type === mealType)
-                                        const mealName = getMealDisplayName(mealType)
-
-                                        return (
-                                            <div key={mealType} className="bg-[#121318] border border-[#212227] rounded-[20px] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)]">
-                                                <div className="flex items-center justify-between mb-3">
-                                                    <div className="flex items-center space-x-3">
-                                                        <div className="w-8 h-8 bg-[rgba(255,255,255,0.03)] border border-[#2A2B31] rounded-[10px] flex items-center justify-center text-[#F3F4F6]">
-                                                            {getMealIcon(mealType)}
-                                                        </div>
-                                                        <div>
-                                                            <h3 className="font-medium text-[#F3F4F6]">{mealName}</h3>
-                                                            {meal && (
-                                                                <p className="text-xs text-[#A1A1AA]">{meal.totalCalories} cal • {meal.foods.length} items</p>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    <Button
-                                                        onClick={() => handleAddFood(mealType as 'breakfast' | 'lunch' | 'dinner' | 'snacks')}
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full w-7 h-7"
-                                                    >
-                                                        <Plus className="w-4 h-4" />
-                                                    </Button>
-                                                </div>
-
-                                                {meal ? (
-                                                    <div className="space-y-2">
-                                                        {meal.foods.map((food, index) => (
-                                                            <div key={index} className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-[rgba(255,255,255,0.02)] group">
-                                                                <div>
-                                                                    <p className="text-sm text-[#F3F4F6]">{food.food.name}</p>
-                                                                    <p className="text-xs text-[#7A7F86]">{food.adjustedCalories} cal</p>
-                                                                </div>
-                                                                <Button
-                                                                    onClick={() => handleDeleteFood(mealType, food.id)}
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="w-6 h-6 text-[#A1A1AA] hover:text-red-400 hover:bg-red-500/10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                                                                >
-                                                                    <Trash2 className="w-3 h-3" />
-                                                                </Button>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                ) : (
-                                                    <div className="text-center py-4">
-                                                        <p className="text-sm text-[#7A7F86]">No foods added yet</p>
-                                                        <p className="text-xs text-[#5A5F66] mt-1">Tap + to add food</p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )
-                                    })}
+                                <div className="space-y-4">
+                                    {Object.entries(nutritionEntries)
+                                        .sort(([dateA], [dateB]) => dateB.localeCompare(dateA)) // Sort newest first
+                                        .map(([date, nutritionEntry]) => (
+                                            <NutritionCard
+                                                key={date}
+                                                date={date}
+                                                nutritionEntry={nutritionEntry}
+                                                onEdit={() => handleEditNutrition(date)}
+                                            />
+                                        ))}
                                 </div>
                             )}
                         </TabsContent>
@@ -902,13 +628,13 @@ export default function HistoryPage() {
                 />
             )}
 
-            {/* Add Food Dialog */}
-            {selectedMealType && (
-                <AddFoodDialog
-                    isOpen={isAddFoodDialogOpen}
-                    onClose={closeAddFoodDialog}
-                    mealType={selectedMealType}
-                    onFoodAdded={handleFoodAdded}
+            {/* Nutrition Edit Modal */}
+            {editingNutritionDate && (
+                <NutritionEditModal
+                    date={editingNutritionDate}
+                    nutritionEntry={nutritionEntries[editingNutritionDate]}
+                    onClose={() => setEditingNutritionDate(null)}
+                    onSave={handleNutritionSave}
                 />
             )}
         </div>
