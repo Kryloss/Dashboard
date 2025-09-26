@@ -7,14 +7,14 @@ import { Button } from "@/components/ui/button"
 import { GoalRings } from "../workout/components/goal-rings"
 import { StatCard } from "../workout/components/stat-card"
 
-import { NutritionStorage, NutritionEntry, NutritionGoals, DetailedNutrients, Food } from "@/lib/nutrition-storage"
+import { NutritionStorage, NutritionEntry, NutritionGoals, DetailedNutrients, Food, FoodEntry } from "@/lib/nutrition-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 import { useWorkoutState } from "@/lib/hooks/useWorkoutState"
 import { DetailedMacroModal } from "./components/detailed-macro-modal"
 import { AddFoodDialog } from "./components/add-food-dialog"
 import { SetGoalDialog } from "../workout/components/set-goal-dialog"
-import { Plus, Apple, Utensils, User, Dumbbell, Coffee, Sandwich, ChefHat, Cookie, Flame, Moon, TrendingUp } from "lucide-react"
+import { Plus, Apple, Utensils, User, Dumbbell, Coffee, Sandwich, ChefHat, Cookie, Flame, Moon, TrendingUp, Edit3, Trash2 } from "lucide-react"
 
 export default function NutritionPage() {
     const router = useRouter()
@@ -140,6 +140,79 @@ export default function NutritionPage() {
     const closeAddFoodDialog = () => {
         setIsAddFoodDialogOpen(false)
         setSelectedMealType(null)
+    }
+
+    const handleEditFood = async (mealType: 'breakfast' | 'lunch' | 'dinner' | 'snacks', food: FoodEntry) => {
+        if (!user) {
+            notifications.warning('Sign in required', {
+                description: 'Please sign in to edit nutrition',
+                duration: 4000,
+                action: {
+                    label: 'Sign In',
+                    onClick: () => router.push('/auth/signin')
+                }
+            })
+            return
+        }
+
+        // TODO: Implement food editing functionality
+        notifications.info('Edit Food', {
+            description: `Editing ${food.food.name} from ${mealType}. Feature coming soon!`,
+            duration: 3000
+        })
+    }
+
+    const handleDeleteFood = async (mealType: 'breakfast' | 'lunch' | 'dinner' | 'snacks', foodId: string) => {
+        if (!user || !nutritionEntry) return
+
+        try {
+            const updatedEntry = { ...nutritionEntry }
+            const meal = updatedEntry.meals.find(m => m.type === mealType)
+
+            if (!meal) return
+
+            // Remove the food from the meal
+            meal.foods = meal.foods.filter(f => f.id !== foodId)
+
+            // Recalculate meal totals
+            const mealTotals = NutritionStorage.calculateMealTotals(meal)
+            meal.totalCalories = mealTotals.calories
+            meal.totalMacros = mealTotals.macros
+
+            // Recalculate entry totals
+            updatedEntry.totalCalories = updatedEntry.meals.reduce((sum, m) => sum + m.totalCalories, 0)
+            updatedEntry.totalMacros = {
+                carbs: updatedEntry.meals.reduce((sum, m) => sum + m.totalMacros.carbs, 0),
+                protein: updatedEntry.meals.reduce((sum, m) => sum + m.totalMacros.protein, 0),
+                fats: updatedEntry.meals.reduce((sum, m) => sum + m.totalMacros.fats, 0),
+                fiber: updatedEntry.meals.reduce((sum, m) => sum + (m.totalMacros.fiber || 0), 0),
+                sugar: updatedEntry.meals.reduce((sum, m) => sum + (m.totalMacros.sugar || 0), 0),
+                sodium: updatedEntry.meals.reduce((sum, m) => sum + (m.totalMacros.sodium || 0), 0)
+            }
+
+            // Save to storage
+            const savedEntry = await NutritionStorage.saveNutritionEntry(updatedEntry)
+
+            // Update local state
+            setNutritionEntry(savedEntry)
+
+            // Refresh workout state to update goal rings
+            if (refreshWorkoutData) {
+                refreshWorkoutData(true)
+            }
+
+            notifications.success('Food removed', {
+                description: 'Food item removed from meal',
+                duration: 3000
+            })
+
+        } catch (error) {
+            console.error('Error deleting food:', error)
+            notifications.error('Delete failed', {
+                description: 'Unable to remove food item. Please try again.',
+                duration: 4000
+            })
+        }
     }
 
     const handleFoodAdded = async (food: Food, quantity: number, notes?: string) => {
@@ -515,7 +588,7 @@ export default function NutritionPage() {
                                         className="bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-full border border-[rgba(42,140,234,0.35)] shadow-[0_8px_32px_rgba(42,140,234,0.28)] hover:shadow-[0_10px_40px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all"
                                     >
                                         <Plus className="w-4 h-4 mr-2" />
-                                        Add Food
+                                        Add Meal
                                     </Button>
                                 </div>
                             </div>
@@ -619,10 +692,28 @@ export default function NutritionPage() {
                                             {meal ? (
                                                 <div className="space-y-2">
                                                     {meal.foods.slice(0, 3).map((food, index) => (
-                                                        <div key={index} className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-[rgba(255,255,255,0.02)]">
+                                                        <div key={index} className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-[rgba(255,255,255,0.02)] group">
                                                             <div>
                                                                 <p className="text-sm text-[#F3F4F6]">{food.food.name}</p>
-                                                                <p className="text-xs text-[#7A7F86]">{food.adjustedCalories} cal</p>
+                                                                <p className="text-xs text-[#7A7F86]">{food.adjustedCalories} cal • {food.quantity} {food.food.servingUnit}</p>
+                                                            </div>
+                                                            <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                <Button
+                                                                    onClick={() => handleEditFood(mealType as 'breakfast' | 'lunch' | 'dinner' | 'snacks', food)}
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full w-6 h-6"
+                                                                >
+                                                                    <Edit3 className="w-3 h-3" />
+                                                                </Button>
+                                                                <Button
+                                                                    onClick={() => handleDeleteFood(mealType as 'breakfast' | 'lunch' | 'dinner' | 'snacks', food.id)}
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="text-[#A1A1AA] hover:text-red-400 hover:bg-red-500/10 rounded-full w-6 h-6"
+                                                                >
+                                                                    <Trash2 className="w-3 h-3" />
+                                                                </Button>
                                                             </div>
                                                         </div>
                                                     ))}
