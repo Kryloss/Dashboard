@@ -27,7 +27,7 @@ interface NutritionEditModalProps {
 }
 
 export function NutritionEditModal({ date, nutritionEntry: initialEntry, onClose, onSave }: NutritionEditModalProps) {
-    const { user, supabase } = useAuth()
+    const { user } = useAuth()
     const notifications = useNotifications()
 
     const [nutritionEntry, setNutritionEntry] = useState<NutritionEntry | null>(initialEntry)
@@ -133,11 +133,6 @@ export function NutritionEditModal({ date, nutritionEntry: initialEntry, onClose
             const savedEntry = await NutritionStorage.saveNutritionEntry(currentEntry)
             setNutritionEntry(savedEntry)
             closeAddFoodDialog()
-
-            notifications.success('Food added', {
-                description: 'Food added to your nutrition log',
-                duration: 3000
-            })
 
         } catch (error) {
             console.error('Error adding food:', error)
@@ -319,15 +314,7 @@ export function NutritionEditModal({ date, nutritionEntry: initialEntry, onClose
                         </div>
                     </div>
 
-                    <div className="flex justify-end space-x-2 pt-4 border-t border-[#212227]">
-                        <Button
-                            onClick={onClose}
-                            variant="secondary"
-                            className="bg-[#0E0F13] text-[#F3F4F6] border border-[#212227] rounded-full hover:bg-[#17181D] hover:border-[#2A2B31]"
-                            disabled={isLoading}
-                        >
-                            Cancel
-                        </Button>
+                    <div className="flex justify-end pt-4 border-t border-[#212227]">
                         <Button
                             onClick={handleSave}
                             className="bg-gradient-to-r from-[#9BE15D] to-[#00E676] text-[#0B0B0F] rounded-full hover:shadow-lg disabled:opacity-50"
