@@ -31,6 +31,7 @@ import { SleepEditModal } from "./components/sleep-edit-modal"
 import { SleepDeleteConfirmDialog } from "./components/sleep-delete-confirm-dialog"
 import { NutritionCard } from "./components/nutrition-card"
 import { NutritionEditModal } from "./components/nutrition-edit-modal"
+import { NutritionDeleteConfirmDialog } from "./components/nutrition-delete-confirm-dialog"
 
 import { format } from "date-fns"
 
@@ -64,6 +65,7 @@ export default function HistoryPage() {
     const [nutritionEntries, setNutritionEntries] = useState<{[date: string]: NutritionEntry | null}>({})
     const [isNutritionLoading, setIsNutritionLoading] = useState(false)
     const [editingNutritionDate, setEditingNutritionDate] = useState<string | null>(null)
+    const [deletingNutritionDate, setDeletingNutritionDate] = useState<string | null>(null)
     const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
 
     // Track if we've shown the sign-in notification to avoid duplicates
@@ -344,6 +346,34 @@ export default function HistoryPage() {
 
         // Open the edit modal for the selected date
         setEditingNutritionDate(dateString)
+    }
+
+    const handleDeleteNutrition = (date: string) => {
+        setDeletingNutritionDate(date)
+    }
+
+    const handleNutritionDelete = async (date: string) => {
+        try {
+            await NutritionStorage.deleteNutritionEntry(date)
+
+            setNutritionEntries(prev => {
+                const updated = { ...prev }
+                delete updated[date]
+                return updated
+            })
+
+            setDeletingNutritionDate(null)
+
+            notifications.success('Nutrition data deleted', {
+                description: 'Nutrition data removed from history',
+                duration: 3000
+            })
+        } catch (error) {
+            console.error('Error deleting nutrition data:', error)
+            notifications.error('Delete failed', {
+                description: 'Could not remove nutrition data'
+            })
+        }
     }
 
     // Helper functions for workout display
@@ -646,6 +676,7 @@ export default function HistoryPage() {
                                                 date={date}
                                                 nutritionEntry={nutritionEntry}
                                                 onEdit={() => handleEditNutrition(date)}
+                                                onDelete={() => handleDeleteNutrition(date)}
                                             />
                                         ))}
                                 </div>
@@ -698,6 +729,15 @@ export default function HistoryPage() {
                     nutritionEntry={nutritionEntries[editingNutritionDate]}
                     onClose={() => setEditingNutritionDate(null)}
                     onSave={handleNutritionSave}
+                />
+            )}
+
+            {/* Nutrition Delete Confirmation */}
+            {deletingNutritionDate && (
+                <NutritionDeleteConfirmDialog
+                    date={deletingNutritionDate}
+                    onCancel={() => setDeletingNutritionDate(null)}
+                    onConfirm={() => handleNutritionDelete(deletingNutritionDate)}
                 />
             )}
         </div>

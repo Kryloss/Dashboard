@@ -474,6 +474,42 @@ export class NutritionStorage {
         return updatedEntry
     }
 
+    static async deleteNutritionEntry(date: string): Promise<void> {
+        if (!this.currentUser) {
+            throw new Error('User must be authenticated to delete nutrition entries')
+        }
+
+        console.log('NutritionStorage.deleteNutritionEntry - Date:', date, 'User:', this.currentUser.id)
+
+        // Delete from localStorage immediately
+        this.deleteNutritionEntryFromLocalStorage(date)
+
+        // Try to delete from Supabase
+        if (this.supabase) {
+            try {
+                const { error } = await this.supabase
+                    .from('nutrition_entries')
+                    .delete()
+                    .eq('user_id', this.currentUser.id)
+                    .eq('date', date)
+                    .not('user_id', 'is', null)
+
+                if (error) throw error
+
+                console.log('Nutrition entry deleted from Supabase:', date)
+            } catch (error) {
+                console.error('Error deleting nutrition entry from Supabase:', error)
+                // Add to sync queue for retry later
+                this.addToSyncQueue({
+                    action: 'delete',
+                    table: 'nutrition_entries',
+                    data: date,
+                    timestamp: Date.now()
+                })
+            }
+        }
+    }
+
     // ============================================================================
     // NUTRITION GOALS MANAGEMENT
     // ============================================================================
@@ -749,6 +785,16 @@ export class NutritionStorage {
         } catch (error) {
             console.error('Error loading nutrition entries from localStorage:', error)
             return []
+        }
+    }
+
+    private static deleteNutritionEntryFromLocalStorage(date: string): void {
+        if (typeof window === 'undefined') return
+
+        try {
+            localStorage.removeItem(`${this.ENTRIES_KEY}-${date}`)
+        } catch (error) {
+            console.error('Error deleting nutrition entry from localStorage:', error)
         }
     }
 
