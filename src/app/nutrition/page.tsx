@@ -14,8 +14,9 @@ import { useWorkoutState } from "@/lib/hooks/useWorkoutState"
 import { DetailedMacroModal } from "./components/detailed-macro-modal"
 import { AddMealDialog } from "./components/add-meal-dialog"
 import { EditFoodDialog } from "./components/edit-food-dialog"
+import { EditMealDialog } from "./components/edit-meal-dialog"
 import { SetGoalDialog } from "../workout/components/set-goal-dialog"
-import { Plus, Apple, Utensils, User, Dumbbell, Coffee, Sandwich, ChefHat, Cookie, Flame, Moon, TrendingUp, Edit3, Trash2 } from "lucide-react"
+import { Plus, Apple, Utensils, User, Dumbbell, Coffee, Sandwich, ChefHat, Cookie, Flame, Moon, TrendingUp, Edit3, Trash2, Pizza, Salad, Croissant, IceCream } from "lucide-react"
 
 export default function NutritionPage() {
     const router = useRouter()
@@ -37,6 +38,10 @@ export default function NutritionPage() {
     const [editingFoodEntry, setEditingFoodEntry] = useState<FoodEntry | null>(null)
     const [editingMealType, setEditingMealType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snacks' | null>(null)
     const [isEditFoodDialogOpen, setIsEditFoodDialogOpen] = useState(false)
+
+    // Edit meal dialog state
+    const [editingMeal, setEditingMeal] = useState<Meal | null>(null)
+    const [isEditMealDialogOpen, setIsEditMealDialogOpen] = useState(false)
 
     // Settings dialog state
     const [showSetGoalDialog, setShowSetGoalDialog] = useState(false)
@@ -115,9 +120,18 @@ export default function NutritionPage() {
         }
 
         if (action === 'add-food') {
-            // Show meal creation dialog
+            // Show meal creation dialog - top button
             notifications.info('Add Meal', {
                 description: 'Meal creation feature coming soon! Use + buttons on meal cards to add foods for now.',
+                duration: 4000
+            })
+            return
+        }
+
+        if (action === 'add-meal') {
+            // Show meal creation dialog - Add Meal card
+            notifications.info('Add Meal', {
+                description: 'Custom meal creation with templates coming soon! Use + buttons on existing meal cards to add foods for now.',
                 duration: 4000
             })
             return
@@ -161,6 +175,11 @@ export default function NutritionPage() {
         setIsEditFoodDialogOpen(false)
         setEditingFoodEntry(null)
         setEditingMealType(null)
+    }
+
+    const closeEditMealDialog = () => {
+        setIsEditMealDialogOpen(false)
+        setEditingMeal(null)
     }
 
     const handleEditFood = async (mealType: 'breakfast' | 'lunch' | 'dinner' | 'snacks', food: FoodEntry) => {
@@ -247,11 +266,8 @@ export default function NutritionPage() {
             return
         }
 
-        // TODO: Implement meal editing functionality
-        notifications.info('Edit Meal', {
-            description: `Editing ${meal.name} meal. Feature coming soon!`,
-            duration: 3000
-        })
+        setEditingMeal(meal)
+        setIsEditMealDialogOpen(true)
     }
 
     const handleDeleteMeal = async (mealType: 'breakfast' | 'lunch' | 'dinner' | 'snacks', meal: Meal) => {
@@ -446,6 +462,38 @@ export default function NutritionPage() {
         }
     }
 
+    const handleMealUpdated = async (updatedMeal: Meal) => {
+        if (!user || !nutritionEntry) return
+
+        try {
+            const currentEntry = { ...nutritionEntry }
+
+            // Find and update the meal
+            const mealIndex = currentEntry.meals.findIndex(m => m.id === updatedMeal.id)
+            if (mealIndex === -1) return
+
+            currentEntry.meals[mealIndex] = updatedMeal
+
+            // Save to storage
+            const savedEntry = await NutritionStorage.saveNutritionEntry(currentEntry)
+
+            // Update local state
+            setNutritionEntry(savedEntry)
+
+            notifications.success('Meal updated', {
+                description: 'Meal name and icon updated successfully',
+                duration: 3000
+            })
+
+        } catch (error) {
+            console.error('Error updating meal:', error)
+            notifications.error('Update failed', {
+                description: 'Unable to update meal. Please try again.',
+                duration: 4000
+            })
+        }
+    }
+
     // Helper functions for calculations
     const getTodaysNutrition = () => {
         if (!nutritionEntry) {
@@ -476,7 +524,25 @@ export default function NutritionPage() {
         }
     }
 
-    const getMealIcon = (mealType: string) => {
+    const getMealIcon = (mealType: string, customIcon?: string) => {
+        // If custom icon is provided, use it
+        if (customIcon) {
+            switch (customIcon) {
+                case 'Coffee': return <Coffee className="w-5 h-5" />
+                case 'Sandwich': return <Sandwich className="w-5 h-5" />
+                case 'ChefHat': return <ChefHat className="w-5 h-5" />
+                case 'Cookie': return <Cookie className="w-5 h-5" />
+                case 'Apple': return <Apple className="w-5 h-5" />
+                case 'Utensils': return <Utensils className="w-5 h-5" />
+                case 'Pizza': return <Pizza className="w-5 h-5" />
+                case 'Salad': return <Salad className="w-5 h-5" />
+                case 'Croissant': return <Croissant className="w-5 h-5" />
+                case 'IceCream': return <IceCream className="w-5 h-5" />
+                default: return <Utensils className="w-5 h-5" />
+            }
+        }
+
+        // Default icons based on meal type
         switch (mealType) {
             case 'breakfast': return <Coffee className="w-5 h-5" />
             case 'lunch': return <Sandwich className="w-5 h-5" />
@@ -801,47 +867,39 @@ export default function NutritionPage() {
 
                             {/* Meals Section */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {['breakfast', 'lunch', 'dinner', 'snacks'].map((mealType) => {
-                                    const meal = getTodaysNutrition().meals.find(m => m.type === mealType)
-                                    const mealName = mealType.charAt(0).toUpperCase() + mealType.slice(1)
-
+                                {/* Existing Meals */}
+                                {getTodaysNutrition().meals.map((meal) => {
                                     return (
-                                        <div key={mealType} className="bg-[#121318] border border-[#212227] rounded-[20px] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)] hover:border-[#2A2B31] transition-colors">
+                                        <div key={meal.id} className="bg-[#121318] border border-[#212227] rounded-[20px] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)] hover:border-[#2A2B31] transition-colors">
                                             <div className="flex items-center justify-between mb-3 group/meal">
                                                 <div className="flex items-center space-x-3">
                                                     <div className="w-8 h-8 bg-[rgba(255,255,255,0.03)] border border-[#2A2B31] rounded-[10px] flex items-center justify-center text-[#F3F4F6]">
-                                                        {getMealIcon(mealType)}
+                                                        {getMealIcon(meal.type, meal.icon)}
                                                     </div>
                                                     <div>
-                                                        <h3 className="font-medium text-[#F3F4F6]">{mealName}</h3>
-                                                        {meal && (
-                                                            <p className="text-xs text-[#A1A1AA]">{meal.totalCalories} cal • {meal.foods.length} items</p>
-                                                        )}
+                                                        <h3 className="font-medium text-[#F3F4F6]">{meal.name}</h3>
+                                                        <p className="text-xs text-[#A1A1AA]">{meal.totalCalories} cal • {meal.foods.length} items</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center space-x-1">
-                                                    {meal && (
-                                                        <>
-                                                            <Button
-                                                                onClick={() => handleEditMeal(mealType as 'breakfast' | 'lunch' | 'dinner' | 'snacks', meal)}
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full w-6 h-6 opacity-0 group-hover/meal:opacity-100 transition-opacity"
-                                                            >
-                                                                <Edit3 className="w-3 h-3" />
-                                                            </Button>
-                                                            <Button
-                                                                onClick={() => handleDeleteMeal(mealType as 'breakfast' | 'lunch' | 'dinner' | 'snacks', meal)}
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="text-[#A1A1AA] hover:text-red-400 hover:bg-red-500/10 rounded-full w-6 h-6 opacity-0 group-hover/meal:opacity-100 transition-opacity"
-                                                            >
-                                                                <Trash2 className="w-3 h-3" />
-                                                            </Button>
-                                                        </>
-                                                    )}
                                                     <Button
-                                                        onClick={() => handleAddFood(mealType as 'breakfast' | 'lunch' | 'dinner' | 'snacks')}
+                                                        onClick={() => handleEditMeal(meal.type as 'breakfast' | 'lunch' | 'dinner' | 'snacks', meal)}
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full w-6 h-6 opacity-0 group-hover/meal:opacity-100 transition-opacity"
+                                                    >
+                                                        <Edit3 className="w-3 h-3" />
+                                                    </Button>
+                                                    <Button
+                                                        onClick={() => handleDeleteMeal(meal.type as 'breakfast' | 'lunch' | 'dinner' | 'snacks', meal)}
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="text-[#A1A1AA] hover:text-red-400 hover:bg-red-500/10 rounded-full w-6 h-6 opacity-0 group-hover/meal:opacity-100 transition-opacity"
+                                                    >
+                                                        <Trash2 className="w-3 h-3" />
+                                                    </Button>
+                                                    <Button
+                                                        onClick={() => handleAddFood(meal.type as 'breakfast' | 'lunch' | 'dinner' | 'snacks')}
                                                         variant="ghost"
                                                         size="icon"
                                                         className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full w-7 h-7"
@@ -851,49 +909,67 @@ export default function NutritionPage() {
                                                 </div>
                                             </div>
 
-                                            {meal ? (
-                                                <div className="space-y-2">
-                                                    {meal.foods.slice(0, 3).map((food, index) => (
-                                                        <div key={index} className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-[rgba(255,255,255,0.02)] group">
-                                                            <div>
-                                                                <p className="text-sm text-[#F3F4F6]">{food.food.name}</p>
-                                                                <p className="text-xs text-[#7A7F86]">{food.adjustedCalories} cal • {food.quantity} {food.food.servingUnit}</p>
-                                                            </div>
-                                                            <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                <Button
-                                                                    onClick={() => handleEditFood(mealType as 'breakfast' | 'lunch' | 'dinner' | 'snacks', food)}
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full w-6 h-6"
-                                                                >
-                                                                    <Edit3 className="w-3 h-3" />
-                                                                </Button>
-                                                                <Button
-                                                                    onClick={() => handleDeleteFood(mealType as 'breakfast' | 'lunch' | 'dinner' | 'snacks', food.id)}
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="text-[#A1A1AA] hover:text-red-400 hover:bg-red-500/10 rounded-full w-6 h-6"
-                                                                >
-                                                                    <Trash2 className="w-3 h-3" />
-                                                                </Button>
-                                                            </div>
+                                            <div className="space-y-2">
+                                                {meal.foods.slice(0, 3).map((food, index) => (
+                                                    <div key={index} className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-[rgba(255,255,255,0.02)] group">
+                                                        <div>
+                                                            <p className="text-sm text-[#F3F4F6]">{food.food.name}</p>
+                                                            <p className="text-xs text-[#7A7F86]">{food.adjustedCalories} cal • {food.quantity} {food.food.servingUnit}</p>
                                                         </div>
-                                                    ))}
-                                                    {meal.foods.length > 3 && (
-                                                        <p className="text-xs text-[#7A7F86] text-center py-1">
-                                                            +{meal.foods.length - 3} more items
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                <div className="text-center py-4">
-                                                    <p className="text-sm text-[#7A7F86]">No foods added yet</p>
-                                                    <p className="text-xs text-[#5A5F66] mt-1">Tap + to add items</p>
-                                                </div>
-                                            )}
+                                                        <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <Button
+                                                                onClick={() => handleEditFood(meal.type as 'breakfast' | 'lunch' | 'dinner' | 'snacks', food)}
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full w-6 h-6"
+                                                            >
+                                                                <Edit3 className="w-3 h-3" />
+                                                            </Button>
+                                                            <Button
+                                                                onClick={() => handleDeleteFood(meal.type as 'breakfast' | 'lunch' | 'dinner' | 'snacks', food.id)}
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="text-[#A1A1AA] hover:text-red-400 hover:bg-red-500/10 rounded-full w-6 h-6"
+                                                            >
+                                                                <Trash2 className="w-3 h-3" />
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                {meal.foods.length > 3 && (
+                                                    <p className="text-xs text-[#7A7F86] text-center py-1">
+                                                        +{meal.foods.length - 3} more items
+                                                    </p>
+                                                )}
+                                                {meal.foods.length === 0 && (
+                                                    <div className="text-center py-4">
+                                                        <p className="text-sm text-[#7A7F86]">No foods added yet</p>
+                                                        <p className="text-xs text-[#5A5F66] mt-1">Tap + to add items</p>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     )
                                 })}
+
+                                {/* Add Meal Card - Show if less than 6 meals */}
+                                {getTodaysNutrition().meals.length < 6 && (
+                                    <div
+                                        onClick={() => handleQuickAction('add-meal')}
+                                        className="bg-[#0E0F13] border-2 border-dashed border-[#2A2B31] rounded-[20px] p-4 hover:border-[#4A5A6F] hover:bg-[rgba(255,255,255,0.02)] transition-colors cursor-pointer flex flex-col items-center justify-center min-h-[180px]"
+                                    >
+                                        <div className="w-12 h-12 bg-gradient-to-br from-[#9BE15D] to-[#00E676] rounded-full flex items-center justify-center mb-4">
+                                            <Plus className="w-6 h-6 text-white" />
+                                        </div>
+                                        <h3 className="font-medium text-[#F3F4F6] mb-2">Add New Meal</h3>
+                                        <p className="text-xs text-[#A1A1AA] text-center">
+                                            Create a custom meal or choose from templates
+                                        </p>
+                                        <p className="text-xs text-[#7A7F86] mt-2">
+                                            {6 - getTodaysNutrition().meals.length} meals remaining
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </section>
 
@@ -1008,6 +1084,16 @@ export default function NutritionPage() {
                         foodEntry={editingFoodEntry}
                         mealType={editingMealType}
                         onFoodUpdated={handleFoodUpdated}
+                    />
+                )}
+
+                {/* Edit Meal Dialog */}
+                {editingMeal && (
+                    <EditMealDialog
+                        isOpen={isEditMealDialogOpen}
+                        onClose={closeEditMealDialog}
+                        meal={editingMeal}
+                        onMealUpdated={handleMealUpdated}
                     />
                 )}
 

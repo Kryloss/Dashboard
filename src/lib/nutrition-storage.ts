@@ -74,12 +74,28 @@ export interface FoodEntry {
 
 export interface Meal {
     id: string
-    type: 'breakfast' | 'lunch' | 'dinner' | 'snacks'
+    type: 'breakfast' | 'lunch' | 'dinner' | 'snacks' | 'custom'
     name: string           // "Breakfast", "Lunch", "Dinner", "Snacks", or custom
+    icon?: string          // icon name for the meal
     foods: FoodEntry[]
     totalCalories: number  // calculated from foods
     totalMacros: MacroNutrients // calculated from foods
     notes?: string
+}
+
+export interface MealTemplate {
+    id: string
+    name: string
+    icon: string
+    type: 'builtin' | 'user'
+    userId?: string
+    foods: Array<{
+        food: Food
+        quantity: number
+        notes?: string
+    }>
+    createdAt: string
+    updatedAt: string
 }
 
 export interface NutritionEntry {
