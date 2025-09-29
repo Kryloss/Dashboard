@@ -159,9 +159,11 @@ export default function WorkoutPage() {
                     duration: 3000
                 })
 
-                // Always refresh workout data to ensure consistency
-                // The individual hooks handle their own optimistic updates
-                refreshWorkoutData(true)
+                // Data should already be refreshed by the hook that emitted this event
+                // Only refresh if the event doesn't come from use-log-workout
+                if (customEvent.detail.source !== 'use-log-workout') {
+                    refreshWorkoutData(true)
+                }
             }
         }
 
