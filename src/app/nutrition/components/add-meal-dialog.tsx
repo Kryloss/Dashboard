@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { NutritionStorage, Food, DetailedNutrients } from "@/lib/nutrition-storage"
-import { Search, X, Plus, Package, Edit3, Calculator } from "lucide-react"
+import { Search, X, Plus, Package, Edit3, Calculator, Database, Leaf } from "lucide-react"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 
 interface AddMealDialogProps {
@@ -26,6 +26,7 @@ interface FoodSearchResult {
     servingSize: number
     servingUnit: string
     macros: DetailedNutrients
+    isUserCreated: boolean
 }
 
 export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMealDialogProps) {
@@ -89,7 +90,8 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                     caloriesPerServing: food.caloriesPerServing,
                     servingSize: food.servingSize,
                     servingUnit: food.servingUnit,
-                    macros: food.macros
+                    macros: food.macros,
+                    isUserCreated: food.isUserCreated
                 })))
             } catch (error) {
                 console.error('Error searching foods:', error)
@@ -274,7 +276,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#A1A1AA] w-4 h-4" />
                             <Input
-                                placeholder="Search for foods (e.g., 'chicken breast', 'banana')..."
+                                placeholder="Search foods from USDA database (e.g., 'chicken breast', 'banana')..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-10 bg-[#121318] border-[#212227] text-[#F3F4F6] placeholder-[#7A7F86]"
@@ -289,31 +291,53 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                     <p className="text-[#A1A1AA] text-sm">Searching...</p>
                                 </div>
                             ) : searchResults.length > 0 ? (
-                                searchResults.map((food) => (
-                                    <div
-                                        key={food.id}
-                                        onClick={() => handleFoodSelect(food)}
-                                        className="p-3 bg-[#121318] border border-[#212227] rounded-lg hover:border-[#2A2B31] cursor-pointer transition-colors"
-                                    >
-                                        <div className="flex justify-between items-start">
-                                            <div className="flex-1">
-                                                <h4 className="font-medium text-[#F3F4F6]">{food.name}</h4>
-                                                {food.brand && (
-                                                    <p className="text-xs text-[#A1A1AA] mb-1">{food.brand}</p>
-                                                )}
-                                                <div className="flex items-center space-x-4 text-xs text-[#7A7F86]">
-                                                    <span>{food.caloriesPerServing} cal</span>
-                                                    <span>{food.macros.carbs}g carbs</span>
-                                                    <span>{food.macros.protein}g protein</span>
-                                                    <span>{food.macros.fats}g fats</span>
+                                searchResults.map((food) => {
+                                    const isUSDAFood = food.id.startsWith('usda-')
+                                    const isUserFood = food.isUserCreated
+
+                                    return (
+                                        <div
+                                            key={food.id}
+                                            onClick={() => handleFoodSelect(food)}
+                                            className="p-3 bg-[#121318] border border-[#212227] rounded-lg hover:border-[#2A2B31] cursor-pointer transition-colors"
+                                        >
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center space-x-2 mb-1">
+                                                        <h4 className="font-medium text-[#F3F4F6]">{food.name}</h4>
+                                                        {isUSDAFood && (
+                                                            <Badge variant="outline" className="text-[#9BE15D] border-[#9BE15D]/30 bg-[#9BE15D]/10 text-xs">
+                                                                <Leaf className="w-3 h-3 mr-1" />
+                                                                USDA
+                                                            </Badge>
+                                                        )}
+                                                        {isUserFood && (
+                                                            <Badge variant="outline" className="text-[#2A8CEA] border-[#2A8CEA]/30 bg-[#2A8CEA]/10 text-xs">
+                                                                <Database className="w-3 h-3 mr-1" />
+                                                                Custom
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                    {food.brand && (
+                                                        <p className="text-xs text-[#A1A1AA] mb-1">{food.brand}</p>
+                                                    )}
+                                                    <div className="flex items-center space-x-4 text-xs text-[#7A7F86]">
+                                                        <span className="font-medium">{food.caloriesPerServing} cal</span>
+                                                        <span className="text-[#9BE15D]">{Math.round(food.macros.carbs * 10) / 10}g carbs</span>
+                                                        <span className="text-[#2A8CEA]">{Math.round(food.macros.protein * 10) / 10}g protein</span>
+                                                        <span className="text-[#FF2D55]">{Math.round(food.macros.fats * 10) / 10}g fats</span>
+                                                        {food.macros.fiber && food.macros.fiber > 0 && (
+                                                            <span className="text-[#A1A1AA]">{Math.round(food.macros.fiber * 10) / 10}g fiber</span>
+                                                        )}
+                                                    </div>
                                                 </div>
+                                                <Badge variant="outline" className="text-[#A1A1AA] border-[#212227] ml-2">
+                                                    per {food.servingSize}{food.servingUnit}
+                                                </Badge>
                                             </div>
-                                            <Badge variant="outline" className="text-[#A1A1AA] border-[#212227]">
-                                                per {food.servingSize}{food.servingUnit}
-                                            </Badge>
                                         </div>
-                                    </div>
-                                ))
+                                    )
+                                })
                             ) : searchQuery.length >= 2 ? (
                                 <div className="text-center py-8">
                                     <Package className="w-8 h-8 text-[#A1A1AA] mx-auto mb-2" />
@@ -322,9 +346,22 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                 </div>
                             ) : (
                                 <div className="text-center py-8">
-                                    <Search className="w-8 h-8 text-[#A1A1AA] mx-auto mb-2" />
-                                    <p className="text-[#A1A1AA] text-sm">Start typing to search for foods</p>
-                                    <p className="text-[#7A7F86] text-xs mt-1">Enter at least 2 characters</p>
+                                    <div className="flex items-center justify-center space-x-2 mb-3">
+                                        <Search className="w-8 h-8 text-[#A1A1AA]" />
+                                        <Leaf className="w-6 h-6 text-[#9BE15D]" />
+                                    </div>
+                                    <p className="text-[#A1A1AA] text-sm font-medium">Search USDA Food Database</p>
+                                    <p className="text-[#7A7F86] text-xs mt-1">Enter at least 2 characters to find foods with complete nutrition facts</p>
+                                    <div className="flex items-center justify-center space-x-4 mt-3 text-xs text-[#7A7F86]">
+                                        <span className="flex items-center">
+                                            <Leaf className="w-3 h-3 mr-1 text-[#9BE15D]" />
+                                            USDA verified
+                                        </span>
+                                        <span className="flex items-center">
+                                            <Database className="w-3 h-3 mr-1 text-[#2A8CEA]" />
+                                            Your custom foods
+                                        </span>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -555,9 +592,16 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                             <div className="flex items-center space-x-2 mb-3">
                                 <Calculator className="w-4 h-4 text-[#2A8CEA]" />
                                 <h5 className="text-[#F3F4F6] font-medium">Nutrition for {quantity} serving{quantity !== 1 ? 's' : ''}</h5>
+                                {selectedFood.id.startsWith('usda-') && (
+                                    <Badge variant="outline" className="text-[#9BE15D] border-[#9BE15D]/30 bg-[#9BE15D]/10 text-xs">
+                                        <Leaf className="w-3 h-3 mr-1" />
+                                        USDA Data
+                                    </Badge>
+                                )}
                             </div>
 
-                            <div className="grid grid-cols-4 gap-4 text-center">
+                            {/* Main Macros */}
+                            <div className="grid grid-cols-4 gap-4 text-center mb-4">
                                 <div>
                                     <div className="text-xl font-bold text-[#F3F4F6]">
                                         {calculateAdjustedNutrition(selectedFood, quantity).calories}
@@ -583,6 +627,38 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                     <div className="text-xs text-[#A1A1AA]">fats</div>
                                 </div>
                             </div>
+
+                            {/* Additional Nutrients (if available from USDA) */}
+                            {(selectedFood.macros.fiber || selectedFood.macros.sugar || selectedFood.macros.sodium) && (
+                                <div className="border-t border-[#212227] pt-3">
+                                    <div className="grid grid-cols-3 gap-4 text-center text-sm">
+                                        {selectedFood.macros.fiber && selectedFood.macros.fiber > 0 && (
+                                            <div>
+                                                <div className="font-semibold text-[#A1A1AA]">
+                                                    {Math.round((selectedFood.macros.fiber * quantity) * 10) / 10}g
+                                                </div>
+                                                <div className="text-xs text-[#7A7F86]">fiber</div>
+                                            </div>
+                                        )}
+                                        {selectedFood.macros.sugar && selectedFood.macros.sugar > 0 && (
+                                            <div>
+                                                <div className="font-semibold text-[#A1A1AA]">
+                                                    {Math.round((selectedFood.macros.sugar * quantity) * 10) / 10}g
+                                                </div>
+                                                <div className="text-xs text-[#7A7F86]">sugar</div>
+                                            </div>
+                                        )}
+                                        {selectedFood.macros.sodium && selectedFood.macros.sodium > 0 && (
+                                            <div>
+                                                <div className="font-semibold text-[#A1A1AA]">
+                                                    {Math.round((selectedFood.macros.sodium * quantity))}mg
+                                                </div>
+                                                <div className="text-xs text-[#7A7F86]">sodium</div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

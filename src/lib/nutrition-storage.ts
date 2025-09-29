@@ -2,6 +2,7 @@
 // Following the same pattern as WorkoutStorage for consistency
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { User } from '@supabase/supabase-js'
+import { USDAFoodDataService } from './usda-fooddata'
 
 // Core nutrition data models
 export interface MacroNutrients {
@@ -14,6 +15,7 @@ export interface MacroNutrients {
 }
 
 export interface DetailedNutrients extends MacroNutrients {
+    calories?: number      // kcal
     saturatedFat?: number   // grams
     transFat?: number      // grams
     monounsaturatedFat?: number // grams
@@ -268,39 +270,87 @@ export class NutritionStorage {
     static async getFoods(searchTerm?: string, limit: number = 100): Promise<Food[]> {
         console.log('NutritionStorage.getFoods - Current user:', this.currentUser?.id, 'Search:', searchTerm)
 
+        const allFoods: Food[] = []
+
+        // First, get local foods (Supabase/localStorage)
+        let localFoods: Food[] = []
+
         // Try Supabase first if user is authenticated
         if (this.currentUser && this.supabase) {
             try {
                 const { data: authUser } = await this.supabase.auth.getUser()
-                if (!authUser.user) {
-                    return this.getFoodsFromLocalStorage(searchTerm, limit)
+                if (authUser.user) {
+                    // Query both user foods and built-in database foods
+                    let query = this.supabase
+                        .from('foods')
+                        .select('*')
+                        .or(`and(user_id.eq.${this.currentUser.id},user_id.not.is.null),and(is_user_created.eq.false,user_id.is.null)`)
+                        .order('is_user_created', { ascending: false }) // User foods first
+                        .order('name', { ascending: true })
+                        .limit(Math.floor(limit / 2)) // Reserve half the limit for USDA results
+
+                    if (searchTerm) {
+                        query = query.ilike('name', `%${searchTerm}%`)
+                    }
+
+                    const { data, error } = await query
+
+                    if (!error && data) {
+                        localFoods = data.map(this.convertDbFoodToApp)
+                    }
                 }
-
-                // Query both user foods and built-in database foods
-                let query = this.supabase
-                    .from('foods')
-                    .select('*')
-                    .or(`and(user_id.eq.${this.currentUser.id},user_id.not.is.null),and(is_user_created.eq.false,user_id.is.null)`)
-                    .order('is_user_created', { ascending: false }) // User foods first
-                    .order('name', { ascending: true })
-                    .limit(limit)
-
-                if (searchTerm) {
-                    query = query.ilike('name', `%${searchTerm}%`)
-                }
-
-                const { data, error } = await query
-
-                if (error) throw error
-
-                return (data || []).map(this.convertDbFoodToApp)
             } catch (error) {
                 console.error('Error fetching foods from Supabase:', error)
             }
         }
 
-        // Fallback to localStorage
-        return this.getFoodsFromLocalStorage(searchTerm, limit)
+        // Fallback to localStorage if no Supabase results
+        if (localFoods.length === 0) {
+            localFoods = this.getFoodsFromLocalStorage(searchTerm, Math.floor(limit / 2))
+        }
+
+        allFoods.push(...localFoods)
+
+        // Then, get USDA foods if we have a search term
+        if (searchTerm && searchTerm.trim().length >= 2) {
+            try {
+                const usdaFoods = await USDAFoodDataService.searchFoods(
+                    searchTerm,
+                    limit - allFoods.length // Use remaining limit for USDA results
+                )
+
+                // Filter out duplicates (foods that might already exist locally)
+                const uniqueUSDAFoods = usdaFoods.filter(usdaFood =>
+                    !allFoods.some(localFood =>
+                        localFood.name.toLowerCase() === usdaFood.name.toLowerCase() &&
+                        localFood.brand === usdaFood.brand
+                    )
+                )
+
+                allFoods.push(...uniqueUSDAFoods)
+            } catch (error) {
+                console.error('Error fetching USDA foods:', error)
+                // Continue without USDA results if API is unavailable
+            }
+        }
+
+        // Sort results: user foods first, then other local foods, then USDA foods
+        const sortedFoods = allFoods.sort((a, b) => {
+            // User-created foods first
+            if (a.isUserCreated && !b.isUserCreated) return -1
+            if (!a.isUserCreated && b.isUserCreated) return 1
+
+            // Local foods before USDA foods
+            const aIsUSDA = a.id.startsWith('usda-')
+            const bIsUSDA = b.id.startsWith('usda-')
+            if (!aIsUSDA && bIsUSDA) return -1
+            if (aIsUSDA && !bIsUSDA) return 1
+
+            // Alphabetical within each group
+            return a.name.localeCompare(b.name)
+        })
+
+        return sortedFoods.slice(0, limit)
     }
 
     static async saveFood(foodData: Omit<Food, 'id' | 'createdAt' | 'updatedAt'>): Promise<Food> {
