@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { isOnSubdomain } from "@/lib/subdomains"
 import { Button } from "@/components/ui/button"
@@ -71,6 +71,82 @@ export default function HistoryPage() {
     // Track if we've shown the sign-in notification to avoid duplicates
     const signInNotificationShownRef = useRef(false)
 
+    // Load workout data
+    const loadWorkoutData = useCallback(async () => {
+        if (!user || !supabase) return
+
+        try {
+            setIsWorkoutLoading(true)
+            setOffset(0)
+            setActivities([])
+            setSleepData([])
+
+            const type = filterType === "all" ? undefined : filterType as 'strength' | 'running' | 'yoga' | 'cycling'
+            const workoutPromise = WorkoutStorage.getWorkoutActivities(limit, 0, type)
+
+            const endDate = GoalProgressCalculator.getTodayDateString()
+            const startDate = (() => {
+                const date = new Date()
+                date.setDate(date.getDate() - 30)
+                return date.toISOString().split('T')[0]
+            })()
+
+            const sleepPromise = UserDataStorage.getSleepData(startDate, endDate)
+
+            const [workoutData, sleepDataResult] = await Promise.all([workoutPromise, sleepPromise])
+
+            setActivities(workoutData.activities)
+            setHasMore(workoutData.hasMore)
+            setOffset(limit)
+
+            setSleepData(sleepDataResult)
+        } catch (error) {
+            console.error('Error loading workout data:', error)
+            notifications.error('Load failed', {
+                description: 'Could not load workout history data'
+            })
+        } finally {
+            setIsWorkoutLoading(false)
+        }
+    }, [user, supabase, filterType, limit, notifications])
+
+    // Load nutrition data from first entry to today
+    const loadNutritionData = useCallback(async () => {
+        if (!user || !supabase) return
+
+        try {
+            setIsNutritionLoading(true)
+
+            // Get all nutrition entries for the user
+            const allEntries = await NutritionStorage.getAllNutritionEntries()
+
+            // Create a map with date as key and entry as value
+            const entriesMap: {[date: string]: NutritionEntry | null} = {}
+
+            // If we have entries, fill in all dates from first entry to today
+            if (allEntries.length > 0) {
+                const firstDate = new Date(Math.min(...allEntries.map(e => new Date(e.date).getTime())))
+                const today = new Date()
+
+                for (let d = new Date(firstDate); d <= today; d.setDate(d.getDate() + 1)) {
+                    const dateStr = d.toISOString().split('T')[0]
+                    const entry = allEntries.find(e => e.date === dateStr)
+                    entriesMap[dateStr] = entry || null
+                }
+            }
+
+            setNutritionEntries(entriesMap)
+        } catch (error) {
+            console.error('Error loading nutrition data:', error)
+            notifications.error('Load failed', {
+                description: 'Unable to load nutrition data',
+                duration: 3000
+            })
+        } finally {
+            setIsNutritionLoading(false)
+        }
+    }, [user, supabase, notifications])
+
     // Initialize and check URL parameter for tab
     useEffect(() => {
         const onHealss = isOnSubdomain('healss')
@@ -110,10 +186,10 @@ export default function HistoryPage() {
         }, 1000)
 
         return () => clearTimeout(initializeWithDelay)
-    }, [user, loading, supabase, notifications, router])
+    }, [user, loading, supabase, notifications, router, searchParams, loadWorkoutData])
 
     // Load workout data
-    const loadWorkoutData = async () => {
+    const loadWorkoutData = useCallback(async () => {
         if (!user || !supabase) return
 
         try {
@@ -151,10 +227,10 @@ export default function HistoryPage() {
         } finally {
             setIsWorkoutLoading(false)
         }
-    }
+    }, [user, supabase, filterType, limit, notifications])
 
     // Load nutrition data from first entry to today
-    const loadNutritionData = async () => {
+    const loadNutritionData = useCallback(async () => {
         if (!user || !supabase) return
 
         try {
@@ -197,20 +273,20 @@ export default function HistoryPage() {
         } finally {
             setIsNutritionLoading(false)
         }
-    }
+    }, [user, supabase, notifications])
 
     useEffect(() => {
         if (user && supabase && activeTab === "nutrition") {
             loadNutritionData()
         }
-    }, [user, supabase, activeTab, notifications])
+    }, [user, supabase, activeTab, notifications, loadNutritionData])
 
     // Reload data when filter changes
     useEffect(() => {
         if (user && supabase && activeTab === "workouts") {
             loadWorkoutData()
         }
-    }, [filterType, user, supabase, activeTab])
+    }, [filterType, user, supabase, activeTab, loadWorkoutData])
 
     const loadMoreActivities = async () => {
         if (!user || !supabase || isWorkoutLoading) return

@@ -197,8 +197,8 @@ export class USDAFoodDataService {
                         ? Math.round(value)
                         : Math.round(value * 100) / 100
 
-                    // Safely assign to nutrients object using type assertion
-                    const nutrientsRecord = nutrients as Record<string, number | undefined>
+                    // Safely assign to nutrients object using proper type assertion
+                    const nutrientsRecord = nutrients as unknown as Record<string, number | undefined>
                     if (mappedKey in nutrients || ['saturatedFat', 'transFat', 'monounsaturatedFat', 'polyunsaturatedFat', 'cholesterol', 'potassium', 'vitaminA', 'vitaminC', 'calcium', 'iron', 'vitaminD', 'vitaminE', 'vitaminK', 'thiamine', 'riboflavin', 'niacin', 'vitaminB6', 'folate', 'vitaminB12', 'pantothenicAcid', 'phosphorus', 'iodine', 'magnesium', 'zinc', 'selenium', 'copper', 'manganese', 'chromium', 'molybdenum'].includes(mappedKey)) {
                         nutrientsRecord[mappedKey] = roundedValue
                     }
