@@ -30,50 +30,46 @@ interface USDASearchResult {
     foods: USDAFood[]
 }
 
-// Nutrient ID mappings from USDA FoodData Central
+// Nutrient ID mappings from USDA FoodData Central (using nutrientId, not nutrientNumber)
 const NUTRIENT_MAPPINGS = {
     // Energy and macronutrients
-    208: 'calories',        // Energy (kcal)
-    205: 'carbs',          // Carbohydrate, by difference (g)
-    203: 'protein',        // Protein (g)
-    204: 'fats',           // Total lipid (fat) (g)
+    1008: 'calories',       // Energy (kcal)
+    1005: 'carbs',         // Carbohydrate, by difference (g)
+    1003: 'protein',       // Protein (g)
+    1004: 'fats',          // Total lipid (fat) (g)
 
     // Detailed nutrients
-    291: 'fiber',          // Fiber, total dietary (g)
-    269: 'sugar',          // Sugars, total including NLEA (g)
-    307: 'sodium',         // Sodium, Na (mg)
-    606: 'saturatedFat',   // Fatty acids, total saturated (g)
-    605: 'transFat',       // Fatty acids, total trans (g)
-    645: 'monounsaturatedFat', // Fatty acids, total monounsaturated (g)
-    646: 'polyunsaturatedFat', // Fatty acids, total polyunsaturated (g)
-    601: 'cholesterol',    // Cholesterol (mg)
-    306: 'potassium',      // Potassium, K (mg)
+    1079: 'fiber',         // Fiber, total dietary (g)
+    2000: 'sugar',         // Sugars, total including NLEA (g)
+    1093: 'sodium',        // Sodium, Na (mg)
+    1258: 'saturatedFat',  // Fatty acids, total saturated (g)
+    1257: 'transFat',      // Fatty acids, total trans (g)
+    1292: 'monounsaturatedFat', // Fatty acids, total monounsaturated (g)
+    1293: 'polyunsaturatedFat', // Fatty acids, total polyunsaturated (g)
+    1253: 'cholesterol',   // Cholesterol (mg)
+    1092: 'potassium',     // Potassium, K (mg)
 
     // Vitamins
-    318: 'vitaminA',       // Vitamin A, IU (IU)
-    401: 'vitaminC',       // Vitamin C, total ascorbic acid (mg)
-    301: 'calcium',        // Calcium, Ca (mg)
-    303: 'iron',           // Iron, Fe (mg)
-    324: 'vitaminD',       // Vitamin D (D2 + D3) (IU)
-    323: 'vitaminE',       // Vitamin E (alpha-tocopherol) (mg)
-    430: 'vitaminK',       // Vitamin K (phylloquinone) (mcg)
-    404: 'thiamine',       // Thiamin (mg)
-    405: 'riboflavin',     // Riboflavin (mg)
-    406: 'niacin',         // Niacin (mg)
-    415: 'vitaminB6',      // Vitamin B-6 (mg)
-    435: 'folate',         // Folate, total (mcg)
-    418: 'vitaminB12',     // Vitamin B-12 (mcg)
-    // 317: 'biotin',      // Biotin (mcg) - conflicts with selenium
-    410: 'pantothenicAcid', // Pantothenic acid (mg)
-    305: 'phosphorus',     // Phosphorus, P (mg)
-    314: 'iodine',         // Iodine, I (mcg)
-    304: 'magnesium',      // Magnesium, Mg (mg)
-    309: 'zinc',           // Zinc, Zn (mg)
-    317: 'selenium',       // Selenium, Se (mcg)
-    312: 'copper',         // Copper, Cu (mg)
-    315: 'manganese',      // Manganese, Mn (mg)
-    310: 'chromium',       // Chromium, Cr (mcg)
-    316: 'molybdenum'      // Molybdenum, Mo (mcg)
+    1104: 'vitaminA',      // Vitamin A, IU (IU)
+    1162: 'vitaminC',      // Vitamin C, total ascorbic acid (mg)
+    1087: 'calcium',       // Calcium, Ca (mg)
+    1089: 'iron',          // Iron, Fe (mg)
+    1114: 'vitaminD',      // Vitamin D (D2 + D3) (IU)
+    1109: 'vitaminE',      // Vitamin E (alpha-tocopherol) (mg)
+    1185: 'vitaminK',      // Vitamin K (phylloquinone) (mcg)
+    1165: 'thiamine',      // Thiamin (mg)
+    1166: 'riboflavin',    // Riboflavin (mg)
+    1167: 'niacin',        // Niacin (mg)
+    1175: 'vitaminB6',     // Vitamin B-6 (mg)
+    1177: 'folate',        // Folate, total (mcg)
+    1178: 'vitaminB12',    // Vitamin B-12 (mcg)
+    1176: 'pantothenicAcid', // Pantothenic acid (mg)
+    1091: 'phosphorus',    // Phosphorus, P (mg)
+    1100: 'magnesium',     // Magnesium, Mg (mg)
+    1095: 'zinc',          // Zinc, Zn (mg)
+    1103: 'selenium',      // Selenium, Se (mcg)
+    1098: 'copper',        // Copper, Cu (mg)
+    1101: 'manganese'      // Manganese, Mn (mg)
 } as const
 
 export class USDAFoodDataService {
@@ -175,11 +171,14 @@ export class USDAFoodDataService {
             fats: 0
         }
 
+        console.log('🔍 Extracting nutrients from USDA data:', usdaNutrients.length, 'nutrients')
+
         for (const nutrient of usdaNutrients) {
             const mappedKey = NUTRIENT_MAPPINGS[nutrient.nutrientId as keyof typeof NUTRIENT_MAPPINGS]
 
             if (mappedKey && nutrient.value !== undefined) {
                 const value = nutrient.value
+                console.log(`✅ Mapped nutrient: ${nutrient.nutrientName} (ID: ${nutrient.nutrientId}) -> ${mappedKey} = ${value}${nutrient.unitName}`)
 
                 // Handle special case for calories
                 if (mappedKey === 'calories') {
@@ -196,9 +195,12 @@ export class USDAFoodDataService {
                         nutrientsRecord[mappedKey] = roundedValue
                     }
                 }
+            } else if (nutrient.value !== undefined) {
+                console.log(`❌ Unmapped nutrient: ${nutrient.nutrientName} (ID: ${nutrient.nutrientId}) = ${nutrient.value}${nutrient.unitName}`)
             }
         }
 
+        console.log('🎯 Final extracted nutrients:', nutrients)
         return nutrients
     }
 
