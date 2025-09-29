@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Coffee, Sandwich, ChefHat, Cookie, Apple, Utensils, Pizza, Salad, Croissant, IceCream, Sun, Moon, Cake, Beef, Fish, Soup } from "lucide-react"
+import { Coffee, Sandwich, ChefHat, Cookie, Apple, Utensils, Pizza, Salad, Croissant, IceCream, Sun, Moon, Cake, Beef, Fish, Soup, Trash2 } from "lucide-react"
 import { Meal, MealTemplate } from "@/lib/nutrition-storage"
 
 interface CreateMealDialogProps {
@@ -15,6 +14,7 @@ interface CreateMealDialogProps {
     onMealCreated: (meal: Meal) => void
     existingTemplates: MealTemplate[]
     maxMealsReached: boolean
+    onTemplateDeleted?: (templateId: string) => void
 }
 
 const availableIcons = [
@@ -36,7 +36,7 @@ const availableIcons = [
     { name: 'Soup', icon: Soup, label: 'Soup' }
 ]
 
-export function CreateMealDialog({ isOpen, onClose, onMealCreated, existingTemplates, maxMealsReached }: CreateMealDialogProps) {
+export function CreateMealDialog({ isOpen, onClose, onMealCreated, existingTemplates, maxMealsReached, onTemplateDeleted }: CreateMealDialogProps) {
     const [selectedTab, setSelectedTab] = useState<'create' | 'templates'>('create')
     const [mealName, setMealName] = useState('')
     const [selectedIcon, setSelectedIcon] = useState<string>('Utensils')
@@ -101,6 +101,20 @@ export function CreateMealDialog({ isOpen, onClose, onMealCreated, existingTempl
             console.error('Error creating meal from template:', error)
         } finally {
             setIsLoading(false)
+        }
+    }
+
+    const handleDeleteTemplate = async (templateId: string) => {
+        if (!onTemplateDeleted) return
+
+        try {
+            onTemplateDeleted(templateId)
+            // Reset selected template if it was the one being deleted
+            if (selectedTemplate === templateId) {
+                setSelectedTemplate('')
+            }
+        } catch (error) {
+            console.error('Error deleting template:', error)
         }
     }
 
@@ -232,48 +246,45 @@ export function CreateMealDialog({ isOpen, onClose, onMealCreated, existingTempl
                                 </div>
                             ) : (
                                 <>
-                                    <div className="space-y-2">
-                                        <Label className="text-[#F3F4F6]">Choose Template</Label>
-                                        <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-                                            <SelectTrigger className="bg-[#0E0F13] border border-[#2A2B31] text-[#F3F4F6]">
-                                                <SelectValue placeholder="Select a meal template..." />
-                                            </SelectTrigger>
-                                            <SelectContent className="bg-[#121318] border border-[#212227]">
-                                                {existingTemplates.map((template) => (
-                                                    <SelectItem
-                                                        key={template.id}
-                                                        value={template.id}
-                                                        className="text-[#F3F4F6] focus:bg-[#2A2B31] focus:text-[#F3F4F6]"
-                                                    >
-                                                        <div className="flex items-center space-x-2">
-                                                            {getIconComponent(template.icon)}
-                                                            <span>{template.name}</span>
+                                    <div className="space-y-3">
+                                        <Label className="text-[#F3F4F6]">Saved Templates</Label>
+                                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                                            {existingTemplates.map((template) => (
+                                                <div
+                                                    key={template.id}
+                                                    className={`p-3 bg-[#0E0F13] border rounded-lg cursor-pointer transition-colors group ${
+                                                        selectedTemplate === template.id
+                                                            ? 'border-[#2A8CEA] bg-[#2A8CEA]/10'
+                                                            : 'border-[#2A2B31] hover:border-[#4A5A6F]'
+                                                    }`}
+                                                    onClick={() => setSelectedTemplate(template.id)}
+                                                >
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center space-x-3">
+                                                            <div className="w-8 h-8 bg-[rgba(255,255,255,0.03)] border border-[#2A2B31] rounded-lg flex items-center justify-center text-[#F3F4F6]">
+                                                                {getIconComponent(template.icon)}
+                                                            </div>
+                                                            <div>
+                                                                <h3 className="font-medium text-[#F3F4F6]">{template.name}</h3>
+                                                                <p className="text-xs text-[#A1A1AA]">{template.foods.length} foods in template</p>
+                                                            </div>
                                                         </div>
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
-                                    {selectedTemplate && (
-                                        <div className="p-3 bg-[#0E0F13] border border-[#2A2B31] rounded-lg">
-                                            {(() => {
-                                                const template = existingTemplates.find(t => t.id === selectedTemplate)
-                                                if (!template) return null
-                                                return (
-                                                    <div className="flex items-center space-x-3">
-                                                        <div className="w-8 h-8 bg-[rgba(255,255,255,0.03)] border border-[#2A2B31] rounded-lg flex items-center justify-center text-[#F3F4F6]">
-                                                            {getIconComponent(template.icon)}
-                                                        </div>
-                                                        <div>
-                                                            <h3 className="font-medium text-[#F3F4F6]">{template.name}</h3>
-                                                            <p className="text-xs text-[#A1A1AA]">{template.foods.length} foods in template</p>
-                                                        </div>
+                                                        <Button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                handleDeleteTemplate(template.id)
+                                                            }}
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="text-[#A1A1AA] hover:text-red-400 hover:bg-red-500/10 rounded-full w-7 h-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </Button>
                                                     </div>
-                                                )
-                                            })()}
+                                                </div>
+                                            ))}
                                         </div>
-                                    )}
+                                    </div>
 
                                     <Button
                                         onClick={handleUseTemplate}

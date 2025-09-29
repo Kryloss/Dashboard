@@ -417,6 +417,24 @@ export default function NutritionPage() {
         setIsCreateMealDialogOpen(false)
     }
 
+    const handleTemplateDeleted = async (templateId: string) => {
+        try {
+            await NutritionStorage.deleteMealTemplate(templateId)
+            setMealTemplates(prev => prev.filter(t => t.id !== templateId))
+
+            notifications.success('Template deleted', {
+                description: 'Meal template has been removed from your saved templates',
+                duration: 3000
+            })
+        } catch (error) {
+            console.error('Error deleting template:', error)
+            notifications.error('Delete failed', {
+                description: 'Unable to delete template. Please try again.',
+                duration: 4000
+            })
+        }
+    }
+
     const handleFoodAdded = async (food: Food, quantity: number, notes?: string) => {
         if ((!selectedMealType && !selectedCustomMealId) || !user) return
 
@@ -1004,25 +1022,23 @@ export default function NutritionPage() {
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center space-x-1">
+                                                    <Button
+                                                        onClick={() => handleEditMeal(meal)}
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full w-6 h-6 opacity-0 group-hover/meal:opacity-100 transition-opacity"
+                                                    >
+                                                        <Edit3 className="w-3 h-3" />
+                                                    </Button>
                                                     {existingMeal && (
-                                                        <>
-                                                            <Button
-                                                                onClick={() => handleEditMeal(meal)}
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full w-6 h-6 opacity-0 group-hover/meal:opacity-100 transition-opacity"
-                                                            >
-                                                                <Edit3 className="w-3 h-3" />
-                                                            </Button>
-                                                            <Button
-                                                                onClick={() => handleDeleteMeal(meal)}
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="text-[#A1A1AA] hover:text-red-400 hover:bg-red-500/10 rounded-full w-6 h-6 opacity-0 group-hover/meal:opacity-100 transition-opacity"
-                                                            >
-                                                                <Trash2 className="w-3 h-3" />
-                                                            </Button>
-                                                        </>
+                                                        <Button
+                                                            onClick={() => handleDeleteMeal(meal)}
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="text-[#A1A1AA] hover:text-red-400 hover:bg-red-500/10 rounded-full w-6 h-6 opacity-0 group-hover/meal:opacity-100 transition-opacity"
+                                                        >
+                                                            <Trash2 className="w-3 h-3" />
+                                                        </Button>
                                                     )}
                                                     <Button
                                                         onClick={() => handleAddFood(meal.type as 'breakfast' | 'lunch' | 'dinner' | 'snacks')}
@@ -1299,7 +1315,8 @@ export default function NutritionPage() {
                     onClose={handleCloseCreateMealDialog}
                     onMealCreated={handleCreateMeal}
                     existingTemplates={mealTemplates}
-                    maxMealsReached={getTodaysNutrition().meals.length >= 6}
+                    maxMealsReached={getTodaysNutrition().meals.filter(m => m.type === 'custom').length >= 2}
+                    onTemplateDeleted={handleTemplateDeleted}
                 />
 
                 {/* Settings Dialog */}
