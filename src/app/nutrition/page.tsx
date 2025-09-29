@@ -325,10 +325,28 @@ export default function NutritionPage() {
     }
 
     const handleCreateMeal = async (meal: Meal) => {
-        if (!user || !nutritionEntry) return
+        if (!user) return
 
         try {
-            const updatedEntry = { ...nutritionEntry }
+            // Get current nutrition entry or create new one
+            const todayDate = new Date().toISOString().split('T')[0]
+            let currentEntry = nutritionEntry
+
+            if (!currentEntry) {
+                // Create new entry for today
+                currentEntry = {
+                    id: `nutrition-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                    userId: user.id,
+                    date: todayDate,
+                    meals: [],
+                    totalCalories: 0,
+                    totalMacros: { carbs: 0, protein: 0, fats: 0 },
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                }
+            }
+
+            const updatedEntry = { ...currentEntry }
 
             // Add the new meal to the entry
             updatedEntry.meals.push(meal)
