@@ -61,10 +61,7 @@ export function useLogWorkout() {
                 userId: user.id
             })
 
-            // Revalidate immediately to ensure data is fresh
-            await refreshWorkoutData(true)
-
-            // Notify listeners after data is refreshed (keeps existing UX hooks working)
+            // Notify listeners (keeps existing UX hooks working)
             try {
                 window.dispatchEvent(new CustomEvent('workoutCompleted', {
                     detail: {
@@ -78,6 +75,9 @@ export function useLogWorkout() {
             } catch {}
 
             // Notification handled by page event listener
+
+            // Revalidate shortly to reconcile with server
+            setTimeout(() => refreshWorkoutData(true), 200)
         } catch (e) {
             const message = e instanceof Error ? e.message : 'Unknown error'
             setError(message)
