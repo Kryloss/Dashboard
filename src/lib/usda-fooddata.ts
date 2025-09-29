@@ -171,14 +171,11 @@ export class USDAFoodDataService {
             fats: 0
         }
 
-        console.log('🔍 Extracting nutrients from USDA data:', usdaNutrients.length, 'nutrients')
-
         for (const nutrient of usdaNutrients) {
             const mappedKey = NUTRIENT_MAPPINGS[nutrient.nutrientId as keyof typeof NUTRIENT_MAPPINGS]
 
             if (mappedKey && nutrient.value !== undefined) {
                 const value = nutrient.value
-                console.log(`✅ Mapped nutrient: ${nutrient.nutrientName} (ID: ${nutrient.nutrientId}) -> ${mappedKey} = ${value}${nutrient.unitName}`)
 
                 // Handle special case for calories
                 if (mappedKey === 'calories') {
@@ -195,12 +192,8 @@ export class USDAFoodDataService {
                         nutrientsRecord[mappedKey] = roundedValue
                     }
                 }
-            } else if (nutrient.value !== undefined) {
-                console.log(`❌ Unmapped nutrient: ${nutrient.nutrientName} (ID: ${nutrient.nutrientId}) = ${nutrient.value}${nutrient.unitName}`)
             }
         }
-
-        console.log('🎯 Final extracted nutrients:', nutrients)
         return nutrients
     }
 

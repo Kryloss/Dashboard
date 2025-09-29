@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { NutritionStorage, Food, DetailedNutrients } from "@/lib/nutrition-storage"
-import { Search, X, Plus, Package, Edit3, Calculator, Database, Leaf } from "lucide-react"
+import { Search, X, Plus, Package, Edit3, Calculator, Database, Leaf, ChevronDown, ChevronUp } from "lucide-react"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 
 interface AddMealDialogProps {
@@ -61,6 +61,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
     const [notes, setNotes] = useState("")
 
     const [activeTab, setActiveTab] = useState<"search" | "manual" | "recent">("search")
+    const [showDetailedNutrition, setShowDetailedNutrition] = useState(false)
 
     const getMealDisplayName = () => {
         const names = {
@@ -234,6 +235,15 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
             protein: (protein * qty).toFixed(1),
             fats: (fats * qty).toFixed(1)
         }
+    }
+
+    const hasDetailedNutrients = (macros: DetailedNutrients) => {
+        return !!(
+            macros.fiber || macros.sugar || macros.sodium ||
+            macros.saturatedFat || macros.cholesterol ||
+            macros.vitaminA || macros.vitaminC || macros.calcium ||
+            macros.iron || macros.potassium || macros.vitaminD
+        )
     }
 
     return (
@@ -589,14 +599,29 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
 
                         {/* Nutrition Preview */}
                         <div className="bg-[#121318] border border-[#212227] rounded-lg p-4 mb-4">
-                            <div className="flex items-center space-x-2 mb-3">
-                                <Calculator className="w-4 h-4 text-[#2A8CEA]" />
-                                <h5 className="text-[#F3F4F6] font-medium">Nutrition for {quantity} serving{quantity !== 1 ? 's' : ''}</h5>
-                                {selectedFood.id.startsWith('usda-') && (
-                                    <Badge variant="outline" className="text-[#9BE15D] border-[#9BE15D]/30 bg-[#9BE15D]/10 text-xs">
-                                        <Leaf className="w-3 h-3 mr-1" />
-                                        USDA Data
-                                    </Badge>
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center space-x-2">
+                                    <Calculator className="w-4 h-4 text-[#2A8CEA]" />
+                                    <h5 className="text-[#F3F4F6] font-medium">Nutrition for {quantity} serving{quantity !== 1 ? 's' : ''}</h5>
+                                    {selectedFood.id.startsWith('usda-') && (
+                                        <Badge variant="outline" className="text-[#9BE15D] border-[#9BE15D]/30 bg-[#9BE15D]/10 text-xs">
+                                            <Leaf className="w-3 h-3 mr-1" />
+                                            USDA Data
+                                        </Badge>
+                                    )}
+                                </div>
+                                {hasDetailedNutrients(selectedFood.macros) && (
+                                    <button
+                                        onClick={() => setShowDetailedNutrition(!showDetailedNutrition)}
+                                        className="flex items-center text-xs text-[#2A8CEA] hover:text-[#4AA7FF] transition-colors"
+                                    >
+                                        {showDetailedNutrition ? 'Hide Details' : 'Show Details'}
+                                        {showDetailedNutrition ? (
+                                            <ChevronUp className="w-3 h-3 ml-1" />
+                                        ) : (
+                                            <ChevronDown className="w-3 h-3 ml-1" />
+                                        )}
+                                    </button>
                                 )}
                             </div>
 
@@ -628,10 +653,13 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                 </div>
                             </div>
 
-                            {/* Additional Nutrients (if available from USDA) */}
-                            {(selectedFood.macros.fiber || selectedFood.macros.sugar || selectedFood.macros.sodium) && (
-                                <div className="border-t border-[#212227] pt-3">
-                                    <div className="grid grid-cols-3 gap-4 text-center text-sm">
+                            {/* Detailed Nutrition Panel */}
+                            {showDetailedNutrition && hasDetailedNutrients(selectedFood.macros) && (
+                                <div className="border-t border-[#212227] pt-3 mt-3">
+                                    <h6 className="text-sm font-medium text-[#F3F4F6] mb-3">Detailed Nutrition</h6>
+
+                                    {/* Other Macros */}
+                                    <div className="grid grid-cols-3 gap-4 text-center text-sm mb-4">
                                         {selectedFood.macros.fiber && selectedFood.macros.fiber > 0 && (
                                             <div>
                                                 <div className="font-semibold text-[#A1A1AA]">
@@ -657,6 +685,88 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                             </div>
                                         )}
                                     </div>
+
+                                    {/* Fats Breakdown */}
+                                    {(selectedFood.macros.saturatedFat || selectedFood.macros.cholesterol) && (
+                                        <div className="mb-4">
+                                            <h6 className="text-xs font-medium text-[#FF2D55] mb-2">Fats Breakdown</h6>
+                                            <div className="grid grid-cols-2 gap-4 text-center text-sm">
+                                                {selectedFood.macros.saturatedFat && selectedFood.macros.saturatedFat > 0 && (
+                                                    <div>
+                                                        <div className="font-semibold text-[#A1A1AA]">
+                                                            {Math.round((selectedFood.macros.saturatedFat * quantity) * 10) / 10}g
+                                                        </div>
+                                                        <div className="text-xs text-[#7A7F86]">saturated fat</div>
+                                                    </div>
+                                                )}
+                                                {selectedFood.macros.cholesterol && selectedFood.macros.cholesterol > 0 && (
+                                                    <div>
+                                                        <div className="font-semibold text-[#A1A1AA]">
+                                                            {Math.round((selectedFood.macros.cholesterol * quantity))}mg
+                                                        </div>
+                                                        <div className="text-xs text-[#7A7F86]">cholesterol</div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Vitamins & Minerals */}
+                                    {(selectedFood.macros.vitaminA || selectedFood.macros.vitaminC || selectedFood.macros.calcium || selectedFood.macros.iron || selectedFood.macros.vitaminD || selectedFood.macros.potassium) && (
+                                        <div>
+                                            <h6 className="text-xs font-medium text-[#2A8CEA] mb-2">Vitamins & Minerals</h6>
+                                            <div className="grid grid-cols-3 gap-4 text-center text-sm">
+                                                {selectedFood.macros.vitaminA && selectedFood.macros.vitaminA > 0 && (
+                                                    <div>
+                                                        <div className="font-semibold text-[#A1A1AA]">
+                                                            {Math.round((selectedFood.macros.vitaminA * quantity))}IU
+                                                        </div>
+                                                        <div className="text-xs text-[#7A7F86]">vitamin A</div>
+                                                    </div>
+                                                )}
+                                                {selectedFood.macros.vitaminC && selectedFood.macros.vitaminC > 0 && (
+                                                    <div>
+                                                        <div className="font-semibold text-[#A1A1AA]">
+                                                            {Math.round((selectedFood.macros.vitaminC * quantity) * 10) / 10}mg
+                                                        </div>
+                                                        <div className="text-xs text-[#7A7F86]">vitamin C</div>
+                                                    </div>
+                                                )}
+                                                {selectedFood.macros.vitaminD && selectedFood.macros.vitaminD > 0 && (
+                                                    <div>
+                                                        <div className="font-semibold text-[#A1A1AA]">
+                                                            {Math.round((selectedFood.macros.vitaminD * quantity))}IU
+                                                        </div>
+                                                        <div className="text-xs text-[#7A7F86]">vitamin D</div>
+                                                    </div>
+                                                )}
+                                                {selectedFood.macros.calcium && selectedFood.macros.calcium > 0 && (
+                                                    <div>
+                                                        <div className="font-semibold text-[#A1A1AA]">
+                                                            {Math.round((selectedFood.macros.calcium * quantity))}mg
+                                                        </div>
+                                                        <div className="text-xs text-[#7A7F86]">calcium</div>
+                                                    </div>
+                                                )}
+                                                {selectedFood.macros.iron && selectedFood.macros.iron > 0 && (
+                                                    <div>
+                                                        <div className="font-semibold text-[#A1A1AA]">
+                                                            {Math.round((selectedFood.macros.iron * quantity) * 10) / 10}mg
+                                                        </div>
+                                                        <div className="text-xs text-[#7A7F86]">iron</div>
+                                                    </div>
+                                                )}
+                                                {selectedFood.macros.potassium && selectedFood.macros.potassium > 0 && (
+                                                    <div>
+                                                        <div className="font-semibold text-[#A1A1AA]">
+                                                            {Math.round((selectedFood.macros.potassium * quantity))}mg
+                                                        </div>
+                                                        <div className="text-xs text-[#7A7F86]">potassium</div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
