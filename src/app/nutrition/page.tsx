@@ -1030,16 +1030,14 @@ export default function NutritionPage() {
                                                     >
                                                         <Edit3 className="w-3 h-3" />
                                                     </Button>
-                                                    {existingMeal && (
-                                                        <Button
-                                                            onClick={() => handleDeleteMeal(meal)}
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="text-[#A1A1AA] hover:text-red-400 hover:bg-red-500/10 rounded-full w-6 h-6 opacity-0 group-hover/meal:opacity-100 transition-opacity"
-                                                        >
-                                                            <Trash2 className="w-3 h-3" />
-                                                        </Button>
-                                                    )}
+                                                    <Button
+                                                        onClick={() => handleDeleteMeal(meal)}
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="text-[#A1A1AA] hover:text-red-400 hover:bg-red-500/10 rounded-full w-6 h-6 opacity-0 group-hover/meal:opacity-100 transition-opacity"
+                                                    >
+                                                        <Trash2 className="w-3 h-3" />
+                                                    </Button>
                                                     <Button
                                                         onClick={() => handleAddFood(meal.type as 'breakfast' | 'lunch' | 'dinner' | 'snacks')}
                                                         variant="ghost"
