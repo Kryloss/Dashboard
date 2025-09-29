@@ -77,11 +77,8 @@ const NUTRIENT_MAPPINGS = {
 } as const
 
 export class USDAFoodDataService {
-    private static readonly BASE_URL = 'https://api.nal.usda.gov/fdc/v1'
-    private static readonly API_KEY = process.env.NEXT_PUBLIC_USDA_API_KEY || 'DEMO_KEY'
-
     /**
-     * Search for foods using USDA FoodData Central API
+     * Search for foods using our API proxy to USDA FoodData Central
      */
     static async searchFoods(query: string, pageSize: number = 25): Promise<Food[]> {
         if (!query || query.trim().length < 2) {
@@ -91,14 +88,10 @@ export class USDAFoodDataService {
         try {
             const searchParams = new URLSearchParams({
                 query: query.trim(),
-                dataType: 'Foundation,SR Legacy,Survey (FNDDS),Branded', // Include all data types
-                pageSize: pageSize.toString(),
-                sortBy: 'dataType.keyword',
-                sortOrder: 'asc',
-                api_key: this.API_KEY
+                pageSize: pageSize.toString()
             })
 
-            const response = await fetch(`${this.BASE_URL}/foods/search?${searchParams}`, {
+            const response = await fetch(`/api/usda/search?${searchParams}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'
@@ -106,12 +99,12 @@ export class USDAFoodDataService {
             })
 
             if (!response.ok) {
-                throw new Error(`USDA API error: ${response.status} ${response.statusText}`)
+                throw new Error(`API error: ${response.status} ${response.statusText}`)
             }
 
             const data: USDASearchResult = await response.json()
 
-            return data.foods.map(usdaFood => this.convertUSDAFoodToAppFood(usdaFood))
+            return data.foods?.map(usdaFood => this.convertUSDAFoodToAppFood(usdaFood)) || []
         } catch (error) {
             console.error('Error searching USDA foods:', error)
             throw error
@@ -123,7 +116,7 @@ export class USDAFoodDataService {
      */
     static async getFoodDetails(fdcId: number): Promise<Food | null> {
         try {
-            const response = await fetch(`${this.BASE_URL}/food/${fdcId}?api_key=${this.API_KEY}`, {
+            const response = await fetch(`/api/usda/food/${fdcId}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'
@@ -134,7 +127,7 @@ export class USDAFoodDataService {
                 if (response.status === 404) {
                     return null
                 }
-                throw new Error(`USDA API error: ${response.status} ${response.statusText}`)
+                throw new Error(`API error: ${response.status} ${response.statusText}`)
             }
 
             const usdaFood: USDAFood = await response.json()
@@ -264,7 +257,7 @@ export class USDAFoodDataService {
      */
     static async isAvailable(): Promise<boolean> {
         try {
-            const response = await fetch(`${this.BASE_URL}/foods/search?query=apple&pageSize=1&api_key=${this.API_KEY}`)
+            const response = await fetch('/api/usda/search?query=apple&pageSize=1')
             return response.ok
         } catch {
             return false
