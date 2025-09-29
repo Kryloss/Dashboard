@@ -208,6 +208,11 @@ export class NutritionStorage {
         return `healss-nutrition-sync-queue${userSuffix}`
     }
 
+    private static get TEMPLATES_KEY(): string {
+        const userSuffix = this.currentUser?.id ? `-${this.currentUser.id.slice(-8)}` : '-anonymous'
+        return `healss-nutrition-templates${userSuffix}`
+    }
+
     // Real-time synchronization
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private static realtimeChannel: any = null
@@ -638,6 +643,74 @@ export class NutritionStorage {
     }
 
     // ============================================================================
+    // MEAL TEMPLATE MANAGEMENT
+    // ============================================================================
+
+    static async getMealTemplates(): Promise<MealTemplate[]> {
+        console.log('NutritionStorage.getMealTemplates - User:', this.currentUser?.id)
+
+        // Try Supabase first if user is authenticated
+        if (this.currentUser && this.supabase) {
+            try {
+                const { data: authUser } = await this.supabase.auth.getUser()
+                if (!authUser.user) {
+                    return this.getMealTemplatesFromLocalStorage()
+                }
+
+                // TODO: Implement Supabase meal templates table
+                console.log('Supabase meal templates not implemented yet, using localStorage')
+                return this.getMealTemplatesFromLocalStorage()
+            } catch (error) {
+                console.error('Error fetching meal templates from Supabase:', error)
+            }
+        }
+
+        // Fallback to localStorage
+        return this.getMealTemplatesFromLocalStorage()
+    }
+
+    static async saveMealTemplate(templateData: Omit<MealTemplate, 'id' | 'createdAt' | 'updatedAt'>): Promise<MealTemplate> {
+        if (!this.currentUser) {
+            throw new Error('User must be authenticated to save meal templates')
+        }
+
+        const newTemplate: MealTemplate = {
+            ...templateData,
+            id: `template-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            userId: this.currentUser.id,
+            type: 'user',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        }
+
+        // Save to localStorage immediately
+        this.saveMealTemplateToLocalStorage(newTemplate)
+
+        // TODO: Save to Supabase when templates table is implemented
+        if (this.supabase) {
+            console.log('Supabase meal templates not implemented yet, saved to localStorage only')
+        }
+
+        return newTemplate
+    }
+
+    static async deleteMealTemplate(templateId: string): Promise<void> {
+        if (!this.currentUser) {
+            throw new Error('User must be authenticated to delete meal templates')
+        }
+
+        console.log('NutritionStorage.deleteMealTemplate - Template ID:', templateId, 'User:', this.currentUser.id)
+
+        // Delete from localStorage immediately
+        this.deleteMealTemplateFromLocalStorage(templateId)
+
+        // TODO: Delete from Supabase when templates table is implemented
+        if (this.supabase) {
+            console.log('Supabase meal templates not implemented yet, deleted from localStorage only')
+        }
+    }
+
+    // ============================================================================
     // HELPER METHODS FOR CALCULATIONS
     // ============================================================================
 
@@ -843,6 +916,49 @@ export class NutritionStorage {
             localStorage.setItem(this.GOALS_KEY, JSON.stringify(goals))
         } catch (error) {
             console.error('Error saving nutrition goals to localStorage:', error)
+        }
+    }
+
+    private static getMealTemplatesFromLocalStorage(): MealTemplate[] {
+        if (typeof window === 'undefined') return []
+
+        try {
+            const stored = localStorage.getItem(this.TEMPLATES_KEY)
+            if (!stored) return []
+
+            const templates: MealTemplate[] = JSON.parse(stored)
+
+            // Security check: ensure templates belong to current user
+            return templates.filter(template =>
+                !this.currentUser || !template.userId || template.userId === this.currentUser.id
+            )
+        } catch (error) {
+            console.error('Error loading meal templates from localStorage:', error)
+            return []
+        }
+    }
+
+    private static saveMealTemplateToLocalStorage(template: MealTemplate): void {
+        if (typeof window === 'undefined') return
+
+        try {
+            const existing = this.getMealTemplatesFromLocalStorage()
+            const updated = [template, ...existing.filter(t => t.id !== template.id)]
+            localStorage.setItem(this.TEMPLATES_KEY, JSON.stringify(updated))
+        } catch (error) {
+            console.error('Error saving meal template to localStorage:', error)
+        }
+    }
+
+    private static deleteMealTemplateFromLocalStorage(templateId: string): void {
+        if (typeof window === 'undefined') return
+
+        try {
+            const existing = this.getMealTemplatesFromLocalStorage()
+            const updated = existing.filter(t => t.id !== templateId)
+            localStorage.setItem(this.TEMPLATES_KEY, JSON.stringify(updated))
+        } catch (error) {
+            console.error('Error deleting meal template from localStorage:', error)
         }
     }
 

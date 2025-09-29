@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { GoalRings } from "../workout/components/goal-rings"
 import { StatCard } from "../workout/components/stat-card"
 
-import { NutritionStorage, NutritionEntry, NutritionGoals, DetailedNutrients, Food, FoodEntry, Meal } from "@/lib/nutrition-storage"
+import { NutritionStorage, NutritionEntry, NutritionGoals, DetailedNutrients, Food, FoodEntry, Meal, MealTemplate } from "@/lib/nutrition-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 import { useWorkoutState } from "@/lib/hooks/useWorkoutState"
@@ -15,6 +15,7 @@ import { DetailedMacroModal } from "./components/detailed-macro-modal"
 import { AddMealDialog } from "./components/add-meal-dialog"
 import { EditFoodDialog } from "./components/edit-food-dialog"
 import { EditMealDialog } from "./components/edit-meal-dialog"
+import { CreateMealDialog } from "./components/create-meal-dialog"
 import { SetGoalDialog } from "../workout/components/set-goal-dialog"
 import { Plus, Apple, Utensils, User, Dumbbell, Coffee, Sandwich, ChefHat, Cookie, Flame, Moon, TrendingUp, Edit3, Trash2, Pizza, Salad, Croissant, IceCream } from "lucide-react"
 
@@ -25,6 +26,7 @@ export default function NutritionPage() {
     const [isHealssSubdomain, setIsHealssSubdomain] = useState(false)
     const [nutritionEntry, setNutritionEntry] = useState<NutritionEntry | null>(null)
     const [nutritionGoals, setNutritionGoals] = useState<NutritionGoals | null>(null)
+    const [mealTemplates, setMealTemplates] = useState<MealTemplate[]>([])
 
     // Modal state for detailed macro breakdowns
     const [selectedMacro, setSelectedMacro] = useState<'carbs' | 'protein' | 'fats' | null>(null)
@@ -32,6 +34,7 @@ export default function NutritionPage() {
 
     // Add food dialog state
     const [selectedMealType, setSelectedMealType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snacks' | null>(null)
+    const [selectedCustomMealId, setSelectedCustomMealId] = useState<string | null>(null)
     const [isAddFoodDialogOpen, setIsAddFoodDialogOpen] = useState(false)
 
     // Edit food dialog state
@@ -42,6 +45,9 @@ export default function NutritionPage() {
     // Edit meal dialog state
     const [editingMeal, setEditingMeal] = useState<Meal | null>(null)
     const [isEditMealDialogOpen, setIsEditMealDialogOpen] = useState(false)
+
+    // Create meal dialog state
+    const [isCreateMealDialogOpen, setIsCreateMealDialogOpen] = useState(false)
 
     // Settings dialog state
     const [showSetGoalDialog, setShowSetGoalDialog] = useState(false)
@@ -64,12 +70,14 @@ export default function NutritionPage() {
             // Load nutrition data
             const loadNutritionData = async () => {
                 try {
-                    const [entry, goals] = await Promise.all([
+                    const [entry, goals, templates] = await Promise.all([
                         NutritionStorage.getNutritionEntry(),
-                        NutritionStorage.getNutritionGoals()
+                        NutritionStorage.getNutritionGoals(),
+                        NutritionStorage.getMealTemplates()
                     ])
                     setNutritionEntry(entry)
                     setNutritionGoals(goals)
+                    setMealTemplates(templates)
                 } catch (error) {
                     console.error('Error loading nutrition data:', error)
                 }
@@ -169,6 +177,7 @@ export default function NutritionPage() {
     const closeAddFoodDialog = () => {
         setIsAddFoodDialogOpen(false)
         setSelectedMealType(null)
+        setSelectedCustomMealId(null)
     }
 
     const closeEditFoodDialog = () => {
@@ -315,8 +324,67 @@ export default function NutritionPage() {
         }
     }
 
+    const handleCreateMeal = async (meal: Meal) => {
+        if (!user || !nutritionEntry) return
+
+        try {
+            const updatedEntry = { ...nutritionEntry }
+
+            // Add the new meal to the entry
+            updatedEntry.meals.push(meal)
+
+            // Recalculate entry totals (meal starts empty so no change in totals)
+            updatedEntry.totalCalories = updatedEntry.meals.reduce((sum, m) => sum + m.totalCalories, 0)
+            updatedEntry.totalMacros = {
+                carbs: updatedEntry.meals.reduce((sum, m) => sum + m.totalMacros.carbs, 0),
+                protein: updatedEntry.meals.reduce((sum, m) => sum + m.totalMacros.protein, 0),
+                fats: updatedEntry.meals.reduce((sum, m) => sum + m.totalMacros.fats, 0),
+                fiber: updatedEntry.meals.reduce((sum, m) => sum + (m.totalMacros.fiber || 0), 0),
+                sugar: updatedEntry.meals.reduce((sum, m) => sum + (m.totalMacros.sugar || 0), 0),
+                sodium: updatedEntry.meals.reduce((sum, m) => sum + (m.totalMacros.sodium || 0), 0)
+            }
+
+            // Save to storage
+            const savedEntry = await NutritionStorage.saveNutritionEntry(updatedEntry)
+            setNutritionEntry(savedEntry)
+
+            // Save as template for future use
+            const template: Omit<MealTemplate, 'id' | 'createdAt' | 'updatedAt'> = {
+                name: meal.name,
+                icon: meal.icon || 'Utensils',
+                type: 'user',
+                userId: user.id,
+                foods: [] // Start with empty foods, user will add items later
+            }
+
+            const savedTemplate = await NutritionStorage.saveMealTemplate(template)
+            setMealTemplates(prev => [savedTemplate, ...prev])
+
+            // Refresh workout state to update goal rings
+            if (refreshWorkoutData) {
+                refreshWorkoutData(true)
+            }
+
+            notifications.success('Meal created', {
+                description: `${meal.name} has been added to today's meals`,
+                duration: 3000
+            })
+
+        } catch (error) {
+            console.error('Error creating meal:', error)
+            notifications.error('Create meal failed', {
+                description: 'Unable to create meal. Please try again.',
+                duration: 4000
+            })
+        }
+    }
+
+    const handleCloseCreateMealDialog = () => {
+        setIsCreateMealDialogOpen(false)
+    }
+
     const handleFoodAdded = async (food: Food, quantity: number, notes?: string) => {
-        if (!selectedMealType || !user) return
+        if ((!selectedMealType && !selectedCustomMealId) || !user) return
 
         try {
             // Get current nutrition entry or create new one
@@ -361,10 +429,21 @@ export default function NutritionPage() {
             }
 
             // Find or create the meal
-            let meal = currentEntry.meals.find(m => m.type === selectedMealType)
+            let meal: Meal | undefined
+            if (selectedCustomMealId) {
+                // Adding to custom meal
+                meal = currentEntry.meals.find(m => m.id === selectedCustomMealId)
+            } else if (selectedMealType) {
+                // Adding to built-in meal type
+                meal = currentEntry.meals.find(m => m.type === selectedMealType)
+                if (!meal) {
+                    meal = NutritionStorage.createEmptyMeal(selectedMealType)
+                    currentEntry.meals.push(meal)
+                }
+            }
+
             if (!meal) {
-                meal = NutritionStorage.createEmptyMeal(selectedMealType)
-                currentEntry.meals.push(meal)
+                throw new Error('Could not find or create meal')
             }
 
             // Add food to meal
@@ -789,6 +868,13 @@ export default function NutritionPage() {
                                         <Apple className="w-4 h-4 mr-2" />
                                         Scan Food
                                     </Button>
+                                    <Button
+                                        onClick={() => setIsCreateMealDialogOpen(true)}
+                                        className="bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-full border border-[rgba(42,140,234,0.35)] shadow-[0_8px_32px_rgba(42,140,234,0.28)] hover:shadow-[0_10px_40px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all"
+                                    >
+                                        <Plus className="w-4 h-4 mr-2" />
+                                        Add Meal
+                                    </Button>
                                 </div>
                             </div>
 
@@ -951,6 +1037,95 @@ export default function NutritionPage() {
                                         </div>
                                     )
                                 })}
+
+                                {/* Custom Meals */}
+                                {getTodaysNutrition().meals.filter(m => m.type === 'custom').map((meal) => {
+                                    return (
+                                        <div key={meal.id} className="bg-[#121318] border border-[#212227] rounded-[20px] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)] hover:border-[#2A2B31] transition-colors">
+                                            <div className="flex items-center justify-between mb-3 group/meal">
+                                                <div className="flex items-center space-x-3">
+                                                    <div className="w-8 h-8 bg-[rgba(255,255,255,0.03)] border border-[#2A2B31] rounded-[10px] flex items-center justify-center text-[#F3F4F6]">
+                                                        {getMealIcon(meal.type, meal.icon)}
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="font-medium text-[#F3F4F6]">{meal.name}</h3>
+                                                        <p className="text-xs text-[#A1A1AA]">{meal.totalCalories} cal • {meal.foods.length} items</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center space-x-1">
+                                                    <Button
+                                                        onClick={() => handleEditMeal('breakfast', meal)} // Type doesn't matter for custom meals
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full w-6 h-6 opacity-0 group-hover/meal:opacity-100 transition-opacity"
+                                                    >
+                                                        <Edit3 className="w-3 h-3" />
+                                                    </Button>
+                                                    <Button
+                                                        onClick={() => handleDeleteMeal('breakfast', meal)} // Type doesn't matter for custom meals
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="text-[#A1A1AA] hover:text-red-400 hover:bg-red-500/10 rounded-full w-6 h-6 opacity-0 group-hover/meal:opacity-100 transition-opacity"
+                                                    >
+                                                        <Trash2 className="w-3 h-3" />
+                                                    </Button>
+                                                    <Button
+                                                        onClick={() => {
+                                                            setSelectedCustomMealId(meal.id)
+                                                            setSelectedMealType(null)
+                                                            setIsAddFoodDialogOpen(true)
+                                                        }}
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full w-7 h-7"
+                                                    >
+                                                        <Plus className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                {meal.foods.slice(0, 3).map((food, index) => (
+                                                    <div key={index} className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-[rgba(255,255,255,0.02)] group">
+                                                        <div>
+                                                            <p className="text-sm text-[#F3F4F6]">{food.food.name}</p>
+                                                            <p className="text-xs text-[#7A7F86]">{food.adjustedCalories} cal • {food.quantity} {food.food.servingUnit}</p>
+                                                        </div>
+                                                        <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <Button
+                                                                onClick={() => handleEditFood('breakfast', food)} // Type doesn't matter for display
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full w-6 h-6"
+                                                            >
+                                                                <Edit3 className="w-3 h-3" />
+                                                            </Button>
+                                                            <Button
+                                                                onClick={() => handleDeleteFood('breakfast', food.id)} // Type doesn't matter for delete
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="text-[#A1A1AA] hover:text-red-400 hover:bg-red-500/10 rounded-full w-6 h-6"
+                                                            >
+                                                                <Trash2 className="w-3 h-3" />
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                {meal.foods.length > 3 && (
+                                                    <p className="text-xs text-[#7A7F86] text-center py-1">
+                                                        +{meal.foods.length - 3} more items
+                                                    </p>
+                                                )}
+                                                {meal.foods.length === 0 && (
+                                                    <div className="text-center py-4">
+                                                        <p className="text-sm text-[#7A7F86]">No foods added yet</p>
+                                                        <p className="text-xs text-[#5A5F66] mt-1">Tap + to add items</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )
+                                })}
                             </div>
                         </section>
 
@@ -1048,11 +1223,11 @@ export default function NutritionPage() {
                 )}
 
                 {/* Add Meal Dialog */}
-                {selectedMealType && (
+                {(selectedMealType || selectedCustomMealId) && (
                     <AddMealDialog
                         isOpen={isAddFoodDialogOpen}
                         onClose={closeAddFoodDialog}
-                        mealType={selectedMealType}
+                        mealType={selectedMealType || 'breakfast'} // Use breakfast as fallback for custom meals
                         onFoodAdded={handleFoodAdded}
                     />
                 )}
@@ -1077,6 +1252,15 @@ export default function NutritionPage() {
                         onMealUpdated={handleMealUpdated}
                     />
                 )}
+
+                {/* Create Meal Dialog */}
+                <CreateMealDialog
+                    isOpen={isCreateMealDialogOpen}
+                    onClose={handleCloseCreateMealDialog}
+                    onMealCreated={handleCreateMeal}
+                    existingTemplates={mealTemplates}
+                    maxMealsReached={getTodaysNutrition().meals.length >= 6}
+                />
 
                 {/* Settings Dialog */}
                 <SetGoalDialog
