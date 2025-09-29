@@ -17,7 +17,7 @@ import { EditFoodDialog } from "./components/edit-food-dialog"
 import { EditMealDialog } from "./components/edit-meal-dialog"
 import { CreateMealDialog } from "./components/create-meal-dialog"
 import { SetGoalDialog } from "../workout/components/set-goal-dialog"
-import { Plus, Apple, Utensils, User, Dumbbell, Coffee, Sandwich, ChefHat, Cookie, Flame, Moon, TrendingUp, Edit3, Trash2, Pizza, Salad, Croissant, IceCream } from "lucide-react"
+import { Plus, Apple, Utensils, User, Dumbbell, Coffee, Sandwich, ChefHat, Cookie, Flame, Moon, TrendingUp, Edit3, Trash2, Pizza, Salad, Croissant, IceCream, Sun, Cake, Beef, Fish, Soup } from "lucide-react"
 
 export default function NutritionPage() {
     const router = useRouter()
@@ -262,7 +262,7 @@ export default function NutritionPage() {
         }
     }
 
-    const handleEditMeal = async (mealType: 'breakfast' | 'lunch' | 'dinner' | 'snacks', meal: Meal) => {
+    const handleEditMeal = async (meal: Meal) => {
         if (!user) {
             notifications.warning('Sign in required', {
                 description: 'Please sign in to edit meals',
@@ -279,14 +279,27 @@ export default function NutritionPage() {
         setIsEditMealDialogOpen(true)
     }
 
-    const handleDeleteMeal = async (mealType: 'breakfast' | 'lunch' | 'dinner' | 'snacks', meal: Meal) => {
+    const handleDeleteMeal = async (meal: Meal) => {
         if (!user || !nutritionEntry) return
 
         try {
             const updatedEntry = { ...nutritionEntry }
 
-            // Remove the entire meal
-            updatedEntry.meals = updatedEntry.meals.filter(m => m.id !== meal.id)
+            // For built-in meal types, only clear the foods but keep the meal structure
+            if (meal.type !== 'custom') {
+                const mealIndex = updatedEntry.meals.findIndex(m => m.id === meal.id)
+                if (mealIndex !== -1) {
+                    updatedEntry.meals[mealIndex] = {
+                        ...updatedEntry.meals[mealIndex],
+                        foods: [],
+                        totalCalories: 0,
+                        totalMacros: { carbs: 0, protein: 0, fats: 0 }
+                    }
+                }
+            } else {
+                // For custom meals, remove the entire meal
+                updatedEntry.meals = updatedEntry.meals.filter(m => m.id !== meal.id)
+            }
 
             // Recalculate entry totals
             updatedEntry.totalCalories = updatedEntry.meals.reduce((sum, m) => sum + m.totalCalories, 0)
@@ -310,8 +323,11 @@ export default function NutritionPage() {
                 refreshWorkoutData(true)
             }
 
-            notifications.success('Meal deleted', {
-                description: `${meal.name} meal removed with all ${meal.foods.length} items`,
+            const actionText = meal.type === 'custom' ? 'deleted' : 'cleared'
+            notifications.success(`Meal ${actionText}`, {
+                description: meal.type === 'custom'
+                    ? `${meal.name} meal removed with all ${meal.foods.length} items`
+                    : `All ${meal.foods.length} items removed from ${meal.name}`,
                 duration: 3000
             })
 
@@ -635,6 +651,12 @@ export default function NutritionPage() {
                 case 'Salad': return <Salad className="w-5 h-5" />
                 case 'Croissant': return <Croissant className="w-5 h-5" />
                 case 'IceCream': return <IceCream className="w-5 h-5" />
+                case 'Sun': return <Sun className="w-5 h-5" />
+                case 'Moon': return <Moon className="w-5 h-5" />
+                case 'Cake': return <Cake className="w-5 h-5" />
+                case 'Beef': return <Beef className="w-5 h-5" />
+                case 'Fish': return <Fish className="w-5 h-5" />
+                case 'Soup': return <Soup className="w-5 h-5" />
                 default: return <Utensils className="w-5 h-5" />
             }
         }
@@ -985,7 +1007,7 @@ export default function NutritionPage() {
                                                     {existingMeal && (
                                                         <>
                                                             <Button
-                                                                onClick={() => handleEditMeal(meal.type as 'breakfast' | 'lunch' | 'dinner' | 'snacks', meal)}
+                                                                onClick={() => handleEditMeal(meal)}
                                                                 variant="ghost"
                                                                 size="icon"
                                                                 className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full w-6 h-6 opacity-0 group-hover/meal:opacity-100 transition-opacity"
@@ -993,7 +1015,7 @@ export default function NutritionPage() {
                                                                 <Edit3 className="w-3 h-3" />
                                                             </Button>
                                                             <Button
-                                                                onClick={() => handleDeleteMeal(meal.type as 'breakfast' | 'lunch' | 'dinner' | 'snacks', meal)}
+                                                                onClick={() => handleDeleteMeal(meal)}
                                                                 variant="ghost"
                                                                 size="icon"
                                                                 className="text-[#A1A1AA] hover:text-red-400 hover:bg-red-500/10 rounded-full w-6 h-6 opacity-0 group-hover/meal:opacity-100 transition-opacity"
@@ -1072,7 +1094,7 @@ export default function NutritionPage() {
                                                 </div>
                                                 <div className="flex items-center space-x-1">
                                                     <Button
-                                                        onClick={() => handleEditMeal('breakfast', meal)} // Type doesn't matter for custom meals
+                                                        onClick={() => handleEditMeal(meal)}
                                                         variant="ghost"
                                                         size="icon"
                                                         className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full w-6 h-6 opacity-0 group-hover/meal:opacity-100 transition-opacity"
@@ -1080,7 +1102,7 @@ export default function NutritionPage() {
                                                         <Edit3 className="w-3 h-3" />
                                                     </Button>
                                                     <Button
-                                                        onClick={() => handleDeleteMeal('breakfast', meal)} // Type doesn't matter for custom meals
+                                                        onClick={() => handleDeleteMeal(meal)}
                                                         variant="ghost"
                                                         size="icon"
                                                         className="text-[#A1A1AA] hover:text-red-400 hover:bg-red-500/10 rounded-full w-6 h-6 opacity-0 group-hover/meal:opacity-100 transition-opacity"

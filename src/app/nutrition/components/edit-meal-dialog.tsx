@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Meal } from "@/lib/nutrition-storage"
-import { Edit3, X, Coffee, Sandwich, ChefHat, Cookie, Apple, Utensils, Pizza, Salad, Croissant, IceCream } from "lucide-react"
+import { Edit3, X, Coffee, Sandwich, ChefHat, Cookie, Apple, Utensils, Pizza, Salad, Croissant, IceCream, Sun, Moon, Cake, Beef, Fish, Soup } from "lucide-react"
 
 interface EditMealDialogProps {
     isOpen: boolean
@@ -20,13 +20,19 @@ const MEAL_ICONS = [
     { name: 'Coffee', component: Coffee, label: 'Coffee' },
     { name: 'Sandwich', component: Sandwich, label: 'Sandwich' },
     { name: 'ChefHat', component: ChefHat, label: 'Chef Hat' },
-    { name: 'Cookie', component: Cookie, label: 'Snacks' },
+    { name: 'Cookie', component: Cookie, label: 'Cookie' },
     { name: 'Apple', component: Apple, label: 'Apple' },
     { name: 'Utensils', component: Utensils, label: 'Utensils' },
     { name: 'Pizza', component: Pizza, label: 'Pizza' },
     { name: 'Salad', component: Salad, label: 'Salad' },
     { name: 'Croissant', component: Croissant, label: 'Croissant' },
-    { name: 'IceCream', component: IceCream, label: 'Ice Cream' }
+    { name: 'IceCream', component: IceCream, label: 'Ice Cream' },
+    { name: 'Sun', component: Sun, label: 'Sun' },
+    { name: 'Moon', component: Moon, label: 'Moon' },
+    { name: 'Cake', component: Cake, label: 'Cake' },
+    { name: 'Beef', component: Beef, label: 'Beef' },
+    { name: 'Fish', component: Fish, label: 'Fish' },
+    { name: 'Soup', component: Soup, label: 'Soup' }
 ]
 
 export function EditMealDialog({ isOpen, onClose, meal, onMealUpdated }: EditMealDialogProps) {
@@ -118,7 +124,7 @@ export function EditMealDialog({ isOpen, onClose, meal, onMealUpdated }: EditMea
                         <Label className="text-sm font-medium text-[#F3F4F6]">
                             Choose Icon
                         </Label>
-                        <div className="grid grid-cols-5 gap-2">
+                        <div className="grid grid-cols-8 gap-2">
                             {MEAL_ICONS.map((icon) => (
                                 <Button
                                     key={icon.name}
