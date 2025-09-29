@@ -91,12 +91,12 @@ export default function HistoryPage() {
                 return date.toISOString().split('T')[0]
             })()
 
-            const sleepPromise = UserDataStorage.getSleepData(startDate, endDate)
+            const sleepPromise = UserDataStorage.getSleepDataRange(startDate, endDate)
 
             const [workoutData, sleepDataResult] = await Promise.all([workoutPromise, sleepPromise])
 
-            setActivities(workoutData.activities)
-            setHasMore(workoutData.hasMore)
+            setActivities(workoutData)
+            setHasMore(workoutData.length === limit)
             setOffset(limit)
 
             setSleepData(sleepDataResult)
@@ -187,93 +187,6 @@ export default function HistoryPage() {
 
         return () => clearTimeout(initializeWithDelay)
     }, [user, loading, supabase, notifications, router, searchParams, loadWorkoutData])
-
-    // Load workout data
-    const loadWorkoutData = useCallback(async () => {
-        if (!user || !supabase) return
-
-        try {
-            setIsWorkoutLoading(true)
-            setOffset(0)
-            setActivities([])
-            setSleepData([])
-
-            const type = filterType === "all" ? undefined : filterType as 'strength' | 'running' | 'yoga' | 'cycling'
-            const workoutPromise = WorkoutStorage.getWorkoutActivities(limit, 0, type)
-
-            const endDate = GoalProgressCalculator.getTodayDateString()
-            const startDate = (() => {
-                const date = new Date()
-                date.setDate(date.getDate() - 30)
-                return GoalProgressCalculator.getLocalDateString(date)
-            })()
-            const sleepPromise = UserDataStorage.getSleepDataRange(startDate, endDate)
-
-            const [newActivities, sleepHistory] = await Promise.all([
-                workoutPromise,
-                sleepPromise
-            ])
-
-            setActivities(newActivities)
-            setOffset(limit)
-            setHasMore(newActivities.length === limit)
-            setSleepData(sleepHistory)
-
-        } catch (error) {
-            console.error('Error loading workout data:', error)
-            notifications.error('Load failed', {
-                description: 'Could not load workout history data'
-            })
-        } finally {
-            setIsWorkoutLoading(false)
-        }
-    }, [user, supabase, filterType, limit, notifications])
-
-    // Load nutrition data from first entry to today
-    const loadNutritionData = useCallback(async () => {
-        if (!user || !supabase) return
-
-        try {
-            setIsNutritionLoading(true)
-
-            // First, find all existing nutrition entries to determine date range
-            const allEntries = await NutritionStorage.getAllNutritionEntries()
-
-            if (allEntries.length === 0) {
-                setNutritionEntries({})
-                return
-            }
-
-            // Find the earliest entry date
-            const sortedDates = allEntries.map(entry => entry.date).sort()
-            const firstDate = new Date(sortedDates[0])
-            const today = new Date()
-
-            // Load data from first entry date to today
-            const entries: {[date: string]: NutritionEntry | null} = {}
-            const currentDate = new Date(firstDate)
-
-            while (currentDate <= today) {
-                const dateString = format(currentDate, 'yyyy-MM-dd')
-
-                // Find existing entry for this date
-                const existingEntry = allEntries.find(entry => entry.date === dateString)
-                entries[dateString] = existingEntry || null
-
-                currentDate.setDate(currentDate.getDate() + 1)
-            }
-
-            setNutritionEntries(entries)
-        } catch (error) {
-            console.error('Error loading nutrition data:', error)
-            notifications.error('Load failed', {
-                description: 'Unable to load nutrition data',
-                duration: 3000
-            })
-        } finally {
-            setIsNutritionLoading(false)
-        }
-    }, [user, supabase, notifications])
 
     useEffect(() => {
         if (user && supabase && activeTab === "nutrition") {
