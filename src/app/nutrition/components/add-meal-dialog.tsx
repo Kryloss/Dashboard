@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { NutritionStorage, Food, DetailedNutrients } from "@/lib/nutrition-storage"
 import { SmartFoodSearch } from "@/lib/smart-search"
 import { Search, X, Plus, Package, Edit3, Calculator, Database, Leaf, ChevronDown, ChevronUp,
-         Beef, Wheat, Droplets, AlertTriangle, CheckCircle, Star, Zap, Heart, Shield, Filter } from "lucide-react"
+         Beef, Wheat, Droplets, AlertTriangle, CheckCircle, Star, Zap, Heart, Shield } from "lucide-react"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 
 interface AddMealDialogProps {

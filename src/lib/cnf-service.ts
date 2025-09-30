@@ -244,7 +244,7 @@ export class CNFService {
                         nutrients[nutrientKey] = numValue * 40
                     } else {
                         // TypeScript-safe assignment
-                        const nutrientsRecord = nutrients as Record<string, number | undefined>
+                        const nutrientsRecord = nutrients as unknown as Record<string, number | undefined>
                         nutrientsRecord[nutrientKey] = numValue
                     }
                 }
