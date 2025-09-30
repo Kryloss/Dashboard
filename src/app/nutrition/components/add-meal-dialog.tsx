@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { NutritionStorage, Food, DetailedNutrients } from "@/lib/nutrition-storage"
+import { SmartFoodSearch } from "@/lib/smart-search"
 import { Search, X, Plus, Package, Edit3, Calculator, Database, Leaf, ChevronDown, ChevronUp,
          Beef, Wheat, Droplets, AlertTriangle, CheckCircle, Star, Zap, Heart, Shield, Filter } from "lucide-react"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
@@ -78,7 +79,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
         return names[mealType]
     }
 
-    // Search for foods with smart brand filtering
+    // Search for foods with smart search
     useEffect(() => {
         const searchFoods = async () => {
             const trimmedQuery = searchQuery.trim()
@@ -94,57 +95,63 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
 
             setIsSearching(true)
             try {
-                // Fetch all foods without limit
+                // Fetch all foods without limit (for local search)
                 const foods = await NutritionStorage.getFoods(trimmedQuery, 200)
 
-                console.log(`Search results for "${trimmedQuery}":`, foods.length, 'foods found')
+                console.log(`Fetched ${foods.length} foods for query "${trimmedQuery}"`)
+
+                // Initialize smart search with all foods
+                const smartSearch = new SmartFoodSearch(foods)
+
+                // Perform intelligent fuzzy search
+                const smartResults = smartSearch.search(trimmedQuery, {
+                    threshold: 0.3,  // Lower threshold = more permissive
+                    limit: 200
+                })
+
+                console.log(`Smart search found ${smartResults.length} matches`)
+
+                // Apply brand filtering if in brand search mode
+                let filteredResults = smartResults
+                if (searchMode === 'brand') {
+                    filteredResults = smartResults.filter(result =>
+                        result.item.brand && result.item.brand.toLowerCase().includes(trimmedQuery.toLowerCase())
+                    )
+                    console.log(`Brand search mode: ${filteredResults.length} foods with matching brands`)
+                }
 
                 // Extract unique brands from results
                 const brands = [...new Set(
-                    foods
+                    filteredResults
+                        .map(r => r.item)
                         .filter(food => food.brand)
                         .map(food => food.brand!)
                 )].sort()
                 setAvailableBrands(brands)
 
-                // Apply filtering based on search mode and brand filter
-                let filteredFoods = foods
-
-                // If searching by brand, filter to only foods with brands matching the query
-                if (searchMode === 'brand') {
-                    filteredFoods = foods.filter(food =>
-                        food.brand && food.brand.toLowerCase().includes(trimmedQuery.toLowerCase())
-                    )
-                    console.log(`Brand search mode: ${filteredFoods.length} foods with matching brands`)
-                }
-
                 // Apply brand filter if selected (but not "all")
                 if (brandFilter && brandFilter !== 'all') {
-                    const beforeFilter = filteredFoods.length
-                    filteredFoods = filteredFoods.filter(food => food.brand === brandFilter)
-                    console.log(`Brand filter "${brandFilter}": ${beforeFilter} → ${filteredFoods.length} foods`)
+                    const beforeFilter = filteredResults.length
+                    filteredResults = filteredResults.filter(result => result.item.brand === brandFilter)
+                    console.log(`Brand filter "${brandFilter}": ${beforeFilter} → ${filteredResults.length} foods`)
                 }
 
-                console.log(`Final results: ${filteredFoods.length} foods to display`)
+                console.log(`Final results: ${filteredResults.length} foods to display`)
 
-                setSearchResults(filteredFoods.map(food => ({
-                    id: food.id,
-                    name: food.name,
-                    brand: food.brand,
-                    caloriesPerServing: food.caloriesPerServing,
-                    servingSize: food.servingSize,
-                    servingUnit: food.servingUnit,
-                    macros: food.macros,
-                    isUserCreated: food.isUserCreated
+                // Convert to search results format
+                setSearchResults(filteredResults.map(result => ({
+                    id: result.item.id,
+                    name: result.item.name,
+                    brand: result.item.brand,
+                    caloriesPerServing: result.item.caloriesPerServing,
+                    servingSize: result.item.servingSize,
+                    servingUnit: result.item.servingUnit,
+                    macros: result.item.macros,
+                    isUserCreated: result.item.isUserCreated
                 })))
             } catch (error) {
                 console.error('Error searching foods:', error)
                 setSearchResults([])
-                // Don't show error notification if USDA is just unavailable
-                // notifications.error('Search failed', {
-                //     description: 'Unable to search for foods. Please try again.',
-                //     duration: 3000
-                // })
             } finally {
                 setIsSearching(false)
             }
@@ -152,13 +159,13 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
 
         // Only debounce if we have enough characters
         if (searchQuery.trim().length >= 2) {
-            const debounceTimer = setTimeout(searchFoods, 500)
+            const debounceTimer = setTimeout(searchFoods, 400) // Slightly faster since smart search is efficient
             return () => clearTimeout(debounceTimer)
         } else {
             // Immediately clear if query is too short
             searchFoods()
         }
-    }, [searchQuery, searchMode, brandFilter, notifications])
+    }, [searchQuery, searchMode, brandFilter])
 
     const handleFoodSelect = (foodResult: FoodSearchResult) => {
         const food: Food = {
