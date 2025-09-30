@@ -59,7 +59,8 @@
       "mcp__shadcn__get_item_examples_from_registries",
       "Bash(node:*)",
       "Bash(del \"C:\\Users\\mrRep\\Desktop\\Dashboard\\timezone-test.js\")",
-      "Bash(del .nextcache* /s /q)"
+      "Bash(del .nextcache* /s /q)",
+      "WebFetch(domain:fdc.nal.usda.gov)"
     ],
     "deny": [],
     "ask": [],

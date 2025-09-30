@@ -357,13 +357,19 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                     {food.brand && (
                                                         <p className="text-xs text-[#A1A1AA] mb-1">{food.brand}</p>
                                                     )}
-                                                    <div className="flex items-center space-x-4 text-xs text-[#7A7F86]">
-                                                        <span className="font-medium">{food.caloriesPerServing} cal</span>
+                                                    <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-[#7A7F86]">
+                                                        <span className="font-medium text-[#F3F4F6]">{food.caloriesPerServing} cal</span>
                                                         <span className="text-[#9BE15D]">{formatNutrientValue(food.macros.carbs)}g carbs</span>
                                                         <span className="text-[#2A8CEA]">{formatNutrientValue(food.macros.protein)}g protein</span>
                                                         <span className="text-[#FF2D55]">{formatNutrientValue(food.macros.fats)}g fats</span>
                                                         {food.macros.fiber && food.macros.fiber > 0 && (
-                                                            <span className="text-[#A1A1AA]">{formatNutrientValue(food.macros.fiber)}g fiber</span>
+                                                            <span className="text-[#00E676]">{formatNutrientValue(food.macros.fiber)}g fiber</span>
+                                                        )}
+                                                        {food.macros.sugar && food.macros.sugar > 0 && (
+                                                            <span className="text-[#FF6B6B]">{formatNutrientValue(food.macros.sugar)}g sugar</span>
+                                                        )}
+                                                        {food.macros.sodium && food.macros.sodium > 0 && (
+                                                            <span className="text-[#A1A1AA]">{formatNutrientValue(food.macros.sodium)}mg sodium</span>
                                                         )}
                                                     </div>
                                                 </div>
@@ -1178,221 +1184,160 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                         </div>
                                     )}
 
-                                    {/* Vitamins & Minerals - Complete List */}
+                                    {/* Vitamins & Minerals - Organized by Category */}
                                     {Object.entries(selectedFood.macros).some(([key, value]) =>
                                         ['vitaminA', 'vitaminC', 'vitaminD', 'vitaminE', 'vitaminK', 'thiamine', 'riboflavin', 'niacin', 'vitaminB6', 'folate', 'vitaminB12', 'biotin', 'pantothenicAcid', 'calcium', 'iron', 'potassium', 'phosphorus', 'iodine', 'magnesium', 'zinc', 'selenium', 'copper', 'manganese', 'chromium', 'molybdenum'].includes(key) && value && value > 0.1
                                     ) && (
-                                        <div>
-                                            <h6 className="text-xs font-medium text-[#2A8CEA] mb-2">Vitamins & Minerals</h6>
-                                            <div className="grid grid-cols-3 gap-4 text-center text-sm">
-                                                {/* Fat-Soluble Vitamins */}
-                                                {selectedFood.macros.vitaminA && selectedFood.macros.vitaminA > 0.1 && (
-                                                    <div>
-                                                        <div className="font-semibold text-[#A1A1AA]">
-                                                            {formatNutrientValue(selectedFood.macros.vitaminA * (weightGrams / selectedFood.servingSize))}IU
-                                                        </div>
-                                                        <div className="text-xs text-[#7A7F86]">vitamin A</div>
-                                                    </div>
-                                                )}
-                                                {selectedFood.macros.vitaminD && selectedFood.macros.vitaminD > 0.1 && (
-                                                    <div>
-                                                        <div className="font-semibold text-[#A1A1AA]">
-                                                            {formatNutrientValue(selectedFood.macros.vitaminD * (weightGrams / selectedFood.servingSize))}IU
-                                                        </div>
-                                                        <div className="text-xs text-[#7A7F86]">vitamin D</div>
-                                                    </div>
-                                                )}
-                                                {selectedFood.macros.vitaminE && selectedFood.macros.vitaminE > 0.1 && (
-                                                    <div>
-                                                        <div className="font-semibold text-[#A1A1AA]">
-                                                            {formatNutrientValue(selectedFood.macros.vitaminE * (weightGrams / selectedFood.servingSize))}mg
-                                                        </div>
-                                                        <div className="text-xs text-[#7A7F86]">vitamin E</div>
-                                                    </div>
-                                                )}
-                                                {selectedFood.macros.vitaminK && selectedFood.macros.vitaminK > 0.1 && (
-                                                    <div>
-                                                        <div className="font-semibold text-[#A1A1AA]">
-                                                            {formatNutrientValue(selectedFood.macros.vitaminK * (weightGrams / selectedFood.servingSize))}mcg
-                                                        </div>
-                                                        <div className="text-xs text-[#7A7F86]">vitamin K</div>
-                                                    </div>
-                                                )}
-
-                                                {/* Water-Soluble Vitamins */}
-                                                {selectedFood.macros.vitaminC && selectedFood.macros.vitaminC > 0.1 && (
-                                                    <div>
-                                                        <div className="font-semibold text-[#A1A1AA]">
-                                                            {formatNutrientValue(selectedFood.macros.vitaminC * (weightGrams / selectedFood.servingSize))}mg
-                                                        </div>
-                                                        <div className="text-xs text-[#7A7F86]">vitamin C</div>
-                                                    </div>
-                                                )}
-                                                {selectedFood.macros.thiamine && selectedFood.macros.thiamine > 0.1 && (
-                                                    <div>
-                                                        <div className="font-semibold text-[#A1A1AA]">
-                                                            {formatNutrientValue(selectedFood.macros.thiamine * (weightGrams / selectedFood.servingSize))}mg
-                                                        </div>
-                                                        <div className="text-xs text-[#7A7F86]">thiamine (B1)</div>
-                                                    </div>
-                                                )}
-                                                {selectedFood.macros.riboflavin && selectedFood.macros.riboflavin > 0.1 && (
-                                                    <div>
-                                                        <div className="font-semibold text-[#A1A1AA]">
-                                                            {formatNutrientValue(selectedFood.macros.riboflavin * (weightGrams / selectedFood.servingSize))}mg
-                                                        </div>
-                                                        <div className="text-xs text-[#7A7F86]">riboflavin (B2)</div>
-                                                    </div>
-                                                )}
-                                                {selectedFood.macros.niacin && selectedFood.macros.niacin > 0.1 && (
-                                                    <div>
-                                                        <div className="font-semibold text-[#A1A1AA]">
-                                                            {formatNutrientValue(selectedFood.macros.niacin * (weightGrams / selectedFood.servingSize))}mg
-                                                        </div>
-                                                        <div className="text-xs text-[#7A7F86]">niacin (B3)</div>
-                                                    </div>
-                                                )}
-                                                {selectedFood.macros.vitaminB6 && selectedFood.macros.vitaminB6 > 0.1 && (
-                                                    <div>
-                                                        <div className="font-semibold text-[#A1A1AA]">
-                                                            {formatNutrientValue(selectedFood.macros.vitaminB6 * (weightGrams / selectedFood.servingSize))}mg
-                                                        </div>
-                                                        <div className="text-xs text-[#7A7F86]">vitamin B6</div>
-                                                    </div>
-                                                )}
-                                                {selectedFood.macros.folate && selectedFood.macros.folate > 0.1 && (
-                                                    <div>
-                                                        <div className="font-semibold text-[#A1A1AA]">
-                                                            {formatNutrientValue(selectedFood.macros.folate * (weightGrams / selectedFood.servingSize))}mcg
-                                                        </div>
-                                                        <div className="text-xs text-[#7A7F86]">folate</div>
-                                                    </div>
-                                                )}
-                                                {selectedFood.macros.vitaminB12 && selectedFood.macros.vitaminB12 > 0.1 && (
-                                                    <div>
-                                                        <div className="font-semibold text-[#A1A1AA]">
-                                                            {formatNutrientValue(selectedFood.macros.vitaminB12 * (weightGrams / selectedFood.servingSize))}mcg
-                                                        </div>
-                                                        <div className="text-xs text-[#7A7F86]">vitamin B12</div>
-                                                    </div>
-                                                )}
-                                                {selectedFood.macros.biotin && selectedFood.macros.biotin > 0.1 && (
-                                                    <div>
-                                                        <div className="font-semibold text-[#A1A1AA]">
-                                                            {formatNutrientValue(selectedFood.macros.biotin * (weightGrams / selectedFood.servingSize))}mcg
-                                                        </div>
-                                                        <div className="text-xs text-[#7A7F86]">biotin</div>
-                                                    </div>
-                                                )}
-                                                {selectedFood.macros.pantothenicAcid && selectedFood.macros.pantothenicAcid > 0.1 && (
-                                                    <div>
-                                                        <div className="font-semibold text-[#A1A1AA]">
-                                                            {formatNutrientValue(selectedFood.macros.pantothenicAcid * (weightGrams / selectedFood.servingSize))}mg
-                                                        </div>
-                                                        <div className="text-xs text-[#7A7F86]">pantothenic acid</div>
-                                                    </div>
-                                                )}
-
-                                                {/* Major Minerals */}
-                                                {selectedFood.macros.calcium && selectedFood.macros.calcium > 0.1 && (
-                                                    <div>
-                                                        <div className="font-semibold text-[#A1A1AA]">
-                                                            {formatNutrientValue(selectedFood.macros.calcium * (weightGrams / selectedFood.servingSize))}mg
-                                                        </div>
-                                                        <div className="text-xs text-[#7A7F86]">calcium</div>
-                                                    </div>
-                                                )}
-                                                {selectedFood.macros.iron && selectedFood.macros.iron > 0.1 && (
-                                                    <div>
-                                                        <div className="font-semibold text-[#A1A1AA]">
-                                                            {formatNutrientValue(selectedFood.macros.iron * (weightGrams / selectedFood.servingSize))}mg
-                                                        </div>
-                                                        <div className="text-xs text-[#7A7F86]">iron</div>
-                                                    </div>
-                                                )}
-                                                {selectedFood.macros.potassium && selectedFood.macros.potassium > 0.1 && (
-                                                    <div>
-                                                        <div className="font-semibold text-[#A1A1AA]">
-                                                            {formatNutrientValue(selectedFood.macros.potassium * (weightGrams / selectedFood.servingSize))}mg
-                                                        </div>
-                                                        <div className="text-xs text-[#7A7F86]">potassium</div>
-                                                    </div>
-                                                )}
-                                                {selectedFood.macros.phosphorus && selectedFood.macros.phosphorus > 0.1 && (
-                                                    <div>
-                                                        <div className="font-semibold text-[#A1A1AA]">
-                                                            {formatNutrientValue(selectedFood.macros.phosphorus * (weightGrams / selectedFood.servingSize))}mg
-                                                        </div>
-                                                        <div className="text-xs text-[#7A7F86]">phosphorus</div>
-                                                    </div>
-                                                )}
-                                                {selectedFood.macros.magnesium && selectedFood.macros.magnesium > 0.1 && (
-                                                    <div>
-                                                        <div className="font-semibold text-[#A1A1AA]">
-                                                            {formatNutrientValue(selectedFood.macros.magnesium * (weightGrams / selectedFood.servingSize))}mg
-                                                        </div>
-                                                        <div className="text-xs text-[#7A7F86]">magnesium</div>
-                                                    </div>
-                                                )}
-
-                                                {/* Trace Minerals */}
-                                                {selectedFood.macros.zinc && selectedFood.macros.zinc > 0.1 && (
-                                                    <div>
-                                                        <div className="font-semibold text-[#A1A1AA]">
-                                                            {formatNutrientValue(selectedFood.macros.zinc * (weightGrams / selectedFood.servingSize))}mg
-                                                        </div>
-                                                        <div className="text-xs text-[#7A7F86]">zinc</div>
-                                                    </div>
-                                                )}
-                                                {selectedFood.macros.selenium && selectedFood.macros.selenium > 0.1 && (
-                                                    <div>
-                                                        <div className="font-semibold text-[#A1A1AA]">
-                                                            {formatNutrientValue(selectedFood.macros.selenium * (weightGrams / selectedFood.servingSize))}mcg
-                                                        </div>
-                                                        <div className="text-xs text-[#7A7F86]">selenium</div>
-                                                    </div>
-                                                )}
-                                                {selectedFood.macros.copper && selectedFood.macros.copper > 0.1 && (
-                                                    <div>
-                                                        <div className="font-semibold text-[#A1A1AA]">
-                                                            {formatNutrientValue(selectedFood.macros.copper * (weightGrams / selectedFood.servingSize))}mg
-                                                        </div>
-                                                        <div className="text-xs text-[#7A7F86]">copper</div>
-                                                    </div>
-                                                )}
-                                                {selectedFood.macros.manganese && selectedFood.macros.manganese > 0.1 && (
-                                                    <div>
-                                                        <div className="font-semibold text-[#A1A1AA]">
-                                                            {formatNutrientValue(selectedFood.macros.manganese * (weightGrams / selectedFood.servingSize))}mg
-                                                        </div>
-                                                        <div className="text-xs text-[#7A7F86]">manganese</div>
-                                                    </div>
-                                                )}
-                                                {selectedFood.macros.iodine && selectedFood.macros.iodine > 0 && (
-                                                    <div>
-                                                        <div className="font-semibold text-[#A1A1AA]">
-                                                            {formatNutrientValue(selectedFood.macros.iodine * (weightGrams / selectedFood.servingSize))}mcg
-                                                        </div>
-                                                        <div className="text-xs text-[#7A7F86]">iodine</div>
-                                                    </div>
-                                                )}
-                                                {selectedFood.macros.chromium && selectedFood.macros.chromium > 0 && (
-                                                    <div>
-                                                        <div className="font-semibold text-[#A1A1AA]">
-                                                            {formatNutrientValue(selectedFood.macros.chromium * (weightGrams / selectedFood.servingSize))}mcg
-                                                        </div>
-                                                        <div className="text-xs text-[#7A7F86]">chromium</div>
-                                                    </div>
-                                                )}
-                                                {selectedFood.macros.molybdenum && selectedFood.macros.molybdenum > 0 && (
-                                                    <div>
-                                                        <div className="font-semibold text-[#A1A1AA]">
-                                                            {formatNutrientValue(selectedFood.macros.molybdenum * (weightGrams / selectedFood.servingSize))}mcg
-                                                        </div>
-                                                        <div className="text-xs text-[#7A7F86]">molybdenum</div>
-                                                    </div>
-                                                )}
+                                        <div className="space-y-5">
+                                            <div className="flex items-center space-x-2">
+                                                <div className="w-1 h-5 bg-gradient-to-b from-[#2A8CEA] to-[#1659BF] rounded-full"></div>
+                                                <h6 className="text-sm font-semibold text-[#F3F4F6]">Vitamins & Minerals</h6>
                                             </div>
+
+                                            {/* Fat-Soluble Vitamins */}
+                                            {(() => {
+                                                const fatSolubleVitamins = [
+                                                    { key: 'vitaminA', name: 'Vitamin A', unit: 'IU', color: 'text-[#FF9500]', description: 'Vision, immune function' },
+                                                    { key: 'vitaminD', name: 'Vitamin D', unit: 'IU', color: 'text-[#FFD700]', description: 'Bone health, calcium absorption' },
+                                                    { key: 'vitaminE', name: 'Vitamin E', unit: 'mg', color: 'text-[#00E676]', description: 'Antioxidant, cell protection' },
+                                                    { key: 'vitaminK', name: 'Vitamin K', unit: 'mcg', color: 'text-[#4ECDC4]', description: 'Blood clotting, bone health' }
+                                                ]
+                                                const hasAny = fatSolubleVitamins.some(v => selectedFood.macros[v.key as keyof DetailedNutrients] && (selectedFood.macros[v.key as keyof DetailedNutrients] as number) > 0.1)
+                                                return hasAny && (
+                                                    <div>
+                                                        <h6 className="text-xs font-medium text-[#A1A1AA] mb-3">Fat-Soluble Vitamins</h6>
+                                                        <div className="grid grid-cols-2 gap-3">
+                                                            {fatSolubleVitamins.map(vitamin => {
+                                                                const value = selectedFood.macros[vitamin.key as keyof DetailedNutrients] as number | undefined
+                                                                if (!value || value <= 0.1) return null
+                                                                const adjustedValue = value * (weightGrams / selectedFood.servingSize)
+                                                                return (
+                                                                    <div key={vitamin.key} className="bg-[#0E0F13] border border-[#212227] rounded-lg p-3">
+                                                                        <div className="flex items-start justify-between mb-1">
+                                                                            <span className="text-xs font-medium text-[#F3F4F6]">{vitamin.name}</span>
+                                                                            <span className={`text-sm font-bold ${vitamin.color}`}>
+                                                                                {formatNutrientValue(adjustedValue)}{vitamin.unit}
+                                                                            </span>
+                                                                        </div>
+                                                                        <p className="text-[10px] text-[#7A7F86]">{vitamin.description}</p>
+                                                                    </div>
+                                                                )
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })()}
+
+                                            {/* Water-Soluble Vitamins */}
+                                            {(() => {
+                                                const waterSolubleVitamins = [
+                                                    { key: 'vitaminC', name: 'Vitamin C', unit: 'mg', color: 'text-[#FF6B6B]', description: 'Immune function, collagen' },
+                                                    { key: 'thiamine', name: 'B1 (Thiamine)', unit: 'mg', color: 'text-[#9BE15D]', description: 'Energy metabolism' },
+                                                    { key: 'riboflavin', name: 'B2 (Riboflavin)', unit: 'mg', color: 'text-[#9BE15D]', description: 'Energy production' },
+                                                    { key: 'niacin', name: 'B3 (Niacin)', unit: 'mg', color: 'text-[#9BE15D]', description: 'DNA repair, metabolism' },
+                                                    { key: 'vitaminB6', name: 'B6', unit: 'mg', color: 'text-[#9BE15D]', description: 'Brain development' },
+                                                    { key: 'folate', name: 'B9 (Folate)', unit: 'mcg', color: 'text-[#9BE15D]', description: 'Cell growth, DNA' },
+                                                    { key: 'vitaminB12', name: 'B12', unit: 'mcg', color: 'text-[#9BE15D]', description: 'Nerve function, red blood cells' },
+                                                    { key: 'biotin', name: 'B7 (Biotin)', unit: 'mcg', color: 'text-[#9BE15D]', description: 'Hair, skin, nails' },
+                                                    { key: 'pantothenicAcid', name: 'B5 (Pantothenic)', unit: 'mg', color: 'text-[#9BE15D]', description: 'Hormone synthesis' }
+                                                ]
+                                                const hasAny = waterSolubleVitamins.some(v => selectedFood.macros[v.key as keyof DetailedNutrients] && (selectedFood.macros[v.key as keyof DetailedNutrients] as number) > 0.1)
+                                                return hasAny && (
+                                                    <div>
+                                                        <h6 className="text-xs font-medium text-[#A1A1AA] mb-3">Water-Soluble Vitamins (B-Complex & C)</h6>
+                                                        <div className="grid grid-cols-2 gap-3">
+                                                            {waterSolubleVitamins.map(vitamin => {
+                                                                const value = selectedFood.macros[vitamin.key as keyof DetailedNutrients] as number | undefined
+                                                                if (!value || value <= 0.1) return null
+                                                                const adjustedValue = value * (weightGrams / selectedFood.servingSize)
+                                                                return (
+                                                                    <div key={vitamin.key} className="bg-[#0E0F13] border border-[#212227] rounded-lg p-3">
+                                                                        <div className="flex items-start justify-between mb-1">
+                                                                            <span className="text-xs font-medium text-[#F3F4F6]">{vitamin.name}</span>
+                                                                            <span className={`text-sm font-bold ${vitamin.color}`}>
+                                                                                {formatNutrientValue(adjustedValue)}{vitamin.unit}
+                                                                            </span>
+                                                                        </div>
+                                                                        <p className="text-[10px] text-[#7A7F86]">{vitamin.description}</p>
+                                                                    </div>
+                                                                )
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })()}
+
+                                            {/* Major Minerals */}
+                                            {(() => {
+                                                const majorMinerals = [
+                                                    { key: 'calcium', name: 'Calcium', unit: 'mg', color: 'text-[#2A8CEA]', description: 'Bones, teeth, muscle function' },
+                                                    { key: 'phosphorus', name: 'Phosphorus', unit: 'mg', color: 'text-[#2A8CEA]', description: 'Bone health, energy' },
+                                                    { key: 'magnesium', name: 'Magnesium', unit: 'mg', color: 'text-[#2A8CEA]', description: 'Muscle, nerve function' },
+                                                    { key: 'potassium', name: 'Potassium', unit: 'mg', color: 'text-[#2A8CEA]', description: 'Heart, muscle function' }
+                                                ]
+                                                const hasAny = majorMinerals.some(m => selectedFood.macros[m.key as keyof DetailedNutrients] && (selectedFood.macros[m.key as keyof DetailedNutrients] as number) > 0.1)
+                                                return hasAny && (
+                                                    <div>
+                                                        <h6 className="text-xs font-medium text-[#A1A1AA] mb-3">Major Minerals</h6>
+                                                        <div className="grid grid-cols-2 gap-3">
+                                                            {majorMinerals.map(mineral => {
+                                                                const value = selectedFood.macros[mineral.key as keyof DetailedNutrients] as number | undefined
+                                                                if (!value || value <= 0.1) return null
+                                                                const adjustedValue = value * (weightGrams / selectedFood.servingSize)
+                                                                return (
+                                                                    <div key={mineral.key} className="bg-[#0E0F13] border border-[#212227] rounded-lg p-3">
+                                                                        <div className="flex items-start justify-between mb-1">
+                                                                            <span className="text-xs font-medium text-[#F3F4F6]">{mineral.name}</span>
+                                                                            <span className={`text-sm font-bold ${mineral.color}`}>
+                                                                                {formatNutrientValue(adjustedValue)}{mineral.unit}
+                                                                            </span>
+                                                                        </div>
+                                                                        <p className="text-[10px] text-[#7A7F86]">{mineral.description}</p>
+                                                                    </div>
+                                                                )
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })()}
+
+                                            {/* Trace Minerals */}
+                                            {(() => {
+                                                const traceMinerals = [
+                                                    { key: 'iron', name: 'Iron', unit: 'mg', color: 'text-[#FF375F]', description: 'Oxygen transport, energy' },
+                                                    { key: 'zinc', name: 'Zinc', unit: 'mg', color: 'text-[#A1A1AA]', description: 'Immune function, wound healing' },
+                                                    { key: 'selenium', name: 'Selenium', unit: 'mcg', color: 'text-[#A1A1AA]', description: 'Antioxidant, thyroid' },
+                                                    { key: 'copper', name: 'Copper', unit: 'mg', color: 'text-[#FF9500]', description: 'Iron absorption, nerves' },
+                                                    { key: 'manganese', name: 'Manganese', unit: 'mg', color: 'text-[#A1A1AA]', description: 'Bone formation, metabolism' },
+                                                    { key: 'iodine', name: 'Iodine', unit: 'mcg', color: 'text-[#A1A1AA]', description: 'Thyroid hormone production' },
+                                                    { key: 'chromium', name: 'Chromium', unit: 'mcg', color: 'text-[#A1A1AA]', description: 'Blood sugar regulation' },
+                                                    { key: 'molybdenum', name: 'Molybdenum', unit: 'mcg', color: 'text-[#A1A1AA]', description: 'Enzyme function' }
+                                                ]
+                                                const hasAny = traceMinerals.some(m => selectedFood.macros[m.key as keyof DetailedNutrients] && (selectedFood.macros[m.key as keyof DetailedNutrients] as number) > 0.1)
+                                                return hasAny && (
+                                                    <div>
+                                                        <h6 className="text-xs font-medium text-[#A1A1AA] mb-3">Trace Minerals</h6>
+                                                        <div className="grid grid-cols-2 gap-3">
+                                                            {traceMinerals.map(mineral => {
+                                                                const value = selectedFood.macros[mineral.key as keyof DetailedNutrients] as number | undefined
+                                                                if (!value || value <= 0.1) return null
+                                                                const adjustedValue = value * (weightGrams / selectedFood.servingSize)
+                                                                return (
+                                                                    <div key={mineral.key} className="bg-[#0E0F13] border border-[#212227] rounded-lg p-3">
+                                                                        <div className="flex items-start justify-between mb-1">
+                                                                            <span className="text-xs font-medium text-[#F3F4F6]">{mineral.name}</span>
+                                                                            <span className={`text-sm font-bold ${mineral.color}`}>
+                                                                                {formatNutrientValue(adjustedValue)}{mineral.unit}
+                                                                            </span>
+                                                                        </div>
+                                                                        <p className="text-[10px] text-[#7A7F86]">{mineral.description}</p>
+                                                                    </div>
+                                                                )
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })()}
                                         </div>
                                     )}
                                 </div>

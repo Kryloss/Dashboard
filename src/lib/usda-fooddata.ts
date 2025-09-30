@@ -64,12 +64,16 @@ const NUTRIENT_MAPPINGS = {
     1177: 'folate',        // Folate, total (mcg)
     1178: 'vitaminB12',    // Vitamin B-12 (mcg)
     1176: 'pantothenicAcid', // Pantothenic acid (mg)
+    1170: 'biotin',        // Biotin (mcg)
     1091: 'phosphorus',    // Phosphorus, P (mg)
     1100: 'magnesium',     // Magnesium, Mg (mg)
     1095: 'zinc',          // Zinc, Zn (mg)
     1103: 'selenium',      // Selenium, Se (mcg)
     1098: 'copper',        // Copper, Cu (mg)
-    1101: 'manganese'      // Manganese, Mn (mg)
+    1101: 'manganese',     // Manganese, Mn (mg)
+    1046: 'iodine',        // Iodine, I (mcg)
+    1096: 'chromium',      // Chromium, Cr (mcg)
+    1102: 'molybdenum'     // Molybdenum, Mo (mcg)
 } as const
 
 export class USDAFoodDataService {
