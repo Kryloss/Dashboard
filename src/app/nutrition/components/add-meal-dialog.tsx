@@ -862,7 +862,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                     )}
 
                                     {/* Carbohydrates Quality Breakdown */}
-                                    {(selectedFood.macros.sugar > 0 ||
+                                    {((selectedFood.macros.sugar && selectedFood.macros.sugar > 0) ||
                                       (selectedFood.macros.carbs - (selectedFood.macros.sugar || 0) - (selectedFood.macros.fiber || 0)) > 0 ||
                                       (selectedFood.macros.fiber && selectedFood.macros.fiber > 0) ||
                                       ((selectedFood.macros.carbs - (selectedFood.macros.sugar || 0) - (selectedFood.macros.fiber || 0)) > 0 &&
