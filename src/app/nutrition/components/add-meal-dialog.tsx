@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { NutritionStorage, Food, DetailedNutrients } from "@/lib/nutrition-storage"
 import { Search, X, Plus, Package, Edit3, Calculator, Database, Leaf, ChevronDown, ChevronUp,
-         Beef, Wheat, Droplets, AlertTriangle, CheckCircle, Star, Zap, Heart, Shield } from "lucide-react"
+         Beef, Wheat, Droplets, AlertTriangle, CheckCircle, Star, Zap, Heart, Shield, Filter } from "lucide-react"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 
 interface AddMealDialogProps {
@@ -35,8 +36,10 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
 
     // Search state
     const [searchQuery, setSearchQuery] = useState("")
+    const [brandFilter, setBrandFilter] = useState("")
     const [searchResults, setSearchResults] = useState<FoodSearchResult[]>([])
     const [isSearching, setIsSearching] = useState(false)
+    const [availableBrands, setAvailableBrands] = useState<string[]>([])
 
     // Manual entry state
     const [manualFood, setManualFood] = useState({
@@ -74,18 +77,34 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
         return names[mealType]
     }
 
-    // Search for foods
+    // Search for foods with smart brand filtering
     useEffect(() => {
         const searchFoods = async () => {
             if (searchQuery.trim().length < 2) {
                 setSearchResults([])
+                setAvailableBrands([])
                 return
             }
 
             setIsSearching(true)
             try {
-                const foods = await NutritionStorage.getFoods(searchQuery, 20)
-                setSearchResults(foods.map(food => ({
+                const foods = await NutritionStorage.getFoods(searchQuery, 50)
+
+                // Extract unique brands from results
+                const brands = [...new Set(
+                    foods
+                        .filter(food => food.brand)
+                        .map(food => food.brand!)
+                )].sort()
+                setAvailableBrands(brands)
+
+                // Apply brand filter if selected (but not "all")
+                let filteredFoods = foods
+                if (brandFilter && brandFilter !== 'all') {
+                    filteredFoods = foods.filter(food => food.brand === brandFilter)
+                }
+
+                setSearchResults(filteredFoods.slice(0, 20).map(food => ({
                     id: food.id,
                     name: food.name,
                     brand: food.brand,
@@ -108,7 +127,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
 
         const debounceTimer = setTimeout(searchFoods, 300)
         return () => clearTimeout(debounceTimer)
-    }, [searchQuery, notifications])
+    }, [searchQuery, brandFilter, notifications])
 
     const handleFoodSelect = (foodResult: FoodSearchResult) => {
         const food: Food = {
@@ -202,7 +221,9 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
 
     const handleClose = () => {
         setSearchQuery("")
+        setBrandFilter("")
         setSearchResults([])
+        setAvailableBrands([])
         setSelectedFood(null)
         setWeightGrams(100)
         setNotes("")
@@ -312,15 +333,72 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
 
                     {/* Search Tab */}
                     <TabsContent value="search" className="space-y-4">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#A1A1AA] w-4 h-4" />
-                            <Input
-                                placeholder="Search foods from USDA database (e.g., 'chicken breast', 'banana')..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-10 bg-[#121318] border-[#212227] text-[#F3F4F6] placeholder-[#7A7F86]"
-                            />
+                        <div className="space-y-3">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#A1A1AA] w-4 h-4" />
+                                <Input
+                                    placeholder="Search foods from USDA database (e.g., 'chicken breast', 'banana')..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="pl-10 bg-[#121318] border-[#212227] text-[#F3F4F6] placeholder-[#7A7F86]"
+                                />
+                            </div>
+
+                            {/* Smart Brand Filter */}
+                            {availableBrands.length > 0 && (
+                                <div className="flex items-center space-x-2">
+                                    <div className="flex items-center space-x-2 flex-1">
+                                        <Filter className="w-4 h-4 text-[#A1A1AA]" />
+                                        <Select value={brandFilter} onValueChange={setBrandFilter}>
+                                            <SelectTrigger className="bg-[#121318] border-[#212227] text-[#F3F4F6] h-9">
+                                                <SelectValue placeholder="Filter by brand..." />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-[#121318] border-[#212227] text-[#F3F4F6]">
+                                                <SelectItem value="all" className="hover:bg-[#212227]">
+                                                    <div className="flex items-center space-x-2">
+                                                        <span className="text-[#F3F4F6]">All Brands</span>
+                                                        <span className="text-xs text-[#7A7F86]">({searchResults.length + (brandFilter ? availableBrands.length - 1 : 0)})</span>
+                                                    </div>
+                                                </SelectItem>
+                                                {availableBrands.map((brand) => (
+                                                    <SelectItem key={brand} value={brand} className="hover:bg-[#212227]">
+                                                        <div className="flex items-center justify-between w-full">
+                                                            <span className="text-[#F3F4F6]">{brand}</span>
+                                                        </div>
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    {brandFilter && brandFilter !== 'all' && (
+                                        <Button
+                                            onClick={() => setBrandFilter("")}
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] h-9 px-2"
+                                        >
+                                            <X className="w-3 h-3 mr-1" />
+                                            Clear
+                                        </Button>
+                                    )}
+                                </div>
+                            )}
                         </div>
+
+                        {/* Results Counter */}
+                        {searchResults.length > 0 && (
+                            <div className="flex items-center justify-between text-xs text-[#7A7F86] px-1">
+                                <span>
+                                    {searchResults.length} result{searchResults.length !== 1 ? 's' : ''}
+                                    {brandFilter && brandFilter !== 'all' && (
+                                        <span className="text-[#2A8CEA]"> from {brandFilter}</span>
+                                    )}
+                                </span>
+                                {availableBrands.length > 1 && (
+                                    <span className="text-[#A1A1AA]">{availableBrands.length} brand{availableBrands.length !== 1 ? 's' : ''} available</span>
+                                )}
+                            </div>
+                        )}
 
                         {/* Search Results */}
                         <div className="space-y-2 max-h-64 overflow-y-auto">
