@@ -404,6 +404,7 @@ export class NutritionStorage {
             const limitPerAPI = Math.floor(remainingLimit / 3) // Split between USDA, OFF, and CNF
 
             // Progressive loading: fetch sources in parallel but process results as they arrive
+            console.log(`🔎 Starting USDA search for "${searchTerm}"...`)
             const usdaPromise = USDAFoodDataService.searchFoods(searchTerm, limitPerAPI)
                 .then(foods => {
                     if (!abortSignal?.aborted) {
@@ -411,7 +412,9 @@ export class NutritionStorage {
                         console.log(`📊 USDA: ${unique.length} foods`)
                     }
                 })
-                .catch(() => console.warn('USDA API failed'))
+                .catch((err) => {
+                    console.warn('USDA API failed:', err)
+                })
 
             const offPromise = OpenFoodFactsService.searchFoods(searchTerm, limitPerAPI)
                 .then(foods => {
@@ -432,7 +435,9 @@ export class NutritionStorage {
                 .catch(() => console.warn('CNF search failed'))
 
             // Wait for all to complete
+            console.log(`⏳ Waiting for all API sources to complete...`)
             await Promise.allSettled([usdaPromise, offPromise, cnfPromise])
+            console.log(`✅ All API sources completed! Total foods: ${allFoods.length}`)
 
             if (abortSignal?.aborted) {
                 console.log('❌ Search aborted after fetching')
@@ -557,10 +562,14 @@ export class NutritionStorage {
             return a.name.localeCompare(b.name)
         })
 
+        console.log(`✅ Sorted! Returning top ${limit} of ${sortedFoods.length} results`)
+
         const finalResults = sortedFoods.slice(0, limit)
 
         // Cache the results
         searchCache.set(cacheKey, finalResults)
+
+        console.log(`📦 Cached ${finalResults.length} results for: "${searchTerm}"`)
 
         return finalResults
     }
