@@ -58,7 +58,8 @@
       "Bash(del \"C:\\Users\\mrRep\\Desktop\\Dashboard\\src\\components\\progress-photos-tab.tsx\")",
       "mcp__shadcn__get_item_examples_from_registries",
       "Bash(node:*)",
-      "Bash(del \"C:\\Users\\mrRep\\Desktop\\Dashboard\\timezone-test.js\")"
+      "Bash(del \"C:\\Users\\mrRep\\Desktop\\Dashboard\\timezone-test.js\")",
+      "Bash(del .nextcache* /s /q)"
     ],
     "deny": [],
     "ask": [],

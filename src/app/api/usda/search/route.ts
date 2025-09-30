@@ -31,7 +31,10 @@ export async function GET(request: NextRequest) {
         })
 
         if (!response.ok) {
+            const errorText = await response.text()
             console.error(`USDA API error: ${response.status} ${response.statusText}`)
+            console.error(`USDA API response body:`, errorText)
+            console.error(`Request URL:`, `${USDA_BASE_URL}/foods/search?${usdaSearchParams}`)
             throw new Error(`USDA API error: ${response.status} ${response.statusText}`)
         }
 
@@ -40,6 +43,9 @@ export async function GET(request: NextRequest) {
 
     } catch (error) {
         console.error('Error proxying USDA search request:', error)
+        console.error('Search query:', query)
+        console.error('Page size:', pageSize)
+        console.error('API key present:', !!USDA_API_KEY && USDA_API_KEY !== 'DEMO_KEY')
         return NextResponse.json(
             { error: 'Failed to search foods', foods: [] },
             { status: 500 }
