@@ -6,6 +6,52 @@ import { USDAFoodDataService } from './usda-fooddata'
 import { OpenFoodFactsService } from './openfoodfacts'
 import { CNFService } from './cnf-service'
 
+// Forward declare Food type for cache
+type Food = any // Will be properly defined below
+
+// LRU Cache for search results
+interface CacheEntry {
+    results: Food[]
+    timestamp: number
+}
+
+class SearchCache {
+    private cache = new Map<string, CacheEntry>()
+    private readonly maxSize = 100
+    private readonly ttl = 5 * 60 * 1000 // 5 minutes
+
+    set(key: string, results: Food[]): void {
+        // Remove oldest entry if cache is full
+        if (this.cache.size >= this.maxSize) {
+            const firstKey = this.cache.keys().next().value
+            this.cache.delete(firstKey)
+        }
+        this.cache.set(key, { results, timestamp: Date.now() })
+    }
+
+    get(key: string): Food[] | null {
+        const entry = this.cache.get(key)
+        if (!entry) return null
+
+        // Check if expired
+        if (Date.now() - entry.timestamp > this.ttl) {
+            this.cache.delete(key)
+            return null
+        }
+
+        // Move to end (LRU)
+        this.cache.delete(key)
+        this.cache.set(key, entry)
+        return entry.results
+    }
+
+    clear(): void {
+        this.cache.clear()
+    }
+}
+
+const searchCache = new SearchCache()
+
 // Core nutrition data models
 export interface MacroNutrients {
     carbs: number           // grams
@@ -269,10 +315,41 @@ export class NutritionStorage {
     // FOOD MANAGEMENT
     // ============================================================================
 
-    static async getFoods(searchTerm?: string, limit: number = 100): Promise<Food[]> {
+    static async getFoods(
+        searchTerm?: string,
+        limit: number = 100,
+        onProgressiveResults?: (results: Food[], source: string) => void,
+        abortSignal?: AbortSignal
+    ): Promise<Food[]> {
         console.log('NutritionStorage.getFoods - Current user:', this.currentUser?.id, 'Search:', searchTerm)
 
+        // Check cache first
+        const cacheKey = `${searchTerm || ''}:${limit}`
+        const cached = searchCache.get(cacheKey)
+        if (cached) {
+            console.log('⚡ Cache hit for:', searchTerm)
+            return cached
+        }
+
         const allFoods: Food[] = []
+        const seenFoods = new Map<string, boolean>() // For O(1) deduplication
+
+        // Helper to deduplicate
+        const addUniqueFoods = (foods: Food[], source: string): Food[] => {
+            const unique: Food[] = []
+            for (const food of foods) {
+                const key = `${food.name.toLowerCase()}:${food.brand?.toLowerCase() || ''}`
+                if (!seenFoods.has(key)) {
+                    seenFoods.set(key, true)
+                    unique.push(food)
+                    allFoods.push(food)
+                }
+            }
+            if (unique.length > 0 && onProgressiveResults) {
+                onProgressiveResults([...allFoods], source)
+            }
+            return unique
+        }
 
         // First, get local foods (Supabase/localStorage)
         let localFoods: Food[] = []
@@ -311,66 +388,54 @@ export class NutritionStorage {
             localFoods = this.getFoodsFromLocalStorage(searchTerm, Math.floor(limit / 2))
         }
 
-        allFoods.push(...localFoods)
+        // Add local foods with progressive loading
+        addUniqueFoods(localFoods, 'local')
 
         // Then, get foods from external APIs if we have a search term
         if (searchTerm && searchTerm.trim().length >= 2) {
+            if (abortSignal?.aborted) {
+                console.log('❌ Search aborted')
+                return allFoods
+            }
+
             const remainingLimit = limit - allFoods.length
             const limitPerAPI = Math.floor(remainingLimit / 3) // Split between USDA, OFF, and CNF
 
-            // Fetch from all three databases in parallel
-            const [usdaFoods, offFoods, cnfFoods] = await Promise.all([
-                // USDA FoodData Central (US)
-                USDAFoodDataService.searchFoods(searchTerm, limitPerAPI).catch(() => {
-                    console.warn('USDA API failed, continuing without USDA results')
-                    return []
-                }),
-                // OpenFoodFacts (International)
-                OpenFoodFactsService.searchFoods(searchTerm, limitPerAPI).catch(() => {
-                    console.warn('OpenFoodFacts API failed, continuing without OFF results')
-                    return []
-                }),
-                // Canadian Nutrient File (Canada)
-                CNFService.searchFoods(searchTerm, limitPerAPI).catch(() => {
-                    console.warn('CNF search failed, continuing without CNF results')
-                    return []
+            // Progressive loading: fetch sources in parallel but process results as they arrive
+            const usdaPromise = USDAFoodDataService.searchFoods(searchTerm, limitPerAPI)
+                .then(foods => {
+                    if (!abortSignal?.aborted) {
+                        const unique = addUniqueFoods(foods, 'USDA')
+                        console.log(`📊 USDA: ${unique.length} foods`)
+                    }
                 })
-            ])
+                .catch(() => console.warn('USDA API failed'))
 
-            // Filter out duplicates (foods that might already exist locally or between APIs)
-            const uniqueUSDAFoods = usdaFoods.filter(usdaFood =>
-                !allFoods.some(localFood =>
-                    localFood.name.toLowerCase() === usdaFood.name.toLowerCase() &&
-                    localFood.brand === usdaFood.brand
-                )
-            )
+            const offPromise = OpenFoodFactsService.searchFoods(searchTerm, limitPerAPI)
+                .then(foods => {
+                    if (!abortSignal?.aborted) {
+                        const unique = addUniqueFoods(foods, 'OpenFoodFacts')
+                        console.log(`🌍 OFF: ${unique.length} foods`)
+                    }
+                })
+                .catch(() => console.warn('OpenFoodFacts API failed'))
 
-            const uniqueOFFoods = offFoods.filter(offFood =>
-                !allFoods.some(existingFood =>
-                    existingFood.name.toLowerCase() === offFood.name.toLowerCase() &&
-                    existingFood.brand === offFood.brand
-                ) &&
-                !uniqueUSDAFoods.some(usdaFood =>
-                    usdaFood.name.toLowerCase() === offFood.name.toLowerCase() &&
-                    usdaFood.brand === offFood.brand
-                )
-            )
+            const cnfPromise = CNFService.searchFoods(searchTerm, limitPerAPI)
+                .then(foods => {
+                    if (!abortSignal?.aborted) {
+                        const unique = addUniqueFoods(foods, 'CNF')
+                        console.log(`🍁 CNF: ${unique.length} foods`)
+                    }
+                })
+                .catch(() => console.warn('CNF search failed'))
 
-            const uniqueCNFFoods = cnfFoods.filter(cnfFood =>
-                !allFoods.some(existingFood =>
-                    existingFood.name.toLowerCase() === cnfFood.name.toLowerCase()
-                ) &&
-                !uniqueUSDAFoods.some(usdaFood =>
-                    usdaFood.name.toLowerCase() === cnfFood.name.toLowerCase()
-                ) &&
-                !uniqueOFFoods.some(offFood =>
-                    offFood.name.toLowerCase() === cnfFood.name.toLowerCase()
-                )
-            )
+            // Wait for all to complete
+            await Promise.allSettled([usdaPromise, offPromise, cnfPromise])
 
-            allFoods.push(...uniqueUSDAFoods, ...uniqueOFFoods, ...uniqueCNFFoods)
-
-            console.log(`Search "${searchTerm}": ${localFoods.length} local, ${uniqueUSDAFoods.length} USDA, ${uniqueOFFoods.length} OFF, ${uniqueCNFFoods.length} CNF`)
+            if (abortSignal?.aborted) {
+                console.log('❌ Search aborted after fetching')
+                return allFoods
+            }
         }
 
         // Sort results: user foods first, then local foods, then external API foods
@@ -403,7 +468,12 @@ export class NutritionStorage {
             return a.name.localeCompare(b.name)
         })
 
-        return sortedFoods.slice(0, limit)
+        const finalResults = sortedFoods.slice(0, limit)
+
+        // Cache the results
+        searchCache.set(cacheKey, finalResults)
+
+        return finalResults
     }
 
     static async saveFood(foodData: Omit<Food, 'id' | 'createdAt' | 'updatedAt'>): Promise<Food> {
