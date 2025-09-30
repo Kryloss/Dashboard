@@ -1180,13 +1180,13 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
 
                                     {/* Vitamins & Minerals - Complete List */}
                                     {Object.entries(selectedFood.macros).some(([key, value]) =>
-                                        ['vitaminA', 'vitaminC', 'vitaminD', 'vitaminE', 'vitaminK', 'thiamine', 'riboflavin', 'niacin', 'vitaminB6', 'folate', 'vitaminB12', 'biotin', 'pantothenicAcid', 'calcium', 'iron', 'potassium', 'phosphorus', 'iodine', 'magnesium', 'zinc', 'selenium', 'copper', 'manganese', 'chromium', 'molybdenum'].includes(key) && value && value > 0
+                                        ['vitaminA', 'vitaminC', 'vitaminD', 'vitaminE', 'vitaminK', 'thiamine', 'riboflavin', 'niacin', 'vitaminB6', 'folate', 'vitaminB12', 'biotin', 'pantothenicAcid', 'calcium', 'iron', 'potassium', 'phosphorus', 'iodine', 'magnesium', 'zinc', 'selenium', 'copper', 'manganese', 'chromium', 'molybdenum'].includes(key) && value && value > 0.1
                                     ) && (
                                         <div>
                                             <h6 className="text-xs font-medium text-[#2A8CEA] mb-2">Vitamins & Minerals</h6>
                                             <div className="grid grid-cols-3 gap-4 text-center text-sm">
                                                 {/* Fat-Soluble Vitamins */}
-                                                {selectedFood.macros.vitaminA && selectedFood.macros.vitaminA > 0 && (
+                                                {selectedFood.macros.vitaminA && selectedFood.macros.vitaminA > 0.1 && (
                                                     <div>
                                                         <div className="font-semibold text-[#A1A1AA]">
                                                             {formatNutrientValue(selectedFood.macros.vitaminA * (weightGrams / selectedFood.servingSize))}IU
@@ -1194,7 +1194,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                         <div className="text-xs text-[#7A7F86]">vitamin A</div>
                                                     </div>
                                                 )}
-                                                {selectedFood.macros.vitaminD && selectedFood.macros.vitaminD > 0 && (
+                                                {selectedFood.macros.vitaminD && selectedFood.macros.vitaminD > 0.1 && (
                                                     <div>
                                                         <div className="font-semibold text-[#A1A1AA]">
                                                             {formatNutrientValue(selectedFood.macros.vitaminD * (weightGrams / selectedFood.servingSize))}IU
@@ -1202,7 +1202,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                         <div className="text-xs text-[#7A7F86]">vitamin D</div>
                                                     </div>
                                                 )}
-                                                {selectedFood.macros.vitaminE && selectedFood.macros.vitaminE > 0 && (
+                                                {selectedFood.macros.vitaminE && selectedFood.macros.vitaminE > 0.1 && (
                                                     <div>
                                                         <div className="font-semibold text-[#A1A1AA]">
                                                             {formatNutrientValue(selectedFood.macros.vitaminE * (weightGrams / selectedFood.servingSize))}mg
@@ -1210,7 +1210,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                         <div className="text-xs text-[#7A7F86]">vitamin E</div>
                                                     </div>
                                                 )}
-                                                {selectedFood.macros.vitaminK && selectedFood.macros.vitaminK > 0 && (
+                                                {selectedFood.macros.vitaminK && selectedFood.macros.vitaminK > 0.1 && (
                                                     <div>
                                                         <div className="font-semibold text-[#A1A1AA]">
                                                             {formatNutrientValue(selectedFood.macros.vitaminK * (weightGrams / selectedFood.servingSize))}mcg
@@ -1220,7 +1220,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                 )}
 
                                                 {/* Water-Soluble Vitamins */}
-                                                {selectedFood.macros.vitaminC && selectedFood.macros.vitaminC > 0 && (
+                                                {selectedFood.macros.vitaminC && selectedFood.macros.vitaminC > 0.1 && (
                                                     <div>
                                                         <div className="font-semibold text-[#A1A1AA]">
                                                             {formatNutrientValue(selectedFood.macros.vitaminC * (weightGrams / selectedFood.servingSize))}mg
@@ -1228,7 +1228,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                         <div className="text-xs text-[#7A7F86]">vitamin C</div>
                                                     </div>
                                                 )}
-                                                {selectedFood.macros.thiamine && selectedFood.macros.thiamine > 0 && (
+                                                {selectedFood.macros.thiamine && selectedFood.macros.thiamine > 0.1 && (
                                                     <div>
                                                         <div className="font-semibold text-[#A1A1AA]">
                                                             {formatNutrientValue(selectedFood.macros.thiamine * (weightGrams / selectedFood.servingSize))}mg
@@ -1236,7 +1236,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                         <div className="text-xs text-[#7A7F86]">thiamine (B1)</div>
                                                     </div>
                                                 )}
-                                                {selectedFood.macros.riboflavin && selectedFood.macros.riboflavin > 0 && (
+                                                {selectedFood.macros.riboflavin && selectedFood.macros.riboflavin > 0.1 && (
                                                     <div>
                                                         <div className="font-semibold text-[#A1A1AA]">
                                                             {formatNutrientValue(selectedFood.macros.riboflavin * (weightGrams / selectedFood.servingSize))}mg
@@ -1244,7 +1244,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                         <div className="text-xs text-[#7A7F86]">riboflavin (B2)</div>
                                                     </div>
                                                 )}
-                                                {selectedFood.macros.niacin && selectedFood.macros.niacin > 0 && (
+                                                {selectedFood.macros.niacin && selectedFood.macros.niacin > 0.1 && (
                                                     <div>
                                                         <div className="font-semibold text-[#A1A1AA]">
                                                             {formatNutrientValue(selectedFood.macros.niacin * (weightGrams / selectedFood.servingSize))}mg
@@ -1252,7 +1252,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                         <div className="text-xs text-[#7A7F86]">niacin (B3)</div>
                                                     </div>
                                                 )}
-                                                {selectedFood.macros.vitaminB6 && selectedFood.macros.vitaminB6 > 0 && (
+                                                {selectedFood.macros.vitaminB6 && selectedFood.macros.vitaminB6 > 0.1 && (
                                                     <div>
                                                         <div className="font-semibold text-[#A1A1AA]">
                                                             {formatNutrientValue(selectedFood.macros.vitaminB6 * (weightGrams / selectedFood.servingSize))}mg
@@ -1260,7 +1260,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                         <div className="text-xs text-[#7A7F86]">vitamin B6</div>
                                                     </div>
                                                 )}
-                                                {selectedFood.macros.folate && selectedFood.macros.folate > 0 && (
+                                                {selectedFood.macros.folate && selectedFood.macros.folate > 0.1 && (
                                                     <div>
                                                         <div className="font-semibold text-[#A1A1AA]">
                                                             {formatNutrientValue(selectedFood.macros.folate * (weightGrams / selectedFood.servingSize))}mcg
@@ -1268,7 +1268,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                         <div className="text-xs text-[#7A7F86]">folate</div>
                                                     </div>
                                                 )}
-                                                {selectedFood.macros.vitaminB12 && selectedFood.macros.vitaminB12 > 0 && (
+                                                {selectedFood.macros.vitaminB12 && selectedFood.macros.vitaminB12 > 0.1 && (
                                                     <div>
                                                         <div className="font-semibold text-[#A1A1AA]">
                                                             {formatNutrientValue(selectedFood.macros.vitaminB12 * (weightGrams / selectedFood.servingSize))}mcg
@@ -1276,7 +1276,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                         <div className="text-xs text-[#7A7F86]">vitamin B12</div>
                                                     </div>
                                                 )}
-                                                {selectedFood.macros.biotin && selectedFood.macros.biotin > 0 && (
+                                                {selectedFood.macros.biotin && selectedFood.macros.biotin > 0.1 && (
                                                     <div>
                                                         <div className="font-semibold text-[#A1A1AA]">
                                                             {formatNutrientValue(selectedFood.macros.biotin * (weightGrams / selectedFood.servingSize))}mcg
@@ -1284,7 +1284,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                         <div className="text-xs text-[#7A7F86]">biotin</div>
                                                     </div>
                                                 )}
-                                                {selectedFood.macros.pantothenicAcid && selectedFood.macros.pantothenicAcid > 0 && (
+                                                {selectedFood.macros.pantothenicAcid && selectedFood.macros.pantothenicAcid > 0.1 && (
                                                     <div>
                                                         <div className="font-semibold text-[#A1A1AA]">
                                                             {formatNutrientValue(selectedFood.macros.pantothenicAcid * (weightGrams / selectedFood.servingSize))}mg
@@ -1294,7 +1294,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                 )}
 
                                                 {/* Major Minerals */}
-                                                {selectedFood.macros.calcium && selectedFood.macros.calcium > 0 && (
+                                                {selectedFood.macros.calcium && selectedFood.macros.calcium > 0.1 && (
                                                     <div>
                                                         <div className="font-semibold text-[#A1A1AA]">
                                                             {formatNutrientValue(selectedFood.macros.calcium * (weightGrams / selectedFood.servingSize))}mg
@@ -1302,7 +1302,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                         <div className="text-xs text-[#7A7F86]">calcium</div>
                                                     </div>
                                                 )}
-                                                {selectedFood.macros.iron && selectedFood.macros.iron > 0 && (
+                                                {selectedFood.macros.iron && selectedFood.macros.iron > 0.1 && (
                                                     <div>
                                                         <div className="font-semibold text-[#A1A1AA]">
                                                             {formatNutrientValue(selectedFood.macros.iron * (weightGrams / selectedFood.servingSize))}mg
@@ -1310,7 +1310,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                         <div className="text-xs text-[#7A7F86]">iron</div>
                                                     </div>
                                                 )}
-                                                {selectedFood.macros.potassium && selectedFood.macros.potassium > 0 && (
+                                                {selectedFood.macros.potassium && selectedFood.macros.potassium > 0.1 && (
                                                     <div>
                                                         <div className="font-semibold text-[#A1A1AA]">
                                                             {formatNutrientValue(selectedFood.macros.potassium * (weightGrams / selectedFood.servingSize))}mg
@@ -1318,7 +1318,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                         <div className="text-xs text-[#7A7F86]">potassium</div>
                                                     </div>
                                                 )}
-                                                {selectedFood.macros.phosphorus && selectedFood.macros.phosphorus > 0 && (
+                                                {selectedFood.macros.phosphorus && selectedFood.macros.phosphorus > 0.1 && (
                                                     <div>
                                                         <div className="font-semibold text-[#A1A1AA]">
                                                             {formatNutrientValue(selectedFood.macros.phosphorus * (weightGrams / selectedFood.servingSize))}mg
@@ -1326,7 +1326,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                         <div className="text-xs text-[#7A7F86]">phosphorus</div>
                                                     </div>
                                                 )}
-                                                {selectedFood.macros.magnesium && selectedFood.macros.magnesium > 0 && (
+                                                {selectedFood.macros.magnesium && selectedFood.macros.magnesium > 0.1 && (
                                                     <div>
                                                         <div className="font-semibold text-[#A1A1AA]">
                                                             {formatNutrientValue(selectedFood.macros.magnesium * (weightGrams / selectedFood.servingSize))}mg
@@ -1336,7 +1336,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                 )}
 
                                                 {/* Trace Minerals */}
-                                                {selectedFood.macros.zinc && selectedFood.macros.zinc > 0 && (
+                                                {selectedFood.macros.zinc && selectedFood.macros.zinc > 0.1 && (
                                                     <div>
                                                         <div className="font-semibold text-[#A1A1AA]">
                                                             {formatNutrientValue(selectedFood.macros.zinc * (weightGrams / selectedFood.servingSize))}mg
@@ -1344,7 +1344,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                         <div className="text-xs text-[#7A7F86]">zinc</div>
                                                     </div>
                                                 )}
-                                                {selectedFood.macros.selenium && selectedFood.macros.selenium > 0 && (
+                                                {selectedFood.macros.selenium && selectedFood.macros.selenium > 0.1 && (
                                                     <div>
                                                         <div className="font-semibold text-[#A1A1AA]">
                                                             {formatNutrientValue(selectedFood.macros.selenium * (weightGrams / selectedFood.servingSize))}mcg
@@ -1352,7 +1352,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                         <div className="text-xs text-[#7A7F86]">selenium</div>
                                                     </div>
                                                 )}
-                                                {selectedFood.macros.copper && selectedFood.macros.copper > 0 && (
+                                                {selectedFood.macros.copper && selectedFood.macros.copper > 0.1 && (
                                                     <div>
                                                         <div className="font-semibold text-[#A1A1AA]">
                                                             {formatNutrientValue(selectedFood.macros.copper * (weightGrams / selectedFood.servingSize))}mg
@@ -1360,7 +1360,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                         <div className="text-xs text-[#7A7F86]">copper</div>
                                                     </div>
                                                 )}
-                                                {selectedFood.macros.manganese && selectedFood.macros.manganese > 0 && (
+                                                {selectedFood.macros.manganese && selectedFood.macros.manganese > 0.1 && (
                                                     <div>
                                                         <div className="font-semibold text-[#A1A1AA]">
                                                             {formatNutrientValue(selectedFood.macros.manganese * (weightGrams / selectedFood.servingSize))}mg
