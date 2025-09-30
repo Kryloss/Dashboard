@@ -821,31 +821,48 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                 {/* Complete Proteins */}
                                                 {(() => {
                                                     const totalProtein = selectedFood.macros.protein * (weightGrams / selectedFood.servingSize)
-                                                    const isComplete = selectedFood.name.toLowerCase().includes('meat') ||
-                                                                     selectedFood.name.toLowerCase().includes('fish') ||
-                                                                     selectedFood.name.toLowerCase().includes('chicken') ||
-                                                                     selectedFood.name.toLowerCase().includes('turkey') ||
-                                                                     selectedFood.name.toLowerCase().includes('beef') ||
-                                                                     selectedFood.name.toLowerCase().includes('pork') ||
-                                                                     selectedFood.name.toLowerCase().includes('lamb') ||
-                                                                     selectedFood.name.toLowerCase().includes('egg') ||
-                                                                     selectedFood.name.toLowerCase().includes('milk') ||
-                                                                     selectedFood.name.toLowerCase().includes('cheese') ||
-                                                                     selectedFood.name.toLowerCase().includes('yogurt') ||
-                                                                     selectedFood.name.toLowerCase().includes('whey') ||
-                                                                     selectedFood.name.toLowerCase().includes('casein') ||
-                                                                     selectedFood.name.toLowerCase().includes('quinoa') ||
-                                                                     selectedFood.name.toLowerCase().includes('soy') ||
-                                                                     selectedFood.name.toLowerCase().includes('tofu') ||
-                                                                     selectedFood.name.toLowerCase().includes('tempeh')
 
-                                                    const completeProtein = isComplete ? totalProtein : 0
-                                                    const incompleteProtein = !isComplete ? totalProtein : 0
+                                                    if (totalProtein <= 0) return null
+
+                                                    const hasCompleteProtein = selectedFood.name.toLowerCase().includes('meat') ||
+                                                                              selectedFood.name.toLowerCase().includes('fish') ||
+                                                                              selectedFood.name.toLowerCase().includes('chicken') ||
+                                                                              selectedFood.name.toLowerCase().includes('turkey') ||
+                                                                              selectedFood.name.toLowerCase().includes('beef') ||
+                                                                              selectedFood.name.toLowerCase().includes('pork') ||
+                                                                              selectedFood.name.toLowerCase().includes('lamb') ||
+                                                                              selectedFood.name.toLowerCase().includes('egg') ||
+                                                                              selectedFood.name.toLowerCase().includes('milk') ||
+                                                                              selectedFood.name.toLowerCase().includes('cheese') ||
+                                                                              selectedFood.name.toLowerCase().includes('yogurt') ||
+                                                                              selectedFood.name.toLowerCase().includes('whey') ||
+                                                                              selectedFood.name.toLowerCase().includes('casein') ||
+                                                                              selectedFood.name.toLowerCase().includes('quinoa') ||
+                                                                              selectedFood.name.toLowerCase().includes('soy') ||
+                                                                              selectedFood.name.toLowerCase().includes('tofu') ||
+                                                                              selectedFood.name.toLowerCase().includes('tempeh')
+
+                                                    const hasIncompleteProtein = selectedFood.name.toLowerCase().includes('rice') ||
+                                                                                selectedFood.name.toLowerCase().includes('bean') ||
+                                                                                selectedFood.name.toLowerCase().includes('lentil') ||
+                                                                                selectedFood.name.toLowerCase().includes('pea') ||
+                                                                                selectedFood.name.toLowerCase().includes('nut') ||
+                                                                                selectedFood.name.toLowerCase().includes('seed') ||
+                                                                                selectedFood.name.toLowerCase().includes('wheat') ||
+                                                                                selectedFood.name.toLowerCase().includes('oat') ||
+                                                                                selectedFood.name.toLowerCase().includes('corn') ||
+                                                                                (!hasCompleteProtein && totalProtein > 0)
+
+                                                    // For mixed foods, estimate distribution
+                                                    const completeProtein = hasCompleteProtein ?
+                                                        (hasIncompleteProtein ? totalProtein * 0.7 : totalProtein) : 0
+                                                    const incompleteProtein = hasIncompleteProtein ?
+                                                        (hasCompleteProtein ? totalProtein * 0.3 : totalProtein) : 0
 
                                                     return (
                                                         <>
                                                             {/* Complete Proteins */}
-                                                            {completeProtein > 0 && (
+                                                            {completeProtein > 0.1 && (
                                                                 <div className="bg-[#0E0F13] border border-[#212227] rounded-[10px] p-3">
                                                                     <div className="flex items-center justify-between mb-2">
                                                                         <div className="flex items-center space-x-2">
@@ -861,7 +878,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                             )}
 
                                                             {/* Incomplete Proteins */}
-                                                            {incompleteProtein > 0 && (
+                                                            {incompleteProtein > 0.1 && (
                                                                 <div className="bg-[#0E0F13] border border-[#212227] rounded-[10px] p-3">
                                                                     <div className="flex items-center justify-between mb-2">
                                                                         <div className="flex items-center space-x-2">
@@ -935,25 +952,29 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
 
                                             <div className="space-y-3">
                                                 {/* Simple Carbs (sugars) */}
-                                                {selectedFood.macros.sugar && selectedFood.macros.sugar > 0 && (
-                                                    <div className="bg-[#0E0F13] border border-[#212227] rounded-[10px] p-3">
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <div className="flex items-center space-x-2">
-                                                                <Zap className="w-4 h-4 text-[#FF6B6B]" />
-                                                                <span className="text-sm font-medium text-[#F3F4F6]">Simple Carbs</span>
+                                                {(() => {
+                                                    const sugarAmount = (selectedFood.macros.sugar || 0) * (weightGrams / selectedFood.servingSize)
+                                                    return sugarAmount > 0.1 && (
+                                                        <div className="bg-[#0E0F13] border border-[#212227] rounded-[10px] p-3">
+                                                            <div className="flex items-center justify-between mb-2">
+                                                                <div className="flex items-center space-x-2">
+                                                                    <Zap className="w-4 h-4 text-[#FF6B6B]" />
+                                                                    <span className="text-sm font-medium text-[#F3F4F6]">Simple Carbs</span>
+                                                                </div>
+                                                                <span className="text-lg font-bold text-[#9BE15D]">
+                                                                    {formatNutrientValue(sugarAmount)}g
+                                                                </span>
                                                             </div>
-                                                            <span className="text-lg font-bold text-[#9BE15D]">
-                                                                {formatNutrientValue(selectedFood.macros.sugar * (weightGrams / selectedFood.servingSize))}g
-                                                            </span>
+                                                            <div className="text-xs text-[#7A7F86]">Fast energy absorption</div>
                                                         </div>
-                                                        <div className="text-xs text-[#7A7F86]">Fast energy absorption</div>
-                                                    </div>
-                                                )}
+                                                    )
+                                                })()}
 
                                                 {/* Complex Carbs */}
                                                 {(() => {
                                                     const complexCarbs = selectedFood.macros.carbs - (selectedFood.macros.sugar || 0) - (selectedFood.macros.fiber || 0)
-                                                    return complexCarbs > 0 && (
+                                                    const complexCarbAmount = Math.max(0, complexCarbs * (weightGrams / selectedFood.servingSize))
+                                                    return complexCarbAmount > 0.1 && (
                                                         <div className="bg-[#0E0F13] border border-[#212227] rounded-[10px] p-3">
                                                             <div className="flex items-center justify-between mb-2">
                                                                 <div className="flex items-center space-x-2">
@@ -961,7 +982,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                                     <span className="text-sm font-medium text-[#F3F4F6]">Complex Carbs</span>
                                                                 </div>
                                                                 <span className="text-lg font-bold text-[#9BE15D]">
-                                                                    {formatNutrientValue(complexCarbs * (weightGrams / selectedFood.servingSize))}g
+                                                                    {formatNutrientValue(complexCarbAmount)}g
                                                                 </span>
                                                             </div>
                                                             <div className="text-xs text-[#7A7F86]">Sustained energy release</div>
@@ -970,20 +991,23 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                 })()}
 
                                                 {/* Fiber */}
-                                                {selectedFood.macros.fiber && selectedFood.macros.fiber > 0 && (
-                                                    <div className="bg-[#0E0F13] border border-[#212227] rounded-[10px] p-3">
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <div className="flex items-center space-x-2">
-                                                                <Leaf className="w-4 h-4 text-[#00E676]" />
-                                                                <span className="text-sm font-medium text-[#F3F4F6]">Fiber</span>
+                                                {(() => {
+                                                    const fiberAmount = (selectedFood.macros.fiber || 0) * (weightGrams / selectedFood.servingSize)
+                                                    return fiberAmount > 0.1 && (
+                                                        <div className="bg-[#0E0F13] border border-[#212227] rounded-[10px] p-3">
+                                                            <div className="flex items-center justify-between mb-2">
+                                                                <div className="flex items-center space-x-2">
+                                                                    <Leaf className="w-4 h-4 text-[#00E676]" />
+                                                                    <span className="text-sm font-medium text-[#F3F4F6]">Fiber</span>
+                                                                </div>
+                                                                <span className="text-lg font-bold text-[#9BE15D]">
+                                                                    {formatNutrientValue(fiberAmount)}g
+                                                                </span>
                                                             </div>
-                                                            <span className="text-lg font-bold text-[#9BE15D]">
-                                                                {formatNutrientValue(selectedFood.macros.fiber * (weightGrams / selectedFood.servingSize))}g
-                                                            </span>
+                                                            <div className="text-xs text-[#7A7F86]">Supports digestive health</div>
                                                         </div>
-                                                        <div className="text-xs text-[#7A7F86]">Supports digestive health</div>
-                                                    </div>
-                                                )}
+                                                    )
+                                                })()}
 
                                                 {/* Slow Carbs */}
                                                 {(() => {
@@ -997,9 +1021,9 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                                      selectedFood.name.toLowerCase().includes('black bean') ||
                                                                      selectedFood.name.toLowerCase().includes('sweet potato')
 
-                                                    const slowCarbAmount = isSlowCarb ? (selectedFood.macros.carbs - (selectedFood.macros.sugar || 0)) : 0
+                                                    const slowCarbAmount = isSlowCarb ? Math.max(0, (selectedFood.macros.carbs - (selectedFood.macros.sugar || 0)) * (weightGrams / selectedFood.servingSize)) : 0
 
-                                                    return slowCarbAmount > 0 && (
+                                                    return slowCarbAmount > 0.1 && (
                                                         <div className="bg-[#0E0F13] border border-[#212227] rounded-[10px] p-3">
                                                             <div className="flex items-center justify-between mb-2">
                                                                 <div className="flex items-center space-x-2">
@@ -1007,7 +1031,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                                     <span className="text-sm font-medium text-[#F3F4F6]">Slow Carbs</span>
                                                                 </div>
                                                                 <span className="text-lg font-bold text-[#9BE15D]">
-                                                                    {formatNutrientValue(slowCarbAmount * (weightGrams / selectedFood.servingSize))}g
+                                                                    {formatNutrientValue(slowCarbAmount)}g
                                                                 </span>
                                                             </div>
                                                             <div className="text-xs text-[#7A7F86]">Gradual glucose release</div>
@@ -1060,20 +1084,23 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
 
                                             <div className="space-y-3">
                                                 {/* Saturated Fat */}
-                                                {selectedFood.macros.saturatedFat && selectedFood.macros.saturatedFat > 0 && (
-                                                    <div className="bg-[#0E0F13] border border-[#212227] rounded-[10px] p-3">
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <div className="flex items-center space-x-2">
-                                                                <Droplets className="w-4 h-4 text-[#FF6B6B]" />
-                                                                <span className="text-sm font-medium text-[#F3F4F6]">Saturated Fat</span>
+                                                {(() => {
+                                                    const saturatedFatAmount = (selectedFood.macros.saturatedFat || 0) * (weightGrams / selectedFood.servingSize)
+                                                    return saturatedFatAmount > 0.1 && (
+                                                        <div className="bg-[#0E0F13] border border-[#212227] rounded-[10px] p-3">
+                                                            <div className="flex items-center justify-between mb-2">
+                                                                <div className="flex items-center space-x-2">
+                                                                    <Droplets className="w-4 h-4 text-[#FF6B6B]" />
+                                                                    <span className="text-sm font-medium text-[#F3F4F6]">Saturated Fat</span>
+                                                                </div>
+                                                                <span className="text-lg font-bold text-[#FF2D55]">
+                                                                    {formatNutrientValue(saturatedFatAmount)}g
+                                                                </span>
                                                             </div>
-                                                            <span className="text-lg font-bold text-[#FF2D55]">
-                                                                {formatNutrientValue(selectedFood.macros.saturatedFat * (weightGrams / selectedFood.servingSize))}g
-                                                            </span>
+                                                            <div className="text-xs text-[#7A7F86]">Limit to less than 10% of daily calories</div>
                                                         </div>
-                                                        <div className="text-xs text-[#7A7F86]">Limit to less than 10% of daily calories</div>
-                                                    </div>
-                                                )}
+                                                    )
+                                                })()}
 
                                                 {/* Unsaturated Fat */}
                                                 {(() => {
@@ -1082,7 +1109,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                     const transFat = (selectedFood.macros.transFat || 0) * (weightGrams / selectedFood.servingSize)
                                                     const unsaturatedFat = Math.max(0, totalFat - saturatedFat - transFat)
 
-                                                    return unsaturatedFat > 0 && (
+                                                    return unsaturatedFat > 0.1 && (
                                                         <div className="bg-[#0E0F13] border border-[#212227] rounded-[10px] p-3">
                                                             <div className="flex items-center justify-between mb-2">
                                                                 <div className="flex items-center space-x-2">
@@ -1111,9 +1138,9 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                                           selectedFood.name.toLowerCase().includes('hemp') ||
                                                                           selectedFood.name.toLowerCase().includes('fish oil')
 
-                                                    const estimatedOmega3 = isOmega3Source ? (selectedFood.macros.polyunsaturatedFat || selectedFood.macros.fats * 0.3) * (weightGrams / selectedFood.servingSize) : 0
+                                                    const estimatedOmega3 = isOmega3Source ? Math.max(0, ((selectedFood.macros.polyunsaturatedFat || selectedFood.macros.fats * 0.3) * (weightGrams / selectedFood.servingSize))) : 0
 
-                                                    return estimatedOmega3 > 0 && (
+                                                    return estimatedOmega3 > 0.1 && (
                                                         <div className="bg-[#0E0F13] border border-[#212227] rounded-[10px] p-3">
                                                             <div className="flex items-center justify-between mb-2">
                                                                 <div className="flex items-center space-x-2">
@@ -1130,20 +1157,23 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                 })()}
 
                                                 {/* Trans Fat - Priority Warning */}
-                                                {selectedFood.macros.transFat && selectedFood.macros.transFat > 0 && (
-                                                    <div className="bg-red-500/10 border-2 border-red-500/30 rounded-[10px] p-3">
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <div className="flex items-center space-x-2">
-                                                                <X className="w-4 h-4 text-[#EF4444]" />
-                                                                <span className="text-sm font-medium text-[#F3F4F6]">Trans Fat</span>
+                                                {(() => {
+                                                    const transFatAmount = (selectedFood.macros.transFat || 0) * (weightGrams / selectedFood.servingSize)
+                                                    return transFatAmount > 0.01 && (
+                                                        <div className="bg-red-500/10 border-2 border-red-500/30 rounded-[10px] p-3">
+                                                            <div className="flex items-center justify-between mb-2">
+                                                                <div className="flex items-center space-x-2">
+                                                                    <X className="w-4 h-4 text-[#EF4444]" />
+                                                                    <span className="text-sm font-medium text-[#F3F4F6]">Trans Fat</span>
+                                                                </div>
+                                                                <span className="text-lg font-bold text-[#EF4444]">
+                                                                    {formatNutrientValue(transFatAmount)}g
+                                                                </span>
                                                             </div>
-                                                            <span className="text-lg font-bold text-[#EF4444]">
-                                                                {formatNutrientValue(selectedFood.macros.transFat * (weightGrams / selectedFood.servingSize))}g
-                                                            </span>
+                                                            <div className="text-xs text-[#EF4444] font-medium">⚠️ Avoid when possible - increases bad cholesterol</div>
                                                         </div>
-                                                        <div className="text-xs text-[#EF4444] font-medium">⚠️ Avoid when possible - increases bad cholesterol</div>
-                                                    </div>
-                                                )}
+                                                    )
+                                                })()}
                                             </div>
                                         </div>
                                     )}
