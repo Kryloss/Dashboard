@@ -365,83 +365,47 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
 
                     {/* Search Tab */}
                     <TabsContent value="search" className="space-y-4">
-                        {/* Search Bar with Mode Toggle and Filter on Same Row */}
-                        <div className="flex items-start gap-2">
-                            {/* Search Input with Mode Toggle */}
-                            <div className="flex-1 space-y-2">
-                                <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#A1A1AA] w-4 h-4" />
-                                    <Input
-                                        placeholder={searchMode === 'food' ? "Search foods (e.g., 'chicken breast', 'banana')..." : "Search by brand (e.g., 'Quest', 'KIND')..."}
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="pl-10 bg-[#121318] border-[#212227] text-[#F3F4F6] placeholder-[#7A7F86]"
-                                    />
-                                </div>
-                                {/* Search Mode Toggle */}
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs text-[#7A7F86]">Search by:</span>
-                                    <div className="flex gap-1 bg-[#121318] border border-[#212227] rounded-md p-1">
-                                        <button
-                                            onClick={() => setSearchMode('food')}
-                                            className={`px-3 py-1 text-xs rounded transition-colors ${
-                                                searchMode === 'food'
-                                                    ? 'bg-[#2A8CEA] text-white'
-                                                    : 'text-[#A1A1AA] hover:text-[#F3F4F6]'
-                                            }`}
-                                        >
-                                            <Database className="w-3 h-3 inline mr-1" />
-                                            Food Name
-                                        </button>
-                                        <button
-                                            onClick={() => setSearchMode('brand')}
-                                            className={`px-3 py-1 text-xs rounded transition-colors ${
-                                                searchMode === 'brand'
-                                                    ? 'bg-[#2A8CEA] text-white'
-                                                    : 'text-[#A1A1AA] hover:text-[#F3F4F6]'
-                                            }`}
-                                        >
-                                            <Package className="w-3 h-3 inline mr-1" />
-                                            Brand
-                                        </button>
-                                    </div>
-                                </div>
+                        {/* Search Bar and Filter on Same Row */}
+                        <div className="flex items-center gap-2">
+                            {/* Search Input */}
+                            <div className="flex-1 relative">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#A1A1AA] w-4 h-4" />
+                                <Input
+                                    placeholder={searchMode === 'food' ? "Search foods (e.g., 'chicken breast', 'banana')..." : "Search by brand (e.g., 'Quest', 'KIND')..."}
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="pl-10 bg-[#121318] border-[#212227] text-[#F3F4F6] placeholder-[#7A7F86]"
+                                />
                             </div>
 
                             {/* Brand Filter - Right Side */}
                             {availableBrands.length > 0 && (
-                                <div className="flex flex-col gap-2 w-64">
-                                    <Label className="text-xs text-[#A1A1AA] flex items-center gap-1">
-                                        <Filter className="w-3 h-3" />
-                                        Filter by Brand
-                                    </Label>
-                                    <div className="flex items-center gap-2">
-                                        <Select value={brandFilter} onValueChange={setBrandFilter}>
-                                            <SelectTrigger className="bg-[#121318] border-[#212227] text-[#F3F4F6] h-10">
-                                                <SelectValue placeholder="All brands..." />
-                                            </SelectTrigger>
-                                            <SelectContent className="bg-[#121318] border-[#212227] text-[#F3F4F6]">
-                                                <SelectItem value="all" className="hover:bg-[#212227]">
-                                                    <span className="text-[#F3F4F6]">All Brands</span>
+                                <div className="flex items-center gap-2 w-64 shrink-0">
+                                    <Select value={brandFilter} onValueChange={setBrandFilter}>
+                                        <SelectTrigger className="bg-[#121318] border-[#212227] text-[#F3F4F6]">
+                                            <SelectValue placeholder="All brands..." />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-[#121318] border-[#212227] text-[#F3F4F6]">
+                                            <SelectItem value="all" className="hover:bg-[#212227]">
+                                                <span className="text-[#F3F4F6]">All Brands</span>
+                                            </SelectItem>
+                                            {availableBrands.map((brand) => (
+                                                <SelectItem key={brand} value={brand} className="hover:bg-[#212227]">
+                                                    <span className="text-[#F3F4F6]">{brand}</span>
                                                 </SelectItem>
-                                                {availableBrands.map((brand) => (
-                                                    <SelectItem key={brand} value={brand} className="hover:bg-[#212227]">
-                                                        <span className="text-[#F3F4F6]">{brand}</span>
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        {brandFilter && brandFilter !== 'all' && (
-                                            <Button
-                                                onClick={() => setBrandFilter("")}
-                                                variant="ghost"
-                                                size="icon"
-                                                className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] h-10 w-10 shrink-0"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </Button>
-                                        )}
-                                    </div>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {brandFilter && brandFilter !== 'all' && (
+                                        <Button
+                                            onClick={() => setBrandFilter("")}
+                                            variant="ghost"
+                                            size="icon"
+                                            className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] shrink-0"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </Button>
+                                    )}
                                 </div>
                             )}
                         </div>
