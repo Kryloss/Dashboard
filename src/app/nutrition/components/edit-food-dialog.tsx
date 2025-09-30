@@ -17,6 +17,12 @@ interface EditFoodDialogProps {
 }
 
 export function EditFoodDialog({ isOpen, onClose, foodEntry, mealType, onFoodUpdated }: EditFoodDialogProps) {
+    // Helper function to format numbers to 1 decimal place, removing .0 for whole numbers
+    const formatNutrientValue = (value: number): string => {
+        const rounded = Math.round(value * 10) / 10
+        return rounded % 1 === 0 ? rounded.toString() : rounded.toFixed(1)
+    }
+
     const [quantity, setQuantity] = useState(foodEntry.quantity)
     const [notes, setNotes] = useState(foodEntry.notes || "")
     const [isLoading, setIsLoading] = useState(false)
@@ -68,9 +74,9 @@ export function EditFoodDialog({ isOpen, onClose, foodEntry, mealType, onFoodUpd
     }
 
     const calculatedCalories = Math.round(foodEntry.food.caloriesPerServing * quantity)
-    const calculatedCarbs = Math.round(foodEntry.food.macros.carbs * quantity * 10) / 10
-    const calculatedProtein = Math.round(foodEntry.food.macros.protein * quantity * 10) / 10
-    const calculatedFats = Math.round(foodEntry.food.macros.fats * quantity * 10) / 10
+    const calculatedCarbs = formatNutrientValue(foodEntry.food.macros.carbs * quantity)
+    const calculatedProtein = formatNutrientValue(foodEntry.food.macros.protein * quantity)
+    const calculatedFats = formatNutrientValue(foodEntry.food.macros.fats * quantity)
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -131,7 +137,7 @@ export function EditFoodDialog({ isOpen, onClose, foodEntry, mealType, onFoodUpd
 
                     {/* Calculated Nutrition */}
                     <div className="bg-[#0E0F13] border border-[#212227] rounded-[12px] p-4">
-                        <h4 className="text-sm font-medium text-[#F3F4F6] mb-3">Nutrition (for {quantity} servings)</h4>
+                        <h4 className="text-sm font-medium text-[#F3F4F6] mb-3">Nutrition (for {formatNutrientValue(quantity)} servings)</h4>
                         <div className="grid grid-cols-2 gap-4 text-sm">
                             <div>
                                 <span className="text-[#A1A1AA]">Calories:</span>

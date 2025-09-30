@@ -29,6 +29,12 @@ export function DetailedMacroModal({
     detailedNutrients,
     foods
 }: DetailedMacroModalProps) {
+    // Helper function to format numbers to 1 decimal place, removing .0 for whole numbers
+    const formatNutrientValue = (value: number): string => {
+        const rounded = Math.round(value * 10) / 10
+        return rounded % 1 === 0 ? rounded.toString() : rounded.toFixed(1)
+    }
+
     const getMacroTitle = () => {
         switch (macroType) {
             case 'carbs': return 'Carbohydrates'
@@ -155,7 +161,7 @@ export function DetailedMacroModal({
                                     {Math.round(progressPercentage)}%
                                 </div>
                                 <div className="text-sm text-[#A1A1AA]">
-                                    {currentValue}g / {targetValue}g
+                                    {formatNutrientValue(currentValue)}g / {targetValue}g
                                 </div>
                             </div>
                         </div>
@@ -171,7 +177,7 @@ export function DetailedMacroModal({
                         </div>
 
                         <div className="text-xs text-[#7A7F86]">
-                            {progressPercentage > 100 ? 'Target exceeded' : `${(targetValue - currentValue).toFixed(1)}g remaining`}
+                            {progressPercentage > 100 ? 'Target exceeded' : `${formatNutrientValue(targetValue - currentValue)}g remaining`}
                         </div>
                     </div>
 
@@ -186,7 +192,7 @@ export function DetailedMacroModal({
                                         <span className="text-sm font-medium text-[#F3F4F6]">{item.label}</span>
                                         <div className="text-right">
                                             <span className="text-sm font-semibold text-[#F3F4F6]">
-                                                {item.value.toFixed(1)}{item.unit}
+                                                {formatNutrientValue(item.value)}{item.unit}
                                             </span>
                                             {item.target && (
                                                 <span className="text-xs text-[#A1A1AA] ml-1">
@@ -234,7 +240,7 @@ export function DetailedMacroModal({
                                             </div>
                                             <div className="text-right">
                                                 <div className="text-sm font-semibold" style={{ color: colors.primary }}>
-                                                    {food.macroValue.toFixed(1)}g
+                                                    {formatNutrientValue(food.macroValue)}g
                                                 </div>
                                                 <div className="text-xs text-[#7A7F86]">
                                                     {Math.round((food.macroValue / currentValue) * 100)}%

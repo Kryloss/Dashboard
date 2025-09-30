@@ -625,6 +625,12 @@ export default function NutritionPage() {
         }
     }
 
+    // Helper function to format numbers to 1 decimal place, removing .0 for whole numbers
+    const formatNutrientValue = (value: number): string => {
+        const rounded = Math.round(value * 10) / 10
+        return rounded % 1 === 0 ? rounded.toString() : rounded.toFixed(1)
+    }
+
     // Helper functions for calculations
     const getTodaysNutrition = () => {
         if (!nutritionEntry) {
@@ -900,7 +906,7 @@ export default function NutritionPage() {
                                                 <div className="flex-1 text-center">
                                                     {workoutState.goalProgress && (
                                                         <div className="text-xs text-[#A1A1AA]">
-                                                            {workoutState.goalProgress.recovery.currentHours.toFixed(1)}h of {workoutState.goalProgress.recovery.targetHours}h
+                                                            {formatNutrientValue(workoutState.goalProgress.recovery.currentHours)}h of {workoutState.goalProgress.recovery.targetHours}h
                                                         </div>
                                                     )}
                                                 </div>
@@ -944,7 +950,7 @@ export default function NutritionPage() {
                                 >
                                     <div className="flex items-center justify-between mb-2">
                                         <span className="text-sm font-medium text-[#A1A1AA]">Carbs</span>
-                                        <span className="text-xs text-[#7A7F86]">{getTodaysNutrition().totalMacros.carbs}g / {getTargetNutrition().macroTargets.carbs}g</span>
+                                        <span className="text-xs text-[#7A7F86]">{formatNutrientValue(getTodaysNutrition().totalMacros.carbs)}g / {getTargetNutrition().macroTargets.carbs}g</span>
                                     </div>
                                     <div className="mb-2">
                                         <div className="text-2xl font-bold text-[#F3F4F6]">
@@ -965,7 +971,7 @@ export default function NutritionPage() {
                                 >
                                     <div className="flex items-center justify-between mb-2">
                                         <span className="text-sm font-medium text-[#A1A1AA]">Protein</span>
-                                        <span className="text-xs text-[#7A7F86]">{getTodaysNutrition().totalMacros.protein}g / {getTargetNutrition().macroTargets.protein}g</span>
+                                        <span className="text-xs text-[#7A7F86]">{formatNutrientValue(getTodaysNutrition().totalMacros.protein)}g / {getTargetNutrition().macroTargets.protein}g</span>
                                     </div>
                                     <div className="mb-2">
                                         <div className="text-2xl font-bold text-[#F3F4F6]">
@@ -986,7 +992,7 @@ export default function NutritionPage() {
                                 >
                                     <div className="flex items-center justify-between mb-2">
                                         <span className="text-sm font-medium text-[#A1A1AA]">Fats</span>
-                                        <span className="text-xs text-[#7A7F86]">{getTodaysNutrition().totalMacros.fats}g / {getTargetNutrition().macroTargets.fats}g</span>
+                                        <span className="text-xs text-[#7A7F86]">{formatNutrientValue(getTodaysNutrition().totalMacros.fats)}g / {getTargetNutrition().macroTargets.fats}g</span>
                                     </div>
                                     <div className="mb-2">
                                         <div className="text-2xl font-bold text-[#F3F4F6]">
@@ -1054,7 +1060,7 @@ export default function NutritionPage() {
                                                     <div key={index} className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-[rgba(255,255,255,0.02)] group">
                                                         <div>
                                                             <p className="text-sm text-[#F3F4F6]">{food.food.name}</p>
-                                                            <p className="text-xs text-[#7A7F86]">{food.adjustedCalories} cal • {food.quantity} {food.food.servingUnit}</p>
+                                                            <p className="text-xs text-[#7A7F86]">{food.adjustedCalories} cal • {formatNutrientValue(food.quantity)} {food.food.servingUnit}</p>
                                                         </div>
                                                         <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                             <Button
@@ -1143,7 +1149,7 @@ export default function NutritionPage() {
                                                     <div key={index} className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-[rgba(255,255,255,0.02)] group">
                                                         <div>
                                                             <p className="text-sm text-[#F3F4F6]">{food.food.name}</p>
-                                                            <p className="text-xs text-[#7A7F86]">{food.adjustedCalories} cal • {food.quantity} {food.food.servingUnit}</p>
+                                                            <p className="text-xs text-[#7A7F86]">{food.adjustedCalories} cal • {formatNutrientValue(food.quantity)} {food.food.servingUnit}</p>
                                                         </div>
                                                         <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                             <Button
