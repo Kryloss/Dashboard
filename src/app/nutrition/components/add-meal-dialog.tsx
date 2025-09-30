@@ -528,11 +528,11 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                             ) : searchQuery.length >= 2 ? (
                                 <div className="text-center py-8 px-4">
                                     <Database className="w-12 h-12 text-[#2A2B31] mx-auto mb-3" />
-                                    <p className="text-[#F3F4F6] font-medium mb-2">No foods found for "{searchQuery}"</p>
+                                    <p className="text-[#F3F4F6] font-medium mb-2">No foods found for &ldquo;{searchQuery}&rdquo;</p>
                                     <div className="text-[#7A7F86] text-sm space-y-1 mb-4">
-                                        <p>• Try different keywords (e.g., "chocolate" instead of "choco")</p>
+                                        <p>• Try different keywords (e.g., &ldquo;chocolate&rdquo; instead of &ldquo;choco&rdquo;)</p>
                                         <p>• Check your spelling</p>
-                                        {searchMode === 'brand' && <p>• Switch to "Food Name" search mode</p>}
+                                        {searchMode === 'brand' && <p>• Switch to &ldquo;Food Name&rdquo; search mode</p>}
                                         {brandFilter && brandFilter !== 'all' && <p>• Clear the brand filter to see more results</p>}
                                         <p>• USDA API may be temporarily unavailable</p>
                                     </div>

@@ -99,7 +99,6 @@ export class USDAFoodDataService {
             })
 
             if (!response.ok) {
-                const errorText = await response.text()
                 console.warn(`USDA API unavailable: ${response.status} ${response.statusText}`)
                 // Return empty array instead of throwing - gracefully fall back to local foods only
                 return []
