@@ -696,20 +696,12 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                     )}
 
                                     {/* Protein Quality Breakdown */}
-                                    <div className="mb-4">
-                                        <h6 className="text-xs font-medium text-[#2A8CEA] mb-2">Proteins</h6>
-                                        <div className="grid grid-cols-2 gap-4 text-center text-sm">
-                                            {/* Always show total protein (even if 0) */}
-                                            <div>
-                                                <div className="font-semibold text-[#A1A1AA]">
-                                                    {formatNutrientValue(selectedFood.macros.protein * (weightGrams / selectedFood.servingSize))}g
-                                                </div>
-                                                <div className="text-xs text-[#7A7F86]">total protein</div>
-                                            </div>
-
-                                            {/* Only show complete/incomplete classification if protein > 0 */}
-                                            {selectedFood.macros.protein > 0 && (
-                                                (selectedFood.name.toLowerCase().includes('meat') ||
+                                    {selectedFood.macros.protein > 0 && (
+                                        <div className="mb-4">
+                                            <h6 className="text-xs font-medium text-[#2A8CEA] mb-2">Proteins</h6>
+                                            <div className="grid grid-cols-2 gap-4 text-center text-sm">
+                                                {/* Show complete/incomplete classification */}
+                                                {(selectedFood.name.toLowerCase().includes('meat') ||
                                                  selectedFood.name.toLowerCase().includes('fish') ||
                                                  selectedFood.name.toLowerCase().includes('chicken') ||
                                                  selectedFood.name.toLowerCase().includes('turkey') ||
@@ -728,135 +720,137 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                  selectedFood.name.toLowerCase().includes('tempeh')) ? (
                                                     <div>
                                                         <div className="font-semibold text-[#9BE15D]">
-                                                            ✓ Complete
+                                                            {formatNutrientValue(selectedFood.macros.protein * (weightGrams / selectedFood.servingSize))}g
                                                         </div>
-                                                        <div className="text-xs text-[#7A7F86]">all amino acids</div>
+                                                        <div className="text-xs text-[#7A7F86]">complete proteins</div>
                                                     </div>
                                                 ) : (
                                                     <div>
                                                         <div className="font-semibold text-[#FFA500]">
-                                                            ⚠ Incomplete
+                                                            {formatNutrientValue(selectedFood.macros.protein * (weightGrams / selectedFood.servingSize))}g
                                                         </div>
-                                                        <div className="text-xs text-[#7A7F86]">combine proteins</div>
+                                                        <div className="text-xs text-[#7A7F86]">incomplete proteins</div>
                                                     </div>
-                                                )
-                                            )}
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
 
                                     {/* Carbohydrates Quality Breakdown */}
-                                    <div className="mb-4">
-                                        <h6 className="text-xs font-medium text-[#9BE15D] mb-2">Carbohydrates</h6>
-                                        <div className="grid grid-cols-2 gap-4 text-center text-sm">
-                                            {/* Always show total carbs (even if 0) */}
-                                            <div>
-                                                <div className="font-semibold text-[#A1A1AA]">
-                                                    {formatNutrientValue(selectedFood.macros.carbs * (weightGrams / selectedFood.servingSize))}g
-                                                </div>
-                                                <div className="text-xs text-[#7A7F86]">total carbs</div>
+                                    {(selectedFood.macros.sugar > 0 ||
+                                      (selectedFood.macros.carbs - (selectedFood.macros.sugar || 0) - (selectedFood.macros.fiber || 0)) > 0 ||
+                                      (selectedFood.macros.fiber && selectedFood.macros.fiber > 0) ||
+                                      ((selectedFood.macros.carbs - (selectedFood.macros.sugar || 0) - (selectedFood.macros.fiber || 0)) > 0 &&
+                                       (selectedFood.name.toLowerCase().includes('rice') ||
+                                        selectedFood.name.toLowerCase().includes('bread') ||
+                                        selectedFood.name.toLowerCase().includes('pasta') ||
+                                        selectedFood.name.toLowerCase().includes('potato') ||
+                                        selectedFood.name.toLowerCase().includes('oat') ||
+                                        selectedFood.name.toLowerCase().includes('wheat') ||
+                                        selectedFood.name.toLowerCase().includes('corn') ||
+                                        selectedFood.name.toLowerCase().includes('bean') ||
+                                        selectedFood.name.toLowerCase().includes('lentil')))) && (
+                                        <div className="mb-4">
+                                            <h6 className="text-xs font-medium text-[#9BE15D] mb-2">Carbohydrates</h6>
+                                            <div className="grid grid-cols-2 gap-4 text-center text-sm">
+                                                {/* Simple Carbs (sugars) - only if > 0 */}
+                                                {selectedFood.macros.sugar && selectedFood.macros.sugar > 0 && (
+                                                    <div>
+                                                        <div className="font-semibold text-[#FF6B6B]">
+                                                            {formatNutrientValue(selectedFood.macros.sugar * (weightGrams / selectedFood.servingSize))}g
+                                                        </div>
+                                                        <div className="text-xs text-[#7A7F86]">simple carbs</div>
+                                                    </div>
+                                                )}
+
+                                                {/* Complex Carbs (total carbs - sugars - fiber) - only if > 0 */}
+                                                {(() => {
+                                                    const complexCarbs = selectedFood.macros.carbs - (selectedFood.macros.sugar || 0) - (selectedFood.macros.fiber || 0)
+                                                    return complexCarbs > 0 && (
+                                                        <div>
+                                                            <div className="font-semibold text-[#9BE15D]">
+                                                                {formatNutrientValue(complexCarbs * (weightGrams / selectedFood.servingSize))}g
+                                                            </div>
+                                                            <div className="text-xs text-[#7A7F86]">complex carbs</div>
+                                                        </div>
+                                                    )
+                                                })()}
+
+                                                {/* Fiber - only if > 0 */}
+                                                {selectedFood.macros.fiber && selectedFood.macros.fiber > 0 && (
+                                                    <div>
+                                                        <div className="font-semibold text-[#00E676]">
+                                                            {formatNutrientValue(selectedFood.macros.fiber * (weightGrams / selectedFood.servingSize))}g
+                                                        </div>
+                                                        <div className="text-xs text-[#7A7F86]">fiber</div>
+                                                    </div>
+                                                )}
+
+                                                {/* Starches - only if > 0 and starchy food */}
+                                                {(() => {
+                                                    const starches = selectedFood.macros.carbs - (selectedFood.macros.sugar || 0) - (selectedFood.macros.fiber || 0)
+                                                    const isStarchyFood = selectedFood.name.toLowerCase().includes('rice') ||
+                                                                         selectedFood.name.toLowerCase().includes('bread') ||
+                                                                         selectedFood.name.toLowerCase().includes('pasta') ||
+                                                                         selectedFood.name.toLowerCase().includes('potato') ||
+                                                                         selectedFood.name.toLowerCase().includes('oat') ||
+                                                                         selectedFood.name.toLowerCase().includes('wheat') ||
+                                                                         selectedFood.name.toLowerCase().includes('corn') ||
+                                                                         selectedFood.name.toLowerCase().includes('bean') ||
+                                                                         selectedFood.name.toLowerCase().includes('lentil')
+
+                                                    return isStarchyFood && starches > 0 && (
+                                                        <div>
+                                                            <div className="font-semibold text-[#A1A1AA]">
+                                                                {formatNutrientValue(starches * (weightGrams / selectedFood.servingSize))}g
+                                                            </div>
+                                                            <div className="text-xs text-[#7A7F86]">starches</div>
+                                                        </div>
+                                                    )
+                                                })()}
                                             </div>
-
-                                            {/* Simple Carbs (sugars) - only if > 0 */}
-                                            {selectedFood.macros.sugar && selectedFood.macros.sugar > 0 && (
-                                                <div>
-                                                    <div className="font-semibold text-[#FF6B6B]">
-                                                        {formatNutrientValue(selectedFood.macros.sugar * (weightGrams / selectedFood.servingSize))}g
-                                                    </div>
-                                                    <div className="text-xs text-[#7A7F86]">simple carbs</div>
-                                                </div>
-                                            )}
-
-                                            {/* Complex Carbs (total carbs - sugars - fiber) - only if > 0 */}
-                                            {(() => {
-                                                const complexCarbs = selectedFood.macros.carbs - (selectedFood.macros.sugar || 0) - (selectedFood.macros.fiber || 0)
-                                                return complexCarbs > 0 && (
-                                                    <div>
-                                                        <div className="font-semibold text-[#9BE15D]">
-                                                            {formatNutrientValue(complexCarbs * (weightGrams / selectedFood.servingSize))}g
-                                                        </div>
-                                                        <div className="text-xs text-[#7A7F86]">complex carbs</div>
-                                                    </div>
-                                                )
-                                            })()}
-
-                                            {/* Fiber - only if > 0 */}
-                                            {selectedFood.macros.fiber && selectedFood.macros.fiber > 0 && (
-                                                <div>
-                                                    <div className="font-semibold text-[#00E676]">
-                                                        {formatNutrientValue(selectedFood.macros.fiber * (weightGrams / selectedFood.servingSize))}g
-                                                    </div>
-                                                    <div className="text-xs text-[#7A7F86]">fiber</div>
-                                                </div>
-                                            )}
-
-                                            {/* Starches - only if > 0 and starchy food */}
-                                            {(() => {
-                                                const starches = selectedFood.macros.carbs - (selectedFood.macros.sugar || 0) - (selectedFood.macros.fiber || 0)
-                                                const isStarchyFood = selectedFood.name.toLowerCase().includes('rice') ||
-                                                                     selectedFood.name.toLowerCase().includes('bread') ||
-                                                                     selectedFood.name.toLowerCase().includes('pasta') ||
-                                                                     selectedFood.name.toLowerCase().includes('potato') ||
-                                                                     selectedFood.name.toLowerCase().includes('oat') ||
-                                                                     selectedFood.name.toLowerCase().includes('wheat') ||
-                                                                     selectedFood.name.toLowerCase().includes('corn') ||
-                                                                     selectedFood.name.toLowerCase().includes('bean') ||
-                                                                     selectedFood.name.toLowerCase().includes('lentil')
-
-                                                return isStarchyFood && starches > 0 && (
-                                                    <div>
-                                                        <div className="font-semibold text-[#A1A1AA]">
-                                                            {formatNutrientValue(starches * (weightGrams / selectedFood.servingSize))}g
-                                                        </div>
-                                                        <div className="text-xs text-[#7A7F86]">starches</div>
-                                                    </div>
-                                                )
-                                            })()}
                                         </div>
-                                    </div>
+                                    )}
 
                                     {/* Fats Quality Breakdown */}
-                                    <div className="mb-4">
-                                        <h6 className="text-xs font-medium text-[#FF2D55] mb-2">Fats</h6>
-                                        <div className="grid grid-cols-2 gap-4 text-center text-sm">
-                                            {/* Always show total fats (even if 0) */}
-                                            <div>
-                                                <div className="font-semibold text-[#A1A1AA]">
-                                                    {formatNutrientValue(selectedFood.macros.fats * (weightGrams / selectedFood.servingSize))}g
-                                                </div>
-                                                <div className="text-xs text-[#7A7F86]">total fats</div>
+                                    {((selectedFood.macros.saturatedFat && selectedFood.macros.saturatedFat > 0) ||
+                                      (selectedFood.macros.transFat && selectedFood.macros.transFat > 0) ||
+                                      (selectedFood.macros.cholesterol && selectedFood.macros.cholesterol > 0)) && (
+                                        <div className="mb-4">
+                                            <h6 className="text-xs font-medium text-[#FF2D55] mb-2">Fats</h6>
+                                            <div className="grid grid-cols-2 gap-4 text-center text-sm">
+                                                {/* Saturated Fat - only if > 0 */}
+                                                {selectedFood.macros.saturatedFat && selectedFood.macros.saturatedFat > 0 && (
+                                                    <div>
+                                                        <div className="font-semibold text-[#FF6B6B]">
+                                                            {formatNutrientValue(selectedFood.macros.saturatedFat * (weightGrams / selectedFood.servingSize))}g
+                                                        </div>
+                                                        <div className="text-xs text-[#7A7F86]">saturated fat</div>
+                                                    </div>
+                                                )}
+
+                                                {/* Trans Fat - only if > 0 */}
+                                                {selectedFood.macros.transFat && selectedFood.macros.transFat > 0 && (
+                                                    <div>
+                                                        <div className="font-semibold text-[#EF4444]">
+                                                            {formatNutrientValue(selectedFood.macros.transFat * (weightGrams / selectedFood.servingSize))}g
+                                                        </div>
+                                                        <div className="text-xs text-[#7A7F86]">trans fat</div>
+                                                    </div>
+                                                )}
+
+                                                {/* Cholesterol - only if > 0 */}
+                                                {selectedFood.macros.cholesterol && selectedFood.macros.cholesterol > 0 && (
+                                                    <div>
+                                                        <div className="font-semibold text-[#FFA500]">
+                                                            {formatNutrientValue(selectedFood.macros.cholesterol * (weightGrams / selectedFood.servingSize))}mg
+                                                        </div>
+                                                        <div className="text-xs text-[#7A7F86]">cholesterol</div>
+                                                    </div>
+                                                )}
                                             </div>
-
-                                            {/* Saturated Fat - only if > 0 */}
-                                            {selectedFood.macros.saturatedFat && selectedFood.macros.saturatedFat > 0 && (
-                                                <div>
-                                                    <div className="font-semibold text-[#FF6B6B]">
-                                                        {formatNutrientValue(selectedFood.macros.saturatedFat * (weightGrams / selectedFood.servingSize))}g
-                                                    </div>
-                                                    <div className="text-xs text-[#7A7F86]">saturated fat</div>
-                                                </div>
-                                            )}
-
-                                            {/* Trans Fat - only if > 0 */}
-                                            {selectedFood.macros.transFat && selectedFood.macros.transFat > 0 && (
-                                                <div>
-                                                    <div className="font-semibold text-[#EF4444]">
-                                                        {formatNutrientValue(selectedFood.macros.transFat * (weightGrams / selectedFood.servingSize))}g
-                                                    </div>
-                                                    <div className="text-xs text-[#7A7F86]">trans fat</div>
-                                                </div>
-                                            )}
-
-                                            {/* Cholesterol - only if > 0 */}
-                                            {selectedFood.macros.cholesterol && selectedFood.macros.cholesterol > 0 && (
-                                                <div>
-                                                    <div className="font-semibold text-[#FFA500]">
-                                                        {formatNutrientValue(selectedFood.macros.cholesterol * (weightGrams / selectedFood.servingSize))}mg
-                                                    </div>
-                                                    <div className="text-xs text-[#7A7F86]">cholesterol</div>
-                                                </div>
-                                            )}
                                         </div>
-                                    </div>
+                                    )}
 
                                     {/* Vitamins & Minerals - Complete List */}
                                     {Object.entries(selectedFood.macros).some(([key, value]) =>
