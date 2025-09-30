@@ -58,7 +58,34 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
         sodium: 0,
         saturatedFat: 0,
         transFat: 0,
-        cholesterol: 0
+        monounsaturatedFat: 0,
+        polyunsaturatedFat: 0,
+        cholesterol: 0,
+        potassium: 0,
+        vitaminA: 0,
+        vitaminC: 0,
+        calcium: 0,
+        iron: 0,
+        vitaminD: 0,
+        vitaminE: 0,
+        vitaminK: 0,
+        thiamine: 0,
+        riboflavin: 0,
+        niacin: 0,
+        vitaminB6: 0,
+        folate: 0,
+        vitaminB12: 0,
+        biotin: 0,
+        pantothenicAcid: 0,
+        phosphorus: 0,
+        iodine: 0,
+        magnesium: 0,
+        zinc: 0,
+        selenium: 0,
+        copper: 0,
+        manganese: 0,
+        chromium: 0,
+        molybdenum: 0
     })
 
     // Selected food state
@@ -204,7 +231,34 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                 sodium: manualFood.sodium || undefined,
                 saturatedFat: manualFood.saturatedFat || undefined,
                 transFat: manualFood.transFat || undefined,
-                cholesterol: manualFood.cholesterol || undefined
+                monounsaturatedFat: manualFood.monounsaturatedFat || undefined,
+                polyunsaturatedFat: manualFood.polyunsaturatedFat || undefined,
+                cholesterol: manualFood.cholesterol || undefined,
+                potassium: manualFood.potassium || undefined,
+                vitaminA: manualFood.vitaminA || undefined,
+                vitaminC: manualFood.vitaminC || undefined,
+                calcium: manualFood.calcium || undefined,
+                iron: manualFood.iron || undefined,
+                vitaminD: manualFood.vitaminD || undefined,
+                vitaminE: manualFood.vitaminE || undefined,
+                vitaminK: manualFood.vitaminK || undefined,
+                thiamine: manualFood.thiamine || undefined,
+                riboflavin: manualFood.riboflavin || undefined,
+                niacin: manualFood.niacin || undefined,
+                vitaminB6: manualFood.vitaminB6 || undefined,
+                folate: manualFood.folate || undefined,
+                vitaminB12: manualFood.vitaminB12 || undefined,
+                biotin: manualFood.biotin || undefined,
+                pantothenicAcid: manualFood.pantothenicAcid || undefined,
+                phosphorus: manualFood.phosphorus || undefined,
+                iodine: manualFood.iodine || undefined,
+                magnesium: manualFood.magnesium || undefined,
+                zinc: manualFood.zinc || undefined,
+                selenium: manualFood.selenium || undefined,
+                copper: manualFood.copper || undefined,
+                manganese: manualFood.manganese || undefined,
+                chromium: manualFood.chromium || undefined,
+                molybdenum: manualFood.molybdenum || undefined
             }
 
             const food = await NutritionStorage.saveFood({
@@ -280,7 +334,34 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
             sodium: 0,
             saturatedFat: 0,
             transFat: 0,
-            cholesterol: 0
+            monounsaturatedFat: 0,
+            polyunsaturatedFat: 0,
+            cholesterol: 0,
+            potassium: 0,
+            vitaminA: 0,
+            vitaminC: 0,
+            calcium: 0,
+            iron: 0,
+            vitaminD: 0,
+            vitaminE: 0,
+            vitaminK: 0,
+            thiamine: 0,
+            riboflavin: 0,
+            niacin: 0,
+            vitaminB6: 0,
+            folate: 0,
+            vitaminB12: 0,
+            biotin: 0,
+            pantothenicAcid: 0,
+            phosphorus: 0,
+            iodine: 0,
+            magnesium: 0,
+            zinc: 0,
+            selenium: 0,
+            copper: 0,
+            manganese: 0,
+            chromium: 0,
+            molybdenum: 0
         })
         setActiveTab("search")
         onClose()
@@ -653,77 +734,382 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                             <summary className="p-3 cursor-pointer text-[#A1A1AA] hover:text-[#F3F4F6] transition-colors">
                                 Optional Detailed Nutrition
                             </summary>
-                            <div className="p-3 pt-0 space-y-3">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <Label className="text-[#A1A1AA] text-sm">Fiber (g)</Label>
-                                        <Input
-                                            type="number"
-                                            value={manualFood.fiber}
-                                            onChange={(e) => setManualFood({ ...manualFood, fiber: Number(e.target.value) })}
-                                            className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                            min="0"
-                                            step="0.1"
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label className="text-[#A1A1AA] text-sm">Sugar (g)</Label>
-                                        <Input
-                                            type="number"
-                                            value={manualFood.sugar}
-                                            onChange={(e) => setManualFood({ ...manualFood, sugar: Number(e.target.value) })}
-                                            className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                            min="0"
-                                            step="0.1"
-                                        />
+                            <div className="p-3 pt-0 space-y-4">
+                                {/* Extended Macros */}
+                                <div>
+                                    <h5 className="text-[#F3F4F6] text-sm font-medium mb-2">Extended Macros</h5>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Fiber (g)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.fiber}
+                                                onChange={(e) => setManualFood({ ...manualFood, fiber: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Sugar (g)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.sugar}
+                                                onChange={(e) => setManualFood({ ...manualFood, sugar: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Saturated Fat (g)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.saturatedFat}
+                                                onChange={(e) => setManualFood({ ...manualFood, saturatedFat: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Trans Fat (g)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.transFat}
+                                                onChange={(e) => setManualFood({ ...manualFood, transFat: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Monounsaturated Fat (g)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.monounsaturatedFat}
+                                                onChange={(e) => setManualFood({ ...manualFood, monounsaturatedFat: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Polyunsaturated Fat (g)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.polyunsaturatedFat}
+                                                onChange={(e) => setManualFood({ ...manualFood, polyunsaturatedFat: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Cholesterol (mg)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.cholesterol}
+                                                onChange={(e) => setManualFood({ ...manualFood, cholesterol: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Sodium (mg)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.sodium}
+                                                onChange={(e) => setManualFood({ ...manualFood, sodium: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Potassium (mg)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.potassium}
+                                                onChange={(e) => setManualFood({ ...manualFood, potassium: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <Label className="text-[#A1A1AA] text-sm">Sodium (mg)</Label>
-                                        <Input
-                                            type="number"
-                                            value={manualFood.sodium}
-                                            onChange={(e) => setManualFood({ ...manualFood, sodium: Number(e.target.value) })}
-                                            className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                            min="0"
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label className="text-[#A1A1AA] text-sm">Saturated Fat (g)</Label>
-                                        <Input
-                                            type="number"
-                                            value={manualFood.saturatedFat}
-                                            onChange={(e) => setManualFood({ ...manualFood, saturatedFat: Number(e.target.value) })}
-                                            className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                            min="0"
-                                            step="0.1"
-                                        />
+                                {/* Vitamins */}
+                                <div>
+                                    <h5 className="text-[#F3F4F6] text-sm font-medium mb-2">Vitamins</h5>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Vitamin A (IU)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.vitaminA}
+                                                onChange={(e) => setManualFood({ ...manualFood, vitaminA: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Vitamin C (mg)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.vitaminC}
+                                                onChange={(e) => setManualFood({ ...manualFood, vitaminC: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Vitamin D (IU)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.vitaminD}
+                                                onChange={(e) => setManualFood({ ...manualFood, vitaminD: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Vitamin E (IU)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.vitaminE}
+                                                onChange={(e) => setManualFood({ ...manualFood, vitaminE: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Vitamin K (mcg)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.vitaminK}
+                                                onChange={(e) => setManualFood({ ...manualFood, vitaminK: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Thiamine B1 (mg)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.thiamine}
+                                                onChange={(e) => setManualFood({ ...manualFood, thiamine: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Riboflavin B2 (mg)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.riboflavin}
+                                                onChange={(e) => setManualFood({ ...manualFood, riboflavin: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Niacin B3 (mg)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.niacin}
+                                                onChange={(e) => setManualFood({ ...manualFood, niacin: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Vitamin B6 (mg)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.vitaminB6}
+                                                onChange={(e) => setManualFood({ ...manualFood, vitaminB6: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Folate B9 (mcg)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.folate}
+                                                onChange={(e) => setManualFood({ ...manualFood, folate: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Vitamin B12 (mcg)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.vitaminB12}
+                                                onChange={(e) => setManualFood({ ...manualFood, vitaminB12: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Biotin (mcg)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.biotin}
+                                                onChange={(e) => setManualFood({ ...manualFood, biotin: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Pantothenic Acid B5 (mg)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.pantothenicAcid}
+                                                onChange={(e) => setManualFood({ ...manualFood, pantothenicAcid: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <Label className="text-[#A1A1AA] text-sm">Trans Fat (g)</Label>
-                                        <Input
-                                            type="number"
-                                            value={manualFood.transFat}
-                                            onChange={(e) => setManualFood({ ...manualFood, transFat: Number(e.target.value) })}
-                                            className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                            min="0"
-                                            step="0.1"
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label className="text-[#A1A1AA] text-sm">Cholesterol (mg)</Label>
-                                        <Input
-                                            type="number"
-                                            value={manualFood.cholesterol}
-                                            onChange={(e) => setManualFood({ ...manualFood, cholesterol: Number(e.target.value) })}
-                                            className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                            min="0"
-                                        />
+                                {/* Minerals */}
+                                <div>
+                                    <h5 className="text-[#F3F4F6] text-sm font-medium mb-2">Minerals</h5>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Calcium (mg)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.calcium}
+                                                onChange={(e) => setManualFood({ ...manualFood, calcium: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Iron (mg)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.iron}
+                                                onChange={(e) => setManualFood({ ...manualFood, iron: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Phosphorus (mg)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.phosphorus}
+                                                onChange={(e) => setManualFood({ ...manualFood, phosphorus: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Iodine (mcg)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.iodine}
+                                                onChange={(e) => setManualFood({ ...manualFood, iodine: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Magnesium (mg)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.magnesium}
+                                                onChange={(e) => setManualFood({ ...manualFood, magnesium: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Zinc (mg)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.zinc}
+                                                onChange={(e) => setManualFood({ ...manualFood, zinc: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Selenium (mcg)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.selenium}
+                                                onChange={(e) => setManualFood({ ...manualFood, selenium: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Copper (mg)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.copper}
+                                                onChange={(e) => setManualFood({ ...manualFood, copper: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Manganese (mg)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.manganese}
+                                                onChange={(e) => setManualFood({ ...manualFood, manganese: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Chromium (mcg)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.chromium}
+                                                onChange={(e) => setManualFood({ ...manualFood, chromium: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Molybdenum (mcg)</Label>
+                                            <Input
+                                                type="number"
+                                                value={manualFood.molybdenum}
+                                                onChange={(e) => setManualFood({ ...manualFood, molybdenum: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
