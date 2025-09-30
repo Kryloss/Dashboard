@@ -36,6 +36,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
 
     // Search state
     const [searchQuery, setSearchQuery] = useState("")
+    const [searchMode, setSearchMode] = useState<'food' | 'brand'>('food')
     const [brandFilter, setBrandFilter] = useState("")
     const [searchResults, setSearchResults] = useState<FoodSearchResult[]>([])
     const [isSearching, setIsSearching] = useState(false)
@@ -93,7 +94,8 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
 
             setIsSearching(true)
             try {
-                const foods = await NutritionStorage.getFoods(trimmedQuery, 50)
+                // Fetch all foods without limit
+                const foods = await NutritionStorage.getFoods(trimmedQuery, 200)
 
                 // Extract unique brands from results
                 const brands = [...new Set(
@@ -103,13 +105,22 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                 )].sort()
                 setAvailableBrands(brands)
 
-                // Apply brand filter if selected (but not "all")
+                // Apply filtering based on search mode and brand filter
                 let filteredFoods = foods
-                if (brandFilter && brandFilter !== 'all') {
-                    filteredFoods = foods.filter(food => food.brand === brandFilter)
+
+                // If searching by brand, filter to only foods with brands matching the query
+                if (searchMode === 'brand') {
+                    filteredFoods = foods.filter(food =>
+                        food.brand && food.brand.toLowerCase().includes(trimmedQuery.toLowerCase())
+                    )
                 }
 
-                setSearchResults(filteredFoods.slice(0, 20).map(food => ({
+                // Apply brand filter if selected (but not "all")
+                if (brandFilter && brandFilter !== 'all') {
+                    filteredFoods = filteredFoods.filter(food => food.brand === brandFilter)
+                }
+
+                setSearchResults(filteredFoods.map(food => ({
                     id: food.id,
                     name: food.name,
                     brand: food.brand,
@@ -132,13 +143,13 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
 
         // Only debounce if we have enough characters
         if (searchQuery.trim().length >= 2) {
-            const debounceTimer = setTimeout(searchFoods, 500) // Increased from 300ms to 500ms
+            const debounceTimer = setTimeout(searchFoods, 500)
             return () => clearTimeout(debounceTimer)
         } else {
             // Immediately clear if query is too short
             searchFoods()
         }
-    }, [searchQuery, brandFilter, notifications])
+    }, [searchQuery, searchMode, brandFilter, notifications])
 
     const handleFoodSelect = (foodResult: FoodSearchResult) => {
         const food: Food = {
@@ -232,6 +243,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
 
     const handleClose = () => {
         setSearchQuery("")
+        setSearchMode('food')
         setBrandFilter("")
         setSearchResults([])
         setAvailableBrands([])
@@ -344,69 +356,101 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
 
                     {/* Search Tab */}
                     <TabsContent value="search" className="space-y-4">
-                        <div className="space-y-3">
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#A1A1AA] w-4 h-4" />
-                                <Input
-                                    placeholder="Search foods from USDA database (e.g., 'chicken breast', 'banana')..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="pl-10 bg-[#121318] border-[#212227] text-[#F3F4F6] placeholder-[#7A7F86]"
-                                />
+                        {/* Search Bar with Mode Toggle and Filter on Same Row */}
+                        <div className="flex items-start gap-2">
+                            {/* Search Input with Mode Toggle */}
+                            <div className="flex-1 space-y-2">
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#A1A1AA] w-4 h-4" />
+                                    <Input
+                                        placeholder={searchMode === 'food' ? "Search foods (e.g., 'chicken breast', 'banana')..." : "Search by brand (e.g., 'Quest', 'KIND')..."}
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="pl-10 bg-[#121318] border-[#212227] text-[#F3F4F6] placeholder-[#7A7F86]"
+                                    />
+                                </div>
+                                {/* Search Mode Toggle */}
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs text-[#7A7F86]">Search by:</span>
+                                    <div className="flex gap-1 bg-[#121318] border border-[#212227] rounded-md p-1">
+                                        <button
+                                            onClick={() => setSearchMode('food')}
+                                            className={`px-3 py-1 text-xs rounded transition-colors ${
+                                                searchMode === 'food'
+                                                    ? 'bg-[#2A8CEA] text-white'
+                                                    : 'text-[#A1A1AA] hover:text-[#F3F4F6]'
+                                            }`}
+                                        >
+                                            <Database className="w-3 h-3 inline mr-1" />
+                                            Food Name
+                                        </button>
+                                        <button
+                                            onClick={() => setSearchMode('brand')}
+                                            className={`px-3 py-1 text-xs rounded transition-colors ${
+                                                searchMode === 'brand'
+                                                    ? 'bg-[#2A8CEA] text-white'
+                                                    : 'text-[#A1A1AA] hover:text-[#F3F4F6]'
+                                            }`}
+                                        >
+                                            <Package className="w-3 h-3 inline mr-1" />
+                                            Brand
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
 
-                            {/* Smart Brand Filter */}
+                            {/* Brand Filter - Right Side */}
                             {availableBrands.length > 0 && (
-                                <div className="flex items-center space-x-2">
-                                    <div className="flex items-center space-x-2 flex-1">
-                                        <Filter className="w-4 h-4 text-[#A1A1AA]" />
+                                <div className="flex flex-col gap-2 w-64">
+                                    <Label className="text-xs text-[#A1A1AA] flex items-center gap-1">
+                                        <Filter className="w-3 h-3" />
+                                        Filter by Brand
+                                    </Label>
+                                    <div className="flex items-center gap-2">
                                         <Select value={brandFilter} onValueChange={setBrandFilter}>
-                                            <SelectTrigger className="bg-[#121318] border-[#212227] text-[#F3F4F6] h-9">
-                                                <SelectValue placeholder="Filter by brand..." />
+                                            <SelectTrigger className="bg-[#121318] border-[#212227] text-[#F3F4F6] h-10">
+                                                <SelectValue placeholder="All brands..." />
                                             </SelectTrigger>
                                             <SelectContent className="bg-[#121318] border-[#212227] text-[#F3F4F6]">
                                                 <SelectItem value="all" className="hover:bg-[#212227]">
-                                                    <div className="flex items-center space-x-2">
-                                                        <span className="text-[#F3F4F6]">All Brands</span>
-                                                        <span className="text-xs text-[#7A7F86]">({searchResults.length + (brandFilter ? availableBrands.length - 1 : 0)})</span>
-                                                    </div>
+                                                    <span className="text-[#F3F4F6]">All Brands</span>
                                                 </SelectItem>
                                                 {availableBrands.map((brand) => (
                                                     <SelectItem key={brand} value={brand} className="hover:bg-[#212227]">
-                                                        <div className="flex items-center justify-between w-full">
-                                                            <span className="text-[#F3F4F6]">{brand}</span>
-                                                        </div>
+                                                        <span className="text-[#F3F4F6]">{brand}</span>
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
+                                        {brandFilter && brandFilter !== 'all' && (
+                                            <Button
+                                                onClick={() => setBrandFilter("")}
+                                                variant="ghost"
+                                                size="icon"
+                                                className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] h-10 w-10 shrink-0"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </Button>
+                                        )}
                                     </div>
-                                    {brandFilter && brandFilter !== 'all' && (
-                                        <Button
-                                            onClick={() => setBrandFilter("")}
-                                            variant="ghost"
-                                            size="sm"
-                                            className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] h-9 px-2"
-                                        >
-                                            <X className="w-3 h-3 mr-1" />
-                                            Clear
-                                        </Button>
-                                    )}
                                 </div>
                             )}
                         </div>
 
                         {/* Results Counter */}
                         {searchResults.length > 0 && (
-                            <div className="flex items-center justify-between text-xs text-[#7A7F86] px-1">
-                                <span>
+                            <div className="flex items-center justify-between text-xs px-1 py-2 bg-[#121318] border border-[#212227] rounded-lg">
+                                <span className="text-[#F3F4F6] font-medium">
                                     {searchResults.length} result{searchResults.length !== 1 ? 's' : ''}
+                                    {searchMode === 'brand' && (
+                                        <span className="text-[#2A8CEA]"> · searching brands</span>
+                                    )}
                                     {brandFilter && brandFilter !== 'all' && (
-                                        <span className="text-[#2A8CEA]"> from {brandFilter}</span>
+                                        <span className="text-[#2A8CEA]"> · filtered by {brandFilter}</span>
                                     )}
                                 </span>
                                 {availableBrands.length > 1 && (
-                                    <span className="text-[#A1A1AA]">{availableBrands.length} brand{availableBrands.length !== 1 ? 's' : ''} available</span>
+                                    <span className="text-[#7A7F86]">{availableBrands.length} brand{availableBrands.length !== 1 ? 's' : ''} found</span>
                                 )}
                             </div>
                         )}
