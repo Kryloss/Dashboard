@@ -263,7 +263,7 @@ export class OpenFoodFactsService {
     private static cleanProductName(name: string): string {
         if (!name) return 'Unknown Product'
 
-        let cleaned = name
+        const cleaned = name
             .trim()
             // Remove excessive whitespace
             .replace(/\s+/g, ' ')

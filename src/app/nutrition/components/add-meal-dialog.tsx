@@ -446,6 +446,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                 searchResults.map((food) => {
                                     const isUSDAFood = food.id.startsWith('usda-')
                                     const isOFFFood = food.id.startsWith('off-')
+                                    const isCNFFood = food.id.startsWith('cnf-')
                                     const isUserFood = food.isUserCreated
 
                                     return (
@@ -468,6 +469,12 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                             <Badge variant="outline" className="text-[#FF9500] border-[#FF9500]/30 bg-[#FF9500]/10 text-xs">
                                                                 <Package className="w-3 h-3 mr-1" />
                                                                 OFF
+                                                            </Badge>
+                                                        )}
+                                                        {isCNFFood && (
+                                                            <Badge variant="outline" className="text-[#FF375F] border-[#FF375F]/30 bg-[#FF375F]/10 text-xs">
+                                                                <Leaf className="w-3 h-3 mr-1" />
+                                                                CNF
                                                             </Badge>
                                                         )}
                                                         {isUserFood && (

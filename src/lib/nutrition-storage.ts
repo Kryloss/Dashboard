@@ -4,6 +4,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { User } from '@supabase/supabase-js'
 import { USDAFoodDataService } from './usda-fooddata'
 import { OpenFoodFactsService } from './openfoodfacts'
+import { CNFService } from './cnf-service'
 
 // Core nutrition data models
 export interface MacroNutrients {
@@ -315,18 +316,23 @@ export class NutritionStorage {
         // Then, get foods from external APIs if we have a search term
         if (searchTerm && searchTerm.trim().length >= 2) {
             const remainingLimit = limit - allFoods.length
-            const limitPerAPI = Math.floor(remainingLimit / 2) // Split between USDA and OFF
+            const limitPerAPI = Math.floor(remainingLimit / 3) // Split between USDA, OFF, and CNF
 
-            // Fetch from USDA and OpenFoodFacts in parallel
-            const [usdaFoods, offFoods] = await Promise.all([
-                // USDA FoodData Central
+            // Fetch from all three databases in parallel
+            const [usdaFoods, offFoods, cnfFoods] = await Promise.all([
+                // USDA FoodData Central (US)
                 USDAFoodDataService.searchFoods(searchTerm, limitPerAPI).catch(() => {
                     console.warn('USDA API failed, continuing without USDA results')
                     return []
                 }),
-                // OpenFoodFacts
+                // OpenFoodFacts (International)
                 OpenFoodFactsService.searchFoods(searchTerm, limitPerAPI).catch(() => {
                     console.warn('OpenFoodFacts API failed, continuing without OFF results')
+                    return []
+                }),
+                // Canadian Nutrient File (Canada)
+                CNFService.searchFoods(searchTerm, limitPerAPI).catch(() => {
+                    console.warn('CNF search failed, continuing without CNF results')
                     return []
                 })
             ])
@@ -350,9 +356,21 @@ export class NutritionStorage {
                 )
             )
 
-            allFoods.push(...uniqueUSDAFoods, ...uniqueOFFoods)
+            const uniqueCNFFoods = cnfFoods.filter(cnfFood =>
+                !allFoods.some(existingFood =>
+                    existingFood.name.toLowerCase() === cnfFood.name.toLowerCase()
+                ) &&
+                !uniqueUSDAFoods.some(usdaFood =>
+                    usdaFood.name.toLowerCase() === cnfFood.name.toLowerCase()
+                ) &&
+                !uniqueOFFoods.some(offFood =>
+                    offFood.name.toLowerCase() === cnfFood.name.toLowerCase()
+                )
+            )
 
-            console.log(`Search "${searchTerm}": ${localFoods.length} local, ${uniqueUSDAFoods.length} USDA, ${uniqueOFFoods.length} OpenFoodFacts`)
+            allFoods.push(...uniqueUSDAFoods, ...uniqueOFFoods, ...uniqueCNFFoods)
+
+            console.log(`Search "${searchTerm}": ${localFoods.length} local, ${uniqueUSDAFoods.length} USDA, ${uniqueOFFoods.length} OFF, ${uniqueCNFFoods.length} CNF`)
         }
 
         // Sort results: user foods first, then local foods, then external API foods
@@ -362,16 +380,24 @@ export class NutritionStorage {
             if (!a.isUserCreated && b.isUserCreated) return 1
 
             // Local foods before external API foods
-            const aIsExternal = a.id.startsWith('usda-') || a.id.startsWith('off-')
-            const bIsExternal = b.id.startsWith('usda-') || b.id.startsWith('off-')
+            const aIsExternal = a.id.startsWith('usda-') || a.id.startsWith('off-') || a.id.startsWith('cnf-')
+            const bIsExternal = b.id.startsWith('usda-') || b.id.startsWith('off-') || b.id.startsWith('cnf-')
             if (!aIsExternal && bIsExternal) return -1
             if (aIsExternal && !bIsExternal) return 1
 
-            // USDA before OpenFoodFacts (USDA typically has better data quality for US foods)
+            // Priority: USDA > CNF > OpenFoodFacts
+            // USDA has best data quality for US foods
+            // CNF has great Canadian data with comprehensive nutrients
+            // OpenFoodFacts is crowdsourced but has good coverage
             const aIsUSDA = a.id.startsWith('usda-')
             const bIsUSDA = b.id.startsWith('usda-')
+            const aIsCNF = a.id.startsWith('cnf-')
+            const bIsCNF = b.id.startsWith('cnf-')
+
             if (aIsUSDA && !bIsUSDA) return -1
             if (!aIsUSDA && bIsUSDA) return 1
+            if (aIsCNF && !bIsCNF) return -1
+            if (!aIsCNF && bIsCNF) return 1
 
             // Alphabetical within each group
             return a.name.localeCompare(b.name)

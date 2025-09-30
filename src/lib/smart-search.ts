@@ -1,5 +1,5 @@
 // Smart food search with fuzzy matching, intelligent ranking, and multi-field search
-import Fuse, { FuseResult, FuseResultMatch } from 'fuse.js'
+import Fuse, { FuseResultMatch } from 'fuse.js'
 import { Food } from './nutrition-storage'
 
 export interface SearchResult<T> {
@@ -48,8 +48,7 @@ export class SmartFoodSearch {
     search(query: string, options: SearchOptions = {}): SearchResult<Food>[] {
         const {
             threshold = 0.6,
-            limit = 200,
-            includeScore = true
+            limit = 200
         } = options
 
         if (!query || query.trim().length < 2) {
