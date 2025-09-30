@@ -4,10 +4,11 @@ const USDA_BASE_URL = 'https://api.nal.usda.gov/fdc/v1'
 const USDA_API_KEY = process.env.NEXT_PUBLIC_USDA_API_KEY || 'DEMO_KEY'
 
 export async function GET(request: NextRequest) {
+    const { searchParams } = new URL(request.url)
+    const query = searchParams.get('query')
+    const pageSize = searchParams.get('pageSize') || '25'
+
     try {
-        const { searchParams } = new URL(request.url)
-        const query = searchParams.get('query')
-        const pageSize = searchParams.get('pageSize') || '25'
 
         if (!query || query.trim().length < 2) {
             return NextResponse.json({ foods: [] })
