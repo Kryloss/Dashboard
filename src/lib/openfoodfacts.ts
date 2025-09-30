@@ -160,8 +160,8 @@ export class OpenFoodFactsService {
      * Convert OpenFoodFacts product to our Food format
      */
     private static convertOFFProductToFood(product: OFFProduct): Food {
-        const nutrients = this.extractNutrients(product.nutriments)
         const { servingSize, servingUnit } = this.determineServingSize(product)
+        const nutrients = this.extractNutrients(product.nutriments, servingSize)
 
         // Use English name if available, otherwise use default name
         const productName = product.product_name_en || product.product_name
@@ -185,43 +185,120 @@ export class OpenFoodFactsService {
     /**
      * Extract nutrients from OpenFoodFacts data
      */
-    private static extractNutrients(nutriments: OFFNutriments): DetailedNutrients {
+    private static extractNutrients(nutriments: OFFNutriments, servingSize: number): DetailedNutrients {
         // OpenFoodFacts provides data per 100g and per serving
-        // We'll prefer per 100g for consistency
+        // We'll prefer per-serving data when available, then scale per-100g data to serving size
+
+        const hasServingData = nutriments['energy-kcal_serving'] !== undefined
+
+        // Helper to get nutrient value scaled to serving size
+        const getNutrient = (per100g?: number, perServing?: number): number | undefined => {
+            if (perServing !== undefined) return perServing
+            if (per100g !== undefined && servingSize !== 100) {
+                return (per100g * servingSize) / 100
+            }
+            return per100g
+        }
 
         const nutrients: DetailedNutrients = {
-            calories: nutriments['energy-kcal_100g'] || 0,
-            carbs: nutriments['carbohydrates_100g'] || 0,
-            protein: nutriments['proteins_100g'] || 0,
-            fats: nutriments['fat_100g'] || 0,
-            fiber: nutriments['fiber_100g'],
-            sugar: nutriments['sugars_100g'],
-            sodium: nutriments['sodium_100g'] ? nutriments['sodium_100g'] * 1000 : undefined, // Convert g to mg
-            saturatedFat: nutriments['saturated-fat_100g'],
-            transFat: nutriments['trans-fat_100g'],
-            monounsaturatedFat: nutriments['monounsaturated-fat_100g'],
-            polyunsaturatedFat: nutriments['polyunsaturated-fat_100g'],
-            cholesterol: nutriments['cholesterol_100g'] ? nutriments['cholesterol_100g'] * 1000 : undefined, // Convert g to mg
-            vitaminA: nutriments['vitamin-a_100g'] ? nutriments['vitamin-a_100g'] * 1000000 : undefined, // Convert g to IU (rough)
-            vitaminC: nutriments['vitamin-c_100g'] ? nutriments['vitamin-c_100g'] * 1000 : undefined, // Convert g to mg
-            vitaminD: nutriments['vitamin-d_100g'] ? nutriments['vitamin-d_100g'] * 40000 : undefined, // Convert g to IU
-            vitaminE: nutriments['vitamin-e_100g'] ? nutriments['vitamin-e_100g'] * 1000 : undefined, // Convert g to mg
-            vitaminK: nutriments['vitamin-k_100g'] ? nutriments['vitamin-k_100g'] * 1000000 : undefined, // Convert g to mcg
-            thiamine: nutriments['vitamin-b1_100g'] ? nutriments['vitamin-b1_100g'] * 1000 : undefined,
-            riboflavin: nutriments['vitamin-b2_100g'] ? nutriments['vitamin-b2_100g'] * 1000 : undefined,
-            niacin: nutriments['vitamin-b3_100g'] ? nutriments['vitamin-b3_100g'] * 1000 : undefined,
-            vitaminB6: nutriments['vitamin-b6_100g'] ? nutriments['vitamin-b6_100g'] * 1000 : undefined,
-            folate: nutriments['vitamin-b9_100g'] ? nutriments['vitamin-b9_100g'] * 1000000 : undefined,
-            vitaminB12: nutriments['vitamin-b12_100g'] ? nutriments['vitamin-b12_100g'] * 1000000 : undefined,
-            calcium: nutriments['calcium_100g'] ? nutriments['calcium_100g'] * 1000 : undefined,
-            iron: nutriments['iron_100g'] ? nutriments['iron_100g'] * 1000 : undefined,
-            magnesium: nutriments['magnesium_100g'] ? nutriments['magnesium_100g'] * 1000 : undefined,
-            phosphorus: nutriments['phosphorus_100g'] ? nutriments['phosphorus_100g'] * 1000 : undefined,
-            potassium: nutriments['potassium_100g'] ? nutriments['potassium_100g'] * 1000 : undefined,
-            zinc: nutriments['zinc_100g'] ? nutriments['zinc_100g'] * 1000 : undefined,
-            selenium: nutriments['selenium_100g'] ? nutriments['selenium_100g'] * 1000000 : undefined,
-            copper: nutriments['copper_100g'] ? nutriments['copper_100g'] * 1000 : undefined,
-            manganese: nutriments['manganese_100g'] ? nutriments['manganese_100g'] * 1000 : undefined
+            calories: getNutrient(nutriments['energy-kcal_100g'], nutriments['energy-kcal_serving']) || 0,
+            carbs: getNutrient(nutriments['carbohydrates_100g'], nutriments['carbohydrates_serving']) || 0,
+            protein: getNutrient(nutriments['proteins_100g'], nutriments['proteins_serving']) || 0,
+            fats: getNutrient(nutriments['fat_100g'], nutriments['fat_serving']) || 0,
+            fiber: getNutrient(nutriments['fiber_100g'], nutriments['fiber_serving']),
+            sugar: getNutrient(nutriments['sugars_100g'], nutriments['sugars_serving']),
+            sodium: (() => {
+                const sodiumG = getNutrient(nutriments['sodium_100g'], nutriments['sodium_serving'])
+                return sodiumG ? sodiumG * 1000 : undefined // Convert g to mg
+            })(),
+            saturatedFat: getNutrient(nutriments['saturated-fat_100g'], nutriments['saturated-fat_serving']),
+            transFat: getNutrient(nutriments['trans-fat_100g'], nutriments['trans-fat_serving']),
+            monounsaturatedFat: getNutrient(nutriments['monounsaturated-fat_100g']),
+            polyunsaturatedFat: getNutrient(nutriments['polyunsaturated-fat_100g']),
+            cholesterol: (() => {
+                const cholesterolG = getNutrient(nutriments['cholesterol_100g'], nutriments['cholesterol_serving'])
+                return cholesterolG ? cholesterolG * 1000 : undefined // Convert g to mg
+            })(),
+            vitaminA: (() => {
+                const vitAG = getNutrient(nutriments['vitamin-a_100g'])
+                return vitAG ? vitAG * 1000000 : undefined // Convert g to IU (rough)
+            })(),
+            vitaminC: (() => {
+                const vitCG = getNutrient(nutriments['vitamin-c_100g'])
+                return vitCG ? vitCG * 1000 : undefined // Convert g to mg
+            })(),
+            vitaminD: (() => {
+                const vitDG = getNutrient(nutriments['vitamin-d_100g'])
+                return vitDG ? vitDG * 40000 : undefined // Convert g to IU
+            })(),
+            vitaminE: (() => {
+                const vitEG = getNutrient(nutriments['vitamin-e_100g'])
+                return vitEG ? vitEG * 1000 : undefined // Convert g to mg
+            })(),
+            vitaminK: (() => {
+                const vitKG = getNutrient(nutriments['vitamin-k_100g'])
+                return vitKG ? vitKG * 1000000 : undefined // Convert g to mcg
+            })(),
+            thiamine: (() => {
+                const b1G = getNutrient(nutriments['vitamin-b1_100g'])
+                return b1G ? b1G * 1000 : undefined
+            })(),
+            riboflavin: (() => {
+                const b2G = getNutrient(nutriments['vitamin-b2_100g'])
+                return b2G ? b2G * 1000 : undefined
+            })(),
+            niacin: (() => {
+                const b3G = getNutrient(nutriments['vitamin-b3_100g'])
+                return b3G ? b3G * 1000 : undefined
+            })(),
+            vitaminB6: (() => {
+                const b6G = getNutrient(nutriments['vitamin-b6_100g'])
+                return b6G ? b6G * 1000 : undefined
+            })(),
+            folate: (() => {
+                const b9G = getNutrient(nutriments['vitamin-b9_100g'])
+                return b9G ? b9G * 1000000 : undefined
+            })(),
+            vitaminB12: (() => {
+                const b12G = getNutrient(nutriments['vitamin-b12_100g'])
+                return b12G ? b12G * 1000000 : undefined
+            })(),
+            calcium: (() => {
+                const caG = getNutrient(nutriments['calcium_100g'])
+                return caG ? caG * 1000 : undefined
+            })(),
+            iron: (() => {
+                const feG = getNutrient(nutriments['iron_100g'])
+                return feG ? feG * 1000 : undefined
+            })(),
+            magnesium: (() => {
+                const mgG = getNutrient(nutriments['magnesium_100g'])
+                return mgG ? mgG * 1000 : undefined
+            })(),
+            phosphorus: (() => {
+                const pG = getNutrient(nutriments['phosphorus_100g'])
+                return pG ? pG * 1000 : undefined
+            })(),
+            potassium: (() => {
+                const kG = getNutrient(nutriments['potassium_100g'])
+                return kG ? kG * 1000 : undefined
+            })(),
+            zinc: (() => {
+                const znG = getNutrient(nutriments['zinc_100g'])
+                return znG ? znG * 1000 : undefined
+            })(),
+            selenium: (() => {
+                const seG = getNutrient(nutriments['selenium_100g'])
+                return seG ? seG * 1000000 : undefined
+            })(),
+            copper: (() => {
+                const cuG = getNutrient(nutriments['copper_100g'])
+                return cuG ? cuG * 1000 : undefined
+            })(),
+            manganese: (() => {
+                const mnG = getNutrient(nutriments['manganese_100g'])
+                return mnG ? mnG * 1000 : undefined
+            })()
         }
 
         return nutrients
