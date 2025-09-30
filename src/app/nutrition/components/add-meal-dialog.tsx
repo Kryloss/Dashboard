@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -80,15 +80,20 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
     // Search for foods with smart brand filtering
     useEffect(() => {
         const searchFoods = async () => {
-            if (searchQuery.trim().length < 2) {
+            const trimmedQuery = searchQuery.trim()
+
+            // Clear results if query is too short
+            if (trimmedQuery.length < 2) {
                 setSearchResults([])
                 setAvailableBrands([])
+                setBrandFilter("") // Reset brand filter when search is cleared
+                setIsSearching(false)
                 return
             }
 
             setIsSearching(true)
             try {
-                const foods = await NutritionStorage.getFoods(searchQuery, 50)
+                const foods = await NutritionStorage.getFoods(trimmedQuery, 50)
 
                 // Extract unique brands from results
                 const brands = [...new Set(
@@ -125,8 +130,14 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
             }
         }
 
-        const debounceTimer = setTimeout(searchFoods, 300)
-        return () => clearTimeout(debounceTimer)
+        // Only debounce if we have enough characters
+        if (searchQuery.trim().length >= 2) {
+            const debounceTimer = setTimeout(searchFoods, 500) // Increased from 300ms to 500ms
+            return () => clearTimeout(debounceTimer)
+        } else {
+            // Immediately clear if query is too short
+            searchFoods()
+        }
     }, [searchQuery, brandFilter, notifications])
 
     const handleFoodSelect = (foodResult: FoodSearchResult) => {
@@ -295,7 +306,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
 
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
-            <DialogContent className="bg-[#0B0B0F] border border-[#212227] text-[#F3F4F6] max-w-3xl max-h-[90vh] overflow-y-auto" aria-describedby="add-meal-description">
+            <DialogContent className="bg-[#0B0B0F] border border-[#212227] text-[#F3F4F6] max-w-3xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <div className="flex items-center justify-between">
                         <DialogTitle className="text-xl font-semibold text-[#F3F4F6]">
@@ -310,9 +321,9 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                             <X className="w-4 h-4" />
                         </Button>
                     </div>
-                    <p id="add-meal-description" className="sr-only">
+                    <DialogDescription className="sr-only">
                         Search for foods from USDA database, add them manually, or select from recent foods to add to your meal
-                    </p>
+                    </DialogDescription>
                 </DialogHeader>
 
                 <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)}>
