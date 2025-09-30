@@ -97,6 +97,8 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                 // Fetch all foods without limit
                 const foods = await NutritionStorage.getFoods(trimmedQuery, 200)
 
+                console.log(`Search results for "${trimmedQuery}":`, foods.length, 'foods found')
+
                 // Extract unique brands from results
                 const brands = [...new Set(
                     foods
@@ -113,12 +115,17 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                     filteredFoods = foods.filter(food =>
                         food.brand && food.brand.toLowerCase().includes(trimmedQuery.toLowerCase())
                     )
+                    console.log(`Brand search mode: ${filteredFoods.length} foods with matching brands`)
                 }
 
                 // Apply brand filter if selected (but not "all")
                 if (brandFilter && brandFilter !== 'all') {
+                    const beforeFilter = filteredFoods.length
                     filteredFoods = filteredFoods.filter(food => food.brand === brandFilter)
+                    console.log(`Brand filter "${brandFilter}": ${beforeFilter} → ${filteredFoods.length} foods`)
                 }
+
+                console.log(`Final results: ${filteredFoods.length} foods to display`)
 
                 setSearchResults(filteredFoods.map(food => ({
                     id: food.id,
@@ -132,10 +139,12 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                 })))
             } catch (error) {
                 console.error('Error searching foods:', error)
-                notifications.error('Search failed', {
-                    description: 'Unable to search for foods. Please try again.',
-                    duration: 3000
-                })
+                setSearchResults([])
+                // Don't show error notification if USDA is just unavailable
+                // notifications.error('Search failed', {
+                //     description: 'Unable to search for foods. Please try again.',
+                //     duration: 3000
+                // })
             } finally {
                 setIsSearching(false)
             }
@@ -517,10 +526,24 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                     )
                                 })
                             ) : searchQuery.length >= 2 ? (
-                                <div className="text-center py-8">
-                                    <Package className="w-8 h-8 text-[#A1A1AA] mx-auto mb-2" />
-                                    <p className="text-[#A1A1AA] text-sm">No foods found</p>
-                                    <p className="text-[#7A7F86] text-xs mt-1">Try different keywords or add manually</p>
+                                <div className="text-center py-8 px-4">
+                                    <Database className="w-12 h-12 text-[#2A2B31] mx-auto mb-3" />
+                                    <p className="text-[#F3F4F6] font-medium mb-2">No foods found for "{searchQuery}"</p>
+                                    <div className="text-[#7A7F86] text-sm space-y-1 mb-4">
+                                        <p>• Try different keywords (e.g., "chocolate" instead of "choco")</p>
+                                        <p>• Check your spelling</p>
+                                        {searchMode === 'brand' && <p>• Switch to "Food Name" search mode</p>}
+                                        {brandFilter && brandFilter !== 'all' && <p>• Clear the brand filter to see more results</p>}
+                                        <p>• USDA API may be temporarily unavailable</p>
+                                    </div>
+                                    <Button
+                                        onClick={() => setActiveTab('manual')}
+                                        variant="outline"
+                                        className="bg-[#121318] border-[#2A8CEA] text-[#2A8CEA] hover:bg-[#2A8CEA] hover:text-white"
+                                    >
+                                        <Plus className="w-4 h-4 mr-2" />
+                                        Add Manually Instead
+                                    </Button>
                                 </div>
                             ) : (
                                 <div className="text-center py-8">
