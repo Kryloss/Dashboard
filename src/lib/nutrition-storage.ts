@@ -3,6 +3,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { User } from '@supabase/supabase-js'
 import { USDAFoodDataService } from './usda-fooddata'
+import { OpenFoodFactsService } from './openfoodfacts'
 
 // Core nutrition data models
 export interface MacroNutrients {
@@ -311,40 +312,66 @@ export class NutritionStorage {
 
         allFoods.push(...localFoods)
 
-        // Then, get USDA foods if we have a search term
+        // Then, get foods from external APIs if we have a search term
         if (searchTerm && searchTerm.trim().length >= 2) {
-            try {
-                const usdaFoods = await USDAFoodDataService.searchFoods(
-                    searchTerm,
-                    limit - allFoods.length // Use remaining limit for USDA results
-                )
+            const remainingLimit = limit - allFoods.length
+            const limitPerAPI = Math.floor(remainingLimit / 2) // Split between USDA and OFF
 
-                // Filter out duplicates (foods that might already exist locally)
-                const uniqueUSDAFoods = usdaFoods.filter(usdaFood =>
-                    !allFoods.some(localFood =>
-                        localFood.name.toLowerCase() === usdaFood.name.toLowerCase() &&
-                        localFood.brand === usdaFood.brand
-                    )
-                )
+            // Fetch from USDA and OpenFoodFacts in parallel
+            const [usdaFoods, offFoods] = await Promise.all([
+                // USDA FoodData Central
+                USDAFoodDataService.searchFoods(searchTerm, limitPerAPI).catch(() => {
+                    console.warn('USDA API failed, continuing without USDA results')
+                    return []
+                }),
+                // OpenFoodFacts
+                OpenFoodFactsService.searchFoods(searchTerm, limitPerAPI).catch(() => {
+                    console.warn('OpenFoodFacts API failed, continuing without OFF results')
+                    return []
+                })
+            ])
 
-                allFoods.push(...uniqueUSDAFoods)
-            } catch {
-                // Silently continue without USDA results if API is unavailable
-                // The USDA service already logs warnings, no need to log again here
-            }
+            // Filter out duplicates (foods that might already exist locally or between APIs)
+            const uniqueUSDAFoods = usdaFoods.filter(usdaFood =>
+                !allFoods.some(localFood =>
+                    localFood.name.toLowerCase() === usdaFood.name.toLowerCase() &&
+                    localFood.brand === usdaFood.brand
+                )
+            )
+
+            const uniqueOFFoods = offFoods.filter(offFood =>
+                !allFoods.some(existingFood =>
+                    existingFood.name.toLowerCase() === offFood.name.toLowerCase() &&
+                    existingFood.brand === offFood.brand
+                ) &&
+                !uniqueUSDAFoods.some(usdaFood =>
+                    usdaFood.name.toLowerCase() === offFood.name.toLowerCase() &&
+                    usdaFood.brand === offFood.brand
+                )
+            )
+
+            allFoods.push(...uniqueUSDAFoods, ...uniqueOFFoods)
+
+            console.log(`Search "${searchTerm}": ${localFoods.length} local, ${uniqueUSDAFoods.length} USDA, ${uniqueOFFoods.length} OpenFoodFacts`)
         }
 
-        // Sort results: user foods first, then other local foods, then USDA foods
+        // Sort results: user foods first, then local foods, then external API foods
         const sortedFoods = allFoods.sort((a, b) => {
             // User-created foods first
             if (a.isUserCreated && !b.isUserCreated) return -1
             if (!a.isUserCreated && b.isUserCreated) return 1
 
-            // Local foods before USDA foods
+            // Local foods before external API foods
+            const aIsExternal = a.id.startsWith('usda-') || a.id.startsWith('off-')
+            const bIsExternal = b.id.startsWith('usda-') || b.id.startsWith('off-')
+            if (!aIsExternal && bIsExternal) return -1
+            if (aIsExternal && !bIsExternal) return 1
+
+            // USDA before OpenFoodFacts (USDA typically has better data quality for US foods)
             const aIsUSDA = a.id.startsWith('usda-')
             const bIsUSDA = b.id.startsWith('usda-')
-            if (!aIsUSDA && bIsUSDA) return -1
-            if (aIsUSDA && !bIsUSDA) return 1
+            if (aIsUSDA && !bIsUSDA) return -1
+            if (!aIsUSDA && bIsUSDA) return 1
 
             // Alphabetical within each group
             return a.name.localeCompare(b.name)

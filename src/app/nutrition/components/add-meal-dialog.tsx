@@ -445,6 +445,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                             ) : searchResults.length > 0 ? (
                                 searchResults.map((food) => {
                                     const isUSDAFood = food.id.startsWith('usda-')
+                                    const isOFFFood = food.id.startsWith('off-')
                                     const isUserFood = food.isUserCreated
 
                                     return (
@@ -463,9 +464,15 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                                 USDA
                                                             </Badge>
                                                         )}
+                                                        {isOFFFood && (
+                                                            <Badge variant="outline" className="text-[#FF9500] border-[#FF9500]/30 bg-[#FF9500]/10 text-xs">
+                                                                <Package className="w-3 h-3 mr-1" />
+                                                                OFF
+                                                            </Badge>
+                                                        )}
                                                         {isUserFood && (
                                                             <Badge variant="outline" className="text-[#2A8CEA] border-[#2A8CEA]/30 bg-[#2A8CEA]/10 text-xs">
-                                                                <Database className="w-3 h-3 mr-1" />
+                                                                <Star className="w-3 h-3 mr-1" />
                                                                 Custom
                                                             </Badge>
                                                         )}
