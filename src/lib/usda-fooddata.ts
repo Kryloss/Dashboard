@@ -100,20 +100,18 @@ export class USDAFoodDataService {
 
             if (!response.ok) {
                 const errorText = await response.text()
-                console.error(`USDA Frontend API error: ${response.status} ${response.statusText}`)
-                console.error(`Response body:`, errorText)
-                console.error(`Request URL:`, `/api/usda/search?${searchParams}`)
-                throw new Error(`API error: ${response.status} ${response.statusText}`)
+                console.warn(`USDA API unavailable: ${response.status} ${response.statusText}`)
+                // Return empty array instead of throwing - gracefully fall back to local foods only
+                return []
             }
 
             const data: USDASearchResult = await response.json()
 
             return data.foods?.map(usdaFood => this.convertUSDAFoodToAppFood(usdaFood)) || []
         } catch (error) {
-            console.error('Error searching USDA foods:', error)
-            console.error('Search query:', query)
-            console.error('Page size:', pageSize)
-            throw error
+            console.warn('USDA API unavailable, using local foods only:', error)
+            // Return empty array instead of throwing - gracefully fall back to local foods only
+            return []
         }
     }
 

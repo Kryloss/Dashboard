@@ -329,8 +329,8 @@ export class NutritionStorage {
 
                 allFoods.push(...uniqueUSDAFoods)
             } catch (error) {
-                console.error('Error fetching USDA foods:', error)
-                // Continue without USDA results if API is unavailable
+                // Silently continue without USDA results if API is unavailable
+                // The USDA service already logs warnings, no need to log again here
             }
         }
 
