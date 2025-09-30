@@ -189,8 +189,6 @@ export class OpenFoodFactsService {
         // OpenFoodFacts provides data per 100g and per serving
         // We'll prefer per-serving data when available, then scale per-100g data to serving size
 
-        const hasServingData = nutriments['energy-kcal_serving'] !== undefined
-
         // Helper to get nutrient value scaled to serving size
         const getNutrient = (per100g?: number, perServing?: number): number | undefined => {
             if (perServing !== undefined) return perServing

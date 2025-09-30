@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -42,10 +42,6 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
     const [searchResults, setSearchResults] = useState<FoodSearchResult[]>([])
     const [isSearching, setIsSearching] = useState(false)
     const [availableBrands, setAvailableBrands] = useState<string[]>([])
-    const [loadingSources, setLoadingSources] = useState<string[]>([])
-
-    // AbortController for cancelling previous searches
-    const abortControllerRef = useRef<AbortController | null>(null)
 
     // Manual entry state
     const [manualFood, setManualFood] = useState({

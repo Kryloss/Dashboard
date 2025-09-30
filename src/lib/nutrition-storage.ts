@@ -6,12 +6,10 @@ import { USDAFoodDataService } from './usda-fooddata'
 import { OpenFoodFactsService } from './openfoodfacts'
 import { CNFService } from './cnf-service'
 
-// Forward declare Food type for cache
-type Food = any // Will be properly defined below
-
-// LRU Cache for search results
+// LRU Cache for search results (Food type defined below)
 interface CacheEntry {
-    results: Food[]
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    results: any[] // Food[] - will use actual type once defined
     timestamp: number
 }
 
@@ -20,16 +18,20 @@ class SearchCache {
     private readonly maxSize = 100
     private readonly ttl = 5 * 60 * 1000 // 5 minutes
 
-    set(key: string, results: Food[]): void {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    set(key: string, results: any[]): void {
         // Remove oldest entry if cache is full
         if (this.cache.size >= this.maxSize) {
             const firstKey = this.cache.keys().next().value
-            this.cache.delete(firstKey)
+            if (firstKey) {
+                this.cache.delete(firstKey)
+            }
         }
         this.cache.set(key, { results, timestamp: Date.now() })
     }
 
-    get(key: string): Food[] | null {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    get(key: string): any[] | null {
         const entry = this.cache.get(key)
         if (!entry) return null
 
