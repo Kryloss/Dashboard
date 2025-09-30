@@ -440,33 +440,102 @@ export class NutritionStorage {
             }
         }
 
-        // Sort results: user foods first, then local foods, then external API foods
+        // Helper: Calculate data completeness score (0-100)
+        const getCompletenessScore = (food: Food): number => {
+            let score = 0
+            const m = food.macros
+
+            // Core macros (always present, baseline)
+            score += 20
+
+            // Extended macros (4 points each)
+            if (m.fiber !== undefined && m.fiber > 0) score += 4
+            if (m.sugar !== undefined && m.sugar > 0) score += 4
+            if (m.sodium !== undefined && m.sodium > 0) score += 4
+            if (m.saturatedFat !== undefined && m.saturatedFat > 0) score += 4
+            if (m.transFat !== undefined) score += 4
+            if (m.cholesterol !== undefined && m.cholesterol > 0) score += 4
+
+            // Vitamins (3 points each)
+            if (m.vitaminA !== undefined && m.vitaminA > 0) score += 3
+            if (m.vitaminC !== undefined && m.vitaminC > 0) score += 3
+            if (m.vitaminD !== undefined && m.vitaminD > 0) score += 3
+            if (m.vitaminE !== undefined && m.vitaminE > 0) score += 3
+            if (m.vitaminK !== undefined && m.vitaminK > 0) score += 3
+            if (m.vitaminB6 !== undefined && m.vitaminB6 > 0) score += 3
+            if (m.vitaminB12 !== undefined && m.vitaminB12 > 0) score += 3
+
+            // Minerals (2 points each)
+            if (m.calcium !== undefined && m.calcium > 0) score += 2
+            if (m.iron !== undefined && m.iron > 0) score += 2
+            if (m.potassium !== undefined && m.potassium > 0) score += 2
+            if (m.magnesium !== undefined && m.magnesium > 0) score += 2
+            if (m.zinc !== undefined && m.zinc > 0) score += 2
+
+            return Math.min(score, 100)
+        }
+
+        // Helper: Detect brand in search term
+        const extractBrandFromSearch = (search: string): string | null => {
+            if (!search) return null
+            const words = search.toLowerCase().trim().split(/\s+/)
+            // If first word is likely a brand (capitalized in results), use it
+            return words.length > 1 ? words[0] : null
+        }
+
+        const possibleBrand = extractBrandFromSearch(searchTerm || '')
+
+        // Pre-calculate scores for performance (avoid recalculating in sort comparator)
+        const foodScores = new Map<string, {
+            completeness: number
+            brandMatch: boolean
+            isExternal: boolean
+            isUSDA: boolean
+            isCNF: boolean
+        }>()
+
+        for (const food of allFoods) {
+            const isExternal = food.id.startsWith('usda-') || food.id.startsWith('off-') || food.id.startsWith('cnf-')
+            foodScores.set(food.id, {
+                completeness: getCompletenessScore(food),
+                brandMatch: possibleBrand && searchTerm && searchTerm.length > possibleBrand.length
+                    ? (food.brand?.toLowerCase().includes(possibleBrand) || false)
+                    : false,
+                isExternal,
+                isUSDA: food.id.startsWith('usda-'),
+                isCNF: food.id.startsWith('cnf-')
+            })
+        }
+
+        // Sort results with intelligent prioritization (using pre-calculated scores)
         const sortedFoods = allFoods.sort((a, b) => {
-            // User-created foods first
+            // 1. User-created foods first (highest priority)
             if (a.isUserCreated && !b.isUserCreated) return -1
             if (!a.isUserCreated && b.isUserCreated) return 1
 
-            // Local foods before external API foods
-            const aIsExternal = a.id.startsWith('usda-') || a.id.startsWith('off-') || a.id.startsWith('cnf-')
-            const bIsExternal = b.id.startsWith('usda-') || b.id.startsWith('off-') || b.id.startsWith('cnf-')
-            if (!aIsExternal && bIsExternal) return -1
-            if (aIsExternal && !bIsExternal) return 1
+            const aScore = foodScores.get(a.id)!
+            const bScore = foodScores.get(b.id)!
 
-            // Priority: USDA > CNF > OpenFoodFacts
-            // USDA has best data quality for US foods
-            // CNF has great Canadian data with comprehensive nutrients
-            // OpenFoodFacts is crowdsourced but has good coverage
-            const aIsUSDA = a.id.startsWith('usda-')
-            const bIsUSDA = b.id.startsWith('usda-')
-            const aIsCNF = a.id.startsWith('cnf-')
-            const bIsCNF = b.id.startsWith('cnf-')
+            // 2. Brand match boost (if search contains brand name)
+            if (aScore.brandMatch && !bScore.brandMatch) return -1
+            if (!aScore.brandMatch && bScore.brandMatch) return 1
 
-            if (aIsUSDA && !bIsUSDA) return -1
-            if (!aIsUSDA && bIsUSDA) return 1
-            if (aIsCNF && !bIsCNF) return -1
-            if (!aIsCNF && bIsCNF) return 1
+            // 3. Local foods before external API foods
+            if (!aScore.isExternal && bScore.isExternal) return -1
+            if (aScore.isExternal && !bScore.isExternal) return 1
 
-            // Alphabetical within each group
+            // 4. Data completeness score (foods with more nutrition data rank higher)
+            if (aScore.completeness !== bScore.completeness) {
+                return bScore.completeness - aScore.completeness // Higher score first
+            }
+
+            // 5. Data source priority: USDA > CNF > OpenFoodFacts
+            if (aScore.isUSDA && !bScore.isUSDA) return -1
+            if (!aScore.isUSDA && bScore.isUSDA) return 1
+            if (aScore.isCNF && !bScore.isCNF) return -1
+            if (!aScore.isCNF && bScore.isCNF) return 1
+
+            // 6. Alphabetical within each group
             return a.name.localeCompare(b.name)
         })
 
