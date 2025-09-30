@@ -445,6 +445,8 @@ export class NutritionStorage {
             let score = 0
             const m = food.macros
 
+            if (!m) return 20 // Baseline if no macros data
+
             // Core macros (always present, baseline)
             score += 20
 
@@ -494,18 +496,34 @@ export class NutritionStorage {
             isCNF: boolean
         }>()
 
+        console.log(`🔍 Calculating scores for ${allFoods.length} foods...`)
+
         for (const food of allFoods) {
-            const isExternal = food.id.startsWith('usda-') || food.id.startsWith('off-') || food.id.startsWith('cnf-')
-            foodScores.set(food.id, {
-                completeness: getCompletenessScore(food),
-                brandMatch: possibleBrand && searchTerm && searchTerm.length > possibleBrand.length
-                    ? (food.brand?.toLowerCase().includes(possibleBrand) || false)
-                    : false,
-                isExternal,
-                isUSDA: food.id.startsWith('usda-'),
-                isCNF: food.id.startsWith('cnf-')
-            })
+            try {
+                const isExternal = food.id.startsWith('usda-') || food.id.startsWith('off-') || food.id.startsWith('cnf-')
+                foodScores.set(food.id, {
+                    completeness: getCompletenessScore(food),
+                    brandMatch: possibleBrand && searchTerm && searchTerm.length > possibleBrand.length
+                        ? (food.brand?.toLowerCase().includes(possibleBrand) || false)
+                        : false,
+                    isExternal,
+                    isUSDA: food.id.startsWith('usda-'),
+                    isCNF: food.id.startsWith('cnf-')
+                })
+            } catch (error) {
+                console.error(`Error calculating score for food ${food.id}:`, error)
+                // Set default scores for this food
+                foodScores.set(food.id, {
+                    completeness: 20,
+                    brandMatch: false,
+                    isExternal: true,
+                    isUSDA: false,
+                    isCNF: false
+                })
+            }
         }
+
+        console.log(`✅ Scores calculated, sorting ${allFoods.length} foods...`)
 
         // Sort results with intelligent prioritization (using pre-calculated scores)
         const sortedFoods = allFoods.sort((a, b) => {
