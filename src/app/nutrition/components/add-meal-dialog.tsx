@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
 import { NutritionStorage, Food, DetailedNutrients } from "@/lib/nutrition-storage"
-import { Search, X, Plus, Package, Edit3, Calculator, Database, Leaf, ChevronDown, ChevronUp } from "lucide-react"
+import { Search, X, Plus, Package, Edit3, Calculator, Database, Leaf, ChevronDown, ChevronUp,
+         Beef, Wheat, Droplets, AlertTriangle, CheckCircle, Star, Zap, Heart, Shield } from "lucide-react"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 
 interface AddMealDialogProps {
@@ -732,27 +734,31 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                 maxScore = Math.max(maxScore, 1)
                                                 const percentage = Math.max(0, Math.min(100, (score / maxScore) * 100))
 
-                                                let badgeColor = '#EF4444' // Red
                                                 let badgeText = 'Poor'
                                                 if (percentage >= 80) {
-                                                    badgeColor = '#22C55E' // Green
                                                     badgeText = 'Excellent'
                                                 } else if (percentage >= 60) {
-                                                    badgeColor = '#9BE15D' // Light green
                                                     badgeText = 'Good'
                                                 } else if (percentage >= 40) {
-                                                    badgeColor = '#FFA500' // Orange
                                                     badgeText = 'Fair'
                                                 }
 
                                                 return (
                                                     <div className="flex items-center space-x-2">
-                                                        <div
-                                                            className="px-2 py-1 rounded-full text-xs font-medium text-white"
-                                                            style={{ backgroundColor: badgeColor }}
+                                                        <Badge
+                                                            variant={
+                                                                percentage >= 80 ? "default" :
+                                                                percentage >= 60 ? "secondary" :
+                                                                percentage >= 40 ? "outline" : "destructive"
+                                                            }
+                                                            className="text-xs"
                                                         >
+                                                            {percentage >= 80 && <Star className="w-3 h-3 mr-1" />}
+                                                            {percentage >= 60 && percentage < 80 && <CheckCircle className="w-3 h-3 mr-1" />}
+                                                            {percentage >= 40 && percentage < 60 && <AlertTriangle className="w-3 h-3 mr-1" />}
+                                                            {percentage < 40 && <X className="w-3 h-3 mr-1" />}
                                                             {badgeText}
-                                                        </div>
+                                                        </Badge>
                                                         <div className="text-xs text-[#7A7F86]">
                                                             {Math.round(percentage)}%
                                                         </div>
@@ -778,7 +784,10 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                     {selectedFood.macros.protein > 0 && (
                                         <div className="mb-6">
                                             <div className="flex items-center justify-between mb-3">
-                                                <h6 className="text-xs font-medium text-[#2A8CEA]">🥩 Proteins</h6>
+                                                <div className="flex items-center space-x-2">
+                                                    <Beef className="w-4 h-4 text-[#2A8CEA]" />
+                                                    <h6 className="text-xs font-medium text-[#2A8CEA]">Proteins</h6>
+                                                </div>
                                                 {(() => {
                                                     const isComplete = selectedFood.name.toLowerCase().includes('meat') ||
                                                                      selectedFood.name.toLowerCase().includes('fish') ||
@@ -798,13 +807,13 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                                      selectedFood.name.toLowerCase().includes('tofu') ||
                                                                      selectedFood.name.toLowerCase().includes('tempeh')
                                                     return (
-                                                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                            isComplete
-                                                                ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                                                                : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-                                                        }`}>
-                                                            {isComplete ? '⭐ Complete' : '⚠️ Incomplete'}
-                                                        </div>
+                                                        <Badge
+                                                            variant={isComplete ? "default" : "secondary"}
+                                                            className="text-xs"
+                                                        >
+                                                            {isComplete ? <Star className="w-3 h-3 mr-1" /> : <AlertTriangle className="w-3 h-3 mr-1" />}
+                                                            {isComplete ? 'Complete' : 'Incomplete'}
+                                                        </Badge>
                                                     )
                                                 })()}
                                             </div>
@@ -833,22 +842,26 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                             </div>
 
                                                             {/* Progress Bar */}
-                                                            <div className="w-full bg-[#212227] rounded-full h-2 mb-2">
-                                                                <div
-                                                                    className={`h-2 rounded-full transition-all duration-500 ${
-                                                                        isComplete
-                                                                            ? 'bg-gradient-to-r from-green-500 to-green-400'
-                                                                            : 'bg-gradient-to-r from-orange-500 to-orange-400'
-                                                                    }`}
-                                                                    style={{ width: `${percentage}%` }}
-                                                                ></div>
-                                                            </div>
+                                                            <Progress
+                                                                value={percentage}
+                                                                className="w-full h-2 mb-2"
+                                                            />
 
                                                             <div className="flex items-center justify-between text-xs">
                                                                 <span className="text-[#7A7F86]">
-                                                                    {isComplete
-                                                                        ? '✅ Contains all essential amino acids'
-                                                                        : '💡 Combine with other proteins'}
+                                                                    <div className="flex items-center space-x-1">
+                                                                        {isComplete ? (
+                                                                            <>
+                                                                                <CheckCircle className="w-3 h-3 text-[#00E676]" />
+                                                                                <span>Contains all essential amino acids</span>
+                                                                            </>
+                                                                        ) : (
+                                                                            <>
+                                                                                <AlertTriangle className="w-3 h-3 text-[#FFA500]" />
+                                                                                <span>Combine with other proteins</span>
+                                                                            </>
+                                                                        )}
+                                                                    </div>
                                                                 </span>
                                                                 <span className="text-[#A1A1AA]">
                                                                     {Math.round(percentage)}% of daily target
@@ -877,26 +890,38 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                         selectedFood.name.toLowerCase().includes('lentil')))) && (
                                         <div className="mb-6">
                                             <div className="flex items-center justify-between mb-3">
-                                                <h6 className="text-xs font-medium text-[#9BE15D]">🌾 Carbohydrates</h6>
+                                                <div className="flex items-center space-x-2">
+                                                    <Wheat className="w-4 h-4 text-[#9BE15D]" />
+                                                    <h6 className="text-xs font-medium text-[#9BE15D]">Carbohydrates</h6>
+                                                </div>
                                                 {(() => {
                                                     const fiberAmount = selectedFood.macros.fiber ? selectedFood.macros.fiber * (weightGrams / selectedFood.servingSize) : 0
                                                     const sugarAmount = selectedFood.macros.sugar ? selectedFood.macros.sugar * (weightGrams / selectedFood.servingSize) : 0
                                                     const totalCarbs = selectedFood.macros.carbs * (weightGrams / selectedFood.servingSize)
 
-                                                    let badge = null
                                                     if (fiberAmount >= 3) {
-                                                        badge = { text: '🌟 High Fiber', color: 'bg-green-500/20 text-green-400 border-green-500/30' }
-                                                    } else if (sugarAmount / totalCarbs > 0.5) {
-                                                        badge = { text: '⚠️ High Sugar', color: 'bg-red-500/20 text-red-400 border-red-500/30' }
-                                                    } else if (sugarAmount / totalCarbs < 0.1) {
-                                                        badge = { text: '✅ Low Sugar', color: 'bg-green-500/20 text-green-400 border-green-500/30' }
+                                                        return (
+                                                            <Badge variant="default" className="text-xs">
+                                                                <Star className="w-3 h-3 mr-1" />
+                                                                High Fiber
+                                                            </Badge>
+                                                        )
+                                                    } else if (totalCarbs > 0 && sugarAmount / totalCarbs > 0.5) {
+                                                        return (
+                                                            <Badge variant="destructive" className="text-xs">
+                                                                <AlertTriangle className="w-3 h-3 mr-1" />
+                                                                High Sugar
+                                                            </Badge>
+                                                        )
+                                                    } else if (totalCarbs > 0 && sugarAmount / totalCarbs < 0.1) {
+                                                        return (
+                                                            <Badge variant="default" className="text-xs">
+                                                                <CheckCircle className="w-3 h-3 mr-1" />
+                                                                Low Sugar
+                                                            </Badge>
+                                                        )
                                                     }
-
-                                                    return badge ? (
-                                                        <div className={`px-2 py-1 rounded-full text-xs font-medium border ${badge.color}`}>
-                                                            {badge.text}
-                                                        </div>
-                                                    ) : null
+                                                    return null
                                                 })()}
                                             </div>
 
@@ -905,7 +930,10 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                 {selectedFood.macros.fiber && selectedFood.macros.fiber > 0 && (
                                                     <div className="bg-[#0E0F13] border border-[#212227] rounded-[12px] p-4">
                                                         <div className="flex items-center justify-between mb-2">
-                                                            <span className="text-sm font-medium text-[#F3F4F6]">🥬 Fiber</span>
+                                                            <div className="flex items-center space-x-2">
+                                                                <Leaf className="w-4 h-4 text-[#00E676]" />
+                                                                <span className="text-sm font-medium text-[#F3F4F6]">Fiber</span>
+                                                            </div>
                                                             <span className="text-lg font-bold text-[#00E676]">
                                                                 {formatNutrientValue(selectedFood.macros.fiber * (weightGrams / selectedFood.servingSize))}g
                                                             </span>
@@ -917,14 +945,15 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
 
                                                             return (
                                                                 <div>
-                                                                    <div className="w-full bg-[#212227] rounded-full h-2 mb-2">
-                                                                        <div
-                                                                            className="h-2 rounded-full bg-gradient-to-r from-green-500 to-green-400 transition-all duration-500"
-                                                                            style={{ width: `${percentage}%` }}
-                                                                        ></div>
-                                                                    </div>
+                                                                    <Progress
+                                                                        value={percentage}
+                                                                        className="w-full h-2 mb-2"
+                                                                    />
                                                                     <div className="flex items-center justify-between text-xs">
-                                                                        <span className="text-[#7A7F86]">💚 Supports digestive health</span>
+                                                                        <div className="flex items-center space-x-1">
+                                                                            <Heart className="w-3 h-3 text-[#00E676]" />
+                                                                            <span className="text-[#7A7F86]">Supports digestive health</span>
+                                                                        </div>
                                                                         <span className="text-[#A1A1AA]">{Math.round(percentage)}% of daily target</span>
                                                                     </div>
                                                                 </div>
@@ -941,7 +970,10 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                             <div className="font-semibold text-[#FF6B6B] text-lg mb-1">
                                                                 {formatNutrientValue(selectedFood.macros.sugar * (weightGrams / selectedFood.servingSize))}g
                                                             </div>
-                                                            <div className="text-xs text-[#7A7F86]">⚡ Simple Carbs</div>
+                                                            <div className="flex items-center justify-center space-x-1 text-xs text-[#7A7F86]">
+                                                                <Zap className="w-3 h-3" />
+                                                                <span>Simple Carbs</span>
+                                                            </div>
                                                             <div className="text-xs text-[#FF6B6B] mt-1">Fast energy</div>
                                                         </div>
                                                     )}
@@ -954,7 +986,10 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                                 <div className="font-semibold text-[#9BE15D] text-lg mb-1">
                                                                     {formatNutrientValue(complexCarbs * (weightGrams / selectedFood.servingSize))}g
                                                                 </div>
-                                                                <div className="text-xs text-[#7A7F86]">🌱 Complex Carbs</div>
+                                                                <div className="flex items-center justify-center space-x-1 text-xs text-[#7A7F86]">
+                                                                    <Leaf className="w-3 h-3" />
+                                                                    <span>Complex Carbs</span>
+                                                                </div>
                                                                 <div className="text-xs text-[#9BE15D] mt-1">Sustained energy</div>
                                                             </div>
                                                         )
@@ -978,7 +1013,10 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                                 <div className="font-semibold text-[#A1A1AA] text-lg mb-1">
                                                                     {formatNutrientValue(starches * (weightGrams / selectedFood.servingSize))}g
                                                                 </div>
-                                                                <div className="text-xs text-[#7A7F86]">🍞 Starches</div>
+                                                                <div className="flex items-center justify-center space-x-1 text-xs text-[#7A7F86]">
+                                                                    <Wheat className="w-3 h-3" />
+                                                                    <span>Starches</span>
+                                                                </div>
                                                                 <div className="text-xs text-[#A1A1AA] mt-1">Energy storage</div>
                                                             </div>
                                                         )
@@ -994,28 +1032,34 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                       (selectedFood.macros.cholesterol && selectedFood.macros.cholesterol > 0)) && (
                                         <div className="mb-6">
                                             <div className="flex items-center justify-between mb-3">
-                                                <h6 className="text-xs font-medium text-[#FF2D55]">🥑 Fats</h6>
+                                                <div className="flex items-center space-x-2">
+                                                    <Droplets className="w-4 h-4 text-[#FF2D55]" />
+                                                    <h6 className="text-xs font-medium text-[#FF2D55]">Fats</h6>
+                                                </div>
                                                 {(() => {
                                                     const transFat = selectedFood.macros.transFat ? selectedFood.macros.transFat * (weightGrams / selectedFood.servingSize) : 0
                                                     const saturatedFat = selectedFood.macros.saturatedFat ? selectedFood.macros.saturatedFat * (weightGrams / selectedFood.servingSize) : 0
 
                                                     if (transFat > 0) {
                                                         return (
-                                                            <div className="px-2 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30">
-                                                                🚫 Contains Trans Fat
-                                                            </div>
+                                                            <Badge variant="destructive" className="text-xs">
+                                                                <Shield className="w-3 h-3 mr-1" />
+                                                                Contains Trans Fat
+                                                            </Badge>
                                                         )
                                                     } else if (saturatedFat > 5) {
                                                         return (
-                                                            <div className="px-2 py-1 rounded-full text-xs font-medium bg-orange-500/20 text-orange-400 border border-orange-500/30">
-                                                                ⚠️ High Saturated Fat
-                                                            </div>
+                                                            <Badge variant="secondary" className="text-xs">
+                                                                <AlertTriangle className="w-3 h-3 mr-1" />
+                                                                High Saturated Fat
+                                                            </Badge>
                                                         )
-                                                    } else if (saturatedFat < 2) {
+                                                    } else if (saturatedFat < 2 && saturatedFat > 0) {
                                                         return (
-                                                            <div className="px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
-                                                                ✅ Low Saturated Fat
-                                                            </div>
+                                                            <Badge variant="default" className="text-xs">
+                                                                <CheckCircle className="w-3 h-3 mr-1" />
+                                                                Low Saturated Fat
+                                                            </Badge>
                                                         )
                                                     }
                                                     return null
@@ -1027,13 +1071,19 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                 {selectedFood.macros.transFat && selectedFood.macros.transFat > 0 && (
                                                     <div className="bg-red-500/10 border-2 border-red-500/30 rounded-[12px] p-4">
                                                         <div className="flex items-center justify-between mb-2">
-                                                            <span className="text-sm font-medium text-[#F3F4F6]">🚫 Trans Fat</span>
+                                                            <div className="flex items-center space-x-2">
+                                                                <X className="w-4 h-4 text-[#EF4444]" />
+                                                                <span className="text-sm font-medium text-[#F3F4F6]">Trans Fat</span>
+                                                            </div>
                                                             <span className="text-lg font-bold text-[#EF4444]">
                                                                 {formatNutrientValue(selectedFood.macros.transFat * (weightGrams / selectedFood.servingSize))}g
                                                             </span>
                                                         </div>
                                                         <div className="bg-red-500/20 rounded-lg p-2">
-                                                            <div className="text-xs text-red-300 font-medium">⚠️ HEALTH WARNING</div>
+                                                            <div className="flex items-center space-x-1 text-xs text-red-300 font-medium">
+                                                                <AlertTriangle className="w-3 h-3" />
+                                                                <span>HEALTH WARNING</span>
+                                                            </div>
                                                             <div className="text-xs text-red-200 mt-1">Trans fats increase bad cholesterol and should be avoided</div>
                                                         </div>
                                                     </div>
@@ -1043,7 +1093,10 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                 {selectedFood.macros.saturatedFat && selectedFood.macros.saturatedFat > 0 && (
                                                     <div className="bg-[#0E0F13] border border-[#212227] rounded-[12px] p-4">
                                                         <div className="flex items-center justify-between mb-2">
-                                                            <span className="text-sm font-medium text-[#F3F4F6]">🧈 Saturated Fat</span>
+                                                            <div className="flex items-center space-x-2">
+                                                                <Droplets className="w-4 h-4 text-[#FF6B6B]" />
+                                                                <span className="text-sm font-medium text-[#F3F4F6]">Saturated Fat</span>
+                                                            </div>
                                                             <span className="text-lg font-bold text-[#FF6B6B]">
                                                                 {formatNutrientValue(selectedFood.macros.saturatedFat * (weightGrams / selectedFood.servingSize))}g
                                                             </span>
@@ -1055,22 +1108,28 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
 
                                                             return (
                                                                 <div>
-                                                                    <div className="w-full bg-[#212227] rounded-full h-2 mb-2">
-                                                                        <div
-                                                                            className={`h-2 rounded-full transition-all duration-500 ${
-                                                                                percentage > 50
-                                                                                    ? 'bg-gradient-to-r from-red-500 to-red-400'
-                                                                                    : percentage > 25
-                                                                                    ? 'bg-gradient-to-r from-orange-500 to-orange-400'
-                                                                                    : 'bg-gradient-to-r from-green-500 to-green-400'
-                                                                            }`}
-                                                                            style={{ width: `${percentage}%` }}
-                                                                        ></div>
-                                                                    </div>
+                                                                    <Progress
+                                                                        value={percentage}
+                                                                        className={`w-full h-2 mb-2 ${
+                                                                            percentage > 50 ? '[&>[data-state=complete]]:bg-red-500' :
+                                                                            percentage > 25 ? '[&>[data-state=complete]]:bg-orange-500' :
+                                                                            '[&>[data-state=complete]]:bg-green-500'
+                                                                        }`}
+                                                                    />
                                                                     <div className="flex items-center justify-between text-xs">
-                                                                        <span className="text-[#7A7F86]">
-                                                                            {percentage > 50 ? '⚠️ Limit intake' : '💡 Moderate consumption'}
-                                                                        </span>
+                                                                        <div className="flex items-center space-x-1 text-[#7A7F86]">
+                                                                            {percentage > 50 ? (
+                                                                                <>
+                                                                                    <AlertTriangle className="w-3 h-3" />
+                                                                                    <span>Limit intake</span>
+                                                                                </>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <CheckCircle className="w-3 h-3" />
+                                                                                    <span>Moderate consumption</span>
+                                                                                </>
+                                                                            )}
+                                                                        </div>
                                                                         <span className="text-[#A1A1AA]">{Math.round(percentage)}% of daily limit</span>
                                                                     </div>
                                                                 </div>
@@ -1084,7 +1143,10 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                     <div className="bg-[#0E0F13] border border-[#212227] rounded-[10px] p-3">
                                                         <div className="flex items-center justify-between">
                                                             <div>
-                                                                <div className="text-sm font-medium text-[#F3F4F6]">🥚 Cholesterol</div>
+                                                                <div className="flex items-center space-x-2">
+                                                                    <Package className="w-4 h-4 text-[#FFA500]" />
+                                                                    <span className="text-sm font-medium text-[#F3F4F6]">Cholesterol</span>
+                                                                </div>
                                                                 <div className="text-xs text-[#7A7F86] mt-1">Dietary cholesterol</div>
                                                             </div>
                                                             <div className="text-right">
