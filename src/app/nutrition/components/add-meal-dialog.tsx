@@ -61,6 +61,8 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
         monounsaturatedFat: 0,
         polyunsaturatedFat: 0,
         cholesterol: 0,
+        animalProtein: 0,
+        plantProtein: 0,
         potassium: 0,
         vitaminA: 0,
         vitaminC: 0,
@@ -234,6 +236,8 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                 monounsaturatedFat: manualFood.monounsaturatedFat || undefined,
                 polyunsaturatedFat: manualFood.polyunsaturatedFat || undefined,
                 cholesterol: manualFood.cholesterol || undefined,
+                animalProtein: manualFood.animalProtein || undefined,
+                plantProtein: manualFood.plantProtein || undefined,
                 potassium: manualFood.potassium || undefined,
                 vitaminA: manualFood.vitaminA || undefined,
                 vitaminC: manualFood.vitaminC || undefined,
@@ -337,6 +341,8 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
             monounsaturatedFat: 0,
             polyunsaturatedFat: 0,
             cholesterol: 0,
+            animalProtein: 0,
+            plantProtein: 0,
             potassium: 0,
             vitaminA: 0,
             vitaminC: 0,
@@ -819,30 +825,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                             )}
                         </div>
 
-                        {/* Optional Details */}
-                        <details className="border border-[#212227] rounded-lg bg-[#121318]">
-                            <summary className="p-4 cursor-pointer text-[#F3F4F6] hover:text-[#2A8CEA] transition-colors flex items-center justify-between group">
-                                <div className="flex items-center space-x-2">
-                                    <Shield className="w-4 h-4 text-[#9BE15D]" />
-                                    <span className="font-medium">Optional Detailed Nutrition</span>
-                                    <Badge variant="outline" className="text-[#A1A1AA] border-[#A1A1AA]/30 text-xs">
-                                        Advanced
-                                    </Badge>
-                                </div>
-                                <ChevronDown className="w-4 h-4 text-[#A1A1AA] group-hover:text-[#2A8CEA] transition-transform group-open:rotate-180" />
-                            </summary>
-                            <div className="p-4 pt-0 space-y-6 border-t border-[#212227] mt-2">
-                                {/* Guidance */}
-                                <div className="bg-[#0E0F13] border border-[#212227] rounded-lg p-3">
-                                    <p className="text-[#A1A1AA] text-xs flex items-start space-x-2">
-                                        <Heart className="w-3.5 h-3.5 text-[#9BE15D] mt-0.5 flex-shrink-0" />
-                                        <span>
-                                            Add micronutrients from nutrition labels to get comprehensive tracking and health insights. These values help you meet daily nutritional goals.
-                                        </span>
-                                    </p>
-                                </div>
-
-                                {/* Carbohydrates Breakdown */}
+                        {/* Carbohydrates Breakdown */}
                                 <div className="bg-[#0E0F13] border border-[#9BE15D]/20 rounded-lg p-4 space-y-3">
                                     <div className="flex items-center space-x-2">
                                         <Wheat className="w-4 h-4 text-[#9BE15D]" />
@@ -973,41 +956,109 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                     </div>
                                 </div>
 
-                                {/* Protein Quality (Educational - Not stored) */}
+                                {/* Protein Quality Breakdown */}
                                 <div className="bg-[#0E0F13] border border-[#2A8CEA]/20 rounded-lg p-4 space-y-3">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center space-x-2">
                                             <Beef className="w-4 h-4 text-[#2A8CEA]" />
-                                            <h5 className="text-[#2A8CEA] text-sm font-medium">Protein Quality Guide</h5>
+                                            <h5 className="text-[#2A8CEA] text-sm font-medium">Protein Quality</h5>
                                         </div>
                                         <Badge variant="outline" className="text-[#2A8CEA] border-[#2A8CEA]/30 bg-[#2A8CEA]/10 text-xs">
-                                            Reference
+                                            Optional
                                         </Badge>
                                     </div>
-                                    <div className="space-y-2 text-xs">
-                                        <div className="bg-[#121318] border border-[#212227] rounded p-2">
-                                            <div className="flex items-center space-x-2 mb-1">
+                                    <p className="text-[#7A7F86] text-xs">Breakdown your protein sources for better tracking</p>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm flex items-center space-x-1">
                                                 <Star className="w-3 h-3 text-[#9BE15D]" />
-                                                <span className="text-[#9BE15D] font-medium">Complete Proteins (All 9 Essential Amino Acids)</span>
-                                            </div>
-                                            <p className="text-[#A1A1AA] ml-5">
-                                                Animal: Meat, Fish, Chicken, Turkey, Eggs, Milk, Cheese, Yogurt, Whey
-                                                <br />
-                                                Plant: Quinoa, Soy, Tofu, Tempeh, Edamame
-                                            </p>
+                                                <span>Animal Protein (g)</span>
+                                            </Label>
+                                            <Input
+                                                type="number"
+                                                placeholder="20"
+                                                value={manualFood.animalProtein}
+                                                onChange={(e) => setManualFood({ ...manualFood, animalProtein: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#2A8CEA]/30 text-[#F3F4F6] mt-1"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                            <p className="text-[#7A7F86] text-xs mt-0.5">Complete proteins</p>
                                         </div>
-                                        <div className="bg-[#121318] border border-[#212227] rounded p-2">
-                                            <div className="flex items-center space-x-2 mb-1">
-                                                <AlertTriangle className="w-3 h-3 text-[#FFA500]" />
-                                                <span className="text-[#FFA500] font-medium">Incomplete Proteins (Missing Some Essential Amino Acids)</span>
-                                            </div>
-                                            <p className="text-[#A1A1AA] ml-5">
-                                                Plant: Rice, Beans, Lentils, Peas, Nuts, Seeds, Wheat, Oats, Corn
-                                                <br />
-                                                <span className="text-[#9BE15D]">Tip: Combine different sources (e.g., rice + beans) for complete protein</span>
-                                            </p>
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm flex items-center space-x-1">
+                                                <Leaf className="w-3 h-3 text-[#9BE15D]" />
+                                                <span>Plant Protein (g)</span>
+                                            </Label>
+                                            <Input
+                                                type="number"
+                                                placeholder="10"
+                                                value={manualFood.plantProtein}
+                                                onChange={(e) => setManualFood({ ...manualFood, plantProtein: Number(e.target.value) })}
+                                                className="bg-[#121318] border-[#2A8CEA]/30 text-[#F3F4F6] mt-1"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                            <p className="text-[#7A7F86] text-xs mt-0.5">May need combining</p>
                                         </div>
                                     </div>
+
+                                    {(manualFood.animalProtein > 0 || manualFood.plantProtein > 0) && (
+                                        <div className="bg-[#121318] border border-[#212227] rounded-lg p-2 text-xs">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[#A1A1AA]">Total protein breakdown:</span>
+                                                <span className="text-[#F3F4F6] font-medium">
+                                                    {manualFood.animalProtein + manualFood.plantProtein}g
+                                                </span>
+                                            </div>
+                                            {Math.abs(manualFood.protein - (manualFood.animalProtein + manualFood.plantProtein)) > 0.5 && manualFood.protein > 0 && (
+                                                <p className="text-[#FFA500] mt-1 flex items-center space-x-1">
+                                                    <AlertTriangle className="w-3 h-3" />
+                                                    <span>Total should match protein value ({manualFood.protein}g)</span>
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    <details className="text-xs">
+                                        <summary className="cursor-pointer text-[#2A8CEA] hover:text-[#4AA7FF] flex items-center space-x-1">
+                                            <span>What counts as animal/plant protein?</span>
+                                        </summary>
+                                        <div className="mt-2 space-y-2 ml-3">
+                                            <div>
+                                                <span className="text-[#9BE15D]">✅ Animal (Complete):</span>
+                                                <p className="text-[#A1A1AA] ml-4">Meat, Fish, Chicken, Eggs, Milk, Cheese, Yogurt, Whey</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-[#9BE15D]">🌱 Plant:</span>
+                                                <p className="text-[#A1A1AA] ml-4">Beans, Lentils, Quinoa, Soy, Tofu, Nuts, Seeds, Grains</p>
+                                            </div>
+                                        </div>
+                                    </details>
+                                </div>
+
+                        {/* Optional Details */}
+                        <details className="border border-[#212227] rounded-lg bg-[#121318]">
+                            <summary className="p-4 cursor-pointer text-[#F3F4F6] hover:text-[#2A8CEA] transition-colors flex items-center justify-between group">
+                                <div className="flex items-center space-x-2">
+                                    <Shield className="w-4 h-4 text-[#9BE15D]" />
+                                    <span className="font-medium">Micronutrients (Optional)</span>
+                                    <Badge variant="outline" className="text-[#A1A1AA] border-[#A1A1AA]/30 text-xs">
+                                        Advanced
+                                    </Badge>
+                                </div>
+                                <ChevronDown className="w-4 h-4 text-[#A1A1AA] group-hover:text-[#2A8CEA] transition-transform group-open:rotate-180" />
+                            </summary>
+                            <div className="p-4 pt-4 space-y-6 border-t border-[#212227] mt-2">
+                                {/* Guidance */}
+                                <div className="bg-[#0E0F13] border border-[#212227] rounded-lg p-3">
+                                    <p className="text-[#A1A1AA] text-xs flex items-start space-x-2">
+                                        <Heart className="w-3.5 h-3.5 text-[#9BE15D] mt-0.5 flex-shrink-0" />
+                                        <span>
+                                            Add vitamins, electrolytes, and minerals from nutrition labels for comprehensive tracking. These help you meet daily nutritional goals.
+                                        </span>
+                                    </p>
                                 </div>
 
                                 {/* Electrolytes */}

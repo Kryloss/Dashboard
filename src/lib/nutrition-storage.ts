@@ -71,6 +71,9 @@ export interface DetailedNutrients extends MacroNutrients {
     monounsaturatedFat?: number // grams
     polyunsaturatedFat?: number // grams
     cholesterol?: number   // mg
+    // Protein quality breakdown
+    animalProtein?: number  // grams (complete protein from animal sources)
+    plantProtein?: number   // grams (potentially incomplete from plant sources)
     potassium?: number     // mg
     vitaminA?: number      // IU
     vitaminC?: number      // mg
