@@ -842,108 +842,167 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                     </p>
                                 </div>
 
-                                {/* Extended Macros */}
-                                <div>
-                                    <div className="flex items-center space-x-2 mb-3">
+                                {/* Carbohydrates Breakdown */}
+                                <div className="bg-[#0E0F13] border border-[#9BE15D]/20 rounded-lg p-4 space-y-3">
+                                    <div className="flex items-center space-x-2">
                                         <Wheat className="w-4 h-4 text-[#9BE15D]" />
-                                        <h5 className="text-[#F3F4F6] text-sm font-medium">Extended Macros</h5>
+                                        <h5 className="text-[#9BE15D] text-sm font-medium">Carbohydrate Details</h5>
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Fiber (g)</Label>
+                                            <Label className="text-[#A1A1AA] text-sm flex items-center space-x-1">
+                                                <Leaf className="w-3 h-3 text-[#9BE15D]" />
+                                                <span>Fiber (g)</span>
+                                            </Label>
                                             <Input
                                                 type="number"
+                                                placeholder="5"
                                                 value={manualFood.fiber}
                                                 onChange={(e) => setManualFood({ ...manualFood, fiber: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                className="bg-[#121318] border-[#9BE15D]/30 text-[#F3F4F6] mt-1"
                                                 min="0"
                                                 step="0.1"
                                             />
+                                            <p className="text-[#7A7F86] text-xs mt-0.5">Promotes digestion</p>
                                         </div>
                                         <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Sugar (g)</Label>
+                                            <Label className="text-[#A1A1AA] text-sm flex items-center space-x-1">
+                                                <Zap className="w-3 h-3 text-[#FFA500]" />
+                                                <span>Sugar (g)</span>
+                                            </Label>
                                             <Input
                                                 type="number"
+                                                placeholder="10"
                                                 value={manualFood.sugar}
                                                 onChange={(e) => setManualFood({ ...manualFood, sugar: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                className="bg-[#121318] border-[#9BE15D]/30 text-[#F3F4F6] mt-1"
                                                 min="0"
                                                 step="0.1"
                                             />
+                                            <p className="text-[#7A7F86] text-xs mt-0.5">Simple carbs</p>
                                         </div>
+                                    </div>
+                                </div>
+
+                                {/* Fats Breakdown */}
+                                <div className="bg-[#0E0F13] border border-[#FF2D55]/20 rounded-lg p-4 space-y-3">
+                                    <div className="flex items-center space-x-2">
+                                        <Droplets className="w-4 h-4 text-[#FF2D55]" />
+                                        <h5 className="text-[#FF2D55] text-sm font-medium">Fat Details</h5>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
                                         <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Saturated Fat (g)</Label>
+                                            <Label className="text-[#A1A1AA] text-sm flex items-center space-x-1">
+                                                <AlertTriangle className="w-3 h-3 text-[#FF2D55]" />
+                                                <span>Saturated Fat (g)</span>
+                                            </Label>
                                             <Input
                                                 type="number"
+                                                placeholder="3"
                                                 value={manualFood.saturatedFat}
                                                 onChange={(e) => setManualFood({ ...manualFood, saturatedFat: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                className="bg-[#121318] border-[#FF2D55]/30 text-[#F3F4F6] mt-1"
                                                 min="0"
                                                 step="0.1"
                                             />
+                                            <p className="text-[#7A7F86] text-xs mt-0.5">Limit intake</p>
                                         </div>
                                         <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Trans Fat (g)</Label>
+                                            <Label className="text-[#A1A1AA] text-sm flex items-center space-x-1">
+                                                <X className="w-3 h-3 text-[#FF2D55]" />
+                                                <span>Trans Fat (g)</span>
+                                            </Label>
                                             <Input
                                                 type="number"
+                                                placeholder="0"
                                                 value={manualFood.transFat}
                                                 onChange={(e) => setManualFood({ ...manualFood, transFat: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                className="bg-[#121318] border-[#FF2D55]/30 text-[#F3F4F6] mt-1"
                                                 min="0"
                                                 step="0.1"
                                             />
+                                            <p className="text-[#7A7F86] text-xs mt-0.5">Avoid if possible</p>
                                         </div>
                                         <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Monounsaturated Fat (g)</Label>
+                                            <Label className="text-[#A1A1AA] text-sm flex items-center space-x-1">
+                                                <CheckCircle className="w-3 h-3 text-[#9BE15D]" />
+                                                <span>Monounsaturated (g)</span>
+                                            </Label>
                                             <Input
                                                 type="number"
+                                                placeholder="5"
                                                 value={manualFood.monounsaturatedFat}
                                                 onChange={(e) => setManualFood({ ...manualFood, monounsaturatedFat: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                className="bg-[#121318] border-[#FF2D55]/30 text-[#F3F4F6] mt-1"
                                                 min="0"
                                                 step="0.1"
                                             />
+                                            <p className="text-[#7A7F86] text-xs mt-0.5">Heart healthy</p>
                                         </div>
                                         <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Polyunsaturated Fat (g)</Label>
+                                            <Label className="text-[#A1A1AA] text-sm flex items-center space-x-1">
+                                                <CheckCircle className="w-3 h-3 text-[#9BE15D]" />
+                                                <span>Polyunsaturated (g)</span>
+                                            </Label>
                                             <Input
                                                 type="number"
+                                                placeholder="2"
                                                 value={manualFood.polyunsaturatedFat}
                                                 onChange={(e) => setManualFood({ ...manualFood, polyunsaturatedFat: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                className="bg-[#121318] border-[#FF2D55]/30 text-[#F3F4F6] mt-1"
                                                 min="0"
                                                 step="0.1"
                                             />
+                                            <p className="text-[#7A7F86] text-xs mt-0.5">Omega-3, Omega-6</p>
                                         </div>
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Cholesterol (mg)</Label>
+                                        <div className="col-span-2">
+                                            <Label className="text-[#A1A1AA] text-sm flex items-center space-x-1">
+                                                <Heart className="w-3 h-3 text-[#FF2D55]" />
+                                                <span>Cholesterol (mg)</span>
+                                            </Label>
                                             <Input
                                                 type="number"
+                                                placeholder="60"
                                                 value={manualFood.cholesterol}
                                                 onChange={(e) => setManualFood({ ...manualFood, cholesterol: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                className="bg-[#121318] border-[#FF2D55]/30 text-[#F3F4F6] mt-1"
                                                 min="0"
                                             />
+                                            <p className="text-[#7A7F86] text-xs mt-0.5">Found in animal products</p>
                                         </div>
+                                    </div>
+                                </div>
+
+                                {/* Electrolytes & Other */}
+                                <div className="bg-[#0E0F13] border border-[#2A8CEA]/20 rounded-lg p-4 space-y-3">
+                                    <div className="flex items-center space-x-2">
+                                        <Droplets className="w-4 h-4 text-[#2A8CEA]" />
+                                        <h5 className="text-[#2A8CEA] text-sm font-medium">Electrolytes</h5>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
                                         <div>
                                             <Label className="text-[#A1A1AA] text-sm">Sodium (mg)</Label>
                                             <Input
                                                 type="number"
+                                                placeholder="200"
                                                 value={manualFood.sodium}
                                                 onChange={(e) => setManualFood({ ...manualFood, sodium: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                className="bg-[#121318] border-[#2A8CEA]/30 text-[#F3F4F6] mt-1"
                                                 min="0"
                                             />
+                                            <p className="text-[#7A7F86] text-xs mt-0.5">Fluid balance</p>
                                         </div>
                                         <div>
                                             <Label className="text-[#A1A1AA] text-sm">Potassium (mg)</Label>
                                             <Input
                                                 type="number"
+                                                placeholder="300"
                                                 value={manualFood.potassium}
                                                 onChange={(e) => setManualFood({ ...manualFood, potassium: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                                className="bg-[#121318] border-[#2A8CEA]/30 text-[#F3F4F6] mt-1"
                                                 min="0"
                                             />
+                                            <p className="text-[#7A7F86] text-xs mt-0.5">Muscle function</p>
                                         </div>
                                     </div>
                                 </div>
