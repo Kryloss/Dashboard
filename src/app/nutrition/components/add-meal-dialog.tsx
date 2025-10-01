@@ -973,36 +973,83 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                     </div>
                                 </div>
 
-                                {/* Electrolytes & Other */}
+                                {/* Protein Quality (Educational - Not stored) */}
                                 <div className="bg-[#0E0F13] border border-[#2A8CEA]/20 rounded-lg p-4 space-y-3">
-                                    <div className="flex items-center space-x-2">
-                                        <Droplets className="w-4 h-4 text-[#2A8CEA]" />
-                                        <h5 className="text-[#2A8CEA] text-sm font-medium">Electrolytes</h5>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center space-x-2">
+                                            <Beef className="w-4 h-4 text-[#2A8CEA]" />
+                                            <h5 className="text-[#2A8CEA] text-sm font-medium">Protein Quality Guide</h5>
+                                        </div>
+                                        <Badge variant="outline" className="text-[#2A8CEA] border-[#2A8CEA]/30 bg-[#2A8CEA]/10 text-xs">
+                                            Reference
+                                        </Badge>
                                     </div>
+                                    <div className="space-y-2 text-xs">
+                                        <div className="bg-[#121318] border border-[#212227] rounded p-2">
+                                            <div className="flex items-center space-x-2 mb-1">
+                                                <Star className="w-3 h-3 text-[#9BE15D]" />
+                                                <span className="text-[#9BE15D] font-medium">Complete Proteins (All 9 Essential Amino Acids)</span>
+                                            </div>
+                                            <p className="text-[#A1A1AA] ml-5">
+                                                Animal: Meat, Fish, Chicken, Turkey, Eggs, Milk, Cheese, Yogurt, Whey
+                                                <br />
+                                                Plant: Quinoa, Soy, Tofu, Tempeh, Edamame
+                                            </p>
+                                        </div>
+                                        <div className="bg-[#121318] border border-[#212227] rounded p-2">
+                                            <div className="flex items-center space-x-2 mb-1">
+                                                <AlertTriangle className="w-3 h-3 text-[#FFA500]" />
+                                                <span className="text-[#FFA500] font-medium">Incomplete Proteins (Missing Some Essential Amino Acids)</span>
+                                            </div>
+                                            <p className="text-[#A1A1AA] ml-5">
+                                                Plant: Rice, Beans, Lentils, Peas, Nuts, Seeds, Wheat, Oats, Corn
+                                                <br />
+                                                <span className="text-[#9BE15D]">Tip: Combine different sources (e.g., rice + beans) for complete protein</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Electrolytes */}
+                                <div className="bg-[#0E0F13] border border-[#A855F7]/20 rounded-lg p-4 space-y-3">
+                                    <div className="flex items-center space-x-2">
+                                        <Zap className="w-4 h-4 text-[#A855F7]" />
+                                        <h5 className="text-[#A855F7] text-sm font-medium">Electrolytes</h5>
+                                        <Badge variant="outline" className="text-[#A855F7] border-[#A855F7]/30 bg-[#A855F7]/10 text-xs">
+                                            Hydration
+                                        </Badge>
+                                    </div>
+                                    <p className="text-[#7A7F86] text-xs">Critical for fluid balance, nerve signals, and muscle contractions</p>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Sodium (mg)</Label>
+                                            <Label className="text-[#A1A1AA] text-sm flex items-center space-x-1">
+                                                <Droplets className="w-3 h-3 text-[#A855F7]" />
+                                                <span>Sodium (mg)</span>
+                                            </Label>
                                             <Input
                                                 type="number"
                                                 placeholder="200"
                                                 value={manualFood.sodium}
                                                 onChange={(e) => setManualFood({ ...manualFood, sodium: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#2A8CEA]/30 text-[#F3F4F6] mt-1"
+                                                className="bg-[#121318] border-[#A855F7]/30 text-[#F3F4F6] mt-1"
                                                 min="0"
                                             />
-                                            <p className="text-[#7A7F86] text-xs mt-0.5">Fluid balance</p>
+                                            <p className="text-[#7A7F86] text-xs mt-0.5">Fluid & nerve function</p>
                                         </div>
                                         <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Potassium (mg)</Label>
+                                            <Label className="text-[#A1A1AA] text-sm flex items-center space-x-1">
+                                                <Heart className="w-3 h-3 text-[#A855F7]" />
+                                                <span>Potassium (mg)</span>
+                                            </Label>
                                             <Input
                                                 type="number"
                                                 placeholder="300"
                                                 value={manualFood.potassium}
                                                 onChange={(e) => setManualFood({ ...manualFood, potassium: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#2A8CEA]/30 text-[#F3F4F6] mt-1"
+                                                className="bg-[#121318] border-[#A855F7]/30 text-[#F3F4F6] mt-1"
                                                 min="0"
                                             />
-                                            <p className="text-[#7A7F86] text-xs mt-0.5">Muscle function</p>
+                                            <p className="text-[#7A7F86] text-xs mt-0.5">Heart & muscle health</p>
                                         </div>
                                     </div>
                                 </div>
@@ -1164,13 +1211,13 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                 {/* Minerals */}
                                 <div>
                                     <div className="flex items-center space-x-2 mb-3">
-                                        <Shield className="w-4 h-4 text-[#2A8CEA]" />
+                                        <Shield className="w-4 h-4 text-[#64748B]" />
                                         <h5 className="text-[#F3F4F6] text-sm font-medium">Minerals</h5>
-                                        <Badge variant="outline" className="text-[#2A8CEA] border-[#2A8CEA]/30 bg-[#2A8CEA]/10 text-xs">
-                                            Electrolytes
+                                        <Badge variant="outline" className="text-[#64748B] border-[#64748B]/30 bg-[#64748B]/10 text-xs">
+                                            Structural
                                         </Badge>
                                     </div>
-                                    <p className="text-[#7A7F86] text-xs mb-3">Support bones, muscles, and nerve function</p>
+                                    <p className="text-[#7A7F86] text-xs mb-3">Build bones, teeth, and support metabolic processes</p>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div>
                                             <Label className="text-[#A1A1AA] text-sm">Calcium (mg)</Label>
