@@ -689,9 +689,35 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                         </Button>
                                     </div>
 
-                                    {/* Serving Info */}
-                                    <div className="flex items-center space-x-2 text-sm text-[#A1A1AA]">
-                                        <span>Serving: {manualFood.servingSize} {manualFood.servingUnit}</span>
+                                    {/* Serving Info - Editable */}
+                                    <div className="space-y-2">
+                                        <Label className="text-[#A1A1AA] text-sm">Serving Amount</Label>
+                                        <div className="flex items-center space-x-2">
+                                            <Input
+                                                type="number"
+                                                value={manualFood.servingSize}
+                                                onChange={(e) => setManualFood({ ...manualFood, servingSize: Number(e.target.value) })}
+                                                className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-24"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                            <Select value={manualFood.servingUnit} onValueChange={(val) => setManualFood({ ...manualFood, servingUnit: val })}>
+                                                <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-28">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent className="bg-[#1a1b1f] border-[#212227]">
+                                                    <SelectItem value="g" className="text-[#F3F4F6]">g</SelectItem>
+                                                    <SelectItem value="ml" className="text-[#F3F4F6]">ml</SelectItem>
+                                                    <SelectItem value="oz" className="text-[#F3F4F6]">oz</SelectItem>
+                                                    <SelectItem value="cup" className="text-[#F3F4F6]">cup</SelectItem>
+                                                    <SelectItem value="tbsp" className="text-[#F3F4F6]">tbsp</SelectItem>
+                                                    <SelectItem value="tsp" className="text-[#F3F4F6]">tsp</SelectItem>
+                                                    <SelectItem value="piece" className="text-[#F3F4F6]">piece</SelectItem>
+                                                    <SelectItem value="slice" className="text-[#F3F4F6]">slice</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <p className="text-[#7A7F86] text-xs">Adjust amount as needed</p>
                                     </div>
                                 </div>
 
@@ -922,15 +948,12 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
 
                                 {/* Fat Breakdown - Only show if any values are non-zero */}
                                 {(manualFood.saturatedFat > 0 || manualFood.transFat > 0 || manualFood.monounsaturatedFat > 0 || manualFood.polyunsaturatedFat > 0 || manualFood.cholesterol > 0) && (
-                                    <details className="bg-[#121318] border border-[#212227] rounded-lg">
-                                        <summary className="p-4 cursor-pointer text-[#F3F4F6] hover:text-[#FF2D55] transition-colors flex items-center justify-between">
-                                            <div className="flex items-center space-x-2">
-                                                <Droplets className="w-4 h-4 text-[#FF2D55]" />
-                                                <span className="font-medium text-sm">Fat Details</span>
-                                            </div>
-                                            <ChevronDown className="w-4 h-4" />
-                                        </summary>
-                                        <div className="px-4 pb-4 grid grid-cols-2 gap-3 border-t border-[#212227] pt-4">
+                                    <div className="bg-[#121318] border border-[#212227] rounded-lg p-4">
+                                        <div className="flex items-center space-x-2 mb-3">
+                                            <Droplets className="w-4 h-4 text-[#FF2D55]" />
+                                            <span className="font-medium text-sm text-[#F3F4F6]">Fat Details</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
                                             {manualFood.saturatedFat > 0 && (
                                                 <div>
                                                     <div className="text-sm font-semibold text-[#F3F4F6]">{formatNutrientValue(manualFood.saturatedFat)}g</div>
@@ -962,20 +985,17 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                 </div>
                                             )}
                                         </div>
-                                    </details>
+                                    </div>
                                 )}
 
                                 {/* Protein Breakdown - Only show if any values are non-zero */}
                                 {(manualFood.animalProtein > 0 || manualFood.plantProtein > 0) && (
-                                    <details className="bg-[#121318] border border-[#212227] rounded-lg">
-                                        <summary className="p-4 cursor-pointer text-[#F3F4F6] hover:text-[#2A8CEA] transition-colors flex items-center justify-between">
-                                            <div className="flex items-center space-x-2">
-                                                <Beef className="w-4 h-4 text-[#2A8CEA]" />
-                                                <span className="font-medium text-sm">Protein Quality</span>
-                                            </div>
-                                            <ChevronDown className="w-4 h-4" />
-                                        </summary>
-                                        <div className="px-4 pb-4 grid grid-cols-2 gap-3 border-t border-[#212227] pt-4">
+                                    <div className="bg-[#121318] border border-[#212227] rounded-lg p-4">
+                                        <div className="flex items-center space-x-2 mb-3">
+                                            <Beef className="w-4 h-4 text-[#2A8CEA]" />
+                                            <span className="font-medium text-sm text-[#F3F4F6]">Protein Quality</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
                                             {manualFood.animalProtein > 0 && (
                                                 <div>
                                                     <div className="text-sm font-semibold text-[#2A8CEA]">{formatNutrientValue(manualFood.animalProtein)}g</div>
@@ -989,7 +1009,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                 </div>
                                             )}
                                         </div>
-                                    </details>
+                                    </div>
                                 )}
                             </div>
                         ) : (
