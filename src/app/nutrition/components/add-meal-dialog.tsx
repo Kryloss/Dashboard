@@ -90,13 +90,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
         molybdenum: 0
     })
 
-    // Selected food state
-    const [selectedFood, setSelectedFood] = useState<Food | null>(null)
-    const [weightGrams, setWeightGrams] = useState(100)
-    const [notes, setNotes] = useState("")
-
     const [activeTab, setActiveTab] = useState<"search" | "manual" | "recent">("search")
-    const [showDetailedNutrition, setShowDetailedNutrition] = useState(false)
 
     const getMealDisplayName = () => {
         const names = {
@@ -197,21 +191,55 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
     }, [searchQuery, searchMode, brandFilter])
 
     const handleFoodSelect = (foodResult: FoodSearchResult) => {
-        const food: Food = {
-            id: foodResult.id,
+        // Auto-populate manual entry form with selected food data
+        setManualFood({
             name: foodResult.name,
-            brand: foodResult.brand,
+            brand: foodResult.brand || "",
             servingSize: foodResult.servingSize,
             servingUnit: foodResult.servingUnit,
-            caloriesPerServing: foodResult.caloriesPerServing,
-            macros: foodResult.macros,
-            isUserCreated: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        }
-        setSelectedFood(food)
-        setWeightGrams(food.servingSize) // Set to default serving size in grams
-        setNotes("")
+            calories: foodResult.caloriesPerServing,
+            carbs: foodResult.macros.carbs,
+            protein: foodResult.macros.protein,
+            fats: foodResult.macros.fats,
+            fiber: foodResult.macros.fiber || 0,
+            sugar: foodResult.macros.sugar || 0,
+            sodium: foodResult.macros.sodium || 0,
+            saturatedFat: foodResult.macros.saturatedFat || 0,
+            transFat: foodResult.macros.transFat || 0,
+            monounsaturatedFat: foodResult.macros.monounsaturatedFat || 0,
+            polyunsaturatedFat: foodResult.macros.polyunsaturatedFat || 0,
+            cholesterol: foodResult.macros.cholesterol || 0,
+            animalProtein: foodResult.macros.animalProtein || 0,
+            plantProtein: foodResult.macros.plantProtein || 0,
+            potassium: foodResult.macros.potassium || 0,
+            vitaminA: foodResult.macros.vitaminA || 0,
+            vitaminC: foodResult.macros.vitaminC || 0,
+            calcium: foodResult.macros.calcium || 0,
+            iron: foodResult.macros.iron || 0,
+            vitaminD: foodResult.macros.vitaminD || 0,
+            vitaminE: foodResult.macros.vitaminE || 0,
+            vitaminK: foodResult.macros.vitaminK || 0,
+            thiamine: foodResult.macros.thiamine || 0,
+            riboflavin: foodResult.macros.riboflavin || 0,
+            niacin: foodResult.macros.niacin || 0,
+            vitaminB6: foodResult.macros.vitaminB6 || 0,
+            folate: foodResult.macros.folate || 0,
+            vitaminB12: foodResult.macros.vitaminB12 || 0,
+            biotin: foodResult.macros.biotin || 0,
+            pantothenicAcid: foodResult.macros.pantothenicAcid || 0,
+            phosphorus: foodResult.macros.phosphorus || 0,
+            iodine: foodResult.macros.iodine || 0,
+            magnesium: foodResult.macros.magnesium || 0,
+            zinc: foodResult.macros.zinc || 0,
+            selenium: foodResult.macros.selenium || 0,
+            copper: foodResult.macros.copper || 0,
+            manganese: foodResult.macros.manganese || 0,
+            chromium: foodResult.macros.chromium || 0,
+            molybdenum: foodResult.macros.molybdenum || 0
+        })
+
+        // Switch to Manual Entry tab
+        setActiveTab("manual")
     }
 
     const handleManualSave = async () => {
@@ -293,37 +321,12 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
         }
     }
 
-    const handleSelectedFoodSave = async () => {
-        if (!selectedFood) return
-
-        try {
-            const servingMultiplier = weightGrams / selectedFood.servingSize
-            await onFoodAdded(selectedFood, servingMultiplier, notes.trim() || undefined)
-
-            notifications.success('Food added', {
-                description: `${selectedFood.name} has been added to ${getMealDisplayName()}`,
-                duration: 3000
-            })
-
-            handleClose()
-        } catch (error) {
-            console.error('Error adding selected food:', error)
-            notifications.error('Add failed', {
-                description: 'Unable to add food. Please try again.',
-                duration: 4000
-            })
-        }
-    }
-
     const handleClose = () => {
         setSearchQuery("")
         setSearchMode('food')
         setBrandFilter("")
         setSearchResults([])
         setAvailableBrands([])
-        setSelectedFood(null)
-        setWeightGrams(100)
-        setNotes("")
         setManualFood({
             name: "",
             brand: "",
@@ -1038,6 +1041,193 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                     </details>
                                 </div>
 
+                        {/* Nutritional Insights - Smart Tips */}
+                        {(manualFood.carbs > 0 || manualFood.protein > 0 || manualFood.fats > 0) && (
+                            <div className="bg-[#0E0F13] border border-[#2A8CEA]/20 rounded-lg p-4 space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-2">
+                                        <Star className="w-4 h-4 text-[#2A8CEA]" />
+                                        <h5 className="text-[#F3F4F6] text-sm font-medium">Nutritional Insights</h5>
+                                    </div>
+                                    {/* Health Score Badge */}
+                                    {(() => {
+                                        let score = 0
+                                        let maxScore = 0
+
+                                        // Protein bonus
+                                        if (manualFood.protein > 0) {
+                                            maxScore += 2
+                                            const hasCompleteProtein = (manualFood.animalProtein || 0) > 0 ||
+                                                                       manualFood.name.toLowerCase().includes('meat') ||
+                                                                       manualFood.name.toLowerCase().includes('fish') ||
+                                                                       manualFood.name.toLowerCase().includes('chicken') ||
+                                                                       manualFood.name.toLowerCase().includes('egg')
+                                            if (hasCompleteProtein) score += 2
+                                            else score += 1
+                                        }
+
+                                        // Fiber bonus
+                                        if (manualFood.fiber > 0) {
+                                            maxScore += 2
+                                            if (manualFood.fiber >= 3) score += 2
+                                            else if (manualFood.fiber >= 1) score += 1
+                                        }
+
+                                        // Low sugar bonus
+                                        if (manualFood.carbs > 0) {
+                                            maxScore += 1
+                                            const sugarRatio = manualFood.sugar / manualFood.carbs
+                                            if (sugarRatio < 0.1) score += 1
+                                            else if (sugarRatio < 0.3) score += 0.5
+                                        }
+
+                                        // Saturated fat check
+                                        if (manualFood.saturatedFat > 0) {
+                                            maxScore += 1
+                                            if (manualFood.saturatedFat < 2) score += 1
+                                            else if (manualFood.saturatedFat < 5) score += 0.5
+                                        }
+
+                                        // Trans fat penalty
+                                        if (manualFood.transFat > 0) {
+                                            score -= 2
+                                        }
+
+                                        maxScore = Math.max(maxScore, 1)
+                                        const percentage = Math.max(0, Math.min(100, (score / maxScore) * 100))
+
+                                        let badgeText = 'Poor'
+                                        let badgeVariant: "default" | "secondary" | "outline" | "destructive" = "destructive"
+                                        if (percentage >= 80) {
+                                            badgeText = 'Excellent'
+                                            badgeVariant = "default"
+                                        } else if (percentage >= 60) {
+                                            badgeText = 'Good'
+                                            badgeVariant = "secondary"
+                                        } else if (percentage >= 40) {
+                                            badgeText = 'Fair'
+                                            badgeVariant = "outline"
+                                        }
+
+                                        return (
+                                            <div className="flex items-center space-x-2">
+                                                <Badge variant={badgeVariant} className="text-xs">
+                                                    {percentage >= 80 && <Star className="w-3 h-3 mr-1" />}
+                                                    {percentage >= 60 && percentage < 80 && <CheckCircle className="w-3 h-3 mr-1" />}
+                                                    {percentage >= 40 && percentage < 60 && <AlertTriangle className="w-3 h-3 mr-1" />}
+                                                    {percentage < 40 && <X className="w-3 h-3 mr-1" />}
+                                                    {badgeText}
+                                                </Badge>
+                                                <span className="text-xs text-[#7A7F86]">{Math.round(percentage)}%</span>
+                                            </div>
+                                        )
+                                    })()}
+                                </div>
+
+                                {/* Quality Badges */}
+                                <div className="flex flex-wrap gap-2">
+                                    {/* Protein Quality */}
+                                    {manualFood.protein > 0 && (() => {
+                                        const hasCompleteProtein = (manualFood.animalProtein || 0) > 0 ||
+                                                                   manualFood.name.toLowerCase().includes('meat') ||
+                                                                   manualFood.name.toLowerCase().includes('fish') ||
+                                                                   manualFood.name.toLowerCase().includes('chicken') ||
+                                                                   manualFood.name.toLowerCase().includes('egg') ||
+                                                                   manualFood.name.toLowerCase().includes('quinoa') ||
+                                                                   manualFood.name.toLowerCase().includes('soy')
+                                        return (
+                                            <Badge variant={hasCompleteProtein ? "default" : "secondary"} className="text-xs">
+                                                {hasCompleteProtein ? <Star className="w-3 h-3 mr-1" /> : <AlertTriangle className="w-3 h-3 mr-1" />}
+                                                {hasCompleteProtein ? 'Complete Protein' : 'Incomplete Protein'}
+                                            </Badge>
+                                        )
+                                    })()}
+
+                                    {/* Carb Quality */}
+                                    {manualFood.carbs > 0 && (() => {
+                                        if (manualFood.fiber >= 3) {
+                                            return (
+                                                <Badge variant="default" className="text-xs">
+                                                    <Star className="w-3 h-3 mr-1" />
+                                                    High Fiber
+                                                </Badge>
+                                            )
+                                        } else if (manualFood.carbs > 0 && manualFood.sugar / manualFood.carbs > 0.5) {
+                                            return (
+                                                <Badge variant="destructive" className="text-xs">
+                                                    <AlertTriangle className="w-3 h-3 mr-1" />
+                                                    High Sugar
+                                                </Badge>
+                                            )
+                                        } else if (manualFood.carbs > 0 && manualFood.sugar / manualFood.carbs < 0.1) {
+                                            return (
+                                                <Badge variant="default" className="text-xs">
+                                                    <CheckCircle className="w-3 h-3 mr-1" />
+                                                    Low Sugar
+                                                </Badge>
+                                            )
+                                        }
+                                        return null
+                                    })()}
+
+                                    {/* Fat Quality */}
+                                    {manualFood.fats > 0 && (() => {
+                                        if (manualFood.transFat > 0) {
+                                            return (
+                                                <Badge variant="destructive" className="text-xs">
+                                                    <Shield className="w-3 h-3 mr-1" />
+                                                    Contains Trans Fat
+                                                </Badge>
+                                            )
+                                        } else if (manualFood.saturatedFat > 5) {
+                                            return (
+                                                <Badge variant="secondary" className="text-xs">
+                                                    <AlertTriangle className="w-3 h-3 mr-1" />
+                                                    High Saturated Fat
+                                                </Badge>
+                                            )
+                                        } else if (manualFood.saturatedFat < 2 && manualFood.saturatedFat > 0) {
+                                            return (
+                                                <Badge variant="default" className="text-xs">
+                                                    <CheckCircle className="w-3 h-3 mr-1" />
+                                                    Low Saturated Fat
+                                                </Badge>
+                                            )
+                                        }
+                                        return null
+                                    })()}
+                                </div>
+
+                                {/* Smart Tips */}
+                                <div className="text-xs text-[#A1A1AA] space-y-1">
+                                    {manualFood.fiber >= 3 && (
+                                        <p className="flex items-start space-x-2">
+                                            <CheckCircle className="w-3 h-3 text-[#00E676] mt-0.5 flex-shrink-0" />
+                                            <span>Excellent source of fiber - supports digestive health</span>
+                                        </p>
+                                    )}
+                                    {manualFood.transFat > 0 && (
+                                        <p className="flex items-start space-x-2">
+                                            <X className="w-3 h-3 text-[#EF4444] mt-0.5 flex-shrink-0" />
+                                            <span className="text-[#EF4444]">Contains trans fat - avoid when possible</span>
+                                        </p>
+                                    )}
+                                    {manualFood.saturatedFat > 0 && manualFood.saturatedFat < 2 && (
+                                        <p className="flex items-start space-x-2">
+                                            <Heart className="w-3 h-3 text-[#00E676] mt-0.5 flex-shrink-0" />
+                                            <span>Low saturated fat - heart-healthy choice</span>
+                                        </p>
+                                    )}
+                                    {manualFood.protein > 10 && (manualFood.animalProtein || 0) > 0 && (
+                                        <p className="flex items-start space-x-2">
+                                            <Beef className="w-3 h-3 text-[#2A8CEA] mt-0.5 flex-shrink-0" />
+                                            <span>High in complete protein with all essential amino acids</span>
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Optional Details */}
                         <details className="border border-[#212227] rounded-lg bg-[#121318]">
                             <summary className="p-4 cursor-pointer text-[#F3F4F6] hover:text-[#2A8CEA] transition-colors flex items-center justify-between group">
@@ -1407,8 +1597,8 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                     </TabsContent>
                 </Tabs>
 
-                {/* Food Selection Section */}
-                {selectedFood && (
+                {/* Removed: Food Selection Section - now using auto-filled Manual Entry instead */}
+                {false && (
                     <div className="border-t border-[#212227] pt-4">
                         <h4 className="text-[#F3F4F6] font-medium mb-3">Selected: {selectedFood.name}</h4>
 
@@ -2167,7 +2357,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                         Cancel
                     </Button>
 
-                    {activeTab === "manual" ? (
+                    {activeTab === "manual" && (
                         <Button
                             onClick={handleManualSave}
                             disabled={!manualFood.name.trim()}
@@ -2176,15 +2366,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                             <Plus className="w-4 h-4 mr-2" />
                             Add to {getMealDisplayName()}
                         </Button>
-                    ) : selectedFood ? (
-                        <Button
-                            onClick={handleSelectedFoodSave}
-                            className="bg-gradient-to-r from-[#2A8CEA] via-[#1659BF] to-[#103E9A] text-white rounded-full border border-[rgba(42,140,234,0.35)] shadow-[0_8px_32px_rgba(42,140,234,0.28)] hover:shadow-[0_10px_40px_rgba(42,140,234,0.35)] hover:scale-[1.01] active:scale-[0.997] transition-all"
-                        >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add to {getMealDisplayName()}
-                        </Button>
-                    ) : null}
+                    )}
                 </div>
             </DialogContent>
         </Dialog>
