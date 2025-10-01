@@ -91,6 +91,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
     })
 
     const [activeTab, setActiveTab] = useState<"search" | "manual" | "recent">("search")
+    const [isEditMode, setIsEditMode] = useState(false) // Track if user is editing manual entry
 
     const getMealDisplayName = () => {
         const names = {
@@ -238,8 +239,9 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
             molybdenum: foodResult.macros.molybdenum || 0
         })
 
-        // Switch to Manual Entry tab
+        // Switch to Manual Entry tab in read-only mode
         setActiveTab("manual")
+        setIsEditMode(false) // Show as read-only summary first
     }
 
     const handleManualSave = async () => {
@@ -327,6 +329,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
         setBrandFilter("")
         setSearchResults([])
         setAvailableBrands([])
+        setIsEditMode(false) // Reset edit mode
         setManualFood({
             name: "",
             brand: "",
@@ -400,6 +403,15 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
         }
     }
 
+    // Check if manual food has any data (not freshly created)
+    const manualFoodHasData = () => {
+        return manualFood.name.trim() !== "" ||
+               manualFood.calories > 0 ||
+               manualFood.carbs > 0 ||
+               manualFood.protein > 0 ||
+               manualFood.fats > 0
+    }
+
     const hasDetailedNutrients = (macros: DetailedNutrients) => {
         return !!(
             // Basic detailed nutrients
@@ -450,7 +462,16 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                             <Search className="w-4 h-4 mr-2" />
                             Search
                         </TabsTrigger>
-                        <TabsTrigger value="manual" className="data-[state=active]:bg-[#2A8CEA] data-[state=active]:text-white">
+                        <TabsTrigger
+                            value="manual"
+                            className="data-[state=active]:bg-[#2A8CEA] data-[state=active]:text-white"
+                            onClick={() => {
+                                // If switching to manual tab and no data, enable edit mode
+                                if (!manualFoodHasData()) {
+                                    setIsEditMode(true)
+                                }
+                            }}
+                        >
                             <Edit3 className="w-4 h-4 mr-2" />
                             Manual Entry
                         </TabsTrigger>
@@ -645,6 +666,335 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
 
                     {/* Manual Entry Tab */}
                     <TabsContent value="manual" className="space-y-6">
+                        {/* Read-Only Summary View (when auto-filled from search) */}
+                        {!isEditMode && manualFoodHasData() ? (
+                            <div className="space-y-4">
+                                {/* Food Header */}
+                                <div className="bg-[#121318] border border-[#212227] rounded-lg p-4">
+                                    <div className="flex items-start justify-between mb-3">
+                                        <div>
+                                            <h4 className="text-[#F3F4F6] font-medium text-lg">{manualFood.name}</h4>
+                                            {manualFood.brand && (
+                                                <p className="text-[#A1A1AA] text-sm mt-0.5">{manualFood.brand}</p>
+                                            )}
+                                        </div>
+                                        <Button
+                                            onClick={() => setIsEditMode(true)}
+                                            variant="outline"
+                                            size="sm"
+                                            className="border-[#2A8CEA]/30 text-[#2A8CEA] hover:bg-[#2A8CEA]/10"
+                                        >
+                                            <Edit3 className="w-3 h-3 mr-1.5" />
+                                            Edit
+                                        </Button>
+                                    </div>
+
+                                    {/* Serving Info */}
+                                    <div className="flex items-center space-x-2 text-sm text-[#A1A1AA]">
+                                        <span>Serving: {manualFood.servingSize} {manualFood.servingUnit}</span>
+                                    </div>
+                                </div>
+
+                                {/* Main Macros Display */}
+                                <div className="bg-[#121318] border border-[#212227] rounded-lg p-4">
+                                    <div className="grid grid-cols-4 gap-4 text-center">
+                                        <div>
+                                            <div className="text-2xl font-bold text-[#F3F4F6]">{manualFood.calories}</div>
+                                            <div className="text-xs text-[#A1A1AA] mt-1">calories</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-2xl font-bold text-[#9BE15D]">{formatNutrientValue(manualFood.carbs)}g</div>
+                                            <div className="text-xs text-[#A1A1AA] mt-1">carbs</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-2xl font-bold text-[#2A8CEA]">{formatNutrientValue(manualFood.protein)}g</div>
+                                            <div className="text-xs text-[#A1A1AA] mt-1">protein</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-2xl font-bold text-[#FF2D55]">{formatNutrientValue(manualFood.fats)}g</div>
+                                            <div className="text-xs text-[#A1A1AA] mt-1">fats</div>
+                                        </div>
+                                    </div>
+
+                                    {/* Additional Macros - Only show if non-zero */}
+                                    {(manualFood.fiber > 0 || manualFood.sugar > 0 || manualFood.sodium > 0) && (
+                                        <div className="grid grid-cols-3 gap-4 text-center mt-4 pt-4 border-t border-[#212227]">
+                                            {manualFood.fiber > 0 && (
+                                                <div>
+                                                    <div className="text-lg font-semibold text-[#9BE15D]">{formatNutrientValue(manualFood.fiber)}g</div>
+                                                    <div className="text-xs text-[#A1A1AA]">fiber</div>
+                                                </div>
+                                            )}
+                                            {manualFood.sugar > 0 && (
+                                                <div>
+                                                    <div className="text-lg font-semibold text-[#FF6B6B]">{formatNutrientValue(manualFood.sugar)}g</div>
+                                                    <div className="text-xs text-[#A1A1AA]">sugar</div>
+                                                </div>
+                                            )}
+                                            {manualFood.sodium > 0 && (
+                                                <div>
+                                                    <div className="text-lg font-semibold text-[#A1A1AA]">{formatNutrientValue(manualFood.sodium)}mg</div>
+                                                    <div className="text-xs text-[#A1A1AA]">sodium</div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Nutritional Insights - Smart Tips (Read-only version) */}
+                                {(manualFood.carbs > 0 || manualFood.protein > 0 || manualFood.fats > 0) && (
+                                    <div className="bg-[#0E0F13] border border-[#2A8CEA]/20 rounded-lg p-4 space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center space-x-2">
+                                                <Star className="w-4 h-4 text-[#2A8CEA]" />
+                                                <h5 className="text-[#F3F4F6] text-sm font-medium">Nutritional Insights</h5>
+                                            </div>
+                                            {/* Health Score Badge */}
+                                            {(() => {
+                                                let score = 0
+                                                let maxScore = 0
+
+                                                if (manualFood.protein > 0) {
+                                                    maxScore += 2
+                                                    const hasCompleteProtein = (manualFood.animalProtein || 0) > 0 ||
+                                                                               manualFood.name.toLowerCase().includes('meat') ||
+                                                                               manualFood.name.toLowerCase().includes('fish') ||
+                                                                               manualFood.name.toLowerCase().includes('chicken') ||
+                                                                               manualFood.name.toLowerCase().includes('egg')
+                                                    if (hasCompleteProtein) score += 2
+                                                    else score += 1
+                                                }
+
+                                                if (manualFood.fiber > 0) {
+                                                    maxScore += 2
+                                                    if (manualFood.fiber >= 3) score += 2
+                                                    else if (manualFood.fiber >= 1) score += 1
+                                                }
+
+                                                if (manualFood.carbs > 0) {
+                                                    maxScore += 1
+                                                    const sugarRatio = manualFood.sugar / manualFood.carbs
+                                                    if (sugarRatio < 0.1) score += 1
+                                                    else if (sugarRatio < 0.3) score += 0.5
+                                                }
+
+                                                if (manualFood.saturatedFat > 0) {
+                                                    maxScore += 1
+                                                    if (manualFood.saturatedFat < 2) score += 1
+                                                    else if (manualFood.saturatedFat < 5) score += 0.5
+                                                }
+
+                                                if (manualFood.transFat > 0) {
+                                                    score -= 2
+                                                }
+
+                                                maxScore = Math.max(maxScore, 1)
+                                                const percentage = Math.max(0, Math.min(100, (score / maxScore) * 100))
+
+                                                let badgeText = 'Poor'
+                                                let badgeVariant: "default" | "secondary" | "outline" | "destructive" = "destructive"
+                                                if (percentage >= 80) {
+                                                    badgeText = 'Excellent'
+                                                    badgeVariant = "default"
+                                                } else if (percentage >= 60) {
+                                                    badgeText = 'Good'
+                                                    badgeVariant = "secondary"
+                                                } else if (percentage >= 40) {
+                                                    badgeText = 'Fair'
+                                                    badgeVariant = "outline"
+                                                }
+
+                                                return (
+                                                    <div className="flex items-center space-x-2">
+                                                        <Badge variant={badgeVariant} className="text-xs">
+                                                            {percentage >= 80 && <Star className="w-3 h-3 mr-1" />}
+                                                            {percentage >= 60 && percentage < 80 && <CheckCircle className="w-3 h-3 mr-1" />}
+                                                            {percentage >= 40 && percentage < 60 && <AlertTriangle className="w-3 h-3 mr-1" />}
+                                                            {percentage < 40 && <X className="w-3 h-3 mr-1" />}
+                                                            {badgeText}
+                                                        </Badge>
+                                                        <span className="text-xs text-[#7A7F86]">{Math.round(percentage)}%</span>
+                                                    </div>
+                                                )
+                                            })()}
+                                        </div>
+
+                                        {/* Quality Badges */}
+                                        <div className="flex flex-wrap gap-2">
+                                            {manualFood.protein > 0 && (() => {
+                                                const hasCompleteProtein = (manualFood.animalProtein || 0) > 0 ||
+                                                                           manualFood.name.toLowerCase().includes('meat') ||
+                                                                           manualFood.name.toLowerCase().includes('fish') ||
+                                                                           manualFood.name.toLowerCase().includes('chicken') ||
+                                                                           manualFood.name.toLowerCase().includes('egg') ||
+                                                                           manualFood.name.toLowerCase().includes('quinoa') ||
+                                                                           manualFood.name.toLowerCase().includes('soy')
+                                                return (
+                                                    <Badge variant={hasCompleteProtein ? "default" : "secondary"} className="text-xs">
+                                                        {hasCompleteProtein ? <Star className="w-3 h-3 mr-1" /> : <AlertTriangle className="w-3 h-3 mr-1" />}
+                                                        {hasCompleteProtein ? 'Complete Protein' : 'Incomplete Protein'}
+                                                    </Badge>
+                                                )
+                                            })()}
+
+                                            {manualFood.carbs > 0 && (() => {
+                                                if (manualFood.fiber >= 3) {
+                                                    return (
+                                                        <Badge variant="default" className="text-xs">
+                                                            <Star className="w-3 h-3 mr-1" />
+                                                            High Fiber
+                                                        </Badge>
+                                                    )
+                                                } else if (manualFood.carbs > 0 && manualFood.sugar / manualFood.carbs > 0.5) {
+                                                    return (
+                                                        <Badge variant="destructive" className="text-xs">
+                                                            <AlertTriangle className="w-3 h-3 mr-1" />
+                                                            High Sugar
+                                                        </Badge>
+                                                    )
+                                                } else if (manualFood.carbs > 0 && manualFood.sugar / manualFood.carbs < 0.1) {
+                                                    return (
+                                                        <Badge variant="default" className="text-xs">
+                                                            <CheckCircle className="w-3 h-3 mr-1" />
+                                                            Low Sugar
+                                                        </Badge>
+                                                    )
+                                                }
+                                                return null
+                                            })()}
+
+                                            {manualFood.fats > 0 && (() => {
+                                                if (manualFood.transFat > 0) {
+                                                    return (
+                                                        <Badge variant="destructive" className="text-xs">
+                                                            <Shield className="w-3 h-3 mr-1" />
+                                                            Contains Trans Fat
+                                                        </Badge>
+                                                    )
+                                                } else if (manualFood.saturatedFat > 5) {
+                                                    return (
+                                                        <Badge variant="secondary" className="text-xs">
+                                                            <AlertTriangle className="w-3 h-3 mr-1" />
+                                                            High Saturated Fat
+                                                        </Badge>
+                                                    )
+                                                } else if (manualFood.saturatedFat < 2 && manualFood.saturatedFat > 0) {
+                                                    return (
+                                                        <Badge variant="default" className="text-xs">
+                                                            <CheckCircle className="w-3 h-3 mr-1" />
+                                                            Low Saturated Fat
+                                                        </Badge>
+                                                    )
+                                                }
+                                                return null
+                                            })()}
+                                        </div>
+
+                                        {/* Smart Tips */}
+                                        <div className="text-xs text-[#A1A1AA] space-y-1">
+                                            {manualFood.fiber >= 3 && (
+                                                <p className="flex items-start space-x-2">
+                                                    <CheckCircle className="w-3 h-3 text-[#00E676] mt-0.5 flex-shrink-0" />
+                                                    <span>Excellent source of fiber - supports digestive health</span>
+                                                </p>
+                                            )}
+                                            {manualFood.transFat > 0 && (
+                                                <p className="flex items-start space-x-2">
+                                                    <X className="w-3 h-3 text-[#EF4444] mt-0.5 flex-shrink-0" />
+                                                    <span className="text-[#EF4444]">Contains trans fat - avoid when possible</span>
+                                                </p>
+                                            )}
+                                            {manualFood.saturatedFat > 0 && manualFood.saturatedFat < 2 && (
+                                                <p className="flex items-start space-x-2">
+                                                    <Heart className="w-3 h-3 text-[#00E676] mt-0.5 flex-shrink-0" />
+                                                    <span>Low saturated fat - heart-healthy choice</span>
+                                                </p>
+                                            )}
+                                            {manualFood.protein > 10 && (manualFood.animalProtein || 0) > 0 && (
+                                                <p className="flex items-start space-x-2">
+                                                    <Beef className="w-3 h-3 text-[#2A8CEA] mt-0.5 flex-shrink-0" />
+                                                    <span>High in complete protein with all essential amino acids</span>
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Fat Breakdown - Only show if any values are non-zero */}
+                                {(manualFood.saturatedFat > 0 || manualFood.transFat > 0 || manualFood.monounsaturatedFat > 0 || manualFood.polyunsaturatedFat > 0 || manualFood.cholesterol > 0) && (
+                                    <details className="bg-[#121318] border border-[#212227] rounded-lg">
+                                        <summary className="p-4 cursor-pointer text-[#F3F4F6] hover:text-[#FF2D55] transition-colors flex items-center justify-between">
+                                            <div className="flex items-center space-x-2">
+                                                <Droplets className="w-4 h-4 text-[#FF2D55]" />
+                                                <span className="font-medium text-sm">Fat Details</span>
+                                            </div>
+                                            <ChevronDown className="w-4 h-4" />
+                                        </summary>
+                                        <div className="px-4 pb-4 grid grid-cols-2 gap-3 border-t border-[#212227] pt-4">
+                                            {manualFood.saturatedFat > 0 && (
+                                                <div>
+                                                    <div className="text-sm font-semibold text-[#F3F4F6]">{formatNutrientValue(manualFood.saturatedFat)}g</div>
+                                                    <div className="text-xs text-[#A1A1AA]">Saturated Fat</div>
+                                                </div>
+                                            )}
+                                            {manualFood.transFat > 0 && (
+                                                <div>
+                                                    <div className="text-sm font-semibold text-[#EF4444]">{formatNutrientValue(manualFood.transFat)}g</div>
+                                                    <div className="text-xs text-[#A1A1AA]">Trans Fat</div>
+                                                </div>
+                                            )}
+                                            {manualFood.monounsaturatedFat > 0 && (
+                                                <div>
+                                                    <div className="text-sm font-semibold text-[#9BE15D]">{formatNutrientValue(manualFood.monounsaturatedFat)}g</div>
+                                                    <div className="text-xs text-[#A1A1AA]">Monounsaturated</div>
+                                                </div>
+                                            )}
+                                            {manualFood.polyunsaturatedFat > 0 && (
+                                                <div>
+                                                    <div className="text-sm font-semibold text-[#9BE15D]">{formatNutrientValue(manualFood.polyunsaturatedFat)}g</div>
+                                                    <div className="text-xs text-[#A1A1AA]">Polyunsaturated</div>
+                                                </div>
+                                            )}
+                                            {manualFood.cholesterol > 0 && (
+                                                <div>
+                                                    <div className="text-sm font-semibold text-[#F3F4F6]">{formatNutrientValue(manualFood.cholesterol)}mg</div>
+                                                    <div className="text-xs text-[#A1A1AA]">Cholesterol</div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </details>
+                                )}
+
+                                {/* Protein Breakdown - Only show if any values are non-zero */}
+                                {(manualFood.animalProtein > 0 || manualFood.plantProtein > 0) && (
+                                    <details className="bg-[#121318] border border-[#212227] rounded-lg">
+                                        <summary className="p-4 cursor-pointer text-[#F3F4F6] hover:text-[#2A8CEA] transition-colors flex items-center justify-between">
+                                            <div className="flex items-center space-x-2">
+                                                <Beef className="w-4 h-4 text-[#2A8CEA]" />
+                                                <span className="font-medium text-sm">Protein Quality</span>
+                                            </div>
+                                            <ChevronDown className="w-4 h-4" />
+                                        </summary>
+                                        <div className="px-4 pb-4 grid grid-cols-2 gap-3 border-t border-[#212227] pt-4">
+                                            {manualFood.animalProtein > 0 && (
+                                                <div>
+                                                    <div className="text-sm font-semibold text-[#2A8CEA]">{formatNutrientValue(manualFood.animalProtein)}g</div>
+                                                    <div className="text-xs text-[#A1A1AA]">Animal Protein</div>
+                                                </div>
+                                            )}
+                                            {manualFood.plantProtein > 0 && (
+                                                <div>
+                                                    <div className="text-sm font-semibold text-[#9BE15D]">{formatNutrientValue(manualFood.plantProtein)}g</div>
+                                                    <div className="text-xs text-[#A1A1AA]">Plant Protein</div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </details>
+                                )}
+                            </div>
+                        ) : (
+                            /* Editable Form View */
+                            <>
                         {/* Header with guidance */}
                         <div className="bg-gradient-to-r from-[#2A8CEA]/10 to-[#9BE15D]/10 border border-[#2A8CEA]/30 rounded-lg p-4">
                             <div className="flex items-start space-x-3">
@@ -1585,6 +1935,8 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                 </div>
                             </div>
                         </details>
+                        </>
+                        )}
                     </TabsContent>
 
                     {/* Recent Foods Tab */}
