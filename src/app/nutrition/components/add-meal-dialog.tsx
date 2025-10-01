@@ -635,110 +635,220 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                     </TabsContent>
 
                     {/* Manual Entry Tab */}
-                    <TabsContent value="manual" className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <Label className="text-[#F3F4F6] text-sm font-medium">Food Name *</Label>
-                                <Input
-                                    placeholder="e.g., Grilled Chicken Breast"
-                                    value={manualFood.name}
-                                    onChange={(e) => setManualFood({ ...manualFood, name: e.target.value })}
-                                    className="bg-[#121318] border-[#212227] text-[#F3F4F6] placeholder-[#7A7F86]"
-                                />
-                            </div>
-                            <div>
-                                <Label className="text-[#F3F4F6] text-sm font-medium">Brand (Optional)</Label>
-                                <Input
-                                    placeholder="e.g., Tyson"
-                                    value={manualFood.brand}
-                                    onChange={(e) => setManualFood({ ...manualFood, brand: e.target.value })}
-                                    className="bg-[#121318] border-[#212227] text-[#F3F4F6] placeholder-[#7A7F86]"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <Label className="text-[#F3F4F6] text-sm font-medium">Serving Size</Label>
-                                <div className="flex space-x-2">
-                                    <Input
-                                        type="number"
-                                        value={manualFood.servingSize}
-                                        onChange={(e) => setManualFood({ ...manualFood, servingSize: Number(e.target.value) })}
-                                        className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                        min="0"
-                                        step="0.1"
-                                    />
-                                    <Input
-                                        placeholder="g, ml, cup..."
-                                        value={manualFood.servingUnit}
-                                        onChange={(e) => setManualFood({ ...manualFood, servingUnit: e.target.value })}
-                                        className="bg-[#121318] border-[#212227] text-[#F3F4F6] w-24"
-                                    />
+                    <TabsContent value="manual" className="space-y-6">
+                        {/* Header with guidance */}
+                        <div className="bg-gradient-to-r from-[#2A8CEA]/10 to-[#9BE15D]/10 border border-[#2A8CEA]/30 rounded-lg p-4">
+                            <div className="flex items-start space-x-3">
+                                <Edit3 className="w-5 h-5 text-[#2A8CEA] mt-0.5 flex-shrink-0" />
+                                <div>
+                                    <h4 className="text-[#F3F4F6] font-medium mb-1">Create Custom Food Entry</h4>
+                                    <p className="text-[#A1A1AA] text-sm">
+                                        Enter nutrition information from food labels or your own recipes. All optional fields help provide more accurate tracking.
+                                    </p>
                                 </div>
                             </div>
-                            <div>
-                                <Label className="text-[#F3F4F6] text-sm font-medium">Calories per Serving</Label>
-                                <Input
-                                    type="number"
-                                    value={manualFood.calories}
-                                    onChange={(e) => setManualFood({ ...manualFood, calories: Number(e.target.value) })}
-                                    className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                    min="0"
-                                />
+                        </div>
+
+                        {/* Basic Information */}
+                        <div className="space-y-4">
+                            <div className="flex items-center space-x-2 mb-3">
+                                <Database className="w-4 h-4 text-[#F3F4F6]" />
+                                <h4 className="text-[#F3F4F6] font-medium">Basic Information</h4>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <Label className="text-[#F3F4F6] text-sm font-medium flex items-center space-x-1">
+                                        <span>Food Name</span>
+                                        <span className="text-[#FF2D55]">*</span>
+                                    </Label>
+                                    <Input
+                                        placeholder="e.g., Grilled Chicken Breast"
+                                        value={manualFood.name}
+                                        onChange={(e) => setManualFood({ ...manualFood, name: e.target.value })}
+                                        className="bg-[#121318] border-[#212227] text-[#F3F4F6] placeholder-[#7A7F86] mt-1.5"
+                                    />
+                                    <p className="text-[#7A7F86] text-xs mt-1">Enter a descriptive name</p>
+                                </div>
+                                <div>
+                                    <Label className="text-[#F3F4F6] text-sm font-medium">Brand (Optional)</Label>
+                                    <Input
+                                        placeholder="e.g., Tyson, Kirkland"
+                                        value={manualFood.brand}
+                                        onChange={(e) => setManualFood({ ...manualFood, brand: e.target.value })}
+                                        className="bg-[#121318] border-[#212227] text-[#F3F4F6] placeholder-[#7A7F86] mt-1.5"
+                                    />
+                                    <p className="text-[#7A7F86] text-xs mt-1">Helps organize your foods</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <Label className="text-[#F3F4F6] text-sm font-medium flex items-center space-x-1">
+                                        <span>Serving Size</span>
+                                        <span className="text-[#FF2D55]">*</span>
+                                    </Label>
+                                    <div className="flex space-x-2 mt-1.5">
+                                        <Input
+                                            type="number"
+                                            placeholder="100"
+                                            value={manualFood.servingSize}
+                                            onChange={(e) => setManualFood({ ...manualFood, servingSize: Number(e.target.value) })}
+                                            className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                            min="0"
+                                            step="0.1"
+                                        />
+                                        <Select value={manualFood.servingUnit} onValueChange={(val) => setManualFood({ ...manualFood, servingUnit: val })}>
+                                            <SelectTrigger className="bg-[#121318] border-[#212227] text-[#F3F4F6] w-28">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-[#1a1b1f] border-[#212227]">
+                                                <SelectItem value="g" className="text-[#F3F4F6]">g</SelectItem>
+                                                <SelectItem value="ml" className="text-[#F3F4F6]">ml</SelectItem>
+                                                <SelectItem value="oz" className="text-[#F3F4F6]">oz</SelectItem>
+                                                <SelectItem value="cup" className="text-[#F3F4F6]">cup</SelectItem>
+                                                <SelectItem value="tbsp" className="text-[#F3F4F6]">tbsp</SelectItem>
+                                                <SelectItem value="tsp" className="text-[#F3F4F6]">tsp</SelectItem>
+                                                <SelectItem value="piece" className="text-[#F3F4F6]">piece</SelectItem>
+                                                <SelectItem value="slice" className="text-[#F3F4F6]">slice</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <p className="text-[#7A7F86] text-xs mt-1">Standard portion size</p>
+                                </div>
+                                <div>
+                                    <Label className="text-[#F3F4F6] text-sm font-medium flex items-center space-x-1">
+                                        <Zap className="w-3 h-3 text-[#FFA500]" />
+                                        <span>Calories</span>
+                                        <span className="text-[#FF2D55]">*</span>
+                                    </Label>
+                                    <Input
+                                        type="number"
+                                        placeholder="200"
+                                        value={manualFood.calories}
+                                        onChange={(e) => setManualFood({ ...manualFood, calories: Number(e.target.value) })}
+                                        className="bg-[#121318] border-[#212227] text-[#F3F4F6] mt-1.5"
+                                        min="0"
+                                    />
+                                    <p className="text-[#7A7F86] text-xs mt-1">Energy per serving</p>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Macronutrients */}
-                        <div>
-                            <h4 className="text-[#F3F4F6] font-medium mb-3">Macronutrients (grams)</h4>
+                        {/* Core Macronutrients */}
+                        <div className="bg-[#121318] border border-[#212227] rounded-lg p-4 space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-2">
+                                    <Beef className="w-4 h-4 text-[#2A8CEA]" />
+                                    <h4 className="text-[#F3F4F6] font-medium">Core Macronutrients</h4>
+                                    <span className="text-[#FF2D55] text-xs">*</span>
+                                </div>
+                                <Badge variant="outline" className="text-[#2A8CEA] border-[#2A8CEA]/30 bg-[#2A8CEA]/10 text-xs">
+                                    Required
+                                </Badge>
+                            </div>
+                            <p className="text-[#7A7F86] text-sm -mt-2">These three values are essential for accurate calorie tracking</p>
+
                             <div className="grid grid-cols-3 gap-4">
                                 <div>
-                                    <Label className="text-[#A1A1AA] text-sm">Carbs</Label>
+                                    <Label className="text-[#9BE15D] text-sm font-medium flex items-center space-x-1">
+                                        <Wheat className="w-3 h-3" />
+                                        <span>Carbs (g)</span>
+                                    </Label>
                                     <Input
                                         type="number"
+                                        placeholder="25"
                                         value={manualFood.carbs}
                                         onChange={(e) => setManualFood({ ...manualFood, carbs: Number(e.target.value) })}
-                                        className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                        className="bg-[#0E0F13] border-[#9BE15D]/20 text-[#F3F4F6] mt-1.5 focus:border-[#9BE15D]/50"
                                         min="0"
                                         step="0.1"
                                     />
+                                    <p className="text-[#7A7F86] text-xs mt-1">4 cal/g</p>
                                 </div>
                                 <div>
-                                    <Label className="text-[#A1A1AA] text-sm">Protein</Label>
+                                    <Label className="text-[#2A8CEA] text-sm font-medium flex items-center space-x-1">
+                                        <Beef className="w-3 h-3" />
+                                        <span>Protein (g)</span>
+                                    </Label>
                                     <Input
                                         type="number"
+                                        placeholder="30"
                                         value={manualFood.protein}
                                         onChange={(e) => setManualFood({ ...manualFood, protein: Number(e.target.value) })}
-                                        className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                        className="bg-[#0E0F13] border-[#2A8CEA]/20 text-[#F3F4F6] mt-1.5 focus:border-[#2A8CEA]/50"
                                         min="0"
                                         step="0.1"
                                     />
+                                    <p className="text-[#7A7F86] text-xs mt-1">4 cal/g</p>
                                 </div>
                                 <div>
-                                    <Label className="text-[#A1A1AA] text-sm">Fats</Label>
+                                    <Label className="text-[#FF2D55] text-sm font-medium flex items-center space-x-1">
+                                        <Droplets className="w-3 h-3" />
+                                        <span>Fats (g)</span>
+                                    </Label>
                                     <Input
                                         type="number"
+                                        placeholder="10"
                                         value={manualFood.fats}
                                         onChange={(e) => setManualFood({ ...manualFood, fats: Number(e.target.value) })}
-                                        className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
+                                        className="bg-[#0E0F13] border-[#FF2D55]/20 text-[#F3F4F6] mt-1.5 focus:border-[#FF2D55]/50"
                                         min="0"
                                         step="0.1"
                                     />
+                                    <p className="text-[#7A7F86] text-xs mt-1">9 cal/g</p>
                                 </div>
                             </div>
+
+                            {/* Macro Calculator Helper */}
+                            {(manualFood.carbs > 0 || manualFood.protein > 0 || manualFood.fats > 0) && (
+                                <div className="bg-[#0E0F13] border border-[#212227] rounded-lg p-3">
+                                    <div className="flex items-center justify-between text-xs">
+                                        <span className="text-[#A1A1AA]">Calculated from macros:</span>
+                                        <span className="text-[#F3F4F6] font-medium">
+                                            {Math.round((manualFood.carbs * 4) + (manualFood.protein * 4) + (manualFood.fats * 9))} calories
+                                        </span>
+                                    </div>
+                                    {Math.abs(manualFood.calories - ((manualFood.carbs * 4) + (manualFood.protein * 4) + (manualFood.fats * 9))) > 10 && manualFood.calories > 0 && (
+                                        <p className="text-[#FFA500] text-xs mt-1 flex items-center space-x-1">
+                                            <AlertTriangle className="w-3 h-3" />
+                                            <span>Calorie mismatch detected - verify your values</span>
+                                        </p>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         {/* Optional Details */}
-                        <details className="border border-[#212227] rounded-lg">
-                            <summary className="p-3 cursor-pointer text-[#A1A1AA] hover:text-[#F3F4F6] transition-colors">
-                                Optional Detailed Nutrition
+                        <details className="border border-[#212227] rounded-lg bg-[#121318]">
+                            <summary className="p-4 cursor-pointer text-[#F3F4F6] hover:text-[#2A8CEA] transition-colors flex items-center justify-between group">
+                                <div className="flex items-center space-x-2">
+                                    <Shield className="w-4 h-4 text-[#9BE15D]" />
+                                    <span className="font-medium">Optional Detailed Nutrition</span>
+                                    <Badge variant="outline" className="text-[#A1A1AA] border-[#A1A1AA]/30 text-xs">
+                                        Advanced
+                                    </Badge>
+                                </div>
+                                <ChevronDown className="w-4 h-4 text-[#A1A1AA] group-hover:text-[#2A8CEA] transition-transform group-open:rotate-180" />
                             </summary>
-                            <div className="p-3 pt-0 space-y-4">
+                            <div className="p-4 pt-0 space-y-6 border-t border-[#212227] mt-2">
+                                {/* Guidance */}
+                                <div className="bg-[#0E0F13] border border-[#212227] rounded-lg p-3">
+                                    <p className="text-[#A1A1AA] text-xs flex items-start space-x-2">
+                                        <Heart className="w-3.5 h-3.5 text-[#9BE15D] mt-0.5 flex-shrink-0" />
+                                        <span>
+                                            Add micronutrients from nutrition labels to get comprehensive tracking and health insights. These values help you meet daily nutritional goals.
+                                        </span>
+                                    </p>
+                                </div>
+
                                 {/* Extended Macros */}
                                 <div>
-                                    <h5 className="text-[#F3F4F6] text-sm font-medium mb-2">Extended Macros</h5>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="flex items-center space-x-2 mb-3">
+                                        <Wheat className="w-4 h-4 text-[#9BE15D]" />
+                                        <h5 className="text-[#F3F4F6] text-sm font-medium">Extended Macros</h5>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
                                         <div>
                                             <Label className="text-[#A1A1AA] text-sm">Fiber (g)</Label>
                                             <Input
@@ -840,8 +950,15 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
 
                                 {/* Vitamins */}
                                 <div>
-                                    <h5 className="text-[#F3F4F6] text-sm font-medium mb-2">Vitamins</h5>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="flex items-center space-x-2 mb-3">
+                                        <Star className="w-4 h-4 text-[#FFA500]" />
+                                        <h5 className="text-[#F3F4F6] text-sm font-medium">Vitamins</h5>
+                                        <Badge variant="outline" className="text-[#FFA500] border-[#FFA500]/30 bg-[#FFA500]/10 text-xs">
+                                            Micronutrients
+                                        </Badge>
+                                    </div>
+                                    <p className="text-[#7A7F86] text-xs mb-3">Essential for immunity, energy, and cell function</p>
+                                    <div className="grid grid-cols-2 gap-3">
                                         <div>
                                             <Label className="text-[#A1A1AA] text-sm">Vitamin A (IU)</Label>
                                             <Input
@@ -987,8 +1104,15 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
 
                                 {/* Minerals */}
                                 <div>
-                                    <h5 className="text-[#F3F4F6] text-sm font-medium mb-2">Minerals</h5>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="flex items-center space-x-2 mb-3">
+                                        <Shield className="w-4 h-4 text-[#2A8CEA]" />
+                                        <h5 className="text-[#F3F4F6] text-sm font-medium">Minerals</h5>
+                                        <Badge variant="outline" className="text-[#2A8CEA] border-[#2A8CEA]/30 bg-[#2A8CEA]/10 text-xs">
+                                            Electrolytes
+                                        </Badge>
+                                    </div>
+                                    <p className="text-[#7A7F86] text-xs mb-3">Support bones, muscles, and nerve function</p>
+                                    <div className="grid grid-cols-2 gap-3">
                                         <div>
                                             <Label className="text-[#A1A1AA] text-sm">Calcium (mg)</Label>
                                             <Input

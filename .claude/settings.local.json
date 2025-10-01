@@ -60,7 +60,8 @@
       "Bash(node:*)",
       "Bash(del \"C:\\Users\\mrRep\\Desktop\\Dashboard\\timezone-test.js\")",
       "Bash(del .nextcache* /s /q)",
-      "WebFetch(domain:fdc.nal.usda.gov)"
+      "WebFetch(domain:fdc.nal.usda.gov)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": [],
