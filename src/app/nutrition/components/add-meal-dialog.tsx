@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { NutritionStorage, Food, DetailedNutrients } from "@/lib/nutrition-storage"
 import { SmartFoodSearch } from "@/lib/smart-search"
-import { Search, X, Plus, Package, Edit3, Calculator, Database, Leaf, ChevronDown, ChevronUp,
+import { Search, X, Plus, Minus, Package, Edit3, Calculator, Database, Leaf, ChevronDown, ChevronUp,
          Beef, Wheat, Droplets, AlertTriangle, CheckCircle, Star, Zap, Heart, Shield } from "lucide-react"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 
@@ -731,167 +731,200 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                             const scaledFood = getScaledNutrition()
                             return (
                             <div className="space-y-4">
-                                {/* Food Header */}
+                                {/* Food Header - Compact */}
                                 <div className="bg-[#121318] border border-[#212227] rounded-lg p-4">
+                                    {/* Title and Edit Button */}
                                     <div className="flex items-start justify-between mb-3">
-                                        <div>
-                                            <h4 className="text-[#F3F4F6] font-medium text-lg">{manualFood.name}</h4>
+                                        <div className="flex-1">
+                                            <h4 className="text-[#F3F4F6] font-medium text-base">{manualFood.name}</h4>
                                             {manualFood.brand && (
-                                                <p className="text-[#A1A1AA] text-sm mt-0.5">{manualFood.brand}</p>
+                                                <p className="text-[#A1A1AA] text-xs mt-0.5">{manualFood.brand}</p>
                                             )}
+                                            <p className="text-[#7A7F86] text-xs mt-1">
+                                                Serving: {manualFood.servingSize} {manualFood.servingUnit}
+                                            </p>
                                         </div>
                                         <Button
                                             onClick={() => setIsEditMode(true)}
                                             variant="outline"
                                             size="sm"
-                                            className="border-[#2A8CEA]/30 text-[#2A8CEA] hover:bg-[#2A8CEA]/10"
+                                            className="border-[#2A8CEA]/30 text-[#2A8CEA] hover:bg-[#2A8CEA]/10 ml-2"
                                         >
-                                            <Edit3 className="w-3 h-3 mr-1.5" />
+                                            <Edit3 className="w-3 h-3 mr-1" />
                                             Edit
                                         </Button>
                                     </div>
 
-                                    {/* Serving Info */}
-                                    <div className="space-y-3">
-                                        <div className="text-sm text-[#A1A1AA]">
-                                            <span className="font-medium">Serving Size:</span> {manualFood.servingSize} {manualFood.servingUnit}
+                                    {/* Amount Controls - Compact Side by Side */}
+                                    <div className="flex items-center gap-2 mb-3">
+                                        {/* Servings Input */}
+                                        <div className="flex-1 flex items-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setAmount(Math.max(0.1, amount - 0.5))}
+                                                className="bg-[#0E0F13] border border-[#212227] text-[#F3F4F6] hover:bg-[#212227] rounded px-2 py-1.5 transition-colors"
+                                            >
+                                                <Minus className="w-3 h-3" />
+                                            </button>
+                                            <div className="flex-1 text-center">
+                                                <Input
+                                                    type="number"
+                                                    value={amount}
+                                                    onChange={(e) => setAmount(Number(e.target.value))}
+                                                    className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] text-center h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                    min="0.1"
+                                                    step="0.5"
+                                                />
+                                                <p className="text-[#7A7F86] text-xs mt-0.5">servings</p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setAmount(amount + 0.5)}
+                                                className="bg-[#0E0F13] border border-[#212227] text-[#F3F4F6] hover:bg-[#212227] rounded px-2 py-1.5 transition-colors"
+                                            >
+                                                <Plus className="w-3 h-3" />
+                                            </button>
                                         </div>
 
-                                        {/* Amount Controls */}
-                                        <div className="grid grid-cols-2 gap-3">
-                                            {/* Amount in Servings */}
-                                            <div>
-                                                <Label className="text-[#A1A1AA] text-sm">Amount</Label>
-                                                <div className="flex items-center space-x-2 mt-1.5">
-                                                    <Input
-                                                        type="number"
-                                                        value={amount}
-                                                        onChange={(e) => setAmount(Number(e.target.value))}
-                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-20"
-                                                        min="0.1"
-                                                        step="0.5"
-                                                    />
-                                                    <span className="text-[#A1A1AA] text-xs">serving(s)</span>
-                                                </div>
-                                            </div>
+                                        <div className="text-[#7A7F86]">=</div>
 
-                                            {/* Amount in Grams/Units */}
-                                            <div>
-                                                <Label className="text-[#A1A1AA] text-sm">Or in {manualFood.servingUnit}</Label>
-                                                <div className="flex items-center space-x-2 mt-1.5">
-                                                    <Input
-                                                        type="number"
-                                                        value={(manualFood.servingSize * amount).toFixed(1)}
-                                                        onChange={(e) => {
-                                                            const grams = Number(e.target.value)
-                                                            setAmount(grams / manualFood.servingSize)
-                                                        }}
-                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-20"
-                                                        min="0.1"
-                                                        step="1"
-                                                    />
-                                                    <span className="text-[#A1A1AA] text-xs">{manualFood.servingUnit}</span>
-                                                </div>
+                                        {/* Grams/Units Input */}
+                                        <div className="flex-1 flex items-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const currentGrams = manualFood.servingSize * amount
+                                                    const step = manualFood.servingUnit === 'g' || manualFood.servingUnit === 'ml' ? 10 : 1
+                                                    setAmount(Math.max(0.1, (currentGrams - step) / manualFood.servingSize))
+                                                }}
+                                                className="bg-[#0E0F13] border border-[#212227] text-[#F3F4F6] hover:bg-[#212227] rounded px-2 py-1.5 transition-colors"
+                                            >
+                                                <Minus className="w-3 h-3" />
+                                            </button>
+                                            <div className="flex-1 text-center">
+                                                <Input
+                                                    type="number"
+                                                    value={Math.round(manualFood.servingSize * amount)}
+                                                    onChange={(e) => {
+                                                        const grams = Number(e.target.value)
+                                                        setAmount(grams / manualFood.servingSize)
+                                                    }}
+                                                    className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] text-center h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                    min="0.1"
+                                                    step="1"
+                                                />
+                                                <p className="text-[#7A7F86] text-xs mt-0.5">{manualFood.servingUnit}</p>
                                             </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const currentGrams = manualFood.servingSize * amount
+                                                    const step = manualFood.servingUnit === 'g' || manualFood.servingUnit === 'ml' ? 10 : 1
+                                                    setAmount((currentGrams + step) / manualFood.servingSize)
+                                                }}
+                                                className="bg-[#0E0F13] border border-[#212227] text-[#F3F4F6] hover:bg-[#212227] rounded px-2 py-1.5 transition-colors"
+                                            >
+                                                <Plus className="w-3 h-3" />
+                                            </button>
                                         </div>
-
-                                        {/* Nutrition Insights - Bottom Right */}
-                                        {(manualFood.carbs > 0 || manualFood.protein > 0 || manualFood.fats > 0) && (
-                                            <div className="flex flex-wrap gap-1.5 items-start">
-                                                {/* Complete Protein */}
-                                                {manualFood.protein > 0 && (() => {
-                                                    const hasCompleteProtein = (manualFood.animalProtein || 0) > 0 ||
-                                                                               manualFood.name.toLowerCase().includes('meat') ||
-                                                                               manualFood.name.toLowerCase().includes('fish') ||
-                                                                               manualFood.name.toLowerCase().includes('chicken') ||
-                                                                               manualFood.name.toLowerCase().includes('egg') ||
-                                                                               manualFood.name.toLowerCase().includes('quinoa') ||
-                                                                               manualFood.name.toLowerCase().includes('soy')
-                                                    if (hasCompleteProtein) {
-                                                        return (
-                                                            <Badge variant="default" className="text-xs flex items-center gap-1">
-                                                                <Beef className="w-3 h-3" />
-                                                                Complete Protein
-                                                            </Badge>
-                                                        )
-                                                    }
-                                                    return null
-                                                })()}
-
-                                                {/* High Fiber */}
-                                                {manualFood.fiber >= 3 && (
-                                                    <Badge variant="default" className="text-xs flex items-center gap-1">
-                                                        <Leaf className="w-3 h-3" />
-                                                        High Fiber
-                                                    </Badge>
-                                                )}
-
-                                                {/* Low Sugar */}
-                                                {manualFood.carbs > 0 && manualFood.sugar / manualFood.carbs < 0.1 && (
-                                                    <Badge variant="default" className="text-xs flex items-center gap-1">
-                                                        <CheckCircle className="w-3 h-3" />
-                                                        Low Sugar
-                                                    </Badge>
-                                                )}
-
-                                                {/* High Sugar Warning */}
-                                                {manualFood.carbs > 0 && manualFood.sugar / manualFood.carbs > 0.5 && (
-                                                    <Badge variant="destructive" className="text-xs flex items-center gap-1">
-                                                        <AlertTriangle className="w-3 h-3" />
-                                                        High Sugar
-                                                    </Badge>
-                                                )}
-
-                                                {/* Trans Fat Warning */}
-                                                {manualFood.transFat > 0 && (
-                                                    <Badge variant="destructive" className="text-xs flex items-center gap-1">
-                                                        <X className="w-3 h-3" />
-                                                        Trans Fat
-                                                    </Badge>
-                                                )}
-
-                                                {/* High Saturated Fat */}
-                                                {manualFood.saturatedFat > 5 && (
-                                                    <Badge variant="secondary" className="text-xs flex items-center gap-1">
-                                                        <AlertTriangle className="w-3 h-3" />
-                                                        High Saturated Fat
-                                                    </Badge>
-                                                )}
-
-                                                {/* Low Saturated Fat */}
-                                                {manualFood.saturatedFat > 0 && manualFood.saturatedFat < 2 && (
-                                                    <Badge variant="default" className="text-xs flex items-center gap-1">
-                                                        <Heart className="w-3 h-3" />
-                                                        Low Saturated Fat
-                                                    </Badge>
-                                                )}
-
-                                                {/* High Protein */}
-                                                {manualFood.protein > 10 && (
-                                                    <Badge variant="default" className="text-xs flex items-center gap-1">
-                                                        <Zap className="w-3 h-3" />
-                                                        High Protein
-                                                    </Badge>
-                                                )}
-
-                                                {/* High Sodium */}
-                                                {manualFood.sodium > 400 && (
-                                                    <Badge variant="secondary" className="text-xs flex items-center gap-1">
-                                                        <AlertTriangle className="w-3 h-3" />
-                                                        High Sodium
-                                                    </Badge>
-                                                )}
-
-                                                {/* Low Sodium */}
-                                                {manualFood.sodium > 0 && manualFood.sodium < 140 && (
-                                                    <Badge variant="default" className="text-xs flex items-center gap-1">
-                                                        <CheckCircle className="w-3 h-3" />
-                                                        Low Sodium
-                                                    </Badge>
-                                                )}
-                                            </div>
-                                        )}
                                     </div>
+
+                                    {/* Nutrition Insights */}
+                                    {(manualFood.carbs > 0 || manualFood.protein > 0 || manualFood.fats > 0) && (
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {/* Complete Protein */}
+                                            {manualFood.protein > 0 && (() => {
+                                                const hasCompleteProtein = (manualFood.animalProtein || 0) > 0 ||
+                                                                           manualFood.name.toLowerCase().includes('meat') ||
+                                                                           manualFood.name.toLowerCase().includes('fish') ||
+                                                                           manualFood.name.toLowerCase().includes('chicken') ||
+                                                                           manualFood.name.toLowerCase().includes('egg') ||
+                                                                           manualFood.name.toLowerCase().includes('quinoa') ||
+                                                                           manualFood.name.toLowerCase().includes('soy')
+                                                if (hasCompleteProtein) {
+                                                    return (
+                                                        <Badge variant="default" className="text-xs flex items-center gap-1">
+                                                            <Beef className="w-3 h-3" />
+                                                            Complete Protein
+                                                        </Badge>
+                                                    )
+                                                }
+                                                return null
+                                            })()}
+
+                                            {/* High Fiber */}
+                                            {manualFood.fiber >= 3 && (
+                                                <Badge variant="default" className="text-xs flex items-center gap-1">
+                                                    <Leaf className="w-3 h-3" />
+                                                    High Fiber
+                                                </Badge>
+                                            )}
+
+                                            {/* Low Sugar */}
+                                            {manualFood.carbs > 0 && manualFood.sugar / manualFood.carbs < 0.1 && (
+                                                <Badge variant="default" className="text-xs flex items-center gap-1">
+                                                    <CheckCircle className="w-3 h-3" />
+                                                    Low Sugar
+                                                </Badge>
+                                            )}
+
+                                            {/* High Sugar Warning */}
+                                            {manualFood.carbs > 0 && manualFood.sugar / manualFood.carbs > 0.5 && (
+                                                <Badge variant="destructive" className="text-xs flex items-center gap-1">
+                                                    <AlertTriangle className="w-3 h-3" />
+                                                    High Sugar
+                                                </Badge>
+                                            )}
+
+                                            {/* Trans Fat Warning */}
+                                            {manualFood.transFat > 0 && (
+                                                <Badge variant="destructive" className="text-xs flex items-center gap-1">
+                                                    <X className="w-3 h-3" />
+                                                    Trans Fat
+                                                </Badge>
+                                            )}
+
+                                            {/* High Saturated Fat */}
+                                            {manualFood.saturatedFat > 5 && (
+                                                <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                                                    <AlertTriangle className="w-3 h-3" />
+                                                    High Saturated Fat
+                                                </Badge>
+                                            )}
+
+                                            {/* Low Saturated Fat */}
+                                            {manualFood.saturatedFat > 0 && manualFood.saturatedFat < 2 && (
+                                                <Badge variant="default" className="text-xs flex items-center gap-1">
+                                                    <Heart className="w-3 h-3" />
+                                                    Low Saturated Fat
+                                                </Badge>
+                                            )}
+
+                                            {/* High Protein */}
+                                            {manualFood.protein > 10 && (
+                                                <Badge variant="default" className="text-xs flex items-center gap-1">
+                                                    <Zap className="w-3 h-3" />
+                                                    High Protein
+                                                </Badge>
+                                            )}
+
+                                            {/* High Sodium */}
+                                            {manualFood.sodium > 400 && (
+                                                <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                                                    <AlertTriangle className="w-3 h-3" />
+                                                    High Sodium
+                                                </Badge>
+                                            )}
+
+                                            {/* Low Sodium */}
+                                            {manualFood.sodium > 0 && manualFood.sodium < 140 && (
+                                                <Badge variant="default" className="text-xs flex items-center gap-1">
+                                                    <CheckCircle className="w-3 h-3" />
+                                                    Low Sodium
+                                                </Badge>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Nutrition Facts - FDA Style */}
