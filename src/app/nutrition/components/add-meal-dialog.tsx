@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { Switch } from "@/components/ui/switch"
 import { NutritionStorage, Food, DetailedNutrients } from "@/lib/nutrition-storage"
 import { SmartFoodSearch } from "@/lib/smart-search"
 import { Search, X, Plus, Minus, Package, Edit3, Calculator, Database, Leaf, ChevronDown, ChevronUp,
@@ -94,6 +96,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
     const [isEditMode, setIsEditMode] = useState(false) // Track if user is editing manual entry
     const [originalServingSize, setOriginalServingSize] = useState<number>(100) // Store original serving size for scaling
     const [amount, setAmount] = useState<number>(1) // Number of servings to consume
+    const [isDetailedMode, setIsDetailedMode] = useState(false) // Track if showing detailed nutrients
 
     const getMealDisplayName = () => {
         const names = {
@@ -1246,15 +1249,29 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                         )})() : (
                             /* Editable Form View */
                             <>
-                        {/* Header with guidance */}
+                        {/* Header with Mode Toggle */}
                         <div className="bg-gradient-to-r from-[#2A8CEA]/10 to-[#9BE15D]/10 border border-[#2A8CEA]/30 rounded-lg p-4">
-                            <div className="flex items-start space-x-3">
-                                <Edit3 className="w-5 h-5 text-[#2A8CEA] mt-0.5 flex-shrink-0" />
-                                <div>
-                                    <h4 className="text-[#F3F4F6] font-medium mb-1">Create Custom Food Entry</h4>
-                                    <p className="text-[#A1A1AA] text-sm">
-                                        Enter nutrition information from food labels or your own recipes. All optional fields help provide more accurate tracking.
-                                    </p>
+                            <div className="flex items-start justify-between gap-4">
+                                <div className="flex items-start space-x-3 flex-1">
+                                    <Edit3 className="w-5 h-5 text-[#2A8CEA] mt-0.5 flex-shrink-0" />
+                                    <div>
+                                        <h4 className="text-[#F3F4F6] font-medium mb-1">Create Custom Food Entry</h4>
+                                        <p className="text-[#A1A1AA] text-sm">
+                                            {isDetailedMode
+                                                ? "Full nutrient entry with all FDA-standard fields available"
+                                                : "Quick entry with essential macronutrients"}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center space-x-2 flex-shrink-0">
+                                    <Label htmlFor="detailed-mode" className="text-[#A1A1AA] text-sm cursor-pointer">
+                                        {isDetailedMode ? "Detailed" : "Quick"}
+                                    </Label>
+                                    <Switch
+                                        id="detailed-mode"
+                                        checked={isDetailedMode}
+                                        onCheckedChange={setIsDetailedMode}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -1429,7 +1446,18 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                             )}
                         </div>
 
-                        {/* Carbohydrates Breakdown */}
+                        {/* Additional Nutrient Details - Only in Detailed Mode */}
+                        {isDetailedMode && (
+                            <Accordion type="multiple" defaultValue={["macros"]} className="space-y-4">
+                                {/* Carbohydrate Details Accordion */}
+                                <AccordionItem value="carb-details" className="bg-[#121318] border border-[#212227] rounded-lg px-4">
+                                    <AccordionTrigger className="text-[#F3F4F6] hover:text-[#9BE15D] py-3">
+                                        <div className="flex items-center space-x-2">
+                                            <Wheat className="w-4 h-4 text-[#9BE15D]" />
+                                            <span className="font-medium">Carbohydrate Details</span>
+                                        </div>
+                                    </AccordionTrigger>
+                                    <AccordionContent className="pb-4">
                                 <div className="bg-[#0E0F13] border border-[#9BE15D]/20 rounded-lg p-4 space-y-3">
                                     <div className="flex items-center space-x-2">
                                         <Wheat className="w-4 h-4 text-[#9BE15D]" />
@@ -1470,13 +1498,19 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                         </div>
                                     </div>
                                 </div>
+                                    </AccordionContent>
+                                </AccordionItem>
 
-                                {/* Fats Breakdown */}
+                                {/* Fat Details Accordion */}
+                                <AccordionItem value="fat-details" className="bg-[#121318] border border-[#212227] rounded-lg px-4">
+                                    <AccordionTrigger className="text-[#F3F4F6] hover:text-[#FF2D55] py-3">
+                                        <div className="flex items-center space-x-2">
+                                            <Droplets className="w-4 h-4 text-[#FF2D55]" />
+                                            <span className="font-medium">Fat Details</span>
+                                        </div>
+                                    </AccordionTrigger>
+                                    <AccordionContent className="pb-4">
                                 <div className="bg-[#0E0F13] border border-[#FF2D55]/20 rounded-lg p-4 space-y-3">
-                                    <div className="flex items-center space-x-2">
-                                        <Droplets className="w-4 h-4 text-[#FF2D55]" />
-                                        <h5 className="text-[#FF2D55] text-sm font-medium">Fat Details</h5>
-                                    </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div>
                                             <Label className="text-[#A1A1AA] text-sm flex items-center space-x-1">
@@ -1559,18 +1593,22 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                         </div>
                                     </div>
                                 </div>
+                                    </AccordionContent>
+                                </AccordionItem>
 
-                                {/* Protein Quality Breakdown */}
-                                <div className="bg-[#0E0F13] border border-[#2A8CEA]/20 rounded-lg p-4 space-y-3">
-                                    <div className="flex items-center justify-between">
+                                {/* Protein Quality Accordion */}
+                                <AccordionItem value="protein-details" className="bg-[#121318] border border-[#212227] rounded-lg px-4">
+                                    <AccordionTrigger className="text-[#F3F4F6] hover:text-[#2A8CEA] py-3">
                                         <div className="flex items-center space-x-2">
                                             <Beef className="w-4 h-4 text-[#2A8CEA]" />
-                                            <h5 className="text-[#2A8CEA] text-sm font-medium">Protein Quality</h5>
+                                            <span className="font-medium">Protein Quality</span>
+                                            <Badge variant="outline" className="text-[#2A8CEA] border-[#2A8CEA]/30 bg-[#2A8CEA]/10 text-xs">
+                                                Optional
+                                            </Badge>
                                         </div>
-                                        <Badge variant="outline" className="text-[#2A8CEA] border-[#2A8CEA]/30 bg-[#2A8CEA]/10 text-xs">
-                                            Optional
-                                        </Badge>
-                                    </div>
+                                    </AccordionTrigger>
+                                    <AccordionContent className="pb-4">
+                                <div className="bg-[#0E0F13] border border-[#2A8CEA]/20 rounded-lg p-4 space-y-3">
                                     <p className="text-[#7A7F86] text-xs">Breakdown your protein sources for better tracking</p>
 
                                     <div className="grid grid-cols-2 gap-3">
@@ -1641,8 +1679,12 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                         </div>
                                     </details>
                                 </div>
+                                    </AccordionContent>
+                                </AccordionItem>
+                            </Accordion>
+                        )}
 
-                        {/* Nutritional Insights - Smart Tips */}
+                        {/* Nutritional Insights - Smart Tips (kept for compatibility) */}
                         {(manualFood.carbs > 0 || manualFood.protein > 0 || manualFood.fats > 0) && (
                             <div className="bg-[#0E0F13] border border-[#2A8CEA]/20 rounded-lg p-4 space-y-4">
                                 <div className="flex items-center justify-between">
