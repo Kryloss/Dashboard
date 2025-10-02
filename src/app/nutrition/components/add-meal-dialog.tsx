@@ -751,15 +751,15 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                         </Button>
                                     </div>
 
-                                    {/* Serving Info and Insights */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {/* Left: Serving Info */}
-                                        <div className="space-y-3">
-                                            <div className="text-sm text-[#A1A1AA]">
-                                                <span className="font-medium">Serving Size:</span> {manualFood.servingSize} {manualFood.servingUnit}
-                                            </div>
+                                    {/* Serving Info */}
+                                    <div className="space-y-3">
+                                        <div className="text-sm text-[#A1A1AA]">
+                                            <span className="font-medium">Serving Size:</span> {manualFood.servingSize} {manualFood.servingUnit}
+                                        </div>
 
-                                            {/* Amount - Editable */}
+                                        {/* Amount Controls */}
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {/* Amount in Servings */}
                                             <div>
                                                 <Label className="text-[#A1A1AA] text-sm">Amount</Label>
                                                 <div className="flex items-center space-x-2 mt-1.5">
@@ -767,21 +767,37 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                         type="number"
                                                         value={amount}
                                                         onChange={(e) => setAmount(Number(e.target.value))}
-                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-24"
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-20"
                                                         min="0.1"
                                                         step="0.5"
                                                     />
-                                                    <span className="text-[#A1A1AA] text-sm">serving(s)</span>
+                                                    <span className="text-[#A1A1AA] text-xs">serving(s)</span>
                                                 </div>
-                                                <p className="text-[#7A7F86] text-xs mt-1">
-                                                    {amount !== 1 && `= ${(manualFood.servingSize * amount).toFixed(1)} ${manualFood.servingUnit}`}
-                                                </p>
+                                            </div>
+
+                                            {/* Amount in Grams/Units */}
+                                            <div>
+                                                <Label className="text-[#A1A1AA] text-sm">Or in {manualFood.servingUnit}</Label>
+                                                <div className="flex items-center space-x-2 mt-1.5">
+                                                    <Input
+                                                        type="number"
+                                                        value={(manualFood.servingSize * amount).toFixed(1)}
+                                                        onChange={(e) => {
+                                                            const grams = Number(e.target.value)
+                                                            setAmount(grams / manualFood.servingSize)
+                                                        }}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-20"
+                                                        min="0.1"
+                                                        step="1"
+                                                    />
+                                                    <span className="text-[#A1A1AA] text-xs">{manualFood.servingUnit}</span>
+                                                </div>
                                             </div>
                                         </div>
 
-                                        {/* Right: Nutrition Insights - Simple Badges */}
+                                        {/* Nutrition Insights - Bottom Right */}
                                         {(manualFood.carbs > 0 || manualFood.protein > 0 || manualFood.fats > 0) && (
-                                            <div className="flex flex-wrap gap-1.5 items-start content-start">
+                                            <div className="flex flex-wrap gap-1.5 items-start">
                                                 {/* Complete Protein */}
                                                 {manualFood.protein > 0 && (() => {
                                                     const hasCompleteProtein = (manualFood.animalProtein || 0) > 0 ||
@@ -793,7 +809,8 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                                                manualFood.name.toLowerCase().includes('soy')
                                                     if (hasCompleteProtein) {
                                                         return (
-                                                            <Badge variant="default" className="text-xs">
+                                                            <Badge variant="default" className="text-xs flex items-center gap-1">
+                                                                <Beef className="w-3 h-3" />
                                                                 Complete Protein
                                                             </Badge>
                                                         )
@@ -803,63 +820,72 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
 
                                                 {/* High Fiber */}
                                                 {manualFood.fiber >= 3 && (
-                                                    <Badge variant="default" className="text-xs">
+                                                    <Badge variant="default" className="text-xs flex items-center gap-1">
+                                                        <Leaf className="w-3 h-3" />
                                                         High Fiber
                                                     </Badge>
                                                 )}
 
                                                 {/* Low Sugar */}
                                                 {manualFood.carbs > 0 && manualFood.sugar / manualFood.carbs < 0.1 && (
-                                                    <Badge variant="default" className="text-xs">
+                                                    <Badge variant="default" className="text-xs flex items-center gap-1">
+                                                        <CheckCircle className="w-3 h-3" />
                                                         Low Sugar
                                                     </Badge>
                                                 )}
 
                                                 {/* High Sugar Warning */}
                                                 {manualFood.carbs > 0 && manualFood.sugar / manualFood.carbs > 0.5 && (
-                                                    <Badge variant="destructive" className="text-xs">
+                                                    <Badge variant="destructive" className="text-xs flex items-center gap-1">
+                                                        <AlertTriangle className="w-3 h-3" />
                                                         High Sugar
                                                     </Badge>
                                                 )}
 
                                                 {/* Trans Fat Warning */}
                                                 {manualFood.transFat > 0 && (
-                                                    <Badge variant="destructive" className="text-xs">
+                                                    <Badge variant="destructive" className="text-xs flex items-center gap-1">
+                                                        <X className="w-3 h-3" />
                                                         Trans Fat
                                                     </Badge>
                                                 )}
 
                                                 {/* High Saturated Fat */}
                                                 {manualFood.saturatedFat > 5 && (
-                                                    <Badge variant="secondary" className="text-xs">
+                                                    <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                                                        <AlertTriangle className="w-3 h-3" />
                                                         High Saturated Fat
                                                     </Badge>
                                                 )}
 
                                                 {/* Low Saturated Fat */}
                                                 {manualFood.saturatedFat > 0 && manualFood.saturatedFat < 2 && (
-                                                    <Badge variant="default" className="text-xs">
+                                                    <Badge variant="default" className="text-xs flex items-center gap-1">
+                                                        <Heart className="w-3 h-3" />
                                                         Low Saturated Fat
                                                     </Badge>
                                                 )}
 
                                                 {/* High Protein */}
                                                 {manualFood.protein > 10 && (
-                                                    <Badge variant="default" className="text-xs">
+                                                    <Badge variant="default" className="text-xs flex items-center gap-1">
+                                                        <Zap className="w-3 h-3" />
                                                         High Protein
                                                     </Badge>
                                                 )}
 
                                                 {/* High Sodium */}
                                                 {manualFood.sodium > 400 && (
-                                                    <Badge variant="secondary" className="text-xs">
+                                                    <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                                                        <AlertTriangle className="w-3 h-3" />
                                                         High Sodium
                                                     </Badge>
                                                 )}
 
                                                 {/* Low Sodium */}
                                                 {manualFood.sodium > 0 && manualFood.sodium < 140 && (
-                                                    <Badge variant="default" className="text-xs">
+                                                    <Badge variant="default" className="text-xs flex items-center gap-1">
+                                                        <CheckCircle className="w-3 h-3" />
                                                         Low Sodium
                                                     </Badge>
                                                 )}
