@@ -1624,8 +1624,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                                     </div>
                                                 </div>
                                             </div>
-                                    </div>
-                                </div>
+                                        </div>
                                     </AccordionContent>
                                 </AccordionItem>
 
