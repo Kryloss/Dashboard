@@ -93,6 +93,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
     const [activeTab, setActiveTab] = useState<"search" | "manual" | "recent">("search")
     const [isEditMode, setIsEditMode] = useState(false) // Track if user is editing manual entry
     const [originalServingSize, setOriginalServingSize] = useState<number>(100) // Store original serving size for scaling
+    const [amount, setAmount] = useState<number>(1) // Number of servings to consume
 
     const getMealDisplayName = () => {
         const names = {
@@ -246,6 +247,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
         // Switch to Manual Entry tab in read-only mode
         setActiveTab("manual")
         setIsEditMode(false) // Show as read-only summary first
+        setAmount(1) // Reset amount to 1 serving
     }
 
     const handleManualSave = async () => {
@@ -309,8 +311,8 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                 isUserCreated: true
             })
 
-            // Add as 1 serving (manual entry already has the desired serving size)
-            await onFoodAdded(food, 1, undefined)
+            // Add the specified number of servings
+            await onFoodAdded(food, amount, undefined)
 
             notifications.success('Food added', {
                 description: `${food.name} has been added to ${getMealDisplayName()}`,
@@ -334,6 +336,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
         setSearchResults([])
         setAvailableBrands([])
         setIsEditMode(false) // Reset edit mode
+        setAmount(1) // Reset amount
         setManualFood({
             name: "",
             brand: "",
@@ -416,14 +419,14 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                manualFood.fats > 0
     }
 
-    // Calculate scaled nutrition values based on current serving size
+    // Calculate scaled nutrition values based on amount (number of servings)
     const getScaledNutrition = () => {
-        // Don't scale if no data, or if user hasn't changed serving size, or in edit mode
-        if (!manualFoodHasData() || isEditMode || originalServingSize === 0 || originalServingSize === manualFood.servingSize) {
+        // Don't scale if no data or in edit mode
+        if (!manualFoodHasData() || isEditMode) {
             return manualFood
         }
 
-        const multiplier = manualFood.servingSize / originalServingSize
+        const multiplier = amount
 
         return {
             ...manualFood,
@@ -748,35 +751,30 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                         </Button>
                                     </div>
 
-                                    {/* Serving Info - Editable */}
-                                    <div className="space-y-2">
-                                        <Label className="text-[#A1A1AA] text-sm">Serving Amount</Label>
-                                        <div className="flex items-center space-x-2">
-                                            <Input
-                                                type="number"
-                                                value={manualFood.servingSize}
-                                                onChange={(e) => setManualFood({ ...manualFood, servingSize: Number(e.target.value) })}
-                                                className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-24"
-                                                min="0"
-                                                step="0.1"
-                                            />
-                                            <Select value={manualFood.servingUnit} onValueChange={(val) => setManualFood({ ...manualFood, servingUnit: val })}>
-                                                <SelectTrigger className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-28">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent className="bg-[#1a1b1f] border-[#212227]">
-                                                    <SelectItem value="g" className="text-[#F3F4F6]">g</SelectItem>
-                                                    <SelectItem value="ml" className="text-[#F3F4F6]">ml</SelectItem>
-                                                    <SelectItem value="oz" className="text-[#F3F4F6]">oz</SelectItem>
-                                                    <SelectItem value="cup" className="text-[#F3F4F6]">cup</SelectItem>
-                                                    <SelectItem value="tbsp" className="text-[#F3F4F6]">tbsp</SelectItem>
-                                                    <SelectItem value="tsp" className="text-[#F3F4F6]">tsp</SelectItem>
-                                                    <SelectItem value="piece" className="text-[#F3F4F6]">piece</SelectItem>
-                                                    <SelectItem value="slice" className="text-[#F3F4F6]">slice</SelectItem>
-                                                </SelectContent>
-                                            </Select>
+                                    {/* Serving Info */}
+                                    <div className="space-y-3">
+                                        <div className="text-sm text-[#A1A1AA]">
+                                            <span className="font-medium">Serving Size:</span> {manualFood.servingSize} {manualFood.servingUnit}
                                         </div>
-                                        <p className="text-[#7A7F86] text-xs">Adjust amount as needed</p>
+
+                                        {/* Amount - Editable */}
+                                        <div>
+                                            <Label className="text-[#A1A1AA] text-sm">Amount</Label>
+                                            <div className="flex items-center space-x-2 mt-1.5">
+                                                <Input
+                                                    type="number"
+                                                    value={amount}
+                                                    onChange={(e) => setAmount(Number(e.target.value))}
+                                                    className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-24"
+                                                    min="0.1"
+                                                    step="0.5"
+                                                />
+                                                <span className="text-[#A1A1AA] text-sm">serving(s)</span>
+                                            </div>
+                                            <p className="text-[#7A7F86] text-xs mt-1">
+                                                {amount !== 1 && `= ${(manualFood.servingSize * amount).toFixed(1)} ${manualFood.servingUnit}`}
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -798,7 +796,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                     </div>
 
                                     <div className="divide-y divide-[#212227]">
-                                        {/* Total Fat */}
+                                        {/* 1. Total Fat */}
                                         <div className="py-2 flex justify-between text-[#F3F4F6]">
                                             <div>
                                                 <span className="font-bold">Total Fat</span>
@@ -827,29 +825,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                             </div>
                                         )}
 
-                                        {/* Cholesterol */}
-                                        {scaledFood.cholesterol > 0 && (
-                                            <div className="py-2 flex justify-between text-[#F3F4F6]">
-                                                <div>
-                                                    <span className="font-bold">Cholesterol</span>
-                                                    <span className="ml-1">{formatNutrientValue(scaledFood.cholesterol)}mg</span>
-                                                </div>
-                                                <span className="font-bold">{Math.round((scaledFood.cholesterol / 300) * 100)}%</span>
-                                            </div>
-                                        )}
-
-                                        {/* Sodium */}
-                                        {scaledFood.sodium > 0 && (
-                                            <div className="py-2 flex justify-between text-[#F3F4F6]">
-                                                <div>
-                                                    <span className="font-bold">Sodium</span>
-                                                    <span className="ml-1">{formatNutrientValue(scaledFood.sodium)}mg</span>
-                                                </div>
-                                                <span className="font-bold">{Math.round((scaledFood.sodium / 2300) * 100)}%</span>
-                                            </div>
-                                        )}
-
-                                        {/* Total Carbohydrate */}
+                                        {/* 2. Total Carbohydrate */}
                                         <div className="py-2 flex justify-between text-[#F3F4F6]">
                                             <div>
                                                 <span className="font-bold">Total Carbohydrate</span>
@@ -877,39 +853,63 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                             </div>
                                         )}
 
-                                        {/* Protein */}
-                                        <div className="py-2 text-[#F3F4F6] border-b-4 border-[#212227]">
+                                        {/* 3. Protein */}
+                                        <div className="py-2 text-[#F3F4F6]">
                                             <span className="font-bold">Protein</span>
                                             <span className="ml-1">{formatNutrientValue(scaledFood.protein)}g</span>
                                         </div>
 
-                                        {/* FDA Mandatory Micronutrients - Only show if present */}
-                                        {(scaledFood.vitaminD > 0 || scaledFood.calcium > 0 || scaledFood.iron > 0 || scaledFood.potassium > 0) && (
-                                            <div className="py-3 space-y-2">
-                                                {scaledFood.vitaminD > 0 && (
-                                                    <div className="flex justify-between text-[#F3F4F6] text-sm">
-                                                        <span>Vitamin D {formatNutrientValue(scaledFood.vitaminD)}mcg</span>
-                                                        <span>{Math.round((scaledFood.vitaminD / 20) * 100)}%</span>
-                                                    </div>
-                                                )}
-                                                {scaledFood.calcium > 0 && (
-                                                    <div className="flex justify-between text-[#F3F4F6] text-sm">
-                                                        <span>Calcium {formatNutrientValue(scaledFood.calcium)}mg</span>
-                                                        <span>{Math.round((scaledFood.calcium / 1300) * 100)}%</span>
-                                                    </div>
-                                                )}
-                                                {scaledFood.iron > 0 && (
-                                                    <div className="flex justify-between text-[#F3F4F6] text-sm">
-                                                        <span>Iron {formatNutrientValue(scaledFood.iron)}mg</span>
-                                                        <span>{Math.round((scaledFood.iron / 18) * 100)}%</span>
-                                                    </div>
-                                                )}
-                                                {scaledFood.potassium > 0 && (
-                                                    <div className="flex justify-between text-[#F3F4F6] text-sm">
-                                                        <span>Potassium {formatNutrientValue(scaledFood.potassium)}mg</span>
-                                                        <span>{Math.round((scaledFood.potassium / 4700) * 100)}%</span>
-                                                    </div>
-                                                )}
+                                        {/* 4. Cholesterol */}
+                                        {scaledFood.cholesterol > 0 && (
+                                            <div className="py-2 flex justify-between text-[#F3F4F6]">
+                                                <div>
+                                                    <span className="font-bold">Cholesterol</span>
+                                                    <span className="ml-1">{formatNutrientValue(scaledFood.cholesterol)}mg</span>
+                                                </div>
+                                                <span className="font-bold">{Math.round((scaledFood.cholesterol / 300) * 100)}%</span>
+                                            </div>
+                                        )}
+
+                                        {/* 5. Sodium */}
+                                        {scaledFood.sodium > 0 && (
+                                            <div className="py-2 flex justify-between text-[#F3F4F6]">
+                                                <div>
+                                                    <span className="font-bold">Sodium</span>
+                                                    <span className="ml-1">{formatNutrientValue(scaledFood.sodium)}mg</span>
+                                                </div>
+                                                <span className="font-bold">{Math.round((scaledFood.sodium / 2300) * 100)}%</span>
+                                            </div>
+                                        )}
+
+                                        {/* 6. Minerals - Only show if present */}
+                                        {(scaledFood.potassium > 0 || scaledFood.calcium > 0 || scaledFood.iron > 0 || scaledFood.vitaminD > 0) && (
+                                            <div className="py-2 border-b-4 border-[#212227]">
+                                                <div className="space-y-2">
+                                                    {scaledFood.potassium > 0 && (
+                                                        <div className="flex justify-between text-[#F3F4F6] text-sm">
+                                                            <span>Potassium {formatNutrientValue(scaledFood.potassium)}mg</span>
+                                                            <span className="font-bold">{Math.round((scaledFood.potassium / 4700) * 100)}%</span>
+                                                        </div>
+                                                    )}
+                                                    {scaledFood.calcium > 0 && (
+                                                        <div className="flex justify-between text-[#F3F4F6] text-sm">
+                                                            <span>Calcium {formatNutrientValue(scaledFood.calcium)}mg</span>
+                                                            <span className="font-bold">{Math.round((scaledFood.calcium / 1300) * 100)}%</span>
+                                                        </div>
+                                                    )}
+                                                    {scaledFood.iron > 0 && (
+                                                        <div className="flex justify-between text-[#F3F4F6] text-sm">
+                                                            <span>Iron {formatNutrientValue(scaledFood.iron)}mg</span>
+                                                            <span className="font-bold">{Math.round((scaledFood.iron / 18) * 100)}%</span>
+                                                        </div>
+                                                    )}
+                                                    {scaledFood.vitaminD > 0 && (
+                                                        <div className="flex justify-between text-[#F3F4F6] text-sm">
+                                                            <span>Vitamin D {formatNutrientValue(scaledFood.vitaminD)}mcg</span>
+                                                            <span className="font-bold">{Math.round((scaledFood.vitaminD / 20) * 100)}%</span>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         )}
                                     </div>
@@ -920,37 +920,178 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                     </div>
                                 </div>
 
-                                {/* Additional Nutrients - Only if present */}
-                                {(scaledFood.monounsaturatedFat > 0 || scaledFood.polyunsaturatedFat > 0 || scaledFood.animalProtein > 0 || scaledFood.plantProtein > 0) && (
-                                    <div className="bg-[#121318] border border-[#212227] rounded-lg p-4">
-                                        <h4 className="text-[#F3F4F6] font-medium text-sm mb-3">Additional Nutrients</h4>
-                                        <div className="grid grid-cols-2 gap-4 text-sm">
-                                            {scaledFood.monounsaturatedFat > 0 && (
-                                                <div className="flex justify-between">
-                                                    <span className="text-[#A1A1AA]">Monounsaturated Fat</span>
-                                                    <span className="text-[#F3F4F6] font-medium">{formatNutrientValue(scaledFood.monounsaturatedFat)}g</span>
+                                {/* 7. Additional Info - Expandable (if present) */}
+                                {(scaledFood.monounsaturatedFat > 0 || scaledFood.polyunsaturatedFat > 0 || scaledFood.animalProtein > 0 || scaledFood.plantProtein > 0 ||
+                                  scaledFood.vitaminA > 0 || scaledFood.vitaminC > 0 || scaledFood.vitaminE > 0 || scaledFood.vitaminK > 0 ||
+                                  scaledFood.thiamine > 0 || scaledFood.riboflavin > 0 || scaledFood.niacin > 0 || scaledFood.vitaminB6 > 0 ||
+                                  scaledFood.folate > 0 || scaledFood.vitaminB12 > 0 || scaledFood.phosphorus > 0 || scaledFood.magnesium > 0 ||
+                                  scaledFood.zinc > 0 || scaledFood.selenium > 0 || scaledFood.copper > 0 || scaledFood.manganese > 0) && (
+                                    <details className="bg-[#121318] border border-[#212227] rounded-lg">
+                                        <summary className="p-4 cursor-pointer text-[#F3F4F6] hover:bg-[#1a1b1f] transition-colors flex items-center justify-between">
+                                            <span className="font-medium text-sm">Additional Nutrition Information</span>
+                                            <ChevronDown className="w-4 h-4" />
+                                        </summary>
+                                        <div className="px-4 pb-4 border-t border-[#212227] pt-4 space-y-4">
+                                            {/* Unsaturated Fats */}
+                                            {(scaledFood.monounsaturatedFat > 0 || scaledFood.polyunsaturatedFat > 0) && (
+                                                <div>
+                                                    <h5 className="text-[#F3F4F6] text-xs font-medium mb-2">Unsaturated Fats</h5>
+                                                    <div className="grid grid-cols-2 gap-3 text-sm">
+                                                        {scaledFood.monounsaturatedFat > 0 && (
+                                                            <div className="flex justify-between">
+                                                                <span className="text-[#A1A1AA]">Monounsaturated</span>
+                                                                <span className="text-[#F3F4F6]">{formatNutrientValue(scaledFood.monounsaturatedFat)}g</span>
+                                                            </div>
+                                                        )}
+                                                        {scaledFood.polyunsaturatedFat > 0 && (
+                                                            <div className="flex justify-between">
+                                                                <span className="text-[#A1A1AA]">Polyunsaturated</span>
+                                                                <span className="text-[#F3F4F6]">{formatNutrientValue(scaledFood.polyunsaturatedFat)}g</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             )}
-                                            {scaledFood.polyunsaturatedFat > 0 && (
-                                                <div className="flex justify-between">
-                                                    <span className="text-[#A1A1AA]">Polyunsaturated Fat</span>
-                                                    <span className="text-[#F3F4F6] font-medium">{formatNutrientValue(scaledFood.polyunsaturatedFat)}g</span>
+
+                                            {/* Protein Quality */}
+                                            {(scaledFood.animalProtein > 0 || scaledFood.plantProtein > 0) && (
+                                                <div>
+                                                    <h5 className="text-[#F3F4F6] text-xs font-medium mb-2">Protein Breakdown</h5>
+                                                    <div className="grid grid-cols-2 gap-3 text-sm">
+                                                        {scaledFood.animalProtein > 0 && (
+                                                            <div className="flex justify-between">
+                                                                <span className="text-[#A1A1AA]">Animal Protein</span>
+                                                                <span className="text-[#2A8CEA]">{formatNutrientValue(scaledFood.animalProtein)}g</span>
+                                                            </div>
+                                                        )}
+                                                        {scaledFood.plantProtein > 0 && (
+                                                            <div className="flex justify-between">
+                                                                <span className="text-[#A1A1AA]">Plant Protein</span>
+                                                                <span className="text-[#9BE15D]">{formatNutrientValue(scaledFood.plantProtein)}g</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             )}
-                                            {scaledFood.animalProtein > 0 && (
-                                                <div className="flex justify-between">
-                                                    <span className="text-[#A1A1AA]">Animal Protein</span>
-                                                    <span className="text-[#2A8CEA] font-medium">{formatNutrientValue(scaledFood.animalProtein)}g</span>
+
+                                            {/* Vitamins */}
+                                            {(scaledFood.vitaminA > 0 || scaledFood.vitaminC > 0 || scaledFood.vitaminE > 0 || scaledFood.vitaminK > 0 ||
+                                              scaledFood.thiamine > 0 || scaledFood.riboflavin > 0 || scaledFood.niacin > 0 || scaledFood.vitaminB6 > 0 ||
+                                              scaledFood.folate > 0 || scaledFood.vitaminB12 > 0) && (
+                                                <div>
+                                                    <h5 className="text-[#F3F4F6] text-xs font-medium mb-2">Vitamins</h5>
+                                                    <div className="grid grid-cols-2 gap-3 text-sm">
+                                                        {scaledFood.vitaminA > 0 && (
+                                                            <div className="flex justify-between">
+                                                                <span className="text-[#A1A1AA]">Vitamin A</span>
+                                                                <span className="text-[#F3F4F6]">{formatNutrientValue(scaledFood.vitaminA)} IU</span>
+                                                            </div>
+                                                        )}
+                                                        {scaledFood.vitaminC > 0 && (
+                                                            <div className="flex justify-between">
+                                                                <span className="text-[#A1A1AA]">Vitamin C</span>
+                                                                <span className="text-[#F3F4F6]">{formatNutrientValue(scaledFood.vitaminC)}mg</span>
+                                                            </div>
+                                                        )}
+                                                        {scaledFood.vitaminE > 0 && (
+                                                            <div className="flex justify-between">
+                                                                <span className="text-[#A1A1AA]">Vitamin E</span>
+                                                                <span className="text-[#F3F4F6]">{formatNutrientValue(scaledFood.vitaminE)} IU</span>
+                                                            </div>
+                                                        )}
+                                                        {scaledFood.vitaminK > 0 && (
+                                                            <div className="flex justify-between">
+                                                                <span className="text-[#A1A1AA]">Vitamin K</span>
+                                                                <span className="text-[#F3F4F6]">{formatNutrientValue(scaledFood.vitaminK)}mcg</span>
+                                                            </div>
+                                                        )}
+                                                        {scaledFood.thiamine > 0 && (
+                                                            <div className="flex justify-between">
+                                                                <span className="text-[#A1A1AA]">Thiamine (B1)</span>
+                                                                <span className="text-[#F3F4F6]">{formatNutrientValue(scaledFood.thiamine)}mg</span>
+                                                            </div>
+                                                        )}
+                                                        {scaledFood.riboflavin > 0 && (
+                                                            <div className="flex justify-between">
+                                                                <span className="text-[#A1A1AA]">Riboflavin (B2)</span>
+                                                                <span className="text-[#F3F4F6]">{formatNutrientValue(scaledFood.riboflavin)}mg</span>
+                                                            </div>
+                                                        )}
+                                                        {scaledFood.niacin > 0 && (
+                                                            <div className="flex justify-between">
+                                                                <span className="text-[#A1A1AA]">Niacin (B3)</span>
+                                                                <span className="text-[#F3F4F6]">{formatNutrientValue(scaledFood.niacin)}mg</span>
+                                                            </div>
+                                                        )}
+                                                        {scaledFood.vitaminB6 > 0 && (
+                                                            <div className="flex justify-between">
+                                                                <span className="text-[#A1A1AA]">Vitamin B6</span>
+                                                                <span className="text-[#F3F4F6]">{formatNutrientValue(scaledFood.vitaminB6)}mg</span>
+                                                            </div>
+                                                        )}
+                                                        {scaledFood.folate > 0 && (
+                                                            <div className="flex justify-between">
+                                                                <span className="text-[#A1A1AA]">Folate (B9)</span>
+                                                                <span className="text-[#F3F4F6]">{formatNutrientValue(scaledFood.folate)}mcg</span>
+                                                            </div>
+                                                        )}
+                                                        {scaledFood.vitaminB12 > 0 && (
+                                                            <div className="flex justify-between">
+                                                                <span className="text-[#A1A1AA]">Vitamin B12</span>
+                                                                <span className="text-[#F3F4F6]">{formatNutrientValue(scaledFood.vitaminB12)}mcg</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             )}
-                                            {scaledFood.plantProtein > 0 && (
-                                                <div className="flex justify-between">
-                                                    <span className="text-[#A1A1AA]">Plant Protein</span>
-                                                    <span className="text-[#9BE15D] font-medium">{formatNutrientValue(scaledFood.plantProtein)}g</span>
+
+                                            {/* Additional Minerals */}
+                                            {(scaledFood.phosphorus > 0 || scaledFood.magnesium > 0 || scaledFood.zinc > 0 ||
+                                              scaledFood.selenium > 0 || scaledFood.copper > 0 || scaledFood.manganese > 0) && (
+                                                <div>
+                                                    <h5 className="text-[#F3F4F6] text-xs font-medium mb-2">Additional Minerals</h5>
+                                                    <div className="grid grid-cols-2 gap-3 text-sm">
+                                                        {scaledFood.phosphorus > 0 && (
+                                                            <div className="flex justify-between">
+                                                                <span className="text-[#A1A1AA]">Phosphorus</span>
+                                                                <span className="text-[#F3F4F6]">{formatNutrientValue(scaledFood.phosphorus)}mg</span>
+                                                            </div>
+                                                        )}
+                                                        {scaledFood.magnesium > 0 && (
+                                                            <div className="flex justify-between">
+                                                                <span className="text-[#A1A1AA]">Magnesium</span>
+                                                                <span className="text-[#F3F4F6]">{formatNutrientValue(scaledFood.magnesium)}mg</span>
+                                                            </div>
+                                                        )}
+                                                        {scaledFood.zinc > 0 && (
+                                                            <div className="flex justify-between">
+                                                                <span className="text-[#A1A1AA]">Zinc</span>
+                                                                <span className="text-[#F3F4F6]">{formatNutrientValue(scaledFood.zinc)}mg</span>
+                                                            </div>
+                                                        )}
+                                                        {scaledFood.selenium > 0 && (
+                                                            <div className="flex justify-between">
+                                                                <span className="text-[#A1A1AA]">Selenium</span>
+                                                                <span className="text-[#F3F4F6]">{formatNutrientValue(scaledFood.selenium)}mcg</span>
+                                                            </div>
+                                                        )}
+                                                        {scaledFood.copper > 0 && (
+                                                            <div className="flex justify-between">
+                                                                <span className="text-[#A1A1AA]">Copper</span>
+                                                                <span className="text-[#F3F4F6]">{formatNutrientValue(scaledFood.copper)}mg</span>
+                                                            </div>
+                                                        )}
+                                                        {scaledFood.manganese > 0 && (
+                                                            <div className="flex justify-between">
+                                                                <span className="text-[#A1A1AA]">Manganese</span>
+                                                                <span className="text-[#F3F4F6]">{formatNutrientValue(scaledFood.manganese)}mg</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
-                                    </div>
+                                    </details>
                                 )}
                             </div>
                         )})() : (
