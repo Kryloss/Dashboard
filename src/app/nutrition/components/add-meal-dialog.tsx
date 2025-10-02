@@ -1495,46 +1495,48 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                         </div>
                                     </AccordionTrigger>
                                     <AccordionContent className="pb-4">
-                                <div className="bg-[#0E0F13] border border-[#9BE15D]/20 rounded-lg p-4 space-y-3">
-                                    <div className="flex items-center space-x-2">
-                                        <Wheat className="w-4 h-4 text-[#9BE15D]" />
-                                        <h5 className="text-[#9BE15D] text-sm font-medium">Carbohydrate Details</h5>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm flex items-center space-x-1">
-                                                <Leaf className="w-3 h-3 text-[#9BE15D]" />
-                                                <span>Fiber (g)</span>
-                                            </Label>
-                                            <Input
-                                                type="number"
-                                                placeholder="5"
-                                                value={manualFood.fiber}
-                                                onChange={(e) => setManualFood({ ...manualFood, fiber: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#9BE15D]/30 text-[#F3F4F6] mt-1"
-                                                min="0"
-                                                step="0.1"
-                                            />
-                                            <p className="text-[#7A7F86] text-xs mt-0.5">Promotes digestion</p>
+                                        <div className="divide-y divide-[#212227]">
+                                            {/* Dietary Fiber - Indented */}
+                                            <div className="py-2 pl-4">
+                                                <div className="flex justify-between items-center">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[#F3F4F6] text-sm">Dietary Fiber</span>
+                                                        <Input
+                                                            type="number"
+                                                            placeholder="0"
+                                                            value={manualFood.fiber}
+                                                            onChange={(e) => setManualFood({ ...manualFood, fiber: Number(e.target.value) })}
+                                                            className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                            min="0"
+                                                            step="0.1"
+                                                        />
+                                                        <span className="text-[#F3F4F6] text-sm">g</span>
+                                                    </div>
+                                                    {manualFood.fiber > 0 && (
+                                                        <span className="text-[#F3F4F6] font-bold text-sm">{Math.round((manualFood.fiber / 28) * 100)}%</span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Total Sugars - Indented */}
+                                            <div className="py-2 pl-4">
+                                                <div className="flex justify-between items-center">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[#F3F4F6] text-sm">Total Sugars</span>
+                                                        <Input
+                                                            type="number"
+                                                            placeholder="0"
+                                                            value={manualFood.sugar}
+                                                            onChange={(e) => setManualFood({ ...manualFood, sugar: Number(e.target.value) })}
+                                                            className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                            min="0"
+                                                            step="0.1"
+                                                        />
+                                                        <span className="text-[#F3F4F6] text-sm">g</span>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm flex items-center space-x-1">
-                                                <Zap className="w-3 h-3 text-[#FFA500]" />
-                                                <span>Sugar (g)</span>
-                                            </Label>
-                                            <Input
-                                                type="number"
-                                                placeholder="10"
-                                                value={manualFood.sugar}
-                                                onChange={(e) => setManualFood({ ...manualFood, sugar: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#9BE15D]/30 text-[#F3F4F6] mt-1"
-                                                min="0"
-                                                step="0.1"
-                                            />
-                                            <p className="text-[#7A7F86] text-xs mt-0.5">Simple carbs</p>
-                                        </div>
-                                    </div>
-                                </div>
                                     </AccordionContent>
                                 </AccordionItem>
 
@@ -1547,87 +1549,81 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                         </div>
                                     </AccordionTrigger>
                                     <AccordionContent className="pb-4">
-                                <div className="bg-[#0E0F13] border border-[#FF2D55]/20 rounded-lg p-4 space-y-3">
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm flex items-center space-x-1">
-                                                <AlertTriangle className="w-3 h-3 text-[#FF2D55]" />
-                                                <span>Saturated Fat (g)</span>
-                                            </Label>
-                                            <Input
-                                                type="number"
-                                                placeholder="3"
-                                                value={manualFood.saturatedFat}
-                                                onChange={(e) => setManualFood({ ...manualFood, saturatedFat: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#FF2D55]/30 text-[#F3F4F6] mt-1"
-                                                min="0"
-                                                step="0.1"
-                                            />
-                                            <p className="text-[#7A7F86] text-xs mt-0.5">Limit intake</p>
-                                        </div>
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm flex items-center space-x-1">
-                                                <X className="w-3 h-3 text-[#FF2D55]" />
-                                                <span>Trans Fat (g)</span>
-                                            </Label>
-                                            <Input
-                                                type="number"
-                                                placeholder="0"
-                                                value={manualFood.transFat}
-                                                onChange={(e) => setManualFood({ ...manualFood, transFat: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#FF2D55]/30 text-[#F3F4F6] mt-1"
-                                                min="0"
-                                                step="0.1"
-                                            />
-                                            <p className="text-[#7A7F86] text-xs mt-0.5">Avoid if possible</p>
-                                        </div>
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm flex items-center space-x-1">
-                                                <CheckCircle className="w-3 h-3 text-[#9BE15D]" />
-                                                <span>Monounsaturated (g)</span>
-                                            </Label>
-                                            <Input
-                                                type="number"
-                                                placeholder="5"
-                                                value={manualFood.monounsaturatedFat}
-                                                onChange={(e) => setManualFood({ ...manualFood, monounsaturatedFat: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#FF2D55]/30 text-[#F3F4F6] mt-1"
-                                                min="0"
-                                                step="0.1"
-                                            />
-                                            <p className="text-[#7A7F86] text-xs mt-0.5">Heart healthy</p>
-                                        </div>
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm flex items-center space-x-1">
-                                                <CheckCircle className="w-3 h-3 text-[#9BE15D]" />
-                                                <span>Polyunsaturated (g)</span>
-                                            </Label>
-                                            <Input
-                                                type="number"
-                                                placeholder="2"
-                                                value={manualFood.polyunsaturatedFat}
-                                                onChange={(e) => setManualFood({ ...manualFood, polyunsaturatedFat: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#FF2D55]/30 text-[#F3F4F6] mt-1"
-                                                min="0"
-                                                step="0.1"
-                                            />
-                                            <p className="text-[#7A7F86] text-xs mt-0.5">Omega-3, Omega-6</p>
-                                        </div>
-                                        <div className="col-span-2">
-                                            <Label className="text-[#A1A1AA] text-sm flex items-center space-x-1">
-                                                <Heart className="w-3 h-3 text-[#FF2D55]" />
-                                                <span>Cholesterol (mg)</span>
-                                            </Label>
-                                            <Input
-                                                type="number"
-                                                placeholder="60"
-                                                value={manualFood.cholesterol}
-                                                onChange={(e) => setManualFood({ ...manualFood, cholesterol: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#FF2D55]/30 text-[#F3F4F6] mt-1"
-                                                min="0"
-                                            />
-                                            <p className="text-[#7A7F86] text-xs mt-0.5">Found in animal products</p>
-                                        </div>
+                                        <div className="divide-y divide-[#212227]">
+                                            {/* Saturated Fat - Indented */}
+                                            <div className="py-2 pl-4">
+                                                <div className="flex justify-between items-center">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[#F3F4F6] text-sm">Saturated Fat</span>
+                                                        <Input
+                                                            type="number"
+                                                            value={manualFood.saturatedFat}
+                                                            onChange={(e) => setManualFood({ ...manualFood, saturatedFat: Number(e.target.value) })}
+                                                            className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                            min="0"
+                                                            step="0.1"
+                                                        />
+                                                        <span className="text-[#F3F4F6] text-sm">g</span>
+                                                    </div>
+                                                    {manualFood.saturatedFat > 0 && (
+                                                        <span className="font-bold text-sm">{Math.round((manualFood.saturatedFat / 20) * 100)}%</span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Trans Fat - Indented */}
+                                            <div className="py-2 pl-4">
+                                                <div className="flex justify-between items-center">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[#F3F4F6] text-sm">Trans Fat</span>
+                                                        <Input
+                                                            type="number"
+                                                            value={manualFood.transFat}
+                                                            onChange={(e) => setManualFood({ ...manualFood, transFat: Number(e.target.value) })}
+                                                            className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                            min="0"
+                                                            step="0.1"
+                                                        />
+                                                        <span className="text-[#F3F4F6] text-sm">g</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Monounsaturated Fat - Indented */}
+                                            <div className="py-2 pl-4">
+                                                <div className="flex justify-between items-center">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[#F3F4F6] text-sm">Monounsaturated Fat</span>
+                                                        <Input
+                                                            type="number"
+                                                            value={manualFood.monounsaturatedFat}
+                                                            onChange={(e) => setManualFood({ ...manualFood, monounsaturatedFat: Number(e.target.value) })}
+                                                            className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                            min="0"
+                                                            step="0.1"
+                                                        />
+                                                        <span className="text-[#F3F4F6] text-sm">g</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Polyunsaturated Fat - Indented */}
+                                            <div className="py-2 pl-4">
+                                                <div className="flex justify-between items-center">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[#F3F4F6] text-sm">Polyunsaturated Fat</span>
+                                                        <Input
+                                                            type="number"
+                                                            value={manualFood.polyunsaturatedFat}
+                                                            onChange={(e) => setManualFood({ ...manualFood, polyunsaturatedFat: Number(e.target.value) })}
+                                                            className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                            min="0"
+                                                            step="0.1"
+                                                        />
+                                                        <span className="text-[#F3F4F6] text-sm">g</span>
+                                                    </div>
+                                                </div>
+                                            </div>
                                     </div>
                                 </div>
                                     </AccordionContent>
@@ -1645,77 +1641,53 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                         </div>
                                     </AccordionTrigger>
                                     <AccordionContent className="pb-4">
-                                <div className="bg-[#0E0F13] border border-[#2A8CEA]/20 rounded-lg p-4 space-y-3">
-                                    <p className="text-[#7A7F86] text-xs">Breakdown your protein sources for better tracking</p>
-
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm flex items-center space-x-1">
-                                                <Star className="w-3 h-3 text-[#9BE15D]" />
-                                                <span>Animal Protein (g)</span>
-                                            </Label>
-                                            <Input
-                                                type="number"
-                                                placeholder="20"
-                                                value={manualFood.animalProtein}
-                                                onChange={(e) => setManualFood({ ...manualFood, animalProtein: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#2A8CEA]/30 text-[#F3F4F6] mt-1"
-                                                min="0"
-                                                step="0.1"
-                                            />
-                                            <p className="text-[#7A7F86] text-xs mt-0.5">Complete proteins</p>
-                                        </div>
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm flex items-center space-x-1">
-                                                <Leaf className="w-3 h-3 text-[#9BE15D]" />
-                                                <span>Plant Protein (g)</span>
-                                            </Label>
-                                            <Input
-                                                type="number"
-                                                placeholder="10"
-                                                value={manualFood.plantProtein}
-                                                onChange={(e) => setManualFood({ ...manualFood, plantProtein: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#2A8CEA]/30 text-[#F3F4F6] mt-1"
-                                                min="0"
-                                                step="0.1"
-                                            />
-                                            <p className="text-[#7A7F86] text-xs mt-0.5">May need combining</p>
-                                        </div>
-                                    </div>
-
-                                    {(manualFood.animalProtein > 0 || manualFood.plantProtein > 0) && (
-                                        <div className="bg-[#121318] border border-[#212227] rounded-lg p-2 text-xs">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[#A1A1AA]">Total protein breakdown:</span>
-                                                <span className="text-[#F3F4F6] font-medium">
-                                                    {manualFood.animalProtein + manualFood.plantProtein}g
-                                                </span>
+                                        <div className="divide-y divide-[#212227]">
+                                            {/* Animal Protein - Indented */}
+                                            <div className="py-2 pl-4">
+                                                <div className="flex justify-between items-center">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[#F3F4F6] text-sm">Animal Protein</span>
+                                                        <Input
+                                                            type="number"
+                                                            value={manualFood.animalProtein}
+                                                            onChange={(e) => setManualFood({ ...manualFood, animalProtein: Number(e.target.value) })}
+                                                            className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                            min="0"
+                                                            step="0.1"
+                                                        />
+                                                        <span className="text-[#F3F4F6] text-sm">g</span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            {Math.abs(manualFood.protein - (manualFood.animalProtein + manualFood.plantProtein)) > 0.5 && manualFood.protein > 0 && (
-                                                <p className="text-[#FFA500] mt-1 flex items-center space-x-1">
-                                                    <AlertTriangle className="w-3 h-3" />
-                                                    <span>Total should match protein value ({manualFood.protein}g)</span>
-                                                </p>
-                                            )}
-                                        </div>
-                                    )}
 
-                                    <details className="text-xs">
-                                        <summary className="cursor-pointer text-[#2A8CEA] hover:text-[#4AA7FF] flex items-center space-x-1">
-                                            <span>What counts as animal/plant protein?</span>
-                                        </summary>
-                                        <div className="mt-2 space-y-2 ml-3">
-                                            <div>
-                                                <span className="text-[#9BE15D]">✅ Animal (Complete):</span>
-                                                <p className="text-[#A1A1AA] ml-4">Meat, Fish, Chicken, Eggs, Milk, Cheese, Yogurt, Whey</p>
-                                            </div>
-                                            <div>
-                                                <span className="text-[#9BE15D]">🌱 Plant:</span>
-                                                <p className="text-[#A1A1AA] ml-4">Beans, Lentils, Quinoa, Soy, Tofu, Nuts, Seeds, Grains</p>
+                                            {/* Plant Protein - Indented */}
+                                            <div className="py-2 pl-4">
+                                                <div className="flex justify-between items-center">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[#F3F4F6] text-sm">Plant Protein</span>
+                                                        <Input
+                                                            type="number"
+                                                            value={manualFood.plantProtein}
+                                                            onChange={(e) => setManualFood({ ...manualFood, plantProtein: Number(e.target.value) })}
+                                                            className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                            min="0"
+                                                            step="0.1"
+                                                        />
+                                                        <span className="text-[#F3F4F6] text-sm">g</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                    </details>
-                                </div>
+
+                                        {/* Validation Warning */}
+                                        {(manualFood.animalProtein > 0 || manualFood.plantProtein > 0) &&
+                                         Math.abs(manualFood.protein - (manualFood.animalProtein + manualFood.plantProtein)) > 0.5 &&
+                                         manualFood.protein > 0 && (
+                                            <div className="mt-2 text-xs text-[#FFA500] flex items-center gap-1 px-4">
+                                                <AlertTriangle className="w-3 h-3" />
+                                                <span>Total should match protein value ({manualFood.protein}g)</span>
+                                            </div>
+                                        )}
                                     </AccordionContent>
                                 </AccordionItem>
                             </Accordion>
@@ -1993,290 +1965,514 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                 </div>
 
                                 {/* Vitamins */}
-                                <div>
-                                    <div className="flex items-center space-x-2 mb-3">
-                                        <Star className="w-4 h-4 text-[#FFA500]" />
-                                        <h5 className="text-[#F3F4F6] text-sm font-medium">Vitamins</h5>
-                                        <Badge variant="outline" className="text-[#FFA500] border-[#FFA500]/30 bg-[#FFA500]/10 text-xs">
-                                            Micronutrients
-                                        </Badge>
-                                    </div>
-                                    <p className="text-[#7A7F86] text-xs mb-3">Essential for immunity, energy, and cell function</p>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Vitamin A (IU)</Label>
-                                            <Input
-                                                type="number"
-                                                value={manualFood.vitaminA}
-                                                onChange={(e) => setManualFood({ ...manualFood, vitaminA: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                                min="0"
-                                            />
+                                <div className="bg-[#121318] border border-[#212227] rounded-lg p-4">
+                                    <h5 className="text-[#F3F4F6] text-sm font-medium mb-3 pb-2 border-b border-[#212227]">Vitamins</h5>
+                                    <div className="divide-y divide-[#212227]">
+                                        {/* Vitamin A */}
+                                        <div className="py-2">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[#F3F4F6] text-sm">Vitamin A</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={manualFood.vitaminA}
+                                                        onChange={(e) => setManualFood({ ...manualFood, vitaminA: Number(e.target.value) })}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                        min="0"
+                                                    />
+                                                    <span className="text-[#F3F4F6] text-sm">IU</span>
+                                                </div>
+                                                {manualFood.vitaminA > 0 && (
+                                                    <span className="font-bold text-sm">{Math.round((manualFood.vitaminA / 5000) * 100)}%</span>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Vitamin C (mg)</Label>
-                                            <Input
-                                                type="number"
-                                                value={manualFood.vitaminC}
-                                                onChange={(e) => setManualFood({ ...manualFood, vitaminC: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                                min="0"
-                                                step="0.1"
-                                            />
+
+                                        {/* Vitamin C */}
+                                        <div className="py-2">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[#F3F4F6] text-sm">Vitamin C</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={manualFood.vitaminC}
+                                                        onChange={(e) => setManualFood({ ...manualFood, vitaminC: Number(e.target.value) })}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                        min="0"
+                                                        step="0.1"
+                                                    />
+                                                    <span className="text-[#F3F4F6] text-sm">mg</span>
+                                                </div>
+                                                {manualFood.vitaminC > 0 && (
+                                                    <span className="font-bold text-sm">{Math.round((manualFood.vitaminC / 90) * 100)}%</span>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Vitamin D (IU)</Label>
-                                            <Input
-                                                type="number"
-                                                value={manualFood.vitaminD}
-                                                onChange={(e) => setManualFood({ ...manualFood, vitaminD: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                                min="0"
-                                            />
+
+                                        {/* Vitamin D */}
+                                        <div className="py-2">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[#F3F4F6] text-sm">Vitamin D</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={manualFood.vitaminD}
+                                                        onChange={(e) => setManualFood({ ...manualFood, vitaminD: Number(e.target.value) })}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                        min="0"
+                                                    />
+                                                    <span className="text-[#F3F4F6] text-sm">IU</span>
+                                                </div>
+                                                {manualFood.vitaminD > 0 && (
+                                                    <span className="font-bold text-sm">{Math.round((manualFood.vitaminD / 800) * 100)}%</span>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Vitamin E (IU)</Label>
-                                            <Input
-                                                type="number"
-                                                value={manualFood.vitaminE}
-                                                onChange={(e) => setManualFood({ ...manualFood, vitaminE: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                                min="0"
-                                            />
+
+                                        {/* Vitamin E */}
+                                        <div className="py-2">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[#F3F4F6] text-sm">Vitamin E</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={manualFood.vitaminE}
+                                                        onChange={(e) => setManualFood({ ...manualFood, vitaminE: Number(e.target.value) })}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                        min="0"
+                                                    />
+                                                    <span className="text-[#F3F4F6] text-sm">IU</span>
+                                                </div>
+                                                {manualFood.vitaminE > 0 && (
+                                                    <span className="font-bold text-sm">{Math.round((manualFood.vitaminE / 30) * 100)}%</span>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Vitamin K (mcg)</Label>
-                                            <Input
-                                                type="number"
-                                                value={manualFood.vitaminK}
-                                                onChange={(e) => setManualFood({ ...manualFood, vitaminK: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                                min="0"
-                                                step="0.1"
-                                            />
+
+                                        {/* Vitamin K */}
+                                        <div className="py-2">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[#F3F4F6] text-sm">Vitamin K</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={manualFood.vitaminK}
+                                                        onChange={(e) => setManualFood({ ...manualFood, vitaminK: Number(e.target.value) })}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                        min="0"
+                                                        step="0.1"
+                                                    />
+                                                    <span className="text-[#F3F4F6] text-sm">mcg</span>
+                                                </div>
+                                                {manualFood.vitaminK > 0 && (
+                                                    <span className="font-bold text-sm">{Math.round((manualFood.vitaminK / 120) * 100)}%</span>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Thiamine B1 (mg)</Label>
-                                            <Input
-                                                type="number"
-                                                value={manualFood.thiamine}
-                                                onChange={(e) => setManualFood({ ...manualFood, thiamine: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                                min="0"
-                                                step="0.1"
-                                            />
+
+                                        {/* Thiamine B1 */}
+                                        <div className="py-2">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[#F3F4F6] text-sm">Thiamine (B1)</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={manualFood.thiamine}
+                                                        onChange={(e) => setManualFood({ ...manualFood, thiamine: Number(e.target.value) })}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                        min="0"
+                                                        step="0.1"
+                                                    />
+                                                    <span className="text-[#F3F4F6] text-sm">mg</span>
+                                                </div>
+                                                {manualFood.thiamine > 0 && (
+                                                    <span className="font-bold text-sm">{Math.round((manualFood.thiamine / 1.2) * 100)}%</span>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Riboflavin B2 (mg)</Label>
-                                            <Input
-                                                type="number"
-                                                value={manualFood.riboflavin}
-                                                onChange={(e) => setManualFood({ ...manualFood, riboflavin: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                                min="0"
-                                                step="0.1"
-                                            />
+
+                                        {/* Riboflavin B2 */}
+                                        <div className="py-2">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[#F3F4F6] text-sm">Riboflavin (B2)</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={manualFood.riboflavin}
+                                                        onChange={(e) => setManualFood({ ...manualFood, riboflavin: Number(e.target.value) })}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                        min="0"
+                                                        step="0.1"
+                                                    />
+                                                    <span className="text-[#F3F4F6] text-sm">mg</span>
+                                                </div>
+                                                {manualFood.riboflavin > 0 && (
+                                                    <span className="font-bold text-sm">{Math.round((manualFood.riboflavin / 1.3) * 100)}%</span>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Niacin B3 (mg)</Label>
-                                            <Input
-                                                type="number"
-                                                value={manualFood.niacin}
-                                                onChange={(e) => setManualFood({ ...manualFood, niacin: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                                min="0"
-                                                step="0.1"
-                                            />
+
+                                        {/* Niacin B3 */}
+                                        <div className="py-2">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[#F3F4F6] text-sm">Niacin (B3)</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={manualFood.niacin}
+                                                        onChange={(e) => setManualFood({ ...manualFood, niacin: Number(e.target.value) })}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                        min="0"
+                                                        step="0.1"
+                                                    />
+                                                    <span className="text-[#F3F4F6] text-sm">mg</span>
+                                                </div>
+                                                {manualFood.niacin > 0 && (
+                                                    <span className="font-bold text-sm">{Math.round((manualFood.niacin / 16) * 100)}%</span>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Vitamin B6 (mg)</Label>
-                                            <Input
-                                                type="number"
-                                                value={manualFood.vitaminB6}
-                                                onChange={(e) => setManualFood({ ...manualFood, vitaminB6: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                                min="0"
-                                                step="0.1"
-                                            />
+
+                                        {/* Vitamin B6 */}
+                                        <div className="py-2">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[#F3F4F6] text-sm">Vitamin B6</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={manualFood.vitaminB6}
+                                                        onChange={(e) => setManualFood({ ...manualFood, vitaminB6: Number(e.target.value) })}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                        min="0"
+                                                        step="0.1"
+                                                    />
+                                                    <span className="text-[#F3F4F6] text-sm">mg</span>
+                                                </div>
+                                                {manualFood.vitaminB6 > 0 && (
+                                                    <span className="font-bold text-sm">{Math.round((manualFood.vitaminB6 / 1.7) * 100)}%</span>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Folate B9 (mcg)</Label>
-                                            <Input
-                                                type="number"
-                                                value={manualFood.folate}
-                                                onChange={(e) => setManualFood({ ...manualFood, folate: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                                min="0"
-                                                step="0.1"
-                                            />
+
+                                        {/* Folate B9 */}
+                                        <div className="py-2">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[#F3F4F6] text-sm">Folate (B9)</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={manualFood.folate}
+                                                        onChange={(e) => setManualFood({ ...manualFood, folate: Number(e.target.value) })}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                        min="0"
+                                                        step="0.1"
+                                                    />
+                                                    <span className="text-[#F3F4F6] text-sm">mcg</span>
+                                                </div>
+                                                {manualFood.folate > 0 && (
+                                                    <span className="font-bold text-sm">{Math.round((manualFood.folate / 400) * 100)}%</span>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Vitamin B12 (mcg)</Label>
-                                            <Input
-                                                type="number"
-                                                value={manualFood.vitaminB12}
-                                                onChange={(e) => setManualFood({ ...manualFood, vitaminB12: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                                min="0"
-                                                step="0.1"
-                                            />
+
+                                        {/* Vitamin B12 */}
+                                        <div className="py-2">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[#F3F4F6] text-sm">Vitamin B12</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={manualFood.vitaminB12}
+                                                        onChange={(e) => setManualFood({ ...manualFood, vitaminB12: Number(e.target.value) })}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                        min="0"
+                                                        step="0.1"
+                                                    />
+                                                    <span className="text-[#F3F4F6] text-sm">mcg</span>
+                                                </div>
+                                                {manualFood.vitaminB12 > 0 && (
+                                                    <span className="font-bold text-sm">{Math.round((manualFood.vitaminB12 / 2.4) * 100)}%</span>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Biotin (mcg)</Label>
-                                            <Input
-                                                type="number"
-                                                value={manualFood.biotin}
-                                                onChange={(e) => setManualFood({ ...manualFood, biotin: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                                min="0"
-                                                step="0.1"
-                                            />
+
+                                        {/* Biotin */}
+                                        <div className="py-2">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[#F3F4F6] text-sm">Biotin</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={manualFood.biotin}
+                                                        onChange={(e) => setManualFood({ ...manualFood, biotin: Number(e.target.value) })}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                        min="0"
+                                                        step="0.1"
+                                                    />
+                                                    <span className="text-[#F3F4F6] text-sm">mcg</span>
+                                                </div>
+                                                {manualFood.biotin > 0 && (
+                                                    <span className="font-bold text-sm">{Math.round((manualFood.biotin / 30) * 100)}%</span>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Pantothenic Acid B5 (mg)</Label>
-                                            <Input
-                                                type="number"
-                                                value={manualFood.pantothenicAcid}
-                                                onChange={(e) => setManualFood({ ...manualFood, pantothenicAcid: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                                min="0"
-                                                step="0.1"
-                                            />
+
+                                        {/* Pantothenic Acid B5 */}
+                                        <div className="py-2">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[#F3F4F6] text-sm">Pantothenic Acid (B5)</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={manualFood.pantothenicAcid}
+                                                        onChange={(e) => setManualFood({ ...manualFood, pantothenicAcid: Number(e.target.value) })}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                        min="0"
+                                                        step="0.1"
+                                                    />
+                                                    <span className="text-[#F3F4F6] text-sm">mg</span>
+                                                </div>
+                                                {manualFood.pantothenicAcid > 0 && (
+                                                    <span className="font-bold text-sm">{Math.round((manualFood.pantothenicAcid / 5) * 100)}%</span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Minerals */}
-                                <div>
-                                    <div className="flex items-center space-x-2 mb-3">
-                                        <Shield className="w-4 h-4 text-[#64748B]" />
-                                        <h5 className="text-[#F3F4F6] text-sm font-medium">Minerals</h5>
-                                        <Badge variant="outline" className="text-[#64748B] border-[#64748B]/30 bg-[#64748B]/10 text-xs">
-                                            Structural
-                                        </Badge>
-                                    </div>
-                                    <p className="text-[#7A7F86] text-xs mb-3">Build bones, teeth, and support metabolic processes</p>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Calcium (mg)</Label>
-                                            <Input
-                                                type="number"
-                                                value={manualFood.calcium}
-                                                onChange={(e) => setManualFood({ ...manualFood, calcium: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                                min="0"
-                                                step="0.1"
-                                            />
+                                <div className="bg-[#121318] border border-[#212227] rounded-lg p-4">
+                                    <h5 className="text-[#F3F4F6] text-sm font-medium mb-3 pb-2 border-b border-[#212227]">Minerals</h5>
+                                    <div className="divide-y divide-[#212227]">
+                                        {/* Calcium */}
+                                        <div className="py-2">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[#F3F4F6] text-sm">Calcium</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={manualFood.calcium}
+                                                        onChange={(e) => setManualFood({ ...manualFood, calcium: Number(e.target.value) })}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                        min="0"
+                                                        step="0.1"
+                                                    />
+                                                    <span className="text-[#F3F4F6] text-sm">mg</span>
+                                                </div>
+                                                {manualFood.calcium > 0 && (
+                                                    <span className="font-bold text-sm">{Math.round((manualFood.calcium / 1300) * 100)}%</span>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Iron (mg)</Label>
-                                            <Input
-                                                type="number"
-                                                value={manualFood.iron}
-                                                onChange={(e) => setManualFood({ ...manualFood, iron: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                                min="0"
-                                                step="0.1"
-                                            />
+
+                                        {/* Iron */}
+                                        <div className="py-2">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[#F3F4F6] text-sm">Iron</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={manualFood.iron}
+                                                        onChange={(e) => setManualFood({ ...manualFood, iron: Number(e.target.value) })}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                        min="0"
+                                                        step="0.1"
+                                                    />
+                                                    <span className="text-[#F3F4F6] text-sm">mg</span>
+                                                </div>
+                                                {manualFood.iron > 0 && (
+                                                    <span className="font-bold text-sm">{Math.round((manualFood.iron / 18) * 100)}%</span>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Phosphorus (mg)</Label>
-                                            <Input
-                                                type="number"
-                                                value={manualFood.phosphorus}
-                                                onChange={(e) => setManualFood({ ...manualFood, phosphorus: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                                min="0"
-                                                step="0.1"
-                                            />
+
+                                        {/* Phosphorus */}
+                                        <div className="py-2">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[#F3F4F6] text-sm">Phosphorus</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={manualFood.phosphorus}
+                                                        onChange={(e) => setManualFood({ ...manualFood, phosphorus: Number(e.target.value) })}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                        min="0"
+                                                        step="0.1"
+                                                    />
+                                                    <span className="text-[#F3F4F6] text-sm">mg</span>
+                                                </div>
+                                                {manualFood.phosphorus > 0 && (
+                                                    <span className="font-bold text-sm">{Math.round((manualFood.phosphorus / 1250) * 100)}%</span>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Iodine (mcg)</Label>
-                                            <Input
-                                                type="number"
-                                                value={manualFood.iodine}
-                                                onChange={(e) => setManualFood({ ...manualFood, iodine: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                                min="0"
-                                                step="0.1"
-                                            />
+
+                                        {/* Iodine */}
+                                        <div className="py-2">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[#F3F4F6] text-sm">Iodine</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={manualFood.iodine}
+                                                        onChange={(e) => setManualFood({ ...manualFood, iodine: Number(e.target.value) })}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                        min="0"
+                                                        step="0.1"
+                                                    />
+                                                    <span className="text-[#F3F4F6] text-sm">mcg</span>
+                                                </div>
+                                                {manualFood.iodine > 0 && (
+                                                    <span className="font-bold text-sm">{Math.round((manualFood.iodine / 150) * 100)}%</span>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Magnesium (mg)</Label>
-                                            <Input
-                                                type="number"
-                                                value={manualFood.magnesium}
-                                                onChange={(e) => setManualFood({ ...manualFood, magnesium: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                                min="0"
-                                                step="0.1"
-                                            />
+
+                                        {/* Magnesium */}
+                                        <div className="py-2">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[#F3F4F6] text-sm">Magnesium</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={manualFood.magnesium}
+                                                        onChange={(e) => setManualFood({ ...manualFood, magnesium: Number(e.target.value) })}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                        min="0"
+                                                        step="0.1"
+                                                    />
+                                                    <span className="text-[#F3F4F6] text-sm">mg</span>
+                                                </div>
+                                                {manualFood.magnesium > 0 && (
+                                                    <span className="font-bold text-sm">{Math.round((manualFood.magnesium / 420) * 100)}%</span>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Zinc (mg)</Label>
-                                            <Input
-                                                type="number"
-                                                value={manualFood.zinc}
-                                                onChange={(e) => setManualFood({ ...manualFood, zinc: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                                min="0"
-                                                step="0.1"
-                                            />
+
+                                        {/* Zinc */}
+                                        <div className="py-2">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[#F3F4F6] text-sm">Zinc</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={manualFood.zinc}
+                                                        onChange={(e) => setManualFood({ ...manualFood, zinc: Number(e.target.value) })}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                        min="0"
+                                                        step="0.1"
+                                                    />
+                                                    <span className="text-[#F3F4F6] text-sm">mg</span>
+                                                </div>
+                                                {manualFood.zinc > 0 && (
+                                                    <span className="font-bold text-sm">{Math.round((manualFood.zinc / 11) * 100)}%</span>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Selenium (mcg)</Label>
-                                            <Input
-                                                type="number"
-                                                value={manualFood.selenium}
-                                                onChange={(e) => setManualFood({ ...manualFood, selenium: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                                min="0"
-                                                step="0.1"
-                                            />
+
+                                        {/* Selenium */}
+                                        <div className="py-2">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[#F3F4F6] text-sm">Selenium</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={manualFood.selenium}
+                                                        onChange={(e) => setManualFood({ ...manualFood, selenium: Number(e.target.value) })}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                        min="0"
+                                                        step="0.1"
+                                                    />
+                                                    <span className="text-[#F3F4F6] text-sm">mcg</span>
+                                                </div>
+                                                {manualFood.selenium > 0 && (
+                                                    <span className="font-bold text-sm">{Math.round((manualFood.selenium / 55) * 100)}%</span>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Copper (mg)</Label>
-                                            <Input
-                                                type="number"
-                                                value={manualFood.copper}
-                                                onChange={(e) => setManualFood({ ...manualFood, copper: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                                min="0"
-                                                step="0.1"
-                                            />
+
+                                        {/* Copper */}
+                                        <div className="py-2">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[#F3F4F6] text-sm">Copper</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={manualFood.copper}
+                                                        onChange={(e) => setManualFood({ ...manualFood, copper: Number(e.target.value) })}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                        min="0"
+                                                        step="0.1"
+                                                    />
+                                                    <span className="text-[#F3F4F6] text-sm">mg</span>
+                                                </div>
+                                                {manualFood.copper > 0 && (
+                                                    <span className="font-bold text-sm">{Math.round((manualFood.copper / 0.9) * 100)}%</span>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Manganese (mg)</Label>
-                                            <Input
-                                                type="number"
-                                                value={manualFood.manganese}
-                                                onChange={(e) => setManualFood({ ...manualFood, manganese: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                                min="0"
-                                                step="0.1"
-                                            />
+
+                                        {/* Manganese */}
+                                        <div className="py-2">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[#F3F4F6] text-sm">Manganese</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={manualFood.manganese}
+                                                        onChange={(e) => setManualFood({ ...manualFood, manganese: Number(e.target.value) })}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                        min="0"
+                                                        step="0.1"
+                                                    />
+                                                    <span className="text-[#F3F4F6] text-sm">mg</span>
+                                                </div>
+                                                {manualFood.manganese > 0 && (
+                                                    <span className="font-bold text-sm">{Math.round((manualFood.manganese / 2.3) * 100)}%</span>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Chromium (mcg)</Label>
-                                            <Input
-                                                type="number"
-                                                value={manualFood.chromium}
-                                                onChange={(e) => setManualFood({ ...manualFood, chromium: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                                min="0"
-                                                step="0.1"
-                                            />
+
+                                        {/* Chromium */}
+                                        <div className="py-2">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[#F3F4F6] text-sm">Chromium</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={manualFood.chromium}
+                                                        onChange={(e) => setManualFood({ ...manualFood, chromium: Number(e.target.value) })}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                        min="0"
+                                                        step="0.1"
+                                                    />
+                                                    <span className="text-[#F3F4F6] text-sm">mcg</span>
+                                                </div>
+                                                {manualFood.chromium > 0 && (
+                                                    <span className="font-bold text-sm">{Math.round((manualFood.chromium / 35) * 100)}%</span>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <Label className="text-[#A1A1AA] text-sm">Molybdenum (mcg)</Label>
-                                            <Input
-                                                type="number"
-                                                value={manualFood.molybdenum}
-                                                onChange={(e) => setManualFood({ ...manualFood, molybdenum: Number(e.target.value) })}
-                                                className="bg-[#121318] border-[#212227] text-[#F3F4F6]"
-                                                min="0"
-                                                step="0.1"
-                                            />
+
+                                        {/* Molybdenum */}
+                                        <div className="py-2">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[#F3F4F6] text-sm">Molybdenum</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={manualFood.molybdenum}
+                                                        onChange={(e) => setManualFood({ ...manualFood, molybdenum: Number(e.target.value) })}
+                                                        className="bg-[#0E0F13] border-[#212227] text-[#F3F4F6] w-16 h-7 px-2 text-sm"
+                                                        min="0"
+                                                        step="0.1"
+                                                    />
+                                                    <span className="text-[#F3F4F6] text-sm">mcg</span>
+                                                </div>
+                                                {manualFood.molybdenum > 0 && (
+                                                    <span className="font-bold text-sm">{Math.round((manualFood.molybdenum / 45) * 100)}%</span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
