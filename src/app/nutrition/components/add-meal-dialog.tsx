@@ -2488,7 +2488,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                 </div>
                             </div>
                         </details>
-                        </>
+                            </>
                         )}
                     </TabsContent>
 
