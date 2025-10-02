@@ -418,7 +418,10 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
 
     // Calculate scaled nutrition values based on current serving size
     const getScaledNutrition = () => {
-        if (!manualFoodHasData() || originalServingSize === 0) return manualFood
+        // Don't scale if no data, or if user hasn't changed serving size, or in edit mode
+        if (!manualFoodHasData() || isEditMode || originalServingSize === 0 || originalServingSize === manualFood.servingSize) {
+            return manualFood
+        }
 
         const multiplier = manualFood.servingSize / originalServingSize
 
