@@ -779,103 +779,90 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                             </div>
                                         </div>
 
-                                        {/* Right: Quick Insights */}
+                                        {/* Right: Nutrition Insights - Simple Badges */}
                                         {(manualFood.carbs > 0 || manualFood.protein > 0 || manualFood.fats > 0) && (
-                                            <div className="bg-[#0E0F13] border border-[#2A8CEA]/20 rounded-lg p-3">
-                                                <div className="flex items-center space-x-2 mb-2">
-                                                    <Star className="w-3.5 h-3.5 text-[#2A8CEA]" />
-                                                    <h5 className="text-[#F3F4F6] text-xs font-medium">Quick Insights</h5>
-                                                </div>
+                                            <div className="flex flex-wrap gap-1.5 items-start content-start">
+                                                {/* Complete Protein */}
+                                                {manualFood.protein > 0 && (() => {
+                                                    const hasCompleteProtein = (manualFood.animalProtein || 0) > 0 ||
+                                                                               manualFood.name.toLowerCase().includes('meat') ||
+                                                                               manualFood.name.toLowerCase().includes('fish') ||
+                                                                               manualFood.name.toLowerCase().includes('chicken') ||
+                                                                               manualFood.name.toLowerCase().includes('egg') ||
+                                                                               manualFood.name.toLowerCase().includes('quinoa') ||
+                                                                               manualFood.name.toLowerCase().includes('soy')
+                                                    if (hasCompleteProtein) {
+                                                        return (
+                                                            <Badge variant="default" className="text-xs">
+                                                                Complete Protein
+                                                            </Badge>
+                                                        )
+                                                    }
+                                                    return null
+                                                })()}
 
-                                                {/* Quality Badges */}
-                                                <div className="flex flex-wrap gap-1.5 mb-2">
-                                                    {/* Protein Quality */}
-                                                    {manualFood.protein > 0 && (() => {
-                                                        const hasCompleteProtein = (manualFood.animalProtein || 0) > 0 ||
-                                                                                   manualFood.name.toLowerCase().includes('meat') ||
-                                                                                   manualFood.name.toLowerCase().includes('fish') ||
-                                                                                   manualFood.name.toLowerCase().includes('chicken') ||
-                                                                                   manualFood.name.toLowerCase().includes('egg') ||
-                                                                                   manualFood.name.toLowerCase().includes('quinoa') ||
-                                                                                   manualFood.name.toLowerCase().includes('soy')
-                                                        if (hasCompleteProtein) {
-                                                            return (
-                                                                <Badge variant="default" className="text-xs py-0 px-2">
-                                                                    <Star className="w-2.5 h-2.5 mr-1" />
-                                                                    Complete Protein
-                                                                </Badge>
-                                                            )
-                                                        }
-                                                        return null
-                                                    })()}
+                                                {/* High Fiber */}
+                                                {manualFood.fiber >= 3 && (
+                                                    <Badge variant="default" className="text-xs">
+                                                        High Fiber
+                                                    </Badge>
+                                                )}
 
-                                                    {/* High Fiber */}
-                                                    {manualFood.fiber >= 3 && (
-                                                        <Badge variant="default" className="text-xs py-0 px-2">
-                                                            <Star className="w-2.5 h-2.5 mr-1" />
-                                                            High Fiber
-                                                        </Badge>
-                                                    )}
+                                                {/* Low Sugar */}
+                                                {manualFood.carbs > 0 && manualFood.sugar / manualFood.carbs < 0.1 && (
+                                                    <Badge variant="default" className="text-xs">
+                                                        Low Sugar
+                                                    </Badge>
+                                                )}
 
-                                                    {/* Low Sugar */}
-                                                    {manualFood.carbs > 0 && manualFood.sugar / manualFood.carbs < 0.1 && (
-                                                        <Badge variant="default" className="text-xs py-0 px-2">
-                                                            <CheckCircle className="w-2.5 h-2.5 mr-1" />
-                                                            Low Sugar
-                                                        </Badge>
-                                                    )}
+                                                {/* High Sugar Warning */}
+                                                {manualFood.carbs > 0 && manualFood.sugar / manualFood.carbs > 0.5 && (
+                                                    <Badge variant="destructive" className="text-xs">
+                                                        High Sugar
+                                                    </Badge>
+                                                )}
 
-                                                    {/* High Sugar Warning */}
-                                                    {manualFood.carbs > 0 && manualFood.sugar / manualFood.carbs > 0.5 && (
-                                                        <Badge variant="destructive" className="text-xs py-0 px-2">
-                                                            <AlertTriangle className="w-2.5 h-2.5 mr-1" />
-                                                            High Sugar
-                                                        </Badge>
-                                                    )}
+                                                {/* Trans Fat Warning */}
+                                                {manualFood.transFat > 0 && (
+                                                    <Badge variant="destructive" className="text-xs">
+                                                        Trans Fat
+                                                    </Badge>
+                                                )}
 
-                                                    {/* Trans Fat Warning */}
-                                                    {manualFood.transFat > 0 && (
-                                                        <Badge variant="destructive" className="text-xs py-0 px-2">
-                                                            <Shield className="w-2.5 h-2.5 mr-1" />
-                                                            Trans Fat
-                                                        </Badge>
-                                                    )}
+                                                {/* High Saturated Fat */}
+                                                {manualFood.saturatedFat > 5 && (
+                                                    <Badge variant="secondary" className="text-xs">
+                                                        High Saturated Fat
+                                                    </Badge>
+                                                )}
 
-                                                    {/* Low Saturated Fat */}
-                                                    {manualFood.saturatedFat > 0 && manualFood.saturatedFat < 2 && (
-                                                        <Badge variant="default" className="text-xs py-0 px-2">
-                                                            <Heart className="w-2.5 h-2.5 mr-1" />
-                                                            Heart Healthy
-                                                        </Badge>
-                                                    )}
-                                                </div>
+                                                {/* Low Saturated Fat */}
+                                                {manualFood.saturatedFat > 0 && manualFood.saturatedFat < 2 && (
+                                                    <Badge variant="default" className="text-xs">
+                                                        Low Saturated Fat
+                                                    </Badge>
+                                                )}
 
-                                                {/* Top Tip */}
-                                                <div className="text-xs text-[#A1A1AA]">
-                                                    {manualFood.transFat > 0 ? (
-                                                        <p className="flex items-start space-x-1.5">
-                                                            <X className="w-3 h-3 text-[#EF4444] mt-0.5 flex-shrink-0" />
-                                                            <span className="text-[#EF4444]">Contains trans fat - avoid when possible</span>
-                                                        </p>
-                                                    ) : manualFood.fiber >= 3 ? (
-                                                        <p className="flex items-start space-x-1.5">
-                                                            <CheckCircle className="w-3 h-3 text-[#00E676] mt-0.5 flex-shrink-0" />
-                                                            <span>Great source of fiber</span>
-                                                        </p>
-                                                    ) : manualFood.protein > 10 && (manualFood.animalProtein || 0) > 0 ? (
-                                                        <p className="flex items-start space-x-1.5">
-                                                            <Beef className="w-3 h-3 text-[#2A8CEA] mt-0.5 flex-shrink-0" />
-                                                            <span>High in complete protein</span>
-                                                        </p>
-                                                    ) : manualFood.saturatedFat > 0 && manualFood.saturatedFat < 2 ? (
-                                                        <p className="flex items-start space-x-1.5">
-                                                            <Heart className="w-3 h-3 text-[#00E676] mt-0.5 flex-shrink-0" />
-                                                            <span>Low saturated fat</span>
-                                                        </p>
-                                                    ) : (
-                                                        <p className="text-[#7A7F86]">Good nutritional balance</p>
-                                                    )}
-                                                </div>
+                                                {/* High Protein */}
+                                                {manualFood.protein > 10 && (
+                                                    <Badge variant="default" className="text-xs">
+                                                        High Protein
+                                                    </Badge>
+                                                )}
+
+                                                {/* High Sodium */}
+                                                {manualFood.sodium > 400 && (
+                                                    <Badge variant="secondary" className="text-xs">
+                                                        High Sodium
+                                                    </Badge>
+                                                )}
+
+                                                {/* Low Sodium */}
+                                                {manualFood.sodium > 0 && manualFood.sodium < 140 && (
+                                                    <Badge variant="default" className="text-xs">
+                                                        Low Sodium
+                                                    </Badge>
+                                                )}
                                             </div>
                                         )}
                                     </div>
