@@ -92,6 +92,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
 
     const [activeTab, setActiveTab] = useState<"search" | "manual" | "recent">("search")
     const [isEditMode, setIsEditMode] = useState(false) // Track if user is editing manual entry
+    const [originalServingSize, setOriginalServingSize] = useState<number>(100) // Store original serving size for scaling
 
     const getMealDisplayName = () => {
         const names = {
@@ -192,6 +193,9 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
     }, [searchQuery, searchMode, brandFilter])
 
     const handleFoodSelect = (foodResult: FoodSearchResult) => {
+        // Store original serving size for scaling calculations
+        setOriginalServingSize(foodResult.servingSize)
+
         // Auto-populate manual entry form with selected food data
         setManualFood({
             name: foodResult.name,
@@ -410,6 +414,56 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                manualFood.carbs > 0 ||
                manualFood.protein > 0 ||
                manualFood.fats > 0
+    }
+
+    // Calculate scaled nutrition values based on current serving size
+    const getScaledNutrition = () => {
+        if (!manualFoodHasData() || originalServingSize === 0) return manualFood
+
+        const multiplier = manualFood.servingSize / originalServingSize
+
+        return {
+            ...manualFood,
+            calories: Math.round(manualFood.calories * multiplier),
+            carbs: manualFood.carbs * multiplier,
+            protein: manualFood.protein * multiplier,
+            fats: manualFood.fats * multiplier,
+            fiber: manualFood.fiber * multiplier,
+            sugar: manualFood.sugar * multiplier,
+            sodium: manualFood.sodium * multiplier,
+            saturatedFat: manualFood.saturatedFat * multiplier,
+            transFat: manualFood.transFat * multiplier,
+            monounsaturatedFat: manualFood.monounsaturatedFat * multiplier,
+            polyunsaturatedFat: manualFood.polyunsaturatedFat * multiplier,
+            cholesterol: manualFood.cholesterol * multiplier,
+            animalProtein: manualFood.animalProtein * multiplier,
+            plantProtein: manualFood.plantProtein * multiplier,
+            potassium: manualFood.potassium * multiplier,
+            vitaminA: manualFood.vitaminA * multiplier,
+            vitaminC: manualFood.vitaminC * multiplier,
+            calcium: manualFood.calcium * multiplier,
+            iron: manualFood.iron * multiplier,
+            vitaminD: manualFood.vitaminD * multiplier,
+            vitaminE: manualFood.vitaminE * multiplier,
+            vitaminK: manualFood.vitaminK * multiplier,
+            thiamine: manualFood.thiamine * multiplier,
+            riboflavin: manualFood.riboflavin * multiplier,
+            niacin: manualFood.niacin * multiplier,
+            vitaminB6: manualFood.vitaminB6 * multiplier,
+            folate: manualFood.folate * multiplier,
+            vitaminB12: manualFood.vitaminB12 * multiplier,
+            biotin: manualFood.biotin * multiplier,
+            pantothenicAcid: manualFood.pantothenicAcid * multiplier,
+            phosphorus: manualFood.phosphorus * multiplier,
+            iodine: manualFood.iodine * multiplier,
+            magnesium: manualFood.magnesium * multiplier,
+            zinc: manualFood.zinc * multiplier,
+            selenium: manualFood.selenium * multiplier,
+            copper: manualFood.copper * multiplier,
+            manganese: manualFood.manganese * multiplier,
+            chromium: manualFood.chromium * multiplier,
+            molybdenum: manualFood.molybdenum * multiplier
+        }
     }
 
     const hasDetailedNutrients = (macros: DetailedNutrients) => {
@@ -667,7 +721,9 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                     {/* Manual Entry Tab */}
                     <TabsContent value="manual" className="space-y-6">
                         {/* Read-Only Summary View (when auto-filled from search) */}
-                        {!isEditMode && manualFoodHasData() ? (
+                        {!isEditMode && manualFoodHasData() ? (() => {
+                            const scaledFood = getScaledNutrition()
+                            return (
                             <div className="space-y-4">
                                 {/* Food Header */}
                                 <div className="bg-[#121318] border border-[#212227] rounded-lg p-4">
@@ -729,7 +785,7 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                     <div className="py-3 border-b-8 border-[#212227]">
                                         <div className="flex items-baseline justify-between">
                                             <span className="text-[#F3F4F6] font-bold text-2xl">Calories</span>
-                                            <span className="text-[#F3F4F6] font-bold text-3xl">{manualFood.calories}</span>
+                                            <span className="text-[#F3F4F6] font-bold text-3xl">{scaledFood.calories}</span>
                                         </div>
                                     </div>
 
@@ -743,50 +799,50 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                         <div className="py-2 flex justify-between text-[#F3F4F6]">
                                             <div>
                                                 <span className="font-bold">Total Fat</span>
-                                                <span className="ml-1">{formatNutrientValue(manualFood.fats)}g</span>
+                                                <span className="ml-1">{formatNutrientValue(scaledFood.fats)}g</span>
                                             </div>
-                                            {manualFood.fats > 0 && (
-                                                <span className="font-bold">{Math.round((manualFood.fats / 78) * 100)}%</span>
+                                            {scaledFood.fats > 0 && (
+                                                <span className="font-bold">{Math.round((scaledFood.fats / 78) * 100)}%</span>
                                             )}
                                         </div>
 
                                         {/* Saturated Fat - Indented */}
-                                        {manualFood.saturatedFat > 0 && (
+                                        {scaledFood.saturatedFat > 0 && (
                                             <div className="py-1.5 flex justify-between text-[#F3F4F6] pl-4">
                                                 <div className="text-sm">
-                                                    Saturated Fat {formatNutrientValue(manualFood.saturatedFat)}g
+                                                    Saturated Fat {formatNutrientValue(scaledFood.saturatedFat)}g
                                                 </div>
-                                                <span className="font-bold text-sm">{Math.round((manualFood.saturatedFat / 20) * 100)}%</span>
+                                                <span className="font-bold text-sm">{Math.round((scaledFood.saturatedFat / 20) * 100)}%</span>
                                             </div>
                                         )}
 
                                         {/* Trans Fat - Indented */}
-                                        {manualFood.transFat > 0 && (
+                                        {scaledFood.transFat > 0 && (
                                             <div className="py-1.5 text-[#EF4444] pl-4 text-sm flex items-center">
                                                 <AlertTriangle className="w-3 h-3 mr-1" />
-                                                Trans Fat {formatNutrientValue(manualFood.transFat)}g
+                                                Trans Fat {formatNutrientValue(scaledFood.transFat)}g
                                             </div>
                                         )}
 
                                         {/* Cholesterol */}
-                                        {manualFood.cholesterol > 0 && (
+                                        {scaledFood.cholesterol > 0 && (
                                             <div className="py-2 flex justify-between text-[#F3F4F6]">
                                                 <div>
                                                     <span className="font-bold">Cholesterol</span>
-                                                    <span className="ml-1">{formatNutrientValue(manualFood.cholesterol)}mg</span>
+                                                    <span className="ml-1">{formatNutrientValue(scaledFood.cholesterol)}mg</span>
                                                 </div>
-                                                <span className="font-bold">{Math.round((manualFood.cholesterol / 300) * 100)}%</span>
+                                                <span className="font-bold">{Math.round((scaledFood.cholesterol / 300) * 100)}%</span>
                                             </div>
                                         )}
 
                                         {/* Sodium */}
-                                        {manualFood.sodium > 0 && (
+                                        {scaledFood.sodium > 0 && (
                                             <div className="py-2 flex justify-between text-[#F3F4F6]">
                                                 <div>
                                                     <span className="font-bold">Sodium</span>
-                                                    <span className="ml-1">{formatNutrientValue(manualFood.sodium)}mg</span>
+                                                    <span className="ml-1">{formatNutrientValue(scaledFood.sodium)}mg</span>
                                                 </div>
-                                                <span className="font-bold">{Math.round((manualFood.sodium / 2300) * 100)}%</span>
+                                                <span className="font-bold">{Math.round((scaledFood.sodium / 2300) * 100)}%</span>
                                             </div>
                                         )}
 
@@ -794,61 +850,61 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                         <div className="py-2 flex justify-between text-[#F3F4F6]">
                                             <div>
                                                 <span className="font-bold">Total Carbohydrate</span>
-                                                <span className="ml-1">{formatNutrientValue(manualFood.carbs)}g</span>
+                                                <span className="ml-1">{formatNutrientValue(scaledFood.carbs)}g</span>
                                             </div>
-                                            {manualFood.carbs > 0 && (
-                                                <span className="font-bold">{Math.round((manualFood.carbs / 275) * 100)}%</span>
+                                            {scaledFood.carbs > 0 && (
+                                                <span className="font-bold">{Math.round((scaledFood.carbs / 275) * 100)}%</span>
                                             )}
                                         </div>
 
                                         {/* Dietary Fiber - Indented */}
-                                        {manualFood.fiber > 0 && (
+                                        {scaledFood.fiber > 0 && (
                                             <div className="py-1.5 flex justify-between text-[#F3F4F6] pl-4">
                                                 <div className="text-sm">
-                                                    Dietary Fiber {formatNutrientValue(manualFood.fiber)}g
+                                                    Dietary Fiber {formatNutrientValue(scaledFood.fiber)}g
                                                 </div>
-                                                <span className="font-bold text-sm">{Math.round((manualFood.fiber / 28) * 100)}%</span>
+                                                <span className="font-bold text-sm">{Math.round((scaledFood.fiber / 28) * 100)}%</span>
                                             </div>
                                         )}
 
                                         {/* Total Sugars - Indented */}
-                                        {manualFood.sugar > 0 && (
+                                        {scaledFood.sugar > 0 && (
                                             <div className="py-1.5 text-[#F3F4F6] pl-4 text-sm">
-                                                Total Sugars {formatNutrientValue(manualFood.sugar)}g
+                                                Total Sugars {formatNutrientValue(scaledFood.sugar)}g
                                             </div>
                                         )}
 
                                         {/* Protein */}
                                         <div className="py-2 text-[#F3F4F6] border-b-4 border-[#212227]">
                                             <span className="font-bold">Protein</span>
-                                            <span className="ml-1">{formatNutrientValue(manualFood.protein)}g</span>
+                                            <span className="ml-1">{formatNutrientValue(scaledFood.protein)}g</span>
                                         </div>
 
                                         {/* FDA Mandatory Micronutrients - Only show if present */}
-                                        {(manualFood.vitaminD > 0 || manualFood.calcium > 0 || manualFood.iron > 0 || manualFood.potassium > 0) && (
+                                        {(scaledFood.vitaminD > 0 || scaledFood.calcium > 0 || scaledFood.iron > 0 || scaledFood.potassium > 0) && (
                                             <div className="py-3 space-y-2">
-                                                {manualFood.vitaminD > 0 && (
+                                                {scaledFood.vitaminD > 0 && (
                                                     <div className="flex justify-between text-[#F3F4F6] text-sm">
-                                                        <span>Vitamin D {formatNutrientValue(manualFood.vitaminD)}mcg</span>
-                                                        <span>{Math.round((manualFood.vitaminD / 20) * 100)}%</span>
+                                                        <span>Vitamin D {formatNutrientValue(scaledFood.vitaminD)}mcg</span>
+                                                        <span>{Math.round((scaledFood.vitaminD / 20) * 100)}%</span>
                                                     </div>
                                                 )}
-                                                {manualFood.calcium > 0 && (
+                                                {scaledFood.calcium > 0 && (
                                                     <div className="flex justify-between text-[#F3F4F6] text-sm">
-                                                        <span>Calcium {formatNutrientValue(manualFood.calcium)}mg</span>
-                                                        <span>{Math.round((manualFood.calcium / 1300) * 100)}%</span>
+                                                        <span>Calcium {formatNutrientValue(scaledFood.calcium)}mg</span>
+                                                        <span>{Math.round((scaledFood.calcium / 1300) * 100)}%</span>
                                                     </div>
                                                 )}
-                                                {manualFood.iron > 0 && (
+                                                {scaledFood.iron > 0 && (
                                                     <div className="flex justify-between text-[#F3F4F6] text-sm">
-                                                        <span>Iron {formatNutrientValue(manualFood.iron)}mg</span>
-                                                        <span>{Math.round((manualFood.iron / 18) * 100)}%</span>
+                                                        <span>Iron {formatNutrientValue(scaledFood.iron)}mg</span>
+                                                        <span>{Math.round((scaledFood.iron / 18) * 100)}%</span>
                                                     </div>
                                                 )}
-                                                {manualFood.potassium > 0 && (
+                                                {scaledFood.potassium > 0 && (
                                                     <div className="flex justify-between text-[#F3F4F6] text-sm">
-                                                        <span>Potassium {formatNutrientValue(manualFood.potassium)}mg</span>
-                                                        <span>{Math.round((manualFood.potassium / 4700) * 100)}%</span>
+                                                        <span>Potassium {formatNutrientValue(scaledFood.potassium)}mg</span>
+                                                        <span>{Math.round((scaledFood.potassium / 4700) * 100)}%</span>
                                                     </div>
                                                 )}
                                             </div>
@@ -862,39 +918,39 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
                                 </div>
 
                                 {/* Additional Nutrients - Only if present */}
-                                {(manualFood.monounsaturatedFat > 0 || manualFood.polyunsaturatedFat > 0 || manualFood.animalProtein > 0 || manualFood.plantProtein > 0) && (
+                                {(scaledFood.monounsaturatedFat > 0 || scaledFood.polyunsaturatedFat > 0 || scaledFood.animalProtein > 0 || scaledFood.plantProtein > 0) && (
                                     <div className="bg-[#121318] border border-[#212227] rounded-lg p-4">
                                         <h4 className="text-[#F3F4F6] font-medium text-sm mb-3">Additional Nutrients</h4>
                                         <div className="grid grid-cols-2 gap-4 text-sm">
-                                            {manualFood.monounsaturatedFat > 0 && (
+                                            {scaledFood.monounsaturatedFat > 0 && (
                                                 <div className="flex justify-between">
                                                     <span className="text-[#A1A1AA]">Monounsaturated Fat</span>
-                                                    <span className="text-[#F3F4F6] font-medium">{formatNutrientValue(manualFood.monounsaturatedFat)}g</span>
+                                                    <span className="text-[#F3F4F6] font-medium">{formatNutrientValue(scaledFood.monounsaturatedFat)}g</span>
                                                 </div>
                                             )}
-                                            {manualFood.polyunsaturatedFat > 0 && (
+                                            {scaledFood.polyunsaturatedFat > 0 && (
                                                 <div className="flex justify-between">
                                                     <span className="text-[#A1A1AA]">Polyunsaturated Fat</span>
-                                                    <span className="text-[#F3F4F6] font-medium">{formatNutrientValue(manualFood.polyunsaturatedFat)}g</span>
+                                                    <span className="text-[#F3F4F6] font-medium">{formatNutrientValue(scaledFood.polyunsaturatedFat)}g</span>
                                                 </div>
                                             )}
-                                            {manualFood.animalProtein > 0 && (
+                                            {scaledFood.animalProtein > 0 && (
                                                 <div className="flex justify-between">
                                                     <span className="text-[#A1A1AA]">Animal Protein</span>
-                                                    <span className="text-[#2A8CEA] font-medium">{formatNutrientValue(manualFood.animalProtein)}g</span>
+                                                    <span className="text-[#2A8CEA] font-medium">{formatNutrientValue(scaledFood.animalProtein)}g</span>
                                                 </div>
                                             )}
-                                            {manualFood.plantProtein > 0 && (
+                                            {scaledFood.plantProtein > 0 && (
                                                 <div className="flex justify-between">
                                                     <span className="text-[#A1A1AA]">Plant Protein</span>
-                                                    <span className="text-[#9BE15D] font-medium">{formatNutrientValue(manualFood.plantProtein)}g</span>
+                                                    <span className="text-[#9BE15D] font-medium">{formatNutrientValue(scaledFood.plantProtein)}g</span>
                                                 </div>
                                             )}
                                         </div>
                                     </div>
                                 )}
                             </div>
-                        ) : (
+                        )})() : (
                             /* Editable Form View */
                             <>
                         {/* Header with guidance */}
