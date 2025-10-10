@@ -76,10 +76,18 @@ export function HealssNav() {
     }, [user, supabase])
 
     const navItems = [
-        { href: "https://healss.kryloss.com/workout", label: "Workout", current: pathname === "/workout" },
-        { href: "https://healss.kryloss.com/nutrition", label: "Nutrition", current: pathname === "/nutrition" },
-        { href: "https://healss.kryloss.com/progress", label: "Progress", current: pathname === "/progress" },
+        { href: "/workout", label: "Workout", value: "workout" },
+        { href: "/nutrition", label: "Nutrition", value: "nutrition" },
+        { href: "/progress", label: "Progress", value: "progress" },
     ]
+
+    // Determine active tab based on pathname
+    const getActiveTab = () => {
+        if (pathname.startsWith('/workout')) return 'workout'
+        if (pathname.startsWith('/nutrition')) return 'nutrition'
+        if (pathname.startsWith('/progress')) return 'progress'
+        return 'workout' // default
+    }
 
     return (
         <nav className="bg-[#1A1D21] border-b border-[#2A3442] sticky top-0 z-50">
@@ -97,32 +105,18 @@ export function HealssNav() {
 
                     {/* Navigation Links */}
                     <div className="hidden md:flex items-center">
-                        <Tabs
-                            value={pathname.includes('/workout') ? 'workout' : pathname.includes('/nutrition') ? 'nutrition' : pathname.includes('/progress') ? 'progress' : 'workout'}
-                            className="w-auto"
-                        >
-                            <TabsList className="bg-[#0F101A] border border-[#2A3442] h-11 p-1">
-                                <TabsTrigger
-                                    value="workout"
-                                    asChild
-                                    className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#114EB2] data-[state=active]:via-[#257ADA] data-[state=active]:to-[#4AA7FF] data-[state=active]:text-white data-[state=active]:shadow-[0_0_20px_rgba(37,122,218,0.35)] text-[#9CA9B7] hover:text-[#FBF7FA] transition-all"
-                                >
-                                    <Link href="https://healss.kryloss.com/workout">Workout</Link>
-                                </TabsTrigger>
-                                <TabsTrigger
-                                    value="nutrition"
-                                    asChild
-                                    className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#114EB2] data-[state=active]:via-[#257ADA] data-[state=active]:to-[#4AA7FF] data-[state=active]:text-white data-[state=active]:shadow-[0_0_20px_rgba(37,122,218,0.35)] text-[#9CA9B7] hover:text-[#FBF7FA] transition-all"
-                                >
-                                    <Link href="https://healss.kryloss.com/nutrition">Nutrition</Link>
-                                </TabsTrigger>
-                                <TabsTrigger
-                                    value="progress"
-                                    asChild
-                                    className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#114EB2] data-[state=active]:via-[#257ADA] data-[state=active]:to-[#4AA7FF] data-[state=active]:text-white data-[state=active]:shadow-[0_0_20px_rgba(37,122,218,0.35)] text-[#9CA9B7] hover:text-[#FBF7FA] transition-all"
-                                >
-                                    <Link href="https://healss.kryloss.com/progress">Progress</Link>
-                                </TabsTrigger>
+                        <Tabs value={getActiveTab()} className="w-auto">
+                            <TabsList className="bg-[#0F101A] border border-[#2A3442] h-11 p-1 rounded-xl">
+                                {navItems.map((item) => (
+                                    <TabsTrigger
+                                        key={item.value}
+                                        value={item.value}
+                                        asChild
+                                        className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#114EB2] data-[state=active]:via-[#257ADA] data-[state=active]:to-[#4AA7FF] data-[state=active]:text-white data-[state=active]:shadow-[0_0_20px_rgba(37,122,218,0.35)] text-[#9CA9B7] hover:text-[#FBF7FA] transition-all px-6 rounded-lg"
+                                    >
+                                        <Link href={item.href}>{item.label}</Link>
+                                    </TabsTrigger>
+                                ))}
                             </TabsList>
                         </Tabs>
                     </div>
