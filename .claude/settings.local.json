@@ -64,7 +64,8 @@
       "Bash(cat:*)",
       "WebFetch(domain:www.fda.gov)",
       "WebFetch(domain:support.cronometer.com)",
-      "WebFetch(domain:www.accessdata.fda.gov)"
+      "WebFetch(domain:www.accessdata.fda.gov)",
+      "Bash(del \"C:\\Users\\mrRep\\Desktop\\Dashboard\\src\\app\\healss\\components\\healss-nav.tsx\")"
     ],
     "deny": [],
     "ask": [],
