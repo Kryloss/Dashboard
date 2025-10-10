@@ -630,7 +630,7 @@ export default function WorkoutPage() {
                 </div>
 
                 {/* Content */}
-                <div className="relative z-10 pb-20 md:pb-4">
+                <div className="relative z-10 pb-24 md:pb-4">
                     <div className="container mx-auto max-w-7xl px-4 md:px-6 py-4">
                         {/* Daily Goals Section */}
                         <section className="mb-6">
@@ -890,10 +890,10 @@ export default function WorkoutPage() {
                         </section>
 
                         {/* Quick Actions Section */}
-                        <section className="mb-12">
+                        <section className="mb-8">
                             <h2 className="text-xl font-semibold text-[#F3F4F6] mb-6">Quick Actions</h2>
 
-                            <div className="grid grid-cols-6 gap-4">
+                            <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:grid md:grid-cols-6 scrollbar-hide snap-x snap-mandatory">
                                 <QuickActionCard
                                     icon={<Footprints className="w-7 h-7" />}
                                     label="Running"
