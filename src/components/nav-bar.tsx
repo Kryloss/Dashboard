@@ -142,25 +142,25 @@ export function NavBar() {
                         {isOnHealss ? (
                             // Healss-specific navigation with Tabs
                             <Tabs value={getActiveTab()} className="w-auto">
-                                <TabsList className="bg-[#0F101A] border border-[#2A3442] h-10 p-1 rounded-xl">
+                                <TabsList className="bg-transparent border-0 h-auto p-0 gap-6">
                                     <TabsTrigger
                                         value="workout"
                                         asChild
-                                        className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#114EB2] data-[state=active]:via-[#257ADA] data-[state=active]:to-[#4AA7FF] data-[state=active]:text-white data-[state=active]:shadow-[0_0_20px_rgba(37,122,218,0.35)] text-[#9CA9B7] hover:text-[#FBF7FA] transition-all px-6 rounded-lg"
+                                        className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#114EB2] data-[state=active]:via-[#257ADA] data-[state=active]:to-[#4AA7FF] data-[state=active]:text-white data-[state=active]:shadow-[0_0_20px_rgba(37,122,218,0.35)] data-[state=active]:px-4 data-[state=active]:py-1.5 data-[state=active]:rounded-full text-[#9CA9B7] hover:text-[#FBF7FA] transition-all bg-transparent shadow-none px-0 py-0"
                                     >
                                         <Link href="/workout">Workout</Link>
                                     </TabsTrigger>
                                     <TabsTrigger
                                         value="nutrition"
                                         asChild
-                                        className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#114EB2] data-[state=active]:via-[#257ADA] data-[state=active]:to-[#4AA7FF] data-[state=active]:text-white data-[state=active]:shadow-[0_0_20px_rgba(37,122,218,0.35)] text-[#9CA9B7] hover:text-[#FBF7FA] transition-all px-6 rounded-lg"
+                                        className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#114EB2] data-[state=active]:via-[#257ADA] data-[state=active]:to-[#4AA7FF] data-[state=active]:text-white data-[state=active]:shadow-[0_0_20px_rgba(37,122,218,0.35)] data-[state=active]:px-4 data-[state=active]:py-1.5 data-[state=active]:rounded-full text-[#9CA9B7] hover:text-[#FBF7FA] transition-all bg-transparent shadow-none px-0 py-0"
                                     >
                                         <Link href="/nutrition">Nutrition</Link>
                                     </TabsTrigger>
                                     <TabsTrigger
                                         value="progress"
                                         asChild
-                                        className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#114EB2] data-[state=active]:via-[#257ADA] data-[state=active]:to-[#4AA7FF] data-[state=active]:text-white data-[state=active]:shadow-[0_0_20px_rgba(37,122,218,0.35)] text-[#9CA9B7] hover:text-[#FBF7FA] transition-all px-6 rounded-lg"
+                                        className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#114EB2] data-[state=active]:via-[#257ADA] data-[state=active]:to-[#4AA7FF] data-[state=active]:text-white data-[state=active]:shadow-[0_0_20px_rgba(37,122,218,0.35)] data-[state=active]:px-4 data-[state=active]:py-1.5 data-[state=active]:rounded-full text-[#9CA9B7] hover:text-[#FBF7FA] transition-all bg-transparent shadow-none px-0 py-0"
                                     >
                                         <Link href="/progress">Progress</Link>
                                     </TabsTrigger>
