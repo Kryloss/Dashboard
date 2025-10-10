@@ -106,7 +106,7 @@ export function HealssNav() {
                     {/* Navigation Links */}
                     <div className="hidden md:flex items-center">
                         <Tabs value={getActiveTab()} className="w-auto">
-                            <TabsList className="bg-[#0F101A] border border-[#2A3442] h-11 p-1 rounded-xl">
+                            <TabsList className="bg-[#0F101A] border border-[#2A3442] h-10 p-1 rounded-xl">
                                 {navItems.map((item) => (
                                     <TabsTrigger
                                         key={item.value}
