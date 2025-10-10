@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { isOnSubdomain } from "@/lib/subdomains"
+import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 
 export default function ProgressPage() {
     const [isHealssSubdomain, setIsHealssSubdomain] = useState(false)
@@ -16,11 +17,14 @@ export default function ProgressPage() {
     if (isHealssSubdomain) {
         return (
             <div className="min-h-screen bg-[#0B0C0D] text-[#FBF7FA]">
-                <div className="container mx-auto px-4 py-8">
+                <div className="container mx-auto px-4 md:px-6 py-8 pb-20 md:pb-8">
                     <div className="flex items-center justify-center min-h-[60vh]">
                         <p className="text-2xl text-[#9CA9B7]">In development</p>
                     </div>
                 </div>
+
+                {/* Mobile Bottom Navigation */}
+                <MobileBottomNav />
             </div>
         )
     }

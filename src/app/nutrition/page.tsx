@@ -17,6 +17,8 @@ import { EditFoodDialog } from "./components/edit-food-dialog"
 import { EditMealDialog } from "./components/edit-meal-dialog"
 import { CreateMealDialog } from "./components/create-meal-dialog"
 import { SetGoalDialog } from "../workout/components/set-goal-dialog"
+import { MobileBottomNav } from "@/components/mobile-bottom-nav"
+import { MobileFAB } from "@/components/mobile-fab"
 import { Plus, Apple, Utensils, User, Dumbbell, Coffee, Sandwich, ChefHat, Cookie, Flame, Moon, TrendingUp, Edit3, Trash2, Pizza, Salad, Croissant, IceCream, Sun, Cake, Beef, Fish, Soup } from "lucide-react"
 
 export default function NutritionPage() {
@@ -820,8 +822,8 @@ export default function NutritionPage() {
                 </div>
 
                 {/* Content */}
-                <div className="relative z-10">
-                    <div className="container mx-auto max-w-7xl px-6 py-4">
+                <div className="relative z-10 pb-20 md:pb-4">
+                    <div className="container mx-auto max-w-7xl px-4 md:px-6 py-4">
                         {/* Daily Goals Section */}
                         <section className="mb-6">
                             <div className="flex items-center justify-end mb-3 space-x-2">
@@ -1327,6 +1329,34 @@ export default function NutritionPage() {
                 <SetGoalDialog
                     open={showSetGoalDialog}
                     onOpenChange={setShowSetGoalDialog}
+                />
+
+                {/* Mobile Bottom Navigation */}
+                <MobileBottomNav />
+
+                {/* Mobile Floating Action Button */}
+                <MobileFAB
+                    actions={[
+                        {
+                            label: "Add Food",
+                            icon: Plus,
+                            onClick: () => {
+                                if (!user) {
+                                    notifications.warning('Sign in required', {
+                                        description: 'Please sign in to add meals',
+                                        duration: 4000,
+                                        action: {
+                                            label: 'Sign In',
+                                            onClick: () => router.push('/auth/signin')
+                                        }
+                                    })
+                                    return
+                                }
+                                handleAddFood('breakfast')
+                            },
+                            variant: "primary"
+                        }
+                    ]}
                 />
             </div>
         )

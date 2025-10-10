@@ -231,7 +231,19 @@ body {
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
   }
-  
+
+  /* Mobile bottom navigation safe area */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Prevent content from being hidden behind mobile bottom nav */
+  @media (max-width: 768px) {
+    body {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  }
+
   /* Fix dialog overlay issues on mobile */
   [data-radix-dialog-overlay] {
     position: fixed !important;
