@@ -22,6 +22,11 @@ export const metadata: Metadata = {
   creator: "Kryloss",
   publisher: "Kryloss",
   metadataBase: new URL("https://kryloss.com"),
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+  },
   openGraph: {
     title: "Kryloss - Productivity Platform Dashboard",
     description: "Centralized hub for powerful productivity tools. Access health tracking, notifications, and more from one unified dashboard.",
