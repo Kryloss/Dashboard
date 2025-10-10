@@ -4,9 +4,6 @@ import { Hero } from "@/components/hero"
 import { UpdateCard } from "@/components/update-card"
 import { updates } from "@/lib/updates"
 import { Button } from "@/components/ui/button"
-import { KrylossMobileBottomNav } from "@/components/kryloss-mobile-bottom-nav"
-import { MobileFAB } from "@/components/mobile-fab"
-import { UserPlus } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { isOnSubdomain } from "@/lib/subdomains"
@@ -41,12 +38,12 @@ export default function Home() {
 
   // Default main site content
   return (
-    <div className="min-h-screen bg-[#0B0C0D] pb-20 md:pb-0">
+    <div className="min-h-screen bg-[#0B0C0D]">
       {/* Hero Section */}
       <Hero />
 
       {/* Updates/News Section */}
-      <section className="py-16 px-4 md:px-6">
+      <section className="py-16 px-6">
         <div className="container mx-auto max-w-7xl">
           {/* Section Header */}
           <div className="text-center mb-12">
@@ -86,21 +83,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* Mobile Bottom Navigation */}
-      <KrylossMobileBottomNav />
-
-      {/* Mobile Floating Action Button */}
-      <MobileFAB
-        actions={[
-          {
-            label: "Get Started",
-            icon: UserPlus,
-            onClick: () => router.push('/signup'),
-            variant: "primary"
-          }
-        ]}
-      />
     </div>
   )
 }
