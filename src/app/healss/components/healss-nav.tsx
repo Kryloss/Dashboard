@@ -13,6 +13,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import type { Profile } from "@/lib/types/database.types"
@@ -95,19 +96,35 @@ export function HealssNav() {
                     </div>
 
                     {/* Navigation Links */}
-                    <div className="hidden md:flex items-center space-x-8">
-                        {navItems.map((item) => (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className={`text-sm font-medium transition-colors ${item.current
-                                    ? "text-[#4AA7FF]"
-                                    : "text-[#9CA9B7] hover:text-[#FBF7FA]"
-                                    }`}
-                            >
-                                {item.label}
-                            </Link>
-                        ))}
+                    <div className="hidden md:flex items-center">
+                        <Tabs
+                            value={pathname.includes('/workout') ? 'workout' : pathname.includes('/nutrition') ? 'nutrition' : pathname.includes('/progress') ? 'progress' : 'workout'}
+                            className="w-auto"
+                        >
+                            <TabsList className="bg-[#0F101A] border border-[#2A3442] h-11 p-1">
+                                <TabsTrigger
+                                    value="workout"
+                                    asChild
+                                    className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#114EB2] data-[state=active]:via-[#257ADA] data-[state=active]:to-[#4AA7FF] data-[state=active]:text-white data-[state=active]:shadow-[0_0_20px_rgba(37,122,218,0.35)] text-[#9CA9B7] hover:text-[#FBF7FA] transition-all"
+                                >
+                                    <Link href="https://healss.kryloss.com/workout">Workout</Link>
+                                </TabsTrigger>
+                                <TabsTrigger
+                                    value="nutrition"
+                                    asChild
+                                    className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#114EB2] data-[state=active]:via-[#257ADA] data-[state=active]:to-[#4AA7FF] data-[state=active]:text-white data-[state=active]:shadow-[0_0_20px_rgba(37,122,218,0.35)] text-[#9CA9B7] hover:text-[#FBF7FA] transition-all"
+                                >
+                                    <Link href="https://healss.kryloss.com/nutrition">Nutrition</Link>
+                                </TabsTrigger>
+                                <TabsTrigger
+                                    value="progress"
+                                    asChild
+                                    className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#114EB2] data-[state=active]:via-[#257ADA] data-[state=active]:to-[#4AA7FF] data-[state=active]:text-white data-[state=active]:shadow-[0_0_20px_rgba(37,122,218,0.35)] text-[#9CA9B7] hover:text-[#FBF7FA] transition-all"
+                                >
+                                    <Link href="https://healss.kryloss.com/progress">Progress</Link>
+                                </TabsTrigger>
+                            </TabsList>
+                        </Tabs>
                     </div>
 
                     {/* Auth Section */}
