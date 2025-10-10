@@ -20,15 +20,18 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getSubdomains, subdomains } from "@/lib/subdomains"
 import { cn } from "@/lib/utils"
 import { useAuthContext } from "@/lib/contexts/AuthContext"
 import { createClient } from "@/lib/supabase/client"
 import { useState, useEffect, useRef, useCallback } from "react"
+import { usePathname } from "next/navigation"
 import type { Profile } from "@/lib/types/database.types"
 
 export function NavBar() {
     const { user, loading, signOut: authSignOut, isAuthenticated } = useAuthContext()
+    const pathname = usePathname()
 
     // Debug authentication state changes
     useEffect(() => {
@@ -58,7 +61,7 @@ export function NavBar() {
 
         async function fetchProfile() {
             if (!user?.id) return // Additional safety check
-            
+
             try {
                 console.log('NavBar: Fetching profile for user:', user.email)
                 const { data: profile, error } = await supabase
@@ -111,6 +114,14 @@ export function NavBar() {
         setIsOnHealss(window.location.hostname.includes('healss.kryloss.com'))
     }, [])
 
+    // Determine active tab for Healss navigation
+    const getActiveTab = () => {
+        if (pathname.startsWith('/workout')) return 'workout'
+        if (pathname.startsWith('/nutrition')) return 'nutrition'
+        if (pathname.startsWith('/progress')) return 'progress'
+        return 'workout'
+    }
+
     return (
         <header className="sticky top-0 z-50 w-full border-b border-[#1C2430] bg-[#0B0C0D]/80 backdrop-blur">
             <div className="flex h-16 w-full items-center justify-between px-4">
@@ -129,27 +140,32 @@ export function NavBar() {
                     {/* Individual tool links - show on larger screens (lg+) */}
                     <div className="hidden lg:flex items-center space-x-6">
                         {isOnHealss ? (
-                            // Healss-specific navigation
-                            <>
-                                <Link
-                                    href="https://healss.kryloss.com/workout"
-                                    className="text-[#9CA9B7] hover:text-[#FBF7FA] transition-colors px-3 py-2 rounded-md hover:bg-white/5"
-                                >
-                                    Workout
-                                </Link>
-                                <Link
-                                    href="https://healss.kryloss.com/nutrition"
-                                    className="text-[#9CA9B7] hover:text-[#FBF7FA] transition-colors px-3 py-2 rounded-md hover:bg-white/5"
-                                >
-                                    Nutrition
-                                </Link>
-                                <Link
-                                    href="https://healss.kryloss.com/progress"
-                                    className="text-[#9CA9B7] hover:text-[#FBF7FA] transition-colors px-3 py-2 rounded-md hover:bg-white/5"
-                                >
-                                    Progress
-                                </Link>
-                            </>
+                            // Healss-specific navigation with Tabs
+                            <Tabs value={getActiveTab()} className="w-auto">
+                                <TabsList className="bg-[#0F101A] border border-[#2A3442] h-10 p-1 rounded-xl">
+                                    <TabsTrigger
+                                        value="workout"
+                                        asChild
+                                        className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#114EB2] data-[state=active]:via-[#257ADA] data-[state=active]:to-[#4AA7FF] data-[state=active]:text-white data-[state=active]:shadow-[0_0_20px_rgba(37,122,218,0.35)] text-[#9CA9B7] hover:text-[#FBF7FA] transition-all px-6 rounded-lg"
+                                    >
+                                        <Link href="/workout">Workout</Link>
+                                    </TabsTrigger>
+                                    <TabsTrigger
+                                        value="nutrition"
+                                        asChild
+                                        className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#114EB2] data-[state=active]:via-[#257ADA] data-[state=active]:to-[#4AA7FF] data-[state=active]:text-white data-[state=active]:shadow-[0_0_20px_rgba(37,122,218,0.35)] text-[#9CA9B7] hover:text-[#FBF7FA] transition-all px-6 rounded-lg"
+                                    >
+                                        <Link href="/nutrition">Nutrition</Link>
+                                    </TabsTrigger>
+                                    <TabsTrigger
+                                        value="progress"
+                                        asChild
+                                        className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#114EB2] data-[state=active]:via-[#257ADA] data-[state=active]:to-[#4AA7FF] data-[state=active]:text-white data-[state=active]:shadow-[0_0_20px_rgba(37,122,218,0.35)] text-[#9CA9B7] hover:text-[#FBF7FA] transition-all px-6 rounded-lg"
+                                    >
+                                        <Link href="/progress">Progress</Link>
+                                    </TabsTrigger>
+                                </TabsList>
+                            </Tabs>
                         ) : (
                             // Main site navigation
                             <>
