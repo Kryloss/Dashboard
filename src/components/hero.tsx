@@ -16,10 +16,10 @@ export function Hero() {
             />
 
             {/* Content */}
-            <div className="relative z-10 text-center max-w-4xl mx-auto px-6">
+            <div className="relative z-10 text-center max-w-4xl mx-auto px-4 md:px-6">
                 {/* Logo/Brand */}
                 <div className="mb-6">
-                    <h1 className="text-7xl md:text-7xl font-extrabold text-[#FBF7FA] tracking-tight leading-[70px] mb-5">
+                    <h1 className="text-5xl md:text-7xl font-extrabold text-[#FBF7FA] tracking-tight leading-tight md:leading-[70px] mb-5">
                         Kryloss
                     </h1>
                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[rgba(37,122,218,0.10)] border border-[rgba(37,122,218,0.35)] text-[#4AA7FF] text-sm font-medium">
@@ -29,14 +29,14 @@ export function Hero() {
                 </div>
 
                 {/* Description */}
-                <p className="text-xl md:text-2xl text-[#9CA9B7] mb-8 max-w-2xl mx-auto leading-relaxed">
+                <p className="text-lg md:text-2xl text-[#9CA9B7] mb-8 max-w-2xl mx-auto leading-relaxed">
                     Your centralized hub for powerful productivity tools. Access health tracking,
                     notifications, and more from one unified dashboard.
                 </p>
 
                 {/* Featured Image Placeholder */}
                 <div className="mb-4">
-                    <div className="relative w-full max-w-2xl mx-auto h-[300px] rounded-2xl bg-[#121922] border border-[#2A3442] shadow-[0_8px_24px_rgba(0,0,0,0.40)] overflow-hidden">
+                    <div className="relative w-full max-w-2xl mx-auto h-[200px] md:h-[300px] rounded-2xl bg-[#121922] border border-[#2A3442] shadow-[0_8px_24px_rgba(0,0,0,0.40)] overflow-hidden">
                         <div className="absolute inset-0 flex items-center justify-center">
                             <div className="text-center">
                                 <div className="w-16 h-16 mx-auto mb-4 bg-[#0F101A] rounded-xl border border-[#1C2430] flex items-center justify-center">
@@ -55,8 +55,8 @@ export function Hero() {
                     </div>
                 </div>
 
-                {/* CTA Buttons */}
-                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
+                {/* CTA Buttons - Hidden on mobile, shown on desktop */}
+                <div className="hidden md:flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
                     <Button
                         size="lg"
                         asChild

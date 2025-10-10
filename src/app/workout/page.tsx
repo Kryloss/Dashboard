@@ -13,6 +13,8 @@ import { WorkoutTypeDialog } from "./components/workout-type-dialog"
 import { SetGoalDialog } from "./components/set-goal-dialog"
 import { SleepDialog } from "./components/sleep-dialog"
 import { ActivityEditModal } from "./history/components/activity-edit-modal"
+import { MobileBottomNav } from "@/components/mobile-bottom-nav"
+import { MobileFAB } from "@/components/mobile-fab"
 import { WorkoutStorage, OngoingWorkout, WorkoutActivity } from "@/lib/workout-storage"
 import { UserDataStorage } from "@/lib/user-data-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
@@ -628,8 +630,8 @@ export default function WorkoutPage() {
                 </div>
 
                 {/* Content */}
-                <div className="relative z-10">
-                    <div className="container mx-auto max-w-7xl px-6 py-4">
+                <div className="relative z-10 pb-24 md:pb-4">
+                    <div className="container mx-auto max-w-7xl px-4 md:px-6 py-4">
                         {/* Daily Goals Section */}
                         <section className="mb-6">
                             <div className="flex items-center justify-end mb-3 space-x-2">
@@ -769,7 +771,7 @@ export default function WorkoutPage() {
                         <section className="mb-12">
                             <div className="flex items-center justify-between mb-6">
                                 <h2 className="text-xl font-semibold text-[#F3F4F6]">Today&apos;s Activity</h2>
-                                <div className="flex items-center space-x-3">
+                                <div className="hidden md:flex items-center space-x-3">
                                     <Button
                                         onClick={() => {
                                             if (!user) {
@@ -1134,6 +1136,53 @@ export default function WorkoutPage() {
                         // Refresh goal progress when sleep is logged
                         refreshWorkoutData()
                     }}
+                />
+
+                {/* Mobile Bottom Navigation */}
+                <MobileBottomNav />
+
+                {/* Mobile Floating Action Button */}
+                <MobileFAB
+                    actions={[
+                        {
+                            label: "Log Workout",
+                            icon: FileText,
+                            onClick: () => {
+                                if (!user) {
+                                    notifications.warning('Sign in required', {
+                                        description: 'Please sign in to log workouts',
+                                        duration: 4000,
+                                        action: {
+                                            label: 'Sign In',
+                                            onClick: () => router.push('/auth/signin')
+                                        }
+                                    })
+                                    return
+                                }
+                                handleQuickAction('quick-log')
+                            },
+                            variant: "secondary"
+                        },
+                        {
+                            label: "New Workout",
+                            icon: Dumbbell,
+                            onClick: () => {
+                                if (!user) {
+                                    notifications.warning('Sign in required', {
+                                        description: 'Please sign in to start workouts',
+                                        duration: 4000,
+                                        action: {
+                                            label: 'Sign In',
+                                            onClick: () => router.push('/auth/signin')
+                                        }
+                                    })
+                                    return
+                                }
+                                setShowWorkoutDialog(true)
+                            },
+                            variant: "primary"
+                        }
+                    ]}
                 />
             </div>
         )
