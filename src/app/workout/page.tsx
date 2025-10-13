@@ -15,6 +15,7 @@ import { SleepDialog } from "./components/sleep-dialog"
 import { ActivityEditModal } from "./history/components/activity-edit-modal"
 import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 import { MobileFAB } from "@/components/mobile-fab"
+import { CornerNavigationArrows } from "@/components/corner-navigation-arrows"
 import { WorkoutStorage, OngoingWorkout, WorkoutActivity } from "@/lib/workout-storage"
 import { UserDataStorage } from "@/lib/user-data-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
@@ -34,6 +35,8 @@ export default function WorkoutPage() {
     const [editingActivity, setEditingActivity] = useState<WorkoutActivity | null>(null)
     const [showSetGoalDialog, setShowSetGoalDialog] = useState(false)
     const [showSleepDialog, setShowSleepDialog] = useState(false)
+    const [isNavHidden, setIsNavHidden] = useState(false)
+    const [lastScrollY, setLastScrollY] = useState(0)
 
     // Simplified workout state management
     const { state: workoutState, refreshWorkoutData, addWorkoutOptimistically, removeActivityOptimistically, updateActivityOptimistically } = useWorkoutState()
@@ -41,8 +44,27 @@ export default function WorkoutPage() {
     // Track if we've shown the sign-in notification to avoid duplicates
     const signInNotificationShownRef = useRef(false)
 
+    // Handle scroll behavior for nav visibility
+    useEffect(() => {
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY
 
+            if (currentScrollY < 10) {
+                setIsNavHidden(false)
+            } else if (currentScrollY > lastScrollY) {
+                // Scrolling down - nav is hidden
+                setIsNavHidden(true)
+            } else {
+                // Scrolling up - nav is visible
+                setIsNavHidden(false)
+            }
 
+            setLastScrollY(currentScrollY)
+        }
+
+        window.addEventListener('scroll', handleScroll, { passive: true })
+        return () => window.removeEventListener('scroll', handleScroll)
+    }, [lastScrollY])
 
     // Simple initialization
     useEffect(() => {
@@ -610,7 +632,7 @@ export default function WorkoutPage() {
         }
 
         return (
-            <div className="min-h-screen bg-[#0B0B0F] text-[#F3F4F6] relative overflow-hidden">
+            <div className="min-h-screen bg-[#0B0B0F] text-[#F3F4F6] relative overflow-hidden pt-16">
                 {/* Hero Gradient Orb Background */}
                 <div className="absolute inset-0 opacity-80">
                     {/* Desktop gradient */}
@@ -1184,6 +1206,9 @@ export default function WorkoutPage() {
                         }
                     ]}
                 />
+
+                {/* Corner Navigation Arrows */}
+                <CornerNavigationArrows isVisible={isNavHidden} />
             </div>
         )
     }

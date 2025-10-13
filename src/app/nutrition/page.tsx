@@ -20,6 +20,7 @@ import { MealSelectionDialog } from "./components/meal-selection-dialog"
 import { SetGoalDialog } from "../workout/components/set-goal-dialog"
 import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 import { MobileFAB } from "@/components/mobile-fab"
+import { CornerNavigationArrows } from "@/components/corner-navigation-arrows"
 import { Plus, Apple, Utensils, User, Dumbbell, Coffee, Sandwich, ChefHat, Cookie, Flame, Moon, TrendingUp, Edit3, Trash2, Pizza, Salad, Croissant, IceCream, Sun, Cake, Beef, Fish, Soup } from "lucide-react"
 
 export default function NutritionPage() {
@@ -58,11 +59,37 @@ export default function NutritionPage() {
     // Settings dialog state
     const [showSetGoalDialog, setShowSetGoalDialog] = useState(false)
 
+    // Nav visibility state for corner arrows
+    const [isNavHidden, setIsNavHidden] = useState(false)
+    const [lastScrollY, setLastScrollY] = useState(0)
+
     // Use workout state for goal rings integration
     const { state: workoutState, refreshWorkoutData } = useWorkoutState()
 
     // Track if we've shown the sign-in notification to avoid duplicates
     const signInNotificationShownRef = useRef(false)
+
+    // Handle scroll behavior for nav visibility
+    useEffect(() => {
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY
+
+            if (currentScrollY < 10) {
+                setIsNavHidden(false)
+            } else if (currentScrollY > lastScrollY) {
+                // Scrolling down - nav is hidden
+                setIsNavHidden(true)
+            } else {
+                // Scrolling up - nav is visible
+                setIsNavHidden(false)
+            }
+
+            setLastScrollY(currentScrollY)
+        }
+
+        window.addEventListener('scroll', handleScroll, { passive: true })
+        return () => window.removeEventListener('scroll', handleScroll)
+    }, [lastScrollY])
 
     // Initialize and load nutrition data
     useEffect(() => {
@@ -806,7 +833,7 @@ export default function NutritionPage() {
         }
 
         return (
-            <div className="min-h-screen bg-[#0B0B0F] text-[#F3F4F6] relative overflow-hidden">
+            <div className="min-h-screen bg-[#0B0B0F] text-[#F3F4F6] relative overflow-hidden pt-16">
                 {/* Hero Gradient Orb Background */}
                 <div className="absolute inset-0 opacity-80">
                     {/* Desktop gradient */}
@@ -1369,6 +1396,9 @@ export default function NutritionPage() {
                     onClose={() => setIsMealSelectionDialogOpen(false)}
                     onMealSelected={(mealType) => handleAddFood(mealType)}
                 />
+
+                {/* Corner Navigation Arrows */}
+                <CornerNavigationArrows isVisible={isNavHidden} />
             </div>
         )
     }

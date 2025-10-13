@@ -23,6 +23,8 @@ export function HealssNav() {
     const { user, loading, signOut } = useAuthContext()
     const [profile, setProfile] = useState<Profile | null>(null)
     const [hasAccount, setHasAccount] = useState(false)
+    const [isVisible, setIsVisible] = useState(true)
+    const [lastScrollY, setLastScrollY] = useState(0)
     const supabase = createClient()
 
     // Check authentication status and load profile
@@ -75,6 +77,29 @@ export function HealssNav() {
         checkAuthAndProfile()
     }, [user, supabase])
 
+    // Handle scroll behavior for hiding/showing nav
+    useEffect(() => {
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY
+
+            if (currentScrollY < 10) {
+                // Always show nav at the top
+                setIsVisible(true)
+            } else if (currentScrollY > lastScrollY) {
+                // Scrolling down - hide nav
+                setIsVisible(false)
+            } else {
+                // Scrolling up - show nav
+                setIsVisible(true)
+            }
+
+            setLastScrollY(currentScrollY)
+        }
+
+        window.addEventListener('scroll', handleScroll, { passive: true })
+        return () => window.removeEventListener('scroll', handleScroll)
+    }, [lastScrollY])
+
     const navItems = [
         { href: "/workout", label: "Workout", value: "workout" },
         { href: "/nutrition", label: "Nutrition", value: "nutrition" },
@@ -90,7 +115,7 @@ export function HealssNav() {
     }
 
     return (
-        <nav className="bg-[#1A1D21] border-b border-[#2A3442] sticky top-0 z-50">
+        <nav className={`bg-[#1A1D21] border-b border-[#2A3442] fixed top-0 left-0 right-0 z-50 transition-transform duration-300 ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
             <div className="container mx-auto max-w-7xl px-6">
                 <div className="flex items-center justify-between h-16">
                     {/* Logo/Brand */}
