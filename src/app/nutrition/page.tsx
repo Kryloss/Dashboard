@@ -835,7 +835,7 @@ export default function NutritionPage() {
         return (
             <div className="min-h-screen bg-[#0B0B0F] text-[#F3F4F6] relative overflow-hidden">
                 {/* Hero Gradient Orb Background */}
-                <div className="absolute inset-0 opacity-80 mt-16">
+                <div className="absolute inset-0 opacity-80">
                     {/* Desktop gradient */}
                     <div
                         className="hidden md:block absolute inset-0"
