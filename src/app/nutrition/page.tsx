@@ -853,7 +853,7 @@ export default function NutritionPage() {
                 </div>
 
                 {/* Content */}
-                <div className="relative z-10 pb-20 md:pb-4 pt-16">
+                <div className="relative z-10 pb-20 md:pb-4 pt-20">
                     <div className="container mx-auto max-w-7xl px-4 md:px-6 py-4">
                         {/* Daily Goals Section */}
                         <section className="mb-6">
