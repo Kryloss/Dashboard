@@ -21,6 +21,7 @@ export function QuickActionCard({
             className={cn(
                 "flex-shrink-0 flex flex-col items-center justify-center text-center gap-3 min-w-[90px] snap-start",
                 "focus:outline-none focus:ring-2 focus:ring-[#2A8CEA] focus:ring-offset-2 focus:ring-offset-[#0B0B0F]",
+                "md:p-6 md:bg-[#121318] md:border md:border-[#212227] md:rounded-[20px] md:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),_0_1px_2px_rgba(0,0,0,0.60)] md:hover:border-[#2A2B31] md:transition-all",
                 "group",
                 className
             )}
