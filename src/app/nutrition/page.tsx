@@ -16,6 +16,7 @@ import { AddMealDialog } from "./components/add-meal-dialog"
 import { EditFoodDialog } from "./components/edit-food-dialog"
 import { EditMealDialog } from "./components/edit-meal-dialog"
 import { CreateMealDialog } from "./components/create-meal-dialog"
+import { MealSelectionDialog } from "./components/meal-selection-dialog"
 import { SetGoalDialog } from "../workout/components/set-goal-dialog"
 import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 import { MobileFAB } from "@/components/mobile-fab"
@@ -50,6 +51,9 @@ export default function NutritionPage() {
 
     // Create meal dialog state
     const [isCreateMealDialogOpen, setIsCreateMealDialogOpen] = useState(false)
+
+    // Meal selection dialog state (for mobile FAB)
+    const [isMealSelectionDialogOpen, setIsMealSelectionDialogOpen] = useState(false)
 
     // Settings dialog state
     const [showSetGoalDialog, setShowSetGoalDialog] = useState(false)
@@ -1352,11 +1356,18 @@ export default function NutritionPage() {
                                     })
                                     return
                                 }
-                                handleAddFood('breakfast')
+                                setIsMealSelectionDialogOpen(true)
                             },
                             variant: "primary"
                         }
                     ]}
+                />
+
+                {/* Meal Selection Dialog */}
+                <MealSelectionDialog
+                    isOpen={isMealSelectionDialogOpen}
+                    onClose={() => setIsMealSelectionDialogOpen(false)}
+                    onMealSelected={(mealType) => handleAddFood(mealType)}
                 />
             </div>
         )
