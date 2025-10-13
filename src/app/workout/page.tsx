@@ -653,7 +653,7 @@ export default function WorkoutPage() {
 
                 {/* Content */}
                 <div className="relative z-10 pb-24 md:pb-4 pt-16">
-                    <div className="container mx-auto max-w-7xl px-4 md:px-6 py-4">
+                    <div className="container mx-auto max-w-7xl px-4 md:px-6 pb-4">
                         {/* Daily Goals Section */}
                         <section className="mb-6">
                             <div className="flex items-center justify-end mb-3 space-x-2">
