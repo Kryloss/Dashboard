@@ -5,20 +5,21 @@ export function Footer() {
     return (
         <footer className="bg-[#121922] border-t border-[#2A3442] mt-8">
             <div className="max-w-7xl mx-auto px-6 py-8">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-                    {/* Brand Section */}
-                    <div className="col-span-1 md:col-span-2">
-                        <Link href="/" className="inline-block mb-4">
-                            <h3 className="text-xl font-bold text-[#FBF7FA] bg-gradient-to-br from-[#114EB2] via-[#257ADA] to-[#4AA7FF] bg-clip-text text-transparent">
-                                Kryloss
-                            </h3>
-                        </Link>
-                        <p className="text-[#9CA9B7] text-sm leading-relaxed max-w-md">
-                            Your centralized productivity hub. Access powerful tools for health tracking,
-                            notifications, and workflow management from one unified dashboard.
-                        </p>
-                    </div>
+                {/* Brand Section - Full Width on Mobile */}
+                <div className="mb-8">
+                    <Link href="/" className="inline-block mb-4">
+                        <h3 className="text-xl font-bold text-[#FBF7FA] bg-gradient-to-br from-[#114EB2] via-[#257ADA] to-[#4AA7FF] bg-clip-text text-transparent">
+                            Kryloss
+                        </h3>
+                    </Link>
+                    <p className="text-[#9CA9B7] text-sm leading-relaxed max-w-md">
+                        Your centralized productivity hub. Access powerful tools for health tracking,
+                        notifications, and workflow management from one unified dashboard.
+                    </p>
+                </div>
 
+                {/* Platform and Legal - Two Columns on Mobile, Four on Desktop */}
+                <div className="grid grid-cols-2 md:grid-cols-2 gap-8">
                     {/* Platform Links */}
                     <div>
                         <h4 className="text-[#FBF7FA] font-semibold text-sm mb-4">Platform</h4>
