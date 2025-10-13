@@ -833,9 +833,9 @@ export default function NutritionPage() {
         }
 
         return (
-            <div className="min-h-screen bg-[#0B0B0F] text-[#F3F4F6] relative overflow-hidden pt-16">
+            <div className="min-h-screen bg-[#0B0B0F] text-[#F3F4F6] relative overflow-hidden">
                 {/* Hero Gradient Orb Background */}
-                <div className="absolute inset-0 opacity-80">
+                <div className="absolute inset-0 opacity-80 mt-16">
                     {/* Desktop gradient */}
                     <div
                         className="hidden md:block absolute inset-0"
@@ -853,7 +853,7 @@ export default function NutritionPage() {
                 </div>
 
                 {/* Content */}
-                <div className="relative z-10 pb-20 md:pb-4">
+                <div className="relative z-10 pb-20 md:pb-4 pt-16">
                     <div className="container mx-auto max-w-7xl px-4 md:px-6 py-4">
                         {/* Daily Goals Section */}
                         <section className="mb-6">
