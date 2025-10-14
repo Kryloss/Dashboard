@@ -435,42 +435,49 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
         fatsGrams: number
         macroPreference: 'balanced' | 'highProtein' | 'lowCarb' | 'custom'
     }}) => {
-        console.log('Template applied:', template.name, template.values)
         const values = template.values
 
-        // Update goals with proper spreading to ensure reactivity
-        const newGoals = {
-            ...goals,
+        // Create completely new state objects to ensure React detects the change
+        const newGoals: GoalsFormData = {
             dailyExerciseMinutes: values.dailyExerciseMinutes.toString(),
             weeklyExerciseSessions: values.weeklyExerciseSessions.toString(),
             dailyCalories: values.dailyCalories.toString(),
             activityLevel: values.activityLevel,
             sleepHours: values.sleepHours.toString(),
             recoveryMinutes: values.recoveryMinutes.toString(),
+            startingWeight: goals.startingWeight, // Preserve existing weight goals
+            goalWeight: goals.goalWeight,
             dietType: values.dietType
         }
 
-        const newNutrition = {
-            ...nutrition,
+        const newNutrition: NutritionFormData = {
             dailyCalories: values.dailyCalories.toString(),
             carbsGrams: values.carbsGrams.toString(),
             proteinGrams: values.proteinGrams.toString(),
             fatsGrams: values.fatsGrams.toString(),
+            fiberGrams: nutrition.fiberGrams, // Preserve existing fiber
+            waterMl: nutrition.waterMl, // Preserve existing water
+            sodiumMg: nutrition.sodiumMg, // Preserve existing sodium
             macroPreference: values.macroPreference
         }
 
-        console.log('New goals state:', newGoals)
-        console.log('New nutrition state:', newNutrition)
-
+        // Batch state updates using React's automatic batching
         setGoals(newGoals)
         setNutrition(newNutrition)
 
-        // Switch to Goals tab to show the updated values
-        setActiveTab('goals')
+        // Use setTimeout to ensure state has updated before switching tabs
+        setTimeout(() => {
+            // Force scroll to top of the content area to show form fields
+            const contentArea = document.querySelector('[role="tabpanel"]')
+            if (contentArea) {
+                contentArea.scrollTop = 0
+            }
+        }, 50)
 
-        notifications.success('Template applied', {
-            description: `${template.name} goal template has been applied. Review and save your goals below.`,
-            duration: 5000
+        // Show success notification with template details
+        notifications.success(`${template.name} Applied!`, {
+            description: `Exercise: ${values.dailyExerciseMinutes}min/day • Calories: ${values.dailyCalories} • Sleep: ${values.sleepHours}h`,
+            duration: 6000
         })
     }
 

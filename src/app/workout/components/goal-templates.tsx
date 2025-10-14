@@ -1,8 +1,9 @@
 "use client"
 
+import { useState } from "react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Target, TrendingDown, TrendingUp, Activity, Flame, Heart } from "lucide-react"
+import { Target, TrendingDown, TrendingUp, Activity, Flame, Heart, Check } from "lucide-react"
 
 interface GoalTemplate {
     id: string
@@ -167,6 +168,18 @@ const templates: GoalTemplate[] = [
 ]
 
 export function GoalTemplates({ onApplyTemplate }: GoalTemplatesProps) {
+    const [appliedTemplate, setAppliedTemplate] = useState<string | null>(null)
+
+    const handleApplyTemplate = (template: GoalTemplate) => {
+        setAppliedTemplate(template.id)
+        onApplyTemplate(template)
+
+        // Reset the applied state after animation
+        setTimeout(() => {
+            setAppliedTemplate(null)
+        }, 2000)
+    }
+
     return (
         <Card className="bg-[#121318] border-[#212227]">
             <CardHeader className="pb-4">
@@ -176,35 +189,40 @@ export function GoalTemplates({ onApplyTemplate }: GoalTemplatesProps) {
                     </div>
                     <div>
                         <p className="text-sm text-[#F3F4F6] font-medium">Goal Templates</p>
-                        <p className="text-xs text-[#A1A1AA]">Quick-start presets for common fitness goals</p>
+                        <p className="text-xs text-[#A1A1AA]">Click a template to instantly populate your goals</p>
                     </div>
                 </div>
             </CardHeader>
             <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {templates.map((template) => (
-                        <button
-                            key={template.id}
-                            onClick={() => onApplyTemplate(template)}
-                            className="group relative bg-[#0E0F13] border-2 rounded-[12px] p-4 transition-all text-left hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
-                            style={{
-                                borderColor: template.borderColor.replace('border-[', '').replace(']', ''),
-                                opacity: 0.85
-                            }}
-                        >
-                            {/* Icon and Badge */}
-                            <div className="flex items-start justify-between mb-3">
-                                <div className={`w-10 h-10 bg-gradient-to-br ${template.bgColor} rounded-lg flex items-center justify-center`}>
-                                    <div className="text-white">
-                                        {template.icon}
+                    {templates.map((template) => {
+                        const isApplied = appliedTemplate === template.id
+                        return (
+                            <button
+                                key={template.id}
+                                onClick={() => handleApplyTemplate(template)}
+                                disabled={isApplied}
+                                className="group relative bg-[#0E0F13] border-2 rounded-[12px] p-4 transition-all text-left hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:scale-100 disabled:cursor-not-allowed"
+                                style={{
+                                    borderColor: isApplied
+                                        ? '#9BE15D'
+                                        : template.borderColor.replace('border-[', '').replace(']', ''),
+                                    opacity: isApplied ? 1 : 0.85
+                                }}
+                            >
+                                {/* Icon and Badge */}
+                                <div className="flex items-start justify-between mb-3">
+                                    <div className={`w-10 h-10 bg-gradient-to-br ${template.bgColor} rounded-lg flex items-center justify-center transition-all ${isApplied ? 'ring-2 ring-[#9BE15D] ring-offset-2 ring-offset-[#0E0F13]' : ''}`}>
+                                        <div className="text-white">
+                                            {isApplied ? <Check className="w-5 h-5" /> : template.icon}
+                                        </div>
                                     </div>
+                                    <Badge
+                                        className={`${isApplied ? 'bg-gradient-to-r from-[#9BE15D] to-[#00E676]' : `bg-gradient-to-r ${template.bgColor}`} text-white border-0 text-[10px] font-medium px-2 py-1 transition-all`}
+                                    >
+                                        {isApplied ? 'Applied!' : 'Apply'}
+                                    </Badge>
                                 </div>
-                                <Badge
-                                    className={`bg-gradient-to-r ${template.bgColor} text-white border-0 text-[10px] font-medium px-2 py-1`}
-                                >
-                                    Apply
-                                </Badge>
-                            </div>
 
                             {/* Template Info */}
                             <div className="space-y-2">
@@ -236,14 +254,20 @@ export function GoalTemplates({ onApplyTemplate }: GoalTemplatesProps) {
                                 </div>
                             </div>
 
-                            {/* Hover effect overlay */}
-                            <div className="absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-5 transition-opacity rounded-[12px] pointer-events-none"
-                                style={{
-                                    backgroundImage: `linear-gradient(to bottom right, ${template.bgColor.replace('from-[', '').replace('] to-[', ', ').replace(']', '')})`
-                                }}
-                            />
-                        </button>
-                    ))}
+                                {/* Hover effect overlay */}
+                                <div className="absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-5 transition-opacity rounded-[12px] pointer-events-none"
+                                    style={{
+                                        backgroundImage: `linear-gradient(to bottom right, ${template.bgColor.replace('from-[', '').replace('] to-[', ', ').replace(']', '')})`
+                                    }}
+                                />
+
+                                {/* Applied success overlay */}
+                                {isApplied && (
+                                    <div className="absolute inset-0 bg-gradient-to-br from-[#9BE15D]/10 to-[#00E676]/10 rounded-[12px] pointer-events-none animate-pulse" />
+                                )}
+                            </button>
+                        )
+                    })}
                 </div>
             </CardContent>
         </Card>
