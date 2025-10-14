@@ -17,6 +17,7 @@ import ProgressGalleryCompact from '@/components/progress-gallery-compact'
 import { BMICalculator } from './calculators/bmi-calculator'
 import { TDEECalculator } from './calculators/tdee-calculator'
 import { MacroCalculator } from './calculators/macro-calculator'
+import { GoalTemplates } from './goal-templates'
 import { User, Target, Weight, Moon, Flame, Dumbbell, Camera, Calculator } from "lucide-react"
 
 interface SetGoalDialogProps {
@@ -420,6 +421,53 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
         })
     }
 
+    // Handler for when a goal template is applied
+    const handleTemplateApply = (template: { name: string; values: {
+        dailyExerciseMinutes: number
+        weeklyExerciseSessions: number
+        dailyCalories: number
+        activityLevel: string
+        sleepHours: number
+        recoveryMinutes: number
+        dietType: string
+        carbsGrams: number
+        proteinGrams: number
+        fatsGrams: number
+        macroPreference: 'balanced' | 'highProtein' | 'lowCarb' | 'custom'
+    }}) => {
+        const values = template.values
+
+        // Update goals
+        setGoals({
+            dailyExerciseMinutes: values.dailyExerciseMinutes.toString(),
+            weeklyExerciseSessions: values.weeklyExerciseSessions.toString(),
+            dailyCalories: values.dailyCalories.toString(),
+            activityLevel: values.activityLevel,
+            sleepHours: values.sleepHours.toString(),
+            recoveryMinutes: values.recoveryMinutes.toString(),
+            startingWeight: goals.startingWeight, // Keep existing values
+            goalWeight: goals.goalWeight, // Keep existing values
+            dietType: values.dietType
+        })
+
+        // Update nutrition
+        setNutrition({
+            dailyCalories: values.dailyCalories.toString(),
+            carbsGrams: values.carbsGrams.toString(),
+            proteinGrams: values.proteinGrams.toString(),
+            fatsGrams: values.fatsGrams.toString(),
+            fiberGrams: nutrition.fiberGrams, // Keep existing values
+            waterMl: nutrition.waterMl, // Keep existing values
+            sodiumMg: nutrition.sodiumMg, // Keep existing values
+            macroPreference: values.macroPreference
+        })
+
+        notifications.success('Template applied', {
+            description: `${template.name} goal template has been applied`,
+            duration: 3000
+        })
+    }
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-hidden p-0 z-[9998]" onInteractOutside={(e) => e.preventDefault()}>
@@ -589,28 +637,33 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                 </Card>
                             </TabsContent>
 
-                            <TabsContent value="goals" className="mt-0">
+                            <TabsContent value="goals" className="mt-0 space-y-6">
+                                {/* Goal Templates Section */}
+                                <GoalTemplates onApplyTemplate={handleTemplateApply} />
+
                                 {/* Single Consolidated Goals Card */}
                                 <Card className="bg-[#121318] border-[#212227]">
                                     <CardHeader className="pb-4">
-                                        <div className="flex items-center space-x-3">
-                                            <div className="w-8 h-8 bg-[rgba(255,255,255,0.03)] border border-[#2A2B31] rounded-lg flex items-center justify-center">
-                                                <Target className="w-4 h-4 text-[#A1A1AA]" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm text-[#F3F4F6] font-medium">Health & Fitness Goals</p>
-                                                <p className="text-xs text-[#A1A1AA]">Set your targets for optimal performance</p>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center space-x-3">
+                                                <div className="w-8 h-8 bg-[rgba(255,255,255,0.03)] border border-[#2A2B31] rounded-lg flex items-center justify-center">
+                                                    <Target className="w-4 h-4 text-[#A1A1AA]" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm text-[#F3F4F6] font-medium">Health & Fitness Goals</p>
+                                                    <p className="text-xs text-[#A1A1AA]">Set your targets for optimal performance</p>
+                                                </div>
                                             </div>
                                         </div>
                                     </CardHeader>
-                                    <CardContent className="space-y-5">
+                                    <CardContent className="space-y-6">
                                         {/* Exercise Goals Section - Compact Grid */}
-                                        <div className="space-y-3">
+                                        <div className="space-y-3 pb-5 border-b border-[#212227]">
                                             <div className="flex items-center space-x-2">
-                                                <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-[#FF2D55] to-[#FF375F] flex items-center justify-center">
-                                                    <Dumbbell className="w-3.5 h-3.5 text-white" />
+                                                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#FF2D55] to-[#FF375F] flex items-center justify-center shadow-sm">
+                                                    <Dumbbell className="w-4 h-4 text-white" />
                                                 </div>
-                                                <span className="text-sm font-medium text-[#F3F4F6]">Exercise</span>
+                                                <span className="text-sm font-semibold text-[#F3F4F6]">Exercise Goals</span>
                                             </div>
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div className="space-y-2">
@@ -641,12 +694,12 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                         </div>
 
                                         {/* Nutrition Goals Section */}
-                                        <div className="space-y-3">
+                                        <div className="space-y-3 pb-5 border-b border-[#212227]">
                                             <div className="flex items-center space-x-2">
-                                                <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-[#9BE15D] to-[#00E676] flex items-center justify-center">
-                                                    <Flame className="w-3.5 h-3.5 text-white" />
+                                                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#9BE15D] to-[#00E676] flex items-center justify-center shadow-sm">
+                                                    <Flame className="w-4 h-4 text-white" />
                                                 </div>
-                                                <span className="text-sm font-medium text-[#F3F4F6]">Nutrition</span>
+                                                <span className="text-sm font-semibold text-[#F3F4F6]">Nutrition Goals</span>
                                             </div>
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div className="space-y-2">
@@ -685,12 +738,12 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                         </div>
 
                                         {/* Detailed Nutrition Goals Section */}
-                                        <div className="space-y-3 border-t border-[#212227] pt-4">
+                                        <div className="space-y-3 pb-5 border-b border-[#212227]">
                                             <div className="flex items-center space-x-2">
-                                                <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-[#9BE15D] to-[#00E676] flex items-center justify-center">
-                                                    <Flame className="w-3.5 h-3.5 text-white" />
+                                                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#9BE15D] to-[#00E676] flex items-center justify-center shadow-sm">
+                                                    <Flame className="w-4 h-4 text-white" />
                                                 </div>
-                                                <span className="text-sm font-medium text-[#F3F4F6]">Detailed Nutrition</span>
+                                                <span className="text-sm font-semibold text-[#F3F4F6]">Macronutrient Targets</span>
                                             </div>
 
                                             <div className="space-y-3">
@@ -822,12 +875,12 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                         </div>
 
                                         {/* Recovery Goals Section */}
-                                        <div className="space-y-3">
+                                        <div className="space-y-3 pb-5 border-b border-[#212227]">
                                             <div className="flex items-center space-x-2">
-                                                <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-[#2BD2FF] to-[#2A8CEA] flex items-center justify-center">
-                                                    <Moon className="w-3.5 h-3.5 text-white" />
+                                                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#2BD2FF] to-[#2A8CEA] flex items-center justify-center shadow-sm">
+                                                    <Moon className="w-4 h-4 text-white" />
                                                 </div>
-                                                <span className="text-sm font-medium text-[#F3F4F6]">Recovery</span>
+                                                <span className="text-sm font-semibold text-[#F3F4F6]">Recovery & Sleep</span>
                                             </div>
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div className="space-y-2">
@@ -860,10 +913,10 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                         {/* Weight Goals Section */}
                                         <div className="space-y-3">
                                             <div className="flex items-center space-x-2">
-                                                <div className="w-6 h-6 rounded-lg bg-[rgba(255,255,255,0.08)] border border-[#2A2B31] flex items-center justify-center">
-                                                    <Weight className="w-3.5 h-3.5 text-[#A1A1AA]" />
+                                                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#FFA500] to-[#FF8C00] flex items-center justify-center shadow-sm">
+                                                    <Weight className="w-4 h-4 text-white" />
                                                 </div>
-                                                <span className="text-sm font-medium text-[#F3F4F6]">Weight Goals</span>
+                                                <span className="text-sm font-semibold text-[#F3F4F6]">Weight Goals</span>
                                             </div>
                                             <div className="space-y-3">
                                                 <div className="space-y-2">
