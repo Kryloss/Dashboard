@@ -14,7 +14,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import ProgressImageUpload from '@/components/progress-image-upload'
 import ProgressGalleryCompact from '@/components/progress-gallery-compact'
-import { User, Target, Weight, Moon, Flame, Dumbbell, Camera } from "lucide-react"
+import { BMICalculator } from './calculators/bmi-calculator'
+import { TDEECalculator } from './calculators/tdee-calculator'
+import { MacroCalculator } from './calculators/macro-calculator'
+import { User, Target, Weight, Moon, Flame, Dumbbell, Camera, Calculator } from "lucide-react"
 
 interface SetGoalDialogProps {
     open: boolean
@@ -392,6 +395,31 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
         setRefreshKey(prev => prev + 1)
     }
 
+    // Handler for when TDEE calculator applies calories to goals
+    const handleTDEEApply = (calories: number) => {
+        setGoals(prev => ({ ...prev, dailyCalories: calories.toString() }))
+        setNutrition(prev => ({ ...prev, dailyCalories: calories.toString() }))
+        notifications.success('Calories updated', {
+            description: `Daily calorie goal set to ${calories}`,
+            duration: 3000
+        })
+    }
+
+    // Handler for when Macro calculator applies macros to goals
+    const handleMacrosApply = (macros: { carbs: number; protein: number; fats: number }) => {
+        setNutrition(prev => ({
+            ...prev,
+            carbsGrams: macros.carbs.toString(),
+            proteinGrams: macros.protein.toString(),
+            fatsGrams: macros.fats.toString(),
+            macroPreference: 'custom'
+        }))
+        notifications.success('Macros updated', {
+            description: `Macros set to ${macros.carbs}g/${macros.protein}g/${macros.fats}g`,
+            duration: 3000
+        })
+    }
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-hidden p-0 z-[9998]" onInteractOutside={(e) => e.preventDefault()}>
@@ -430,6 +458,19 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                             >
                                 <Target className="w-4 h-4" />
                                 <span>Goals</span>
+                            </button>
+                            <button
+                                onClick={() => setActiveTab("calculators")}
+                                className={`
+                                    flex-1 flex items-center justify-center space-x-2 px-3 py-2 text-sm font-medium transition-all rounded-md
+                                    ${activeTab === "calculators"
+                                        ? "bg-[#2A8CEA] text-white shadow-sm"
+                                        : "text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)]"
+                                    }
+                                `}
+                            >
+                                <Calculator className="w-4 h-4" />
+                                <span>Calculators</span>
                             </button>
                         </div>
 
@@ -876,6 +917,32 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
                                         </Button>
                                     </CardContent>
                                 </Card>
+                            </TabsContent>
+
+                            <TabsContent value="calculators" className="mt-0 space-y-6">
+                                {/* BMI Calculator */}
+                                <BMICalculator
+                                    initialWeight={profile.weight ? parseFloat(profile.weight) : 0}
+                                    initialHeight={profile.height ? parseFloat(profile.height) : 0}
+                                    weightUnit={profile.weightUnit}
+                                    heightUnit={profile.heightUnit}
+                                />
+
+                                {/* TDEE Calculator */}
+                                <TDEECalculator
+                                    initialWeight={profile.weight ? parseFloat(profile.weight) : 0}
+                                    initialHeight={profile.height ? parseFloat(profile.height) : 0}
+                                    initialAge={profile.age ? parseInt(profile.age) : 0}
+                                    weightUnit={profile.weightUnit}
+                                    heightUnit={profile.heightUnit}
+                                    onApplyToGoals={handleTDEEApply}
+                                />
+
+                                {/* Macro Calculator */}
+                                <MacroCalculator
+                                    initialCalories={goals.dailyCalories ? parseInt(goals.dailyCalories) : 2000}
+                                    onApplyToGoals={handleMacrosApply}
+                                />
                             </TabsContent>
                         </div>
                     </div>
