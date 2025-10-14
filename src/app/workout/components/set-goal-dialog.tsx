@@ -439,8 +439,8 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
         const values = template.values
 
         // Update goals with proper spreading to ensure reactivity
-        setGoals(prev => ({
-            ...prev,
+        const newGoals = {
+            ...goals,
             dailyExerciseMinutes: values.dailyExerciseMinutes.toString(),
             weeklyExerciseSessions: values.weeklyExerciseSessions.toString(),
             dailyCalories: values.dailyCalories.toString(),
@@ -448,21 +448,29 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
             sleepHours: values.sleepHours.toString(),
             recoveryMinutes: values.recoveryMinutes.toString(),
             dietType: values.dietType
-        }))
+        }
 
-        // Update nutrition with proper spreading to ensure reactivity
-        setNutrition(prev => ({
-            ...prev,
+        const newNutrition = {
+            ...nutrition,
             dailyCalories: values.dailyCalories.toString(),
             carbsGrams: values.carbsGrams.toString(),
             proteinGrams: values.proteinGrams.toString(),
             fatsGrams: values.fatsGrams.toString(),
             macroPreference: values.macroPreference
-        }))
+        }
+
+        console.log('New goals state:', newGoals)
+        console.log('New nutrition state:', newNutrition)
+
+        setGoals(newGoals)
+        setNutrition(newNutrition)
+
+        // Switch to Goals tab to show the updated values
+        setActiveTab('goals')
 
         notifications.success('Template applied', {
-            description: `${template.name} goal template has been applied`,
-            duration: 3000
+            description: `${template.name} goal template has been applied. Review and save your goals below.`,
+            duration: 5000
         })
     }
 
