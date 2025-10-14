@@ -435,32 +435,30 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
         fatsGrams: number
         macroPreference: 'balanced' | 'highProtein' | 'lowCarb' | 'custom'
     }}) => {
+        console.log('Template applied:', template.name, template.values)
         const values = template.values
 
-        // Update goals
-        setGoals({
+        // Update goals with proper spreading to ensure reactivity
+        setGoals(prev => ({
+            ...prev,
             dailyExerciseMinutes: values.dailyExerciseMinutes.toString(),
             weeklyExerciseSessions: values.weeklyExerciseSessions.toString(),
             dailyCalories: values.dailyCalories.toString(),
             activityLevel: values.activityLevel,
             sleepHours: values.sleepHours.toString(),
             recoveryMinutes: values.recoveryMinutes.toString(),
-            startingWeight: goals.startingWeight, // Keep existing values
-            goalWeight: goals.goalWeight, // Keep existing values
             dietType: values.dietType
-        })
+        }))
 
-        // Update nutrition
-        setNutrition({
+        // Update nutrition with proper spreading to ensure reactivity
+        setNutrition(prev => ({
+            ...prev,
             dailyCalories: values.dailyCalories.toString(),
             carbsGrams: values.carbsGrams.toString(),
             proteinGrams: values.proteinGrams.toString(),
             fatsGrams: values.fatsGrams.toString(),
-            fiberGrams: nutrition.fiberGrams, // Keep existing values
-            waterMl: nutrition.waterMl, // Keep existing values
-            sodiumMg: nutrition.sodiumMg, // Keep existing values
             macroPreference: values.macroPreference
-        })
+        }))
 
         notifications.success('Template applied', {
             description: `${template.name} goal template has been applied`,
