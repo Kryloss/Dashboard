@@ -82,28 +82,18 @@ export function EditFoodDialog({ isOpen, onClose, foodEntry, mealType, onFoodUpd
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader className="pb-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-[#9BE15D] to-[#00E676] rounded-full flex items-center justify-center">
-                                <Edit3 className="w-5 h-5 text-white" />
-                            </div>
-                            <div>
-                                <DialogTitle className="text-lg font-bold text-[#F3F4F6]">
-                                    Edit Food
-                                </DialogTitle>
-                                <p className="text-sm text-[#A1A1AA]">
-                                    {getMealDisplayName()} • {foodEntry.food.name}
-                                </p>
-                            </div>
+                    <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-[#9BE15D] to-[#00E676] rounded-full flex items-center justify-center">
+                            <Edit3 className="w-5 h-5 text-white" />
                         </div>
-                        <Button
-                            onClick={onClose}
-                            variant="ghost"
-                            size="icon"
-                            className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full"
-                        >
-                            <X className="w-4 h-4" />
-                        </Button>
+                        <div>
+                            <DialogTitle className="text-lg font-bold text-[#F3F4F6]">
+                                Edit Food
+                            </DialogTitle>
+                            <p className="text-sm text-[#A1A1AA]">
+                                {getMealDisplayName()} • {foodEntry.food.name}
+                            </p>
+                        </div>
                     </div>
                 </DialogHeader>
 

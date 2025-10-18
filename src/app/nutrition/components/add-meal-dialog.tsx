@@ -501,19 +501,9 @@ export function AddMealDialog({ isOpen, onClose, mealType, onFoodAdded }: AddMea
         <Dialog open={isOpen} onOpenChange={handleClose}>
             <DialogContent className="bg-[#0B0B0F] border border-[#212227] text-[#F3F4F6] max-w-3xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <div className="flex items-center justify-between">
-                        <DialogTitle className="text-xl font-semibold text-[#F3F4F6]">
-                            Add to {getMealDisplayName()}
-                        </DialogTitle>
-                        <Button
-                            onClick={handleClose}
-                            variant="ghost"
-                            size="icon"
-                            className="text-[#A1A1AA] hover:text-[#F3F4F6] hover:bg-[rgba(255,255,255,0.04)] rounded-full"
-                        >
-                            <X className="w-4 h-4" />
-                        </Button>
-                    </div>
+                    <DialogTitle className="text-xl font-semibold text-[#F3F4F6]">
+                        Add to {getMealDisplayName()}
+                    </DialogTitle>
                     <DialogDescription className="sr-only">
                         Search for foods from USDA database, add them manually, or select from recent foods to add to your meal
                     </DialogDescription>

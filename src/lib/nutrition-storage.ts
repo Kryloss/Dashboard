@@ -765,7 +765,7 @@ export class NutritionStorage {
                 }
 
                 const { data, error } = await this.supabase
-                    .from('nutrition_goals')
+                    .from('user_goals')
                     .select('*')
                     .eq('user_id', this.currentUser.id)
                     .not('user_id', 'is', null)
@@ -820,7 +820,7 @@ export class NutritionStorage {
                 if (existingGoals) {
                     // Update existing goals
                     const { error } = await this.supabase
-                        .from('nutrition_goals')
+                        .from('user_goals')
                         .update(dbGoals)
                         .eq('user_id', this.currentUser.id)
                         .not('user_id', 'is', null)
@@ -829,7 +829,7 @@ export class NutritionStorage {
                 } else {
                     // Insert new goals
                     const { data, error } = await this.supabase
-                        .from('nutrition_goals')
+                        .from('user_goals')
                         .insert({
                             ...dbGoals,
                             user_id: this.currentUser.id
@@ -850,7 +850,7 @@ export class NutritionStorage {
                 // Add to sync queue for retry later
                 this.addToSyncQueue({
                     action: 'upsert',
-                    table: 'nutrition_goals',
+                    table: 'user_goals',
                     data: updatedGoals,
                     timestamp: Date.now()
                 })
@@ -1241,13 +1241,14 @@ export class NutritionStorage {
         }
     }
 
-    private static convertDbNutritionGoalsToApp(db: DatabaseNutritionGoals): NutritionGoals {
+    private static convertDbNutritionGoalsToApp(db: any): NutritionGoals {
+        // The user_goals table might not have all nutrition fields, so we provide defaults
         return {
             id: db.id,
             userId: db.user_id,
-            dailyCalories: db.daily_calories,
-            macroTargets: JSON.parse(db.macro_targets),
-            macroPercentages: db.macro_percentages ? JSON.parse(db.macro_percentages) : undefined,
+            dailyCalories: db.daily_calories || 2000,
+            macroTargets: db.macro_targets ? (typeof db.macro_targets === 'string' ? JSON.parse(db.macro_targets) : db.macro_targets) : { carbs: 250, protein: 150, fats: 67 },
+            macroPercentages: db.macro_percentages ? (typeof db.macro_percentages === 'string' ? JSON.parse(db.macro_percentages) : db.macro_percentages) : undefined,
             waterTarget: db.water_target || undefined,
             fiberTarget: db.fiber_target || undefined,
             sodiumLimit: db.sodium_limit || undefined,
@@ -1256,7 +1257,7 @@ export class NutritionStorage {
         }
     }
 
-    private static convertAppNutritionGoalsToDb(app: NutritionGoals): Omit<DatabaseNutritionGoals, 'id' | 'user_id' | 'created_at' | 'updated_at'> {
+    private static convertAppNutritionGoalsToDb(app: NutritionGoals): any {
         return {
             daily_calories: app.dailyCalories,
             macro_targets: JSON.stringify(app.macroTargets),
