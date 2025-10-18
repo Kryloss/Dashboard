@@ -1,11 +1,12 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { isOnSubdomain } from "@/lib/subdomains"
 import { Button } from "@/components/ui/button"
 import { GoalRings } from "../workout/components/goal-rings"
 import { StatCard } from "../workout/components/stat-card"
+import { GoalProgressCalculator } from "@/lib/goal-progress"
 
 import { NutritionStorage, NutritionEntry, NutritionGoals, DetailedNutrients, Food, FoodEntry, Meal, MealTemplate } from "@/lib/nutrition-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
@@ -22,6 +23,8 @@ import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 import { MobileFAB } from "@/components/mobile-fab"
 import { CornerNavigationArrows } from "@/components/corner-navigation-arrows"
 import { Plus, Apple, Utensils, User, Dumbbell, Coffee, Sandwich, ChefHat, Cookie, Flame, Moon, TrendingUp, Edit3, Trash2, Pizza, Salad, Croissant, IceCream, Sun, Cake, Beef, Fish, Soup } from "lucide-react"
+import { calculateWorkoutStreak, calculateWeeklyWorkoutStats, formatWorkoutDuration } from "@/lib/workout-insights"
+import { WorkoutStorage } from "@/lib/workout-storage"
 
 export default function NutritionPage() {
     const router = useRouter()
@@ -31,6 +34,15 @@ export default function NutritionPage() {
     const [nutritionEntry, setNutritionEntry] = useState<NutritionEntry | null>(null)
     const [nutritionGoals, setNutritionGoals] = useState<NutritionGoals | null>(null)
     const [mealTemplates, setMealTemplates] = useState<MealTemplate[]>([])
+    const [streak, setStreak] = useState(0)
+    const [weeklyStats, setWeeklyStats] = useState<{
+        workoutTime: { value: string; change?: { value: string; direction: 'up' | 'down' | 'neutral'; period: string } }
+        sessions: { value: string; change?: { value: string; direction: 'up' | 'down' | 'neutral'; period: string } }
+    }>({ workoutTime: { value: '0m' }, sessions: { value: '0' } })
+    const ringSize = useMemo(() => {
+        if (typeof window === 'undefined') return 'lg'
+        return window.innerWidth < 640 ? 'md' : 'lg'
+    }, [])
 
     // Modal state for detailed macro breakdowns
     const [selectedMacro, setSelectedMacro] = useState<'carbs' | 'protein' | 'fats' | null>(null)
@@ -100,17 +112,45 @@ export default function NutritionPage() {
             // Initialize storage
             NutritionStorage.initialize(user, supabase)
 
-            // Load nutrition data
             const loadNutritionData = async () => {
                 try {
-                    const [entry, goals, templates] = await Promise.all([
+                    const [entry, goals, templates, activities] = await Promise.all([
                         NutritionStorage.getNutritionEntry(),
                         NutritionStorage.getNutritionGoals(),
-                        NutritionStorage.getMealTemplates()
+                        NutritionStorage.getMealTemplates(),
+                        WorkoutStorage.getWorkoutActivities(100, 0)
                     ])
                     setNutritionEntry(entry)
                     setNutritionGoals(goals)
                     setMealTemplates(templates)
+
+                    setStreak(calculateWorkoutStreak(activities))
+                    const stats = calculateWeeklyWorkoutStats(activities)
+                    const workoutTimeValue = formatWorkoutDuration(stats.currentMinutes)
+                    const workoutTimeChange = stats.previousMinutes > 0
+                        ? {
+                            value: `${Math.abs(Math.round(((stats.currentMinutes - stats.previousMinutes) / stats.previousMinutes) * 100))}%`,
+                            direction: stats.currentMinutes >= stats.previousMinutes ? 'up' as const : 'down' as const,
+                            period: 'vs last week'
+                        }
+                        : stats.currentMinutes > 0
+                            ? { value: 'New data', direction: 'neutral' as const, period: '' }
+                            : undefined
+
+                    const sessionsChange = stats.previousSessions > 0
+                        ? {
+                            value: `${Math.abs(stats.currentSessions - stats.previousSessions)}`,
+                            direction: stats.currentSessions >= stats.previousSessions ? 'up' as const : 'down' as const,
+                            period: 'vs last week'
+                        }
+                        : stats.currentSessions > 0
+                            ? { value: 'New data', direction: 'neutral' as const, period: '' }
+                            : undefined
+
+                    setWeeklyStats({
+                        workoutTime: { value: workoutTimeValue, change: workoutTimeChange },
+                        sessions: { value: stats.currentSessions.toString(), change: sessionsChange }
+                    })
                 } catch (error) {
                     console.error('Error loading nutrition data:', error)
                 }
@@ -729,19 +769,21 @@ export default function NutritionPage() {
     }
 
     // Goal ring data calculation
+    const MIN_VISIBLE_PROGRESS = 0.015
+
     const getGoalRingData = () => {
         if (!workoutState.goalProgress) {
             return {
-                recovery: 0.002,
-                nutrition: 0.002,
-                exercise: 0.002
+                recovery: MIN_VISIBLE_PROGRESS,
+                nutrition: MIN_VISIBLE_PROGRESS,
+                exercise: MIN_VISIBLE_PROGRESS
             }
         }
 
         return {
-            recovery: Math.max(workoutState.goalProgress.recovery.progress, 0.002),
-            nutrition: Math.max(workoutState.goalProgress.nutrition.progress, 0.002),
-            exercise: Math.max(workoutState.goalProgress.exercise.progress, 0.002)
+            recovery: Math.max(workoutState.goalProgress.recovery.progress, MIN_VISIBLE_PROGRESS),
+            nutrition: Math.max(workoutState.goalProgress.nutrition.progress, MIN_VISIBLE_PROGRESS),
+            exercise: Math.max(workoutState.goalProgress.exercise.progress, MIN_VISIBLE_PROGRESS)
         }
     }
 
@@ -871,11 +913,11 @@ export default function NutritionPage() {
                                 <div className="flex flex-col items-center lg:items-start">
                                     <div className="flex justify-center lg:justify-start relative">
                                         <GoalRings
-                                            size="lg"
+                                            size={ringSize}
                                             recoveryProgress={getGoalRingData().recovery}
                                             nutritionProgress={getGoalRingData().nutrition}
                                             exerciseProgress={getGoalRingData().exercise}
-                                            streak={7} // Mock streak data
+                                            streak={streak}
                                             className={workoutState.isLoading ? 'opacity-90' : ''}
                                         />
                                     </div>
@@ -900,7 +942,27 @@ export default function NutritionPage() {
                                                     </div>
                                                 </div>
                                                 <div className="text-[#9BE15D] text-sm font-semibold">
-                                                    {Math.round(getSummaryPercentages().nutrition)}%
+                                                    {getNutritionPercentage()}%
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Recovery Summary */}
+                                        <div className="p-4 bg-gradient-to-br from-[#2BD2FF]/10 via-[#2A8CEA]/5 to-transparent border-2 border-[#2BD2FF]/20 rounded-[12px] hover:border-[#2BD2FF]/30 transition-all">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center space-x-3">
+                                                    <div className="w-6 h-6 bg-gradient-to-br from-[#2BD2FF] to-[#2A8CEA] rounded-[8px] flex items-center justify-center">
+                                                        <Moon className="w-3 h-3 text-white" />
+                                                    </div>
+                                                    <span className="text-[#F3F4F6] font-medium text-sm">Recovery</span>
+                                                </div>
+                                                <div className="flex-1 text-center">
+                                                    <div className="text-xs text-[#A1A1AA]">
+                                                        {getSleepProgress().hours}h of {getSleepProgress().target}h
+                                                    </div>
+                                                </div>
+                                                <div className="text-[#2BD2FF] text-sm font-semibold">
+                                                    {Math.round(getSleepProgress().percent)}%
                                                 </div>
                                             </div>
                                         </div>
@@ -915,40 +977,17 @@ export default function NutritionPage() {
                                                     <span className="text-[#F3F4F6] font-medium text-sm">Exercise</span>
                                                 </div>
                                                 <div className="flex-1 text-center">
-                                                    {workoutState.goalProgress && (
-                                                        <div className="text-xs text-[#A1A1AA]">
-                                                            {workoutState.goalProgress.exercise.currentMinutes}m of {workoutState.goalProgress.exercise.targetMinutes}m
-                                                        </div>
-                                                    )}
+                                                    <div className="text-xs text-[#A1A1AA]">
+                                                        {weeklyStats.workoutTime.value}
+                                                    </div>
                                                 </div>
                                                 <div className="text-[#FF2D55] text-sm font-semibold">
-                                                    {Math.round(getSummaryPercentages().exercise)}%
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Recovery Summary */}
-                                        <div className="p-3 bg-[#121318] border border-[#212227] rounded-[12px] hover:border-[#2A2B31] transition-colors">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center space-x-3">
-                                                    <div className="w-6 h-6 bg-gradient-to-br from-[#2BD2FF] to-[#2A8CEA] rounded-[8px] flex items-center justify-center">
-                                                        <Moon className="w-3 h-3 text-white" />
-                                                    </div>
-                                                    <span className="text-[#F3F4F6] font-medium text-sm">Recovery</span>
-                                                </div>
-                                                <div className="flex-1 text-center">
-                                                    {workoutState.goalProgress && (
-                                                        <div className="text-xs text-[#A1A1AA]">
-                                                            {formatNutrientValue(workoutState.goalProgress.recovery.currentHours)}h of {workoutState.goalProgress.recovery.targetHours}h
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="text-[#2BD2FF] text-sm font-semibold">
-                                                    {Math.round(getSummaryPercentages().recovery)}%
+                                                    {weeklyStats.workoutTime.change ? weeklyStats.workoutTime.change.value : '—'}
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
+
                                 </div>
                             </div>
                         </section>

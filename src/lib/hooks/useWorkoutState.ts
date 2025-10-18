@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { GoalProgressCalculator, DailyGoalProgress } from '@/lib/goal-progress'
-import { WorkoutStorage, WorkoutActivity } from '@/lib/workout-storage'
+import { WorkoutStorage, WorkoutActivity, OngoingWorkout } from '@/lib/workout-storage'
 import { useAuth } from './useAuth'
 
 export interface WorkoutState {
@@ -23,6 +23,9 @@ export function useWorkoutState() {
 
     const refreshTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
     const isRefreshingRef = useRef(false)
+    const ongoingWorkoutRef = useRef<OngoingWorkout | null>(null)
+    const lastGoalRefreshRef = useRef(0)
+    const MIN_REFRESH_INTERVAL = 30_000
 
     // Local cache (persisted) helpers
     const getCacheKey = useCallback(() => {
@@ -60,23 +63,31 @@ export function useWorkoutState() {
         isRefreshingRef.current = true
 
         try {
-            // Clear any pending refresh
             if (refreshTimeoutRef.current) {
                 clearTimeout(refreshTimeoutRef.current)
             }
 
             setState(prev => ({ ...prev, isLoading: true }))
 
-            // Initialize storage if needed
             WorkoutStorage.initialize(user, supabase)
 
-            // Only invalidate cache on force
             if (force) {
                 GoalProgressCalculator.invalidateCache(user.id)
             }
 
+            if (!force) {
+                ongoingWorkoutRef.current = await WorkoutStorage.getOngoingWorkout()
+            }
+
+            const includeOngoing = Boolean(ongoingWorkoutRef.current?.isRunning)
+
+            if (includeOngoing && Date.now() - lastGoalRefreshRef.current > MIN_REFRESH_INTERVAL) {
+                GoalProgressCalculator.invalidateCache(user.id)
+                lastGoalRefreshRef.current = Date.now()
+            }
+
             const [goalProgress, recentActivities] = await Promise.all([
-                GoalProgressCalculator.calculateDailyProgress(force, true, user.id),
+                GoalProgressCalculator.calculateDailyProgress(force, includeOngoing, user.id),
                 WorkoutStorage.getRecentActivities(5)
             ])
 

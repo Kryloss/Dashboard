@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { isOnSubdomain } from "@/lib/subdomains"
 import { Button } from "@/components/ui/button"
@@ -22,6 +22,8 @@ import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 import { useWorkoutState } from "@/lib/hooks/useWorkoutState"
 import { Plus, Flame, Dumbbell, User, Timer, Bike, Clock, Heart, FileText, Play, Edit3, Trash2, Moon, Footprints } from "lucide-react"
+import { calculateWorkoutStreak, calculateWeeklyWorkoutStats, formatWorkoutDuration, summarizeTemplate } from "@/lib/workout-insights"
+import { GoalProgressCalculator } from "@/lib/goal-progress"
 
 export default function WorkoutPage() {
     const router = useRouter()
@@ -40,6 +42,76 @@ export default function WorkoutPage() {
 
     // Simplified workout state management
     const { state: workoutState, refreshWorkoutData, addWorkoutOptimistically, removeActivityOptimistically, updateActivityOptimistically } = useWorkoutState()
+
+    const [streak, setStreak] = useState(0)
+    const [weeklyStats, setWeeklyStats] = useState<{
+        workoutTime: { value: string; change?: { value: string; direction: 'up' | 'down' | 'neutral'; period: string } }
+        sessions: { value: string; change?: { value: string; direction: 'up' | 'down' | 'neutral'; period: string } }
+    }>({
+        workoutTime: { value: '0m' },
+        sessions: { value: '0' }
+    })
+    const [plannedWorkouts, setPlannedWorkouts] = useState<PlannedWorkout[]>([])
+    const ringSize = useMemo(() => {
+        if (typeof window === 'undefined') return 'lg'
+        return window.innerWidth < 640 ? 'md' : 'lg'
+    }, [])
+
+    useEffect(() => {
+        const computeInsights = async () => {
+            if (!user) {
+                setStreak(0)
+                setWeeklyStats({ workoutTime: { value: '0m' }, sessions: { value: '0' } })
+                setPlannedWorkouts([])
+                return
+            }
+
+            const recentActivities = workoutState.recentActivities
+            const allActivities = await WorkoutStorage.getWorkoutActivities(100, 0)
+            setStreak(calculateWorkoutStreak(allActivities))
+
+            const stats = calculateWeeklyWorkoutStats(allActivities)
+            const workoutTimeValue = formatWorkoutDuration(stats.currentMinutes)
+            const workoutTimeChange = stats.previousMinutes > 0
+                ? {
+                    value: `${Math.abs(Math.round(((stats.currentMinutes - stats.previousMinutes) / stats.previousMinutes) * 100))}%`,
+                    direction: stats.currentMinutes >= stats.previousMinutes ? 'up' as const : 'down' as const,
+                    period: 'vs last week'
+                }
+                : stats.currentMinutes > 0
+                    ? { value: 'New data', direction: 'neutral' as const, period: '' }
+                    : undefined
+
+            const sessionsChange = stats.previousSessions > 0
+                ? {
+                    value: `${Math.abs(stats.currentSessions - stats.previousSessions)}`,
+                    direction: stats.currentSessions >= stats.previousSessions ? 'up' as const : 'down' as const,
+                    period: 'vs last week'
+                }
+                : stats.currentSessions > 0
+                    ? { value: 'New data', direction: 'neutral' as const, period: '' }
+                    : undefined
+
+            setWeeklyStats({
+                workoutTime: { value: workoutTimeValue, change: workoutTimeChange },
+                sessions: { value: stats.currentSessions.toString(), change: sessionsChange }
+            })
+
+            const templates = await WorkoutStorage.getTemplates()
+            setPlannedWorkouts(templates.slice(0, 3).map(template => {
+                const summary = summarizeTemplate(template)
+                return {
+                    id: template.id,
+                    icon: <Dumbbell className="w-5 h-5" />,
+                    name: template.name,
+                    duration: summary.durationLabel,
+                    time: 'Plan workout'
+                }
+            }))
+        }
+
+        computeInsights()
+    }, [user, workoutState.recentActivities])
 
     // Track if we've shown the sign-in notification to avoid duplicates
     const signInNotificationShownRef = useRef(false)
@@ -244,20 +316,21 @@ export default function WorkoutPage() {
 
 
     // Goal progress calculations
+    const MIN_VISIBLE_PROGRESS = 0.015
+
     const getGoalRingData = () => {
-        // If we have no data yet, show minimal progress to indicate rings are working
         if (!workoutState.goalProgress) {
             return {
-                recovery: 0.002, // Minimal progress to show rings are active
-                nutrition: 0.002,
-                exercise: 0.002
+                recovery: MIN_VISIBLE_PROGRESS,
+                nutrition: MIN_VISIBLE_PROGRESS,
+                exercise: MIN_VISIBLE_PROGRESS
             }
         }
 
         return {
-            recovery: Math.max(workoutState.goalProgress.recovery.progress, 0.002),
-            nutrition: Math.max(workoutState.goalProgress.nutrition.progress, 0.002),
-            exercise: Math.max(workoutState.goalProgress.exercise.progress, 0.002)
+            recovery: Math.max(workoutState.goalProgress.recovery.progress, MIN_VISIBLE_PROGRESS),
+            nutrition: Math.max(workoutState.goalProgress.nutrition.progress, MIN_VISIBLE_PROGRESS),
+            exercise: Math.max(workoutState.goalProgress.exercise.progress, MIN_VISIBLE_PROGRESS)
         }
     }
 
@@ -337,81 +410,26 @@ export default function WorkoutPage() {
         }
     }
 
-    // Mock data for demonstration (non-goal related)
-    const mockData = {
-        streak: 7, // 7 day streak
-        goalDetails: {
-            recovery: {
-                sleep: { current: 7.2, target: 8.0 }, // hours
-                breaks: { current: 45, target: 60 }   // minutes
-            },
-            nutrition: {
-                calories: { consumed: 1847, burned: 420, target: 2000 },
-                macros: {
-                    carbs: { current: 180, target: 250 },
-                    protein: { current: 95, target: 120 },
-                    fats: { current: 65, target: 80 }
-                }
-            },
-            exercise: {
-                completed: 3,
-                planned: 4,
-                extras: 1, // bonus activities
-                duration: 85 // minutes
-            }
+    const weeklyStatCards = [
+        {
+            icon: <Moon className="w-4 h-4" />,
+            label: "Sleep Time",
+            value: 'Log sleep to track',
+            change: undefined
         },
-        plannedWorkouts: [
-            {
-                id: 1,
-                icon: <Footprints className="w-5 h-5" />,
-                name: "Morning Run",
-                duration: "30 min",
-                time: "6:00 AM"
-            },
-            {
-                id: 2,
-                icon: <Dumbbell className="w-5 h-5" />,
-                name: "Strength Training",
-                duration: "45 min",
-                time: "5:00 PM"
-            },
-            {
-                id: 3,
-                icon: <Heart className="w-5 h-5" />,
-                name: "Start Yoga",
-                duration: "25 min",
-                time: "7:30 AM"
-            }
-        ],
-        recentActivity: [
-            { date: "Yesterday", name: "Upper Body Strength", duration: "45 min", progress: 1.0 },
-            { date: "2 days ago", name: "Morning Run", duration: "32 min", progress: 0.8 },
-            { date: "3 days ago", name: "Yoga Flow", duration: "28 min", progress: 0.7 }
-        ],
-        weeklyStats: (() => {
-            const weeklyStats = getWeeklyWorkoutStats()
-            return [
-                {
-                    icon: <Moon className="w-4 h-4" />,
-                    label: "Sleep Time",
-                    value: "7.2h avg",
-                    change: { value: "No progress data yet", direction: "neutral" as const, period: "" }
-                },
-                {
-                    icon: <Clock className="w-4 h-4" />,
-                    label: "Workout Time",
-                    value: weeklyStats.workoutTime.value || "No data",
-                    change: weeklyStats.workoutTime.change
-                },
-                {
-                    icon: <Dumbbell className="w-4 h-4" />,
-                    label: "Sessions",
-                    value: weeklyStats.sessions.value || "0",
-                    change: weeklyStats.sessions.change
-                }
-            ]
-        })()
-    }
+        {
+            icon: <Clock className="w-4 h-4" />,
+            label: "Workout Time",
+            value: weeklyStats.workoutTime.value,
+            change: weeklyStats.workoutTime.change
+        },
+        {
+            icon: <Dumbbell className="w-4 h-4" />,
+            label: "Sessions",
+            value: weeklyStats.sessions.value,
+            change: weeklyStats.sessions.change
+        }
+    ]
 
     const handleStartWorkout = (id: number) => {
         if (!user) {
@@ -426,8 +444,7 @@ export default function WorkoutPage() {
             return
         }
 
-        // Get workout name from mockData
-        const workout = mockData.plannedWorkouts.find(w => w.id === id)
+        const workout = plannedWorkouts.find(w => w.id === id)
         const workoutName = workout?.name || 'Workout'
 
         if (id === 2) { // Strength Training workout
@@ -571,7 +588,10 @@ export default function WorkoutPage() {
             // Do server/local deletion
             await WorkoutStorage.deleteWorkoutActivity(activity.id)
             // Soft refresh soon after to reconcile
-            setTimeout(() => refreshWorkoutData(true), 300)
+            setTimeout(() => {
+                GoalProgressCalculator.invalidateCache(user?.id)
+                refreshWorkoutData(true)
+            }, 300)
 
             notifications.success('Activity deleted', {
                 description: 'Workout removed from history',
@@ -602,7 +622,10 @@ export default function WorkoutPage() {
                 notes: updatedActivity.notes
             })
             // Revalidate shortly after
-            setTimeout(() => refreshWorkoutData(true), 300)
+            setTimeout(() => {
+                GoalProgressCalculator.invalidateCache(user?.id)
+                refreshWorkoutData(true)
+            }, 300)
 
             notifications.success('Activity updated', {
                 description: 'Changes saved successfully',
@@ -702,11 +725,11 @@ export default function WorkoutPage() {
                                 <div className="flex flex-col items-center lg:items-start">
                                     <div className="flex justify-center lg:justify-start relative">
                                         <GoalRings
-                                            size="lg"
+                                            size={ringSize}
                                             recoveryProgress={getGoalRingData().recovery}
                                             nutritionProgress={getGoalRingData().nutrition}
                                             exerciseProgress={getGoalRingData().exercise}
-                                            streak={mockData.streak}
+                                            streak={streak}
                                             className={workoutState.isLoading ? 'opacity-90' : ''}
                                         />
                                     </div>
@@ -896,7 +919,7 @@ export default function WorkoutPage() {
                                     </div>
                                 )}
 
-                                {mockData.plannedWorkouts.map((workout) => (
+                                {plannedWorkouts.map((workout) => (
                                     <PlannedWorkoutCard
                                         key={workout.id}
                                         icon={workout.icon}
@@ -1105,7 +1128,7 @@ export default function WorkoutPage() {
                                 <h2 className="text-xl font-semibold text-[#F3F4F6] mb-6">This Week&apos;s Progress</h2>
 
                                 <div className="space-y-4">
-                                    {mockData.weeklyStats.map((stat, index) => (
+                                    {weeklyStatCards.map((stat, index) => (
                                         <StatCard
                                             key={index}
                                             icon={stat.icon}

@@ -1,12 +1,20 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import type { User, AuthChangeEvent, Session } from '@supabase/supabase-js'
+import type { User, AuthChangeEvent, Session, SupabaseClient } from '@supabase/supabase-js'
+
+// Persist the browser client so we reuse a single instance per module
+let browserSupabaseClient: SupabaseClient | null = null
 
 export function useAuth() {
     const [user, setUser] = useState<User | null>(null)
     const [loading, setLoading] = useState(true)
-    const supabase = createClient()
+    const supabase = useMemo(() => {
+        if (!browserSupabaseClient) {
+            browserSupabaseClient = createClient()
+        }
+        return browserSupabaseClient
+    }, [])
     const router = useRouter()
 
     useEffect(() => {
@@ -58,7 +66,7 @@ export function useAuth() {
         )
 
         return () => subscription.unsubscribe()
-    }, [supabase, router])
+    }, [router, supabase])
 
     const signOut = useCallback(async () => {
         try {
