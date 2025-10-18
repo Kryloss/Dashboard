@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef, useMemo } from "react"
+import React, { useEffect, useState, useRef, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { isOnSubdomain } from "@/lib/subdomains"
 import { Button } from "@/components/ui/button"
@@ -21,7 +21,7 @@ import { UserDataStorage } from "@/lib/user-data-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 import { useWorkoutState } from "@/lib/hooks/useWorkoutState"
-import { Plus, Flame, Dumbbell, User, Timer, Bike, Clock, Heart, FileText, Play, Edit3, Trash2, Moon, Footprints } from "lucide-react"
+import { Plus, Flame, Dumbbell, User, Timer, Bike, Heart, FileText, Play, Edit3, Trash2, Moon, Footprints, Clock } from "lucide-react"
 import { calculateWorkoutStreak, calculateWeeklyWorkoutStats, formatWorkoutDuration, summarizeTemplate } from "@/lib/workout-insights"
 import { GoalProgressCalculator } from "@/lib/goal-progress"
 
@@ -51,7 +51,13 @@ export default function WorkoutPage() {
         workoutTime: { value: '0m' },
         sessions: { value: '0' }
     })
-    const [plannedWorkouts, setPlannedWorkouts] = useState<PlannedWorkout[]>([])
+    const [plannedWorkouts, setPlannedWorkouts] = useState<Array<{
+        id: string
+        icon: React.ReactNode
+        name: string
+        duration: string
+        time: string
+    }>>([])
     const ringSize = useMemo(() => {
         if (typeof window === 'undefined') return 'lg'
         return window.innerWidth < 640 ? 'md' : 'lg'
@@ -66,7 +72,6 @@ export default function WorkoutPage() {
                 return
             }
 
-            const recentActivities = workoutState.recentActivities
             const allActivities = await WorkoutStorage.getWorkoutActivities(100, 0)
             setStreak(calculateWorkoutStreak(allActivities))
 
@@ -101,7 +106,7 @@ export default function WorkoutPage() {
             setPlannedWorkouts(templates.slice(0, 3).map(template => {
                 const summary = summarizeTemplate(template)
                 return {
-                    id: template.id,
+                    id: template.id || template.name,
                     icon: <Dumbbell className="w-5 h-5" />,
                     name: template.name,
                     duration: summary.durationLabel,
@@ -112,6 +117,26 @@ export default function WorkoutPage() {
 
         computeInsights()
     }, [user, workoutState.recentActivities])
+
+    const weeklyStatCards = [
+        {
+            icon: <Moon className="w-4 h-4" />,
+            label: "Sleep Time",
+            value: 'Log sleep to track'
+        },
+        {
+            icon: <Clock className="w-4 h-4" />,
+            label: "Workout Time",
+            value: weeklyStats.workoutTime.value,
+            change: weeklyStats.workoutTime.change
+        },
+        {
+            icon: <Dumbbell className="w-4 h-4" />,
+            label: "Sessions",
+            value: weeklyStats.sessions.value,
+            change: weeklyStats.sessions.change
+        }
+    ]
 
     // Track if we've shown the sign-in notification to avoid duplicates
     const signInNotificationShownRef = useRef(false)
@@ -351,87 +376,8 @@ export default function WorkoutPage() {
         }
     }
 
-    const getWeeklyWorkoutStats = () => {
-        // Get this week's workout data
-        const thisWeekWorkouts = workoutState.recentActivities || []
-        const thisWeekSessions = thisWeekWorkouts.length
-        const thisWeekMinutes = thisWeekWorkouts.reduce((total, workout) => total + Math.round((workout.durationSeconds || 0) / 60), 0)
 
-        // Format workout time as hours and minutes
-        const formatWorkoutTime = (totalMinutes: number) => {
-            if (totalMinutes === 0) return "0m"
-            const hours = Math.floor(totalMinutes / 60)
-            const minutes = totalMinutes % 60
-            if (hours > 0) {
-                return `${hours}h ${minutes}m`
-            }
-            return `${minutes}m`
-        }
-
-        // Mock last week's data for comparison (in real app, this would come from storage)
-        // Set to 0 to simulate no previous data scenario
-        const lastWeekSessions = 0 // Mock previous week sessions
-        const lastWeekMinutes = 0 // Mock previous week minutes
-
-        // Calculate changes
-        const sessionChange = thisWeekSessions - lastWeekSessions
-        const timeChange = thisWeekMinutes - lastWeekMinutes
-        const timeChangePercent = lastWeekMinutes > 0 ? Math.round((timeChange / lastWeekMinutes) * 100) : 0
-
-        // Determine if we have enough data for comparisons
-        const hasWorkoutData = thisWeekSessions > 0 || thisWeekMinutes > 0
-        const hasComparisonData = lastWeekSessions > 0 || lastWeekMinutes > 0
-
-        return {
-            workoutTime: {
-                value: hasWorkoutData ? formatWorkoutTime(thisWeekMinutes) : "No workouts yet",
-                change: hasWorkoutData && hasComparisonData ? {
-                    value: `${Math.abs(timeChangePercent)}%`,
-                    direction: timeChange >= 0 ? 'up' as const : 'down' as const,
-                    period: "vs last week"
-                } : hasWorkoutData && !hasComparisonData ? {
-                    value: "No progress data yet",
-                    direction: 'neutral' as const,
-                    period: ""
-                } : undefined
-            },
-            sessions: {
-                value: hasWorkoutData ? thisWeekSessions.toString() : "0",
-                change: hasWorkoutData && hasComparisonData ? {
-                    value: Math.abs(sessionChange).toString(),
-                    direction: sessionChange >= 0 ? 'up' as const : 'down' as const,
-                    period: "vs last week"
-                } : hasWorkoutData && !hasComparisonData ? {
-                    value: "No progress data yet",
-                    direction: 'neutral' as const,
-                    period: ""
-                } : undefined
-            }
-        }
-    }
-
-    const weeklyStatCards = [
-        {
-            icon: <Moon className="w-4 h-4" />,
-            label: "Sleep Time",
-            value: 'Log sleep to track',
-            change: undefined
-        },
-        {
-            icon: <Clock className="w-4 h-4" />,
-            label: "Workout Time",
-            value: weeklyStats.workoutTime.value,
-            change: weeklyStats.workoutTime.change
-        },
-        {
-            icon: <Dumbbell className="w-4 h-4" />,
-            label: "Sessions",
-            value: weeklyStats.sessions.value,
-            change: weeklyStats.sessions.change
-        }
-    ]
-
-    const handleStartWorkout = (id: number) => {
+    const handleStartWorkout = (id: string) => {
         if (!user) {
             notifications.warning('Sign in required', {
                 description: 'Please sign in to start workouts',
@@ -444,10 +390,10 @@ export default function WorkoutPage() {
             return
         }
 
-        const workout = plannedWorkouts.find(w => w.id === id)
+        const workout = plannedWorkouts.find(w => String(w.id) === String(id))
         const workoutName = workout?.name || 'Workout'
 
-        if (id === 2) { // Strength Training workout
+        if (id === 'strength') {
             handleQuickAction('strength')
         } else {
             // All other planned workouts show coming soon
@@ -459,7 +405,7 @@ export default function WorkoutPage() {
         console.log(`Starting workout ${id}`)
     }
 
-    const handleEditWorkout = (id: number) => {
+    const handleEditWorkout = (id: string) => {
         if (!user) {
             notifications.warning('Sign in required', {
                 description: 'Please sign in to edit workouts',
@@ -922,10 +868,7 @@ export default function WorkoutPage() {
                                 {plannedWorkouts.map((workout) => (
                                     <PlannedWorkoutCard
                                         key={workout.id}
-                                        icon={workout.icon}
-                                        name={workout.name}
-                                        duration={workout.duration}
-                                        time={workout.time}
+                                        {...workout}
                                         onStart={() => handleStartWorkout(workout.id)}
                                         onEdit={() => handleEditWorkout(workout.id)}
                                     />

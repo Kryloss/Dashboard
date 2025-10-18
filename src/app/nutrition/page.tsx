@@ -6,7 +6,6 @@ import { isOnSubdomain } from "@/lib/subdomains"
 import { Button } from "@/components/ui/button"
 import { GoalRings } from "../workout/components/goal-rings"
 import { StatCard } from "../workout/components/stat-card"
-import { GoalProgressCalculator } from "@/lib/goal-progress"
 
 import { NutritionStorage, NutritionEntry, NutritionGoals, DetailedNutrients, Food, FoodEntry, Meal, MealTemplate } from "@/lib/nutrition-storage"
 import { useAuth } from "@/lib/hooks/useAuth"
@@ -734,6 +733,26 @@ export default function NutritionPage() {
         }
     }
 
+    const getNutritionPercentage = () => {
+        const today = getTodaysNutrition()
+        const target = getTargetNutrition()
+        if (target.dailyCalories <= 0) return 0
+        return Math.min(Math.round((today.totalCalories / target.dailyCalories) * 100), 999)
+    }
+
+    const getSleepProgress = () => {
+        if (!workoutState.goalProgress) {
+            return { hours: 0, target: 8, percent: 0 }
+        }
+        const { currentHours, targetHours } = workoutState.goalProgress.recovery
+        const percent = targetHours > 0 ? Math.min(Math.round((currentHours / targetHours) * 100), 999) : 0
+        return {
+            hours: Number(currentHours.toFixed(1)),
+            target: targetHours,
+            percent
+        }
+    }
+
     const getMealIcon = (mealType: string, customIcon?: string) => {
         // If custom icon is provided, use it
         if (customIcon) {
@@ -787,17 +806,6 @@ export default function NutritionPage() {
         }
     }
 
-    const getSummaryPercentages = () => {
-        if (!workoutState.goalProgress) {
-            return { recovery: 0, nutrition: 0, exercise: 0 }
-        }
-
-        return {
-            recovery: (workoutState.goalProgress.recovery.currentHours / workoutState.goalProgress.recovery.targetHours) * 100,
-            nutrition: (workoutState.goalProgress.nutrition.currentCalories / workoutState.goalProgress.nutrition.targetCalories) * 100,
-            exercise: (workoutState.goalProgress.exercise.currentMinutes / workoutState.goalProgress.exercise.targetMinutes) * 100
-        }
-    }
 
     // Get detailed nutrients for modal
     const getDetailedNutrients = (): DetailedNutrients => {
