@@ -18,6 +18,7 @@ import { BMICalculator } from './calculators/bmi-calculator'
 import { TDEECalculator } from './calculators/tdee-calculator'
 import { MacroCalculator } from './calculators/macro-calculator'
 import { GoalTemplates } from './goal-templates'
+import { GoalProgressCalculator } from '@/lib/goal-progress'
 import { User, Target, Weight, Moon, Flame, Dumbbell, Camera, Calculator } from "lucide-react"
 
 interface SetGoalDialogProps {
@@ -287,6 +288,19 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
             notifications.success('Profile saved', {
                 description: 'Your profile has been updated successfully'
             })
+
+            if (user?.id) {
+                GoalProgressCalculator.invalidateCache(user.id)
+            }
+
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('goalSettingsUpdated', {
+                    detail: {
+                        scope: 'profile',
+                        source: 'set-goal-dialog'
+                    }
+                }))
+            }
         } catch (error: unknown) {
             console.error('Error saving profile:', error)
 
@@ -368,6 +382,19 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
             notifications.success('Goals saved', {
                 description: 'Your workout and nutrition goals have been updated successfully'
             })
+
+            if (user?.id) {
+                GoalProgressCalculator.invalidateCache(user.id)
+            }
+
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('goalSettingsUpdated', {
+                    detail: {
+                        scope: 'goals',
+                        source: 'set-goal-dialog'
+                    }
+                }))
+            }
         } catch (error: unknown) {
             console.error('Error saving goals:', error)
 
@@ -422,19 +449,21 @@ export function SetGoalDialog({ open, onOpenChange }: SetGoalDialogProps) {
     }
 
     // Handler for when a goal template is applied
-    const handleTemplateApply = (template: { name: string; values: {
-        dailyExerciseMinutes: number
-        weeklyExerciseSessions: number
-        dailyCalories: number
-        activityLevel: string
-        sleepHours: number
-        recoveryMinutes: number
-        dietType: string
-        carbsGrams: number
-        proteinGrams: number
-        fatsGrams: number
-        macroPreference: 'balanced' | 'highProtein' | 'lowCarb' | 'custom'
-    }}) => {
+    const handleTemplateApply = (template: {
+        name: string; values: {
+            dailyExerciseMinutes: number
+            weeklyExerciseSessions: number
+            dailyCalories: number
+            activityLevel: string
+            sleepHours: number
+            recoveryMinutes: number
+            dietType: string
+            carbsGrams: number
+            proteinGrams: number
+            fatsGrams: number
+            macroPreference: 'balanced' | 'highProtein' | 'lowCarb' | 'custom'
+        }
+    }) => {
         const values = template.values
 
         // Create completely new state objects to ensure React detects the change

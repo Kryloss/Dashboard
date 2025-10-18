@@ -292,12 +292,21 @@ export default function WorkoutPage() {
             }
         }
 
+        const handleGoalSettingsUpdated = () => {
+            if (user?.id) {
+                GoalProgressCalculator.invalidateCache(user.id)
+            }
+            refreshWorkoutData(true)
+        }
+
         window.addEventListener('workoutCompleted', handleWorkoutCompleted as EventListener)
         document.addEventListener('visibilitychange', handleVisibilityChange)
+        window.addEventListener('goalSettingsUpdated', handleGoalSettingsUpdated as EventListener)
 
         return () => {
             window.removeEventListener('workoutCompleted', handleWorkoutCompleted as EventListener)
             document.removeEventListener('visibilitychange', handleVisibilityChange)
+            window.removeEventListener('goalSettingsUpdated', handleGoalSettingsUpdated as EventListener)
         }
     }, [user, supabase, notifications, refreshWorkoutData, addWorkoutOptimistically])
 
