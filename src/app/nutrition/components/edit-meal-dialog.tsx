@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Meal } from "@/lib/nutrition-storage"
-import { Edit3, X, Coffee, Sandwich, ChefHat, Cookie, Apple, Utensils, Pizza, Salad, Croissant, IceCream, Sun, Moon, Cake, Beef, Fish, Soup } from "lucide-react"
+import { Edit3, Coffee, Sandwich, ChefHat, Cookie, Apple, Utensils, Pizza, Salad, Croissant, IceCream, Sun, Moon, Cake, Beef, Fish, Soup } from "lucide-react"
 
 interface EditMealDialogProps {
     isOpen: boolean

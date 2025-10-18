@@ -216,22 +216,22 @@ interface DatabaseNutritionEntry {
     updated_at: string
 }
 
-interface DatabaseNutritionGoals {
+interface DatabaseUserGoalsWithNutrition {
     id: string
     user_id: string
     daily_calories: number
-    macro_targets: string  // JSON string of macro targets
-    macro_percentages: string | null // JSON string of percentages
-    water_target: number | null
-    fiber_target: number | null
-    sodium_limit: number | null
+    macro_targets?: string  // JSON string of macro targets
+    macro_percentages?: string | null // JSON string of percentages
+    water_target?: number | null
+    fiber_target?: number | null
+    sodium_limit?: number | null
     created_at: string
     updated_at: string
 }
 
 interface SyncOperation {
     action: 'upsert' | 'insert' | 'delete'
-    table: 'foods' | 'nutrition_entries' | 'nutrition_goals'
+    table: 'foods' | 'nutrition_entries' | 'user_goals'
     data: Food | NutritionEntry | NutritionGoals | string | null
     timestamp: number
     retryCount?: number
@@ -1241,7 +1241,7 @@ export class NutritionStorage {
         }
     }
 
-    private static convertDbNutritionGoalsToApp(db: any): NutritionGoals {
+    private static convertDbNutritionGoalsToApp(db: DatabaseUserGoalsWithNutrition): NutritionGoals {
         // The user_goals table might not have all nutrition fields, so we provide defaults
         return {
             id: db.id,
@@ -1257,7 +1257,7 @@ export class NutritionStorage {
         }
     }
 
-    private static convertAppNutritionGoalsToDb(app: NutritionGoals): any {
+    private static convertAppNutritionGoalsToDb(app: NutritionGoals): Omit<DatabaseUserGoalsWithNutrition, 'id' | 'user_id' | 'created_at' | 'updated_at'> {
         return {
             daily_calories: app.dailyCalories,
             macro_targets: JSON.stringify(app.macroTargets),
