@@ -8,12 +8,10 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Switch } from "@/components/ui/switch"
 import { NutritionStorage, Food, DetailedNutrients } from "@/lib/nutrition-storage"
 import { SmartFoodSearch } from "@/lib/smart-search"
-import { Search, X, Plus, Minus, Package, Edit3, Calculator, Database, Leaf, ChevronDown, ChevronUp,
-         Beef, Wheat, Droplets, AlertTriangle, CheckCircle, Star, Zap, Heart, Shield } from "lucide-react"
+import { Search, X, Plus, Minus, Package, Edit3, Database, Leaf, ChevronDown,
+         Beef, Droplets, AlertTriangle, CheckCircle, Star, Zap, Heart, Shield } from "lucide-react"
 import { useNotifications } from "@/lib/contexts/NotificationContext"
 
 interface AddMealDialogProps {
